@@ -1,0 +1,10 @@
+_build/
+_coverage/
+.merlin
+*.rst~
+*.install
+bisect*.out
+bisect*.coverage
+fuzz-*-input
+fuzz-*-output
+fuzz-logs/
