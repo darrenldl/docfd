@@ -1,2 +1,8 @@
 (executable
- (name notefd))
+ (name notefd)
+ (public_name notefd)
+ (libraries containers
+            fileutils
+            cmdliner
+ )
+)
