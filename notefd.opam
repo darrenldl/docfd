@@ -1,0 +1,25 @@
+opam-version: "2.0"
+synopsis: "Find notes"
+description: """
+"""
+maintainer: "Darren Ldl <darrenldldev@gmail.com>"
+authors: "Darren Ldl"
+license: "MIT"
+homepage: "https://github.com/darrenldl/notefd"
+bug-reports: "https://github.com/darrenldl/notefd/issues"
+dev-repo: "git+https://github.com/darrenldl/notefd"
+depends: [
+  "ocaml" {>= "4.08.1"}
+  "dune" {>= "2.7.0"}
+  "containers" {>= "3.4"}
+  "fileutils"
+  "cmdliner"
+  "otoml" {>= "0.9.1"}
+  "timedesc" {>= "0.5.1"}
+  "timere" {>= "0.6.0"}
+  "timere-parse" {>= "0.0.5"}
+  "dune-build-info"
+]
+build: [
+  ["dune" "build" "-p" name "-j" jobs]
+]

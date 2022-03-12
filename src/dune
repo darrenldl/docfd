@@ -4,5 +4,6 @@
  (libraries containers
             fileutils
             cmdliner
+            dune-build-info
  )
 )
