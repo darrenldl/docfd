@@ -77,7 +77,7 @@ let parse (l : string list) : string list * String_set.t =
              List.map String.lowercase_ascii l
              |> String_set.add_list tags
            in
-           aux title tags xs
+           aux title tags []
         )
       | Failed _ -> aux title tags xs
   in
