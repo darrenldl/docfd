@@ -127,7 +127,7 @@ let run (tags_required : string list) (dir : string) =
       (match header with
        | Ok header ->
          if String_set.(is_empty @@ diff tags_required header.tags) then
-           Fmt.pr "@[<v>%s@,  @[<v>%s@,@[<h>[%a]@]@]@,@]" header.path
+           Fmt.pr "@[<v>%s@,  @[<v>> %s@,@[<h>[%a]@]@]@,@]" header.path
              (match header.title with
               | None -> "N/A"
               | Some s -> s)
