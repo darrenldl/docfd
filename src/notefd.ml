@@ -94,7 +94,17 @@ let process path : (header, string) result =
     tags;
   }
 
-let run (dir : string) =
+let tag_arg =
+  let doc =
+    "If multiple tags are specified, they are chained together by \"and\"."
+  in
+  Arg.(value & opt_all string [] & info [ "t"; "tag" ] ~doc ~docv:"TAG")
+
+let run (tags_required : string list) (dir : string) =
+  let tags_required =
+    List.map String.lowercase_ascii tags_required
+    |> String_set.of_list
+  in
   let files =
     FileUtil.(find Is_file dir)
       (fun acc x ->
@@ -116,11 +126,12 @@ let run (dir : string) =
   List.iter (fun header ->
       (match header with
        | Ok header ->
-         Fmt.pr "@[<v>%s@,  @[<v>%s@,@[<h>[%a]@]@]@,@]" header.path
-           (match header.title with
-            | None -> "N/A"
-            | Some s -> s)
-           Fmt.(list ~sep:sp string) (String_set.to_list header.tags)
+         if String_set.(is_empty @@ diff tags_required header.tags) then
+           Fmt.pr "@[<v>%s@,  @[<v>%s@,@[<h>[%a]@]@]@,@]" header.path
+             (match header.title with
+              | None -> "N/A"
+              | Some s -> s)
+             Fmt.(list ~sep:sp string) (String_set.to_list header.tags)
        | Error msg ->
          Fmt.pr "Error: %s\n" msg
       )
@@ -136,6 +147,6 @@ let cmd =
     | Some version -> Build_info.V1.Version.to_string version
   in
   Cmd.v (Cmd.info "notefd" ~version ~doc)
-    (Term.(const run $ dir_arg))
+    (Term.(const run $ tag_arg $ dir_arg))
 
 let () = exit (Cmd.eval cmd)
