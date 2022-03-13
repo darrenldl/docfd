@@ -4,6 +4,8 @@
  (libraries containers
             fileutils
             cmdliner
+            mparser
+            fmt
             dune-build-info
  )
 )
