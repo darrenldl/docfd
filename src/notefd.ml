@@ -101,41 +101,44 @@ let tag_arg =
   Arg.(value & opt_all string [] & info [ "t"; "tag" ] ~doc ~docv:"TAG")
 
 let run (tags_required : string list) (dir : string) =
-  let tags_required =
-    List.map String.lowercase_ascii tags_required
-    |> String_set.of_list
-  in
-  let files =
-    FileUtil.(find Is_file dir)
-      (fun acc x ->
-         let words =
-           Filename.basename x
-           |> String.lowercase_ascii
-           |> String.split_on_char '.'
-         in
-         if List.mem "note" words then
-           x :: acc
-         else
-           acc
-      ) []
-  in
-  let files = List.sort_uniq String.compare files in
-  let headers =
-    List.map process files
-  in
-  List.iter (fun header ->
-      (match header with
-       | Ok header ->
-         if String_set.(is_empty @@ diff tags_required header.tags) then
-           Fmt.pr "@[<v>@@ %s@,  @[<v>> %s@,@[<h>[ %a ]@]@]@,@]" header.path
-             (match header.title with
-              | None -> "N/A"
-              | Some s -> s)
-             Fmt.(list ~sep:sp string) (String_set.to_list header.tags)
-       | Error msg ->
-         Fmt.pr "Error: %s\n" msg
-      )
-    ) headers
+  try
+    let tags_required =
+      List.map String.lowercase_ascii tags_required
+      |> String_set.of_list
+    in
+    let files =
+      FileUtil.(find Is_file dir)
+        (fun acc x ->
+           let words =
+             Filename.basename x
+             |> String.lowercase_ascii
+             |> String.split_on_char '.'
+           in
+           if List.mem "note" words then
+             x :: acc
+           else
+             acc
+        ) []
+    in
+    let files = List.sort_uniq String.compare files in
+    let headers =
+      List.map process files
+    in
+    List.iter (fun header ->
+        (match header with
+         | Ok header ->
+           if String_set.(is_empty @@ diff tags_required header.tags) then
+             Fmt.pr "@[<v>@@ %s@,  @[<v>> %s@,@[<h>[ %a ]@]@]@,@]" header.path
+               (match header.title with
+                | None -> "N/A"
+                | Some s -> s)
+               Fmt.(list ~sep:sp string) (String_set.to_list header.tags)
+         | Error msg ->
+           Fmt.pr "Error: %s\n" msg
+        )
+      ) headers
+  with
+  | Sys_error msg -> Printf.printf "Error: %s\n" msg
 
 let dir_arg = Arg.(value & pos 0 dir "." & info [])
 
