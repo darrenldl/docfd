@@ -20,7 +20,7 @@ let get_first_few_lines (path : string) : (string list, string) result =
         Ok (aux ic first_n_lines_to_parse [])
       )
   with
-  | Sys_error _ -> Error (Printf.sprintf "Failed to read file: %s" path)
+  | _ -> Error (Printf.sprintf "Failed to read file: %s" path)
 
 type header = {
   path : string;
@@ -100,45 +100,57 @@ let tag_arg =
   in
   Arg.(value & opt_all string [] & info [ "t"; "tag" ] ~doc ~docv:"TAG")
 
+let list_files_recursively (dir : string) : string list =
+  let rec aux path =
+    Printf.printf "path: %s\n" path;
+    match Sys.is_directory path with
+    | false ->
+      let words =
+        Filename.basename path
+        |> String.lowercase_ascii
+        |> String.split_on_char '.'
+      in
+      if List.mem "note" words then
+        [ path ]
+      else
+        []
+    | true -> (
+        match Array.to_list (Sys.readdir path) with
+        | [] -> [ ]
+        | l ->
+          List.map (Filename.concat path) l
+          |> CCList.flat_map aux
+        | exception _ -> []
+      )
+    | exception _ -> []
+  in
+  aux dir
+
 let run (tags_required : string list) (dir : string) =
-  try
-    let tags_required =
-      List.map String.lowercase_ascii tags_required
-      |> String_set.of_list
-    in
-    let files =
-      FileUtil.(find Is_file dir)
-        (fun acc x ->
-           let words =
-             Filename.basename x
-             |> String.lowercase_ascii
-             |> String.split_on_char '.'
-           in
-           if List.mem "note" words then
-             x :: acc
-           else
-             acc
-        ) []
-    in
-    let files = List.sort_uniq String.compare files in
-    let headers =
-      List.map process files
-    in
-    List.iter (fun header ->
-        (match header with
-         | Ok header ->
-           if String_set.(is_empty @@ diff tags_required header.tags) then
-             Fmt.pr "@[<v>@@ %s@,  @[<v>> %s@,@[<h>[ %a ]@]@]@,@]" header.path
-               (match header.title with
-                | None -> "N/A"
-                | Some s -> s)
-               Fmt.(list ~sep:sp string) (String_set.to_list header.tags)
-         | Error msg ->
-           Fmt.pr "Error: %s\n" msg
-        )
-      ) headers
-  with
-  | Sys_error msg -> Printf.printf "Error: %s\n" msg
+  let tags_required =
+    List.map String.lowercase_ascii tags_required
+    |> String_set.of_list
+  in
+  let files =
+    list_files_recursively dir
+  in
+  let files = List.sort_uniq String.compare files in
+  let headers =
+    List.map process files
+  in
+  List.iter (fun header ->
+      (match header with
+       | Ok header ->
+         if String_set.(is_empty @@ diff tags_required header.tags) then
+           Fmt.pr "@[<v>@@ %s@,  @[<v>> %s@,@[<h>[ %a ]@]@]@,@]" header.path
+             (match header.title with
+              | None -> "N/A"
+              | Some s -> s)
+             Fmt.(list ~sep:sp string) (String_set.to_list header.tags)
+       | Error msg ->
+         Fmt.pr "Error: %s\n" msg
+      )
+    ) headers
 
 let dir_arg = Arg.(value & pos 0 dir "." & info [])
 
