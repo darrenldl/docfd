@@ -102,7 +102,6 @@ let tag_arg =
 
 let list_files_recursively (dir : string) : string list =
   let rec aux path =
-    Printf.printf "path: %s\n" path;
     match Sys.is_directory path with
     | false ->
       let words =
