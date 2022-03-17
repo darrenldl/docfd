@@ -148,10 +148,10 @@ let run (tags_required : string list) (dir : string) =
       (match header with
        | Ok header ->
          if String_set.(is_empty @@ diff tags_required header.tags) then
-           Fmt.pr "@[<v>@@ %s@,  @[<v>> %s@,@[<h>[ %a ]@]@]@,@]" header.path
+           Fmt.pr "@[<v>@@ %s@,  @[<v>>%s@,@[<h>[ %a ]@]@]@,@]" header.path
              (match header.title with
               | None -> ""
-              | Some s -> s)
+              | Some s -> Printf.sprintf " %s" s)
              Fmt.(list ~sep:sp string) (String_set.to_list header.tags)
        | Error msg ->
          Fmt.pr "Error: %s\n" msg
