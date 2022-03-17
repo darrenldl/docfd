@@ -150,7 +150,7 @@ let run (tags_required : string list) (dir : string) =
          if String_set.(is_empty @@ diff tags_required header.tags) then
            Fmt.pr "@[<v>@@ %s@,  @[<v>> %s@,@[<h>[ %a ]@]@]@,@]" header.path
              (match header.title with
-              | None -> "N/A"
+              | None -> ""
               | Some s -> s)
              Fmt.(list ~sep:sp string) (String_set.to_list header.tags)
        | Error msg ->
