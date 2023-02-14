@@ -44,7 +44,7 @@ module Parsers = struct
 
   let spaces = skip_while is_space
 
-  let spaces1 = take_while is_space *> return ()
+  let spaces1 = take_while1 is_space *> return ()
 
   let any_string : string t = take_while1 (fun _ -> true)
 
