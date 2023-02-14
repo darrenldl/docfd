@@ -152,12 +152,12 @@ let list_files_recursively (dir : string) : string list =
       else
         []
     | true -> (
-        match Array.to_list (Sys.readdir path) with
-        | [] -> [ ]
-        | l ->
+        try
+          let l = Array.to_list (Sys.readdir path) in
           List.map (Filename.concat path) l
           |> CCList.flat_map aux
-        | exception _ -> []
+        with
+        | _ -> []
       )
     | exception _ -> []
   in
