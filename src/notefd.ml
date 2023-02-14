@@ -118,11 +118,11 @@ let fuzzy_max_edit_distance_arg =
   let doc =
     "Maximum edit distance for fuzzy matches."
   in
-  Arg.(value & opt int 5 & info [ "fuzzy-max-edit" ] ~doc ~docv:"N")
+  Arg.(value & opt int 3 & info [ "fuzzy-max-edit" ] ~doc ~docv:"N")
 
 let fuzzy_tag_arg =
   let doc =
-    Fmt.str "[F]uzzy tag, match up to fuzzy-max-edit edit distance. %s" tag_doc_common
+    Fmt.str "[F]uzzy case-insensitive tag, match up to fuzzy-max-edit edit distance. %s" tag_doc_common
   in
   Arg.(value & opt_all string [] & info [ "f" ] ~doc ~docv:"TAG")
 
@@ -171,11 +171,14 @@ let run
     (dir : string)
   =
   let fuzzy_tags_required =
-    String_set.of_list fuzzy_tags_required
+    fuzzy_tags_required
+    |> List.map String.lowercase_ascii
+    |> String_set.of_list
   in
   let precise_ci_tags_required =
-    String_set.of_list @@
-    List.map String.lowercase_ascii precise_ci_tags_required
+    precise_ci_tags_required
+    |> List.map String.lowercase_ascii
+    |> String_set.of_list
   in
   let precise_tags_required =
     String_set.of_list precise_tags_required
@@ -190,16 +193,16 @@ let run
   List.iter (fun header ->
       (match header with
        | Ok header -> (
-           let index = header.tags
+           let tags_lowercase =
+             String_set.map String.lowercase_ascii header.tags
+           in
+           let index = tags_lowercase
                        |> String_set.to_list
                        |> List.map (fun s -> (s, ()))
                        |> Spelll.Index.of_list
            in
            let precise_ci_tags_fulfilled =
-             let tags =
-               String_set.map String.lowercase_ascii header.tags
-             in
-             String_set.(is_empty @@ diff precise_ci_tags_required tags)
+             String_set.(is_empty @@ diff precise_ci_tags_required tags_lowercase)
            in
            let precise_tags_fulfilled =
              String_set.(is_empty @@ diff precise_tags_required header.tags)
