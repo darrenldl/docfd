@@ -70,7 +70,7 @@ module Parsers = struct
   let p =
     ( spaces *> char '[' *> spaces *> sep_by spaces1 word_p >>=
       (fun l ->
-         char ']' *> spaces *>
+         spaces *> char ']' *>
          return (Tags l)
       )
     )
@@ -85,7 +85,7 @@ let parse (l : string list) : string list * String_set.t =
     match l with
     | [] -> (List.rev title, tags)
     | x :: xs ->
-      match Angstrom.(parse_string ~consume:Consume.All) Parsers.p x with
+      match Angstrom.(parse_string ~consume:Consume.Prefix) Parsers.p x with
       | Ok x ->
         (match x with
          | Title x -> aux (x :: title) tags xs
@@ -111,11 +111,32 @@ let process path : (header, string) result =
     tags;
   }
 
-let tag_arg =
+let tag_doc_common =
+  "All fuzzy and precise tags are chained together by \"and\"."
+
+let fuzzy_max_edit_distance_arg =
   let doc =
-    "If multiple tags are specified, they are chained together by \"and\"."
+    "Maximum edit distance for fuzzy matches."
   in
-  Arg.(value & opt_all string [] & info [ "t"; "tag" ] ~doc ~docv:"TAG")
+  Arg.(value & opt int 5 & info [ "fuzzy-max-edit" ] ~doc ~docv:"N")
+
+let fuzzy_tag_arg =
+  let doc =
+    Fmt.str "[F]uzzy tag, match up to fuzzy-max-edit edit distance. %s" tag_doc_common
+  in
+  Arg.(value & opt_all string [] & info [ "f" ] ~doc ~docv:"TAG")
+
+let precise_ci_tag_arg =
+  let doc =
+    Fmt.str "Precise case [i]nsensitive tag. %s" tag_doc_common
+  in
+  Arg.(value & opt_all string [] & info [ "i" ] ~doc ~docv:"TAG")
+
+let precise_tag_arg =
+  let doc =
+    Fmt.str "[P]recise tag. %s" tag_doc_common
+  in
+  Arg.(value & opt_all string [] & info [ "p" ] ~doc ~docv:"TAG")
 
 let list_files_recursively (dir : string) : string list =
   let rec aux path =
@@ -142,10 +163,22 @@ let list_files_recursively (dir : string) : string list =
   in
   aux dir
 
-let run (tags_required : string list) (dir : string) =
-  let tags_required =
-    List.map String.lowercase_ascii tags_required
-    |> String_set.of_list
+let run
+    (fuzzy_max_edit_distance : int)
+    (fuzzy_tags_required : string list)
+    (precise_ci_tags_required : string list)
+    (precise_tags_required : string list)
+    (dir : string)
+  =
+  let fuzzy_tags_required =
+    String_set.of_list fuzzy_tags_required
+  in
+  let precise_ci_tags_required =
+    String_set.of_list @@
+    List.map String.lowercase_ascii precise_ci_tags_required
+  in
+  let precise_tags_required =
+    String_set.of_list precise_tags_required
   in
   let files =
     list_files_recursively dir
@@ -156,13 +189,40 @@ let run (tags_required : string list) (dir : string) =
   in
   List.iter (fun header ->
       (match header with
-       | Ok header ->
-         if String_set.(is_empty @@ diff tags_required header.tags) then
-           Fmt.pr "@[<v>@@ %s@,  @[<v>>%s@,@[<h>[ %a ]@]@]@,@]" header.path
-             (match header.title with
-              | None -> ""
-              | Some s -> Printf.sprintf " %s" s)
-             Fmt.(list ~sep:sp string) (String_set.to_list header.tags)
+       | Ok header -> (
+           let index = header.tags
+                       |> String_set.to_list
+                       |> List.map (fun s -> (s, ()))
+                       |> Spelll.Index.of_list
+           in
+           let precise_ci_tags_fulfilled =
+             let tags =
+               String_set.map String.lowercase_ascii header.tags
+             in
+             String_set.(is_empty @@ diff precise_ci_tags_required tags)
+           in
+           let precise_tags_fulfilled =
+             String_set.(is_empty @@ diff precise_tags_required header.tags)
+           in
+           let fuzzy_tags_fulfilled =
+             String_set.for_all
+               (fun s ->
+                  match Spelll.Index.retrieve_l ~limit:fuzzy_max_edit_distance index s with
+                  | [] -> false
+                  | _ -> true
+               )
+               fuzzy_tags_required
+           in
+           if precise_ci_tags_fulfilled
+           && precise_tags_fulfilled
+           && fuzzy_tags_fulfilled then (
+             Fmt.pr "@[<v>%@ @[<v>%s@,>%s@,@[<h>[ %a ]@]@]@,@]" header.path
+               (match header.title with
+                | None -> ""
+                | Some s -> Printf.sprintf " %s" s)
+               Fmt.(list ~sep:sp string) (String_set.to_list header.tags)
+           )
+         )
        | Error msg ->
          Fmt.pr "Error: %s\n" msg
       )
@@ -174,6 +234,11 @@ let cmd =
   let doc = "Find notes" in
   let version = Version_string.s in
   Cmd.v (Cmd.info "notefd" ~version ~doc)
-    (Term.(const run $ tag_arg $ dir_arg))
+    (Term.(const run
+           $ fuzzy_max_edit_distance_arg
+           $ fuzzy_tag_arg
+           $ precise_ci_tag_arg
+           $ precise_tag_arg
+           $ dir_arg))
 
 let () = exit (Cmd.eval cmd)

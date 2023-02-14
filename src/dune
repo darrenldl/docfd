@@ -6,5 +6,6 @@
             angstrom
             cmdliner
             fmt
+            spelll
  )
 )
