@@ -3,10 +3,8 @@
  (name notefd)
  (public_name notefd)
  (libraries containers
-            fileutils
+            angstrom
             cmdliner
-            mparser
             fmt
-            dune-build-info
  )
 )

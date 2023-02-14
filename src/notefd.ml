@@ -33,10 +33,23 @@ type line_typ =
   | Tags of string list
 
 module Parsers = struct
-  open MParser
+  open Angstrom
+
+  let is_space c =
+    match c with
+    | ' ' -> true
+    | '\t' -> true
+    | '\n' -> true
+    | _ -> false
+
+  let spaces = skip_while is_space
+
+  let spaces1 = take_while is_space *> return ()
+
+  let any_string : string t = take_while1 (fun _ -> true)
 
   let word_p =
-    many1_satisfy (fun c ->
+    take_while1 (fun c ->
         match c with
         | 'A' .. 'Z'
         | 'a' .. 'z'
@@ -55,28 +68,25 @@ module Parsers = struct
       )
 
   let p =
-    ( attempt
-        ( spaces >> char '[' >> spaces >> sep_end_by word_p spaces1 >>=
-          (fun l ->
-             char ']' >> spaces >>$
-             (Tags l)
-          )
-        )
+    ( spaces *> char '[' *> spaces *> sep_by spaces1 word_p >>=
+      (fun l ->
+         char ']' *> spaces *>
+         return (Tags l)
+      )
     )
     <|>
-    ( spaces >> many_chars any_char >>=
+    ( spaces *> any_string >>=
       (fun s -> return (Title (CCString.rtrim s)))
     )
 end
 
 let parse (l : string list) : string list * String_set.t =
-  let open MParser in
   let rec aux title tags l =
     match l with
     | [] -> (List.rev title, tags)
     | x :: xs ->
-      match parse_string Parsers.p x () with
-      | Success x ->
+      match Angstrom.(parse_string ~consume:Consume.All) Parsers.p x with
+      | Ok x ->
         (match x with
          | Title x -> aux (x :: title) tags xs
          | Tags l ->
@@ -86,7 +96,7 @@ let parse (l : string list) : string list * String_set.t =
            in
            aux title tags []
         )
-      | Failed _ -> aux title tags xs
+      | Error _ -> aux title tags xs
   in
   aux [] String_set.empty l
 
@@ -162,11 +172,7 @@ let dir_arg = Arg.(value & pos 0 dir "." & info [])
 
 let cmd =
   let doc = "Find notes" in
-  let version =
-    match Build_info.V1.version () with
-    | None -> "N/A"
-    | Some version -> Build_info.V1.Version.to_string version
-  in
+  let version = Version_string.s in
   Cmd.v (Cmd.info "notefd" ~version ~doc)
     (Term.(const run $ tag_arg $ dir_arg))
 

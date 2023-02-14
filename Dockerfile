@@ -1,4 +1,8 @@
-FROM ocaml/opam
+FROM docker.io/ocaml/opam:alpine-ocaml-4.14
 USER root
-RUN opam install dune ocp-indent containers fmt fileutils cmdliner timere timere-parse otoml dune-build-info
-RUN opam install mparser utop
+RUN opam init --disable-sandboxing
+RUN opam install dune containers fmt
+RUN opam install utop ocp-indent
+RUN opam install cmdliner
+RUN opam install angstrom
+RUN opam install spelll
