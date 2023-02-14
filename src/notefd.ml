@@ -128,7 +128,7 @@ let fuzzy_tag_arg =
 
 let precise_ci_tag_arg =
   let doc =
-    Fmt.str "Precise case [i]nsensitive tag. %s" tag_doc_common
+    Fmt.str "Precise case-[i]nsensitive tag. %s" tag_doc_common
   in
   Arg.(value & opt_all string [] & info [ "i" ] ~doc ~docv:"TAG")
 
