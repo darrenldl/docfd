@@ -1,5 +1,5 @@
 # Notefd
-Find notes
+Find notes through a simple text header
 
 ## Installation
 
