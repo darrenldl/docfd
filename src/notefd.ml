@@ -111,9 +111,6 @@ let process path : (header, string) result =
     tags;
   }
 
-let tag_doc_common =
-  "All tag search constraints are chained together by \"and\"."
-
 let fuzzy_max_edit_distance_arg =
   let doc =
     "Maximum edit distance for fuzzy matches."
@@ -122,29 +119,25 @@ let fuzzy_max_edit_distance_arg =
 
 let tag_ci_fuzzy_arg =
   let doc =
-    Fmt.str "[F]uzzy case-insensitive tag match, match up to fuzzy-max-edit edit distance. %s"
-      tag_doc_common
+    Fmt.str "[F]uzzy case-insensitive tag match, up to fuzzy-max-edit edit distance."
   in
-  Arg.(value & opt_all string [] & info [ "f" ] ~doc ~docv:"TAG")
+  Arg.(value & opt_all string [] & info [ "f" ] ~doc ~docv:"STRING")
 
 let tag_ci_full_arg =
   let doc =
-    Fmt.str "Case-[i]nsensitive tag full match. %s"
-      tag_doc_common
+    Fmt.str "Case-[i]nsensitive full tag match."
   in
-  Arg.(value & opt_all string [] & info [ "i" ] ~doc ~docv:"TAG")
+  Arg.(value & opt_all string [] & info [ "i" ] ~doc ~docv:"STRING")
 
 let tag_ci_sub_arg =
   let doc =
-    Fmt.str "Case-insensitive tag [s]ubstring match. %s"
-      tag_doc_common
+    Fmt.str "Case-insensitive [s]ubstring tag match."
   in
-  Arg.(value & opt_all string [] & info [ "s" ] ~doc ~docv:"TAG")
+  Arg.(value & opt_all string [] & info [ "s" ] ~doc ~docv:"SUBSTRING")
 
 let tag_exact_arg =
   let doc =
-    Fmt.str "[E]exact tag match. %s"
-      tag_doc_common
+    Fmt.str "[E]exact tag match."
   in
   Arg.(value & opt_all string [] & info [ "e" ] ~doc ~docv:"TAG")
 
@@ -265,7 +258,7 @@ let run
 let dir_arg = Arg.(value & pos 0 dir "." & info [])
 
 let cmd =
-  let doc = "Find notes" in
+  let doc = "Find notes. All search constraints are chained together by \"and\"." in
   let version = Version_string.s in
   Cmd.v (Cmd.info "notefd" ~version ~doc)
     (Term.(const run
