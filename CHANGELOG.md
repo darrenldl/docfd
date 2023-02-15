@@ -2,9 +2,9 @@
 
 ## 0.0.2
 
-- Added more tag searching types
+- Added `-s` for case-insensitive substring tag match
 
-  - `-s` for substring match
+- Renamed `-p` to `-e` for exact tag match
 
 ## 0.0.1
 
