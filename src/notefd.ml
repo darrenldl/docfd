@@ -4,20 +4,22 @@ let ( let* ) = Result.bind
 
 let ( let+ ) r f = Result.map f r
 
+let file_read_limit = 2048
+
 let first_n_lines_to_parse = 5
 
 let get_first_few_lines (path : string) : (string list, string) result =
-  let rec aux ic count acc =
-    if count = 0 then
-      List.rev acc
-    else
-      match CCIO.read_line ic with
-      | None -> List.rev acc
-      | Some s -> aux ic (pred count) (s :: acc)
-  in
   try
     CCIO.with_in path (fun ic ->
-        Ok (aux ic first_n_lines_to_parse [])
+        let s =
+          match CCIO.read_chunks_seq ~size:file_read_limit ic () with
+          | Seq.Nil -> ""
+          | Seq.Cons (s, _) -> s
+        in
+        CCString.lines_seq s
+        |> Seq.take first_n_lines_to_parse
+        |> List.of_seq
+        |> Result.ok
       )
   with
   | _ -> Error (Printf.sprintf "Failed to read file: %s" path)
