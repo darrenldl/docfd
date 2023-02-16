@@ -52,21 +52,12 @@ module Parsers = struct
 
   let word_p =
     take_while1 (fun c ->
-        match c with
-        | 'A' .. 'Z'
-        | 'a' .. 'z'
-        | '0' .. '9'
-        | '!' | '@' | '#' | '$' | '%' | '^' | '&' | '*' | '(' | ')'
-        | '-' | '='
-        | '_' | '+'
-        | '{' | '}'
-        | '\\' | '|'
-        | ':' | ';'
-        | '\'' | '"'
-        | ',' | '.' | '/'
-        | '<' | '>' | '?'
-          -> true
-        | _ -> false
+        not (is_space c)
+        &&
+        (match c with
+         | '['
+         | ']' -> false
+         | _ -> true)
       )
 
   let p =
