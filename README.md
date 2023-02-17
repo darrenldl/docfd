@@ -22,7 +22,7 @@ Tags are specified in `[]` as space separated list of words.
 Tags cannot contain spaces, `[`, or `]`.
 Tag section must be specified within a single line.
 
-An example of a header reads as follows:
+An example header reads as follows:
 ```
 Meeting YYYY-MM-DD
 [ tag0 tag1 tag2 ... ]
@@ -36,6 +36,8 @@ The following types of tag matching are available:
 - `-f`, [F]uzzy case-insensitive tag match
 - `-i`, Case-[i]nsensitive full tag match
 - `-s`, Case-insensitive [s]ubstring tag match
+
+All search constraints are chained together by "and".
 
 #### Output
 
