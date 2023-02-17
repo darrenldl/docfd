@@ -30,7 +30,7 @@ Meeting YYYY-MM-DD
 
 #### Searching
 
-The following types of tag matching are available:
+The following types of tag matches are available:
 
 - `-e`, [E]xact tag match
 - `-f`, [F]uzzy case-insensitive tag match
