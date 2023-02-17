@@ -28,7 +28,28 @@ Meeting YYYY-MM-DD
 [ tag0 tag1 tag2 ... ]
 ```
 
-The following are also valid headers.
+#### Searching
+
+The following types of tag matching are available:
+
+- `-e`, [E]xact tag match
+- `-f`, [F]uzzy case-insensitive tag match
+- `-i`, Case-[i]nsensitive full tag match
+- `-s`, Case-insensitive [s]ubstring tag match
+
+#### Output
+
+Notefd lists the headers of all note files which satisfy the search constraints.
+
+Example output:
+```
+$ notefd
+@ ./test.note.md
+  > Meeting YYYY-MM-DD
+  [ tag0 tag1 ]
+```
+
+## Other valid header structure
 
 #### Multiline title
 ```
@@ -38,7 +59,7 @@ About topic ABC
 ```
 
 The final title computed by Notefd is simply all title lines
-concatenated using ` `.
+concatenated using ` `, i.e. `Meeting YYYY-MM-DD About topic ABC`.
 
 #### Missing tag section
 ```
