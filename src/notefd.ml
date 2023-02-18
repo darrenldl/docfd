@@ -84,8 +84,7 @@ let parse (l : string list) : string list * String_set.t =
          | Title x -> aux (x :: title) tags xs
          | Tags l ->
            let tags =
-             List.map String.lowercase_ascii l
-             |> String_set.add_list tags
+             String_set.add_list tags l
            in
            aux title tags []
         )

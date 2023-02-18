@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.4
+
+- Fixed tag extraction
+
 ## 0.0.3
 
 - Made header extraction more robust to files with very long lines
