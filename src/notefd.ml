@@ -133,6 +133,18 @@ let tag_exact_arg =
   in
   Arg.(value & opt_all string [] & info [ "e" ] ~doc ~docv:"TAG")
 
+let list_tags_arg =
+  let doc =
+    Fmt.str "List all tags used."
+  in
+  Arg.(value & flag & info [ "tags" ] ~doc)
+
+let list_tags_lowercase_arg =
+  let doc =
+    Fmt.str "List all tags used in lowercase."
+  in
+  Arg.(value & flag & info [ "ltags" ] ~doc)
+
 let list_files_recursively (dir : string) : string list =
   let rec aux path =
     match Sys.is_directory path with
@@ -163,14 +175,31 @@ let ci_string_set_of_list (l : string list) =
   |> List.map String.lowercase_ascii
   |> String_set.of_list
 
+let unwrap_header (f : header -> unit) (header : (header, string) result) =
+  match header with
+  | Ok header -> f header
+  | Error msg -> Fmt.pr "Error: %s\n" msg
+
+let print_tags (tags : String_set.t) =
+  String_set.to_seq tags
+  |> Seq.iter (fun s ->
+      Fmt.pr "%s@ " s
+    )
+
 let run
     (fuzzy_max_edit_distance : int)
     (ci_fuzzy_tag_matches_required : string list)
     (ci_full_tag_matches_required : string list)
     (ci_sub_tag_matches_required : string list)
     (exact_tag_matches_required : string list)
+    (list_tags : bool)
+    (list_tags_lowercase : bool)
     (dir : string)
   =
+  if list_tags_lowercase && list_tags then (
+    Fmt.pr "Error: Please select only --tags or --ltags\n";
+    exit 1
+  );
   let ci_fuzzy_tag_matches_required =
     ci_string_set_of_list ci_fuzzy_tag_matches_required
   in
@@ -190,62 +219,78 @@ let run
   let headers =
     List.map process files
   in
-  List.iter (fun header ->
-      (match header with
-       | Ok header -> (
-           let tags_lowercase =
-             String_set.map String.lowercase_ascii header.tags
-           in
-           let index = tags_lowercase
-                       |> String_set.to_list
-                       |> List.map (fun s -> (s, ()))
-                       |> Spelll.Index.of_list
-           in
-           let ci_fuzzy_tag_matches_fulfilled () =
-             String_set.for_all
-               (fun s ->
-                  match
-                    Spelll.Index.retrieve_l ~limit:fuzzy_max_edit_distance index s
-                  with
-                  | [] -> false
-                  | _ -> true
-               )
-               ci_fuzzy_tag_matches_required
-           in
-           let ci_full_tag_matches_fulfilled () =
-             String_set.(is_empty @@
-                         diff ci_full_tag_matches_required tags_lowercase)
-           in
-           let ci_sub_tag_matches_fulfilled () =
-             String_set.for_all
-               (fun sub ->
-                  String_set.exists (fun s ->
-                      CCString.find ~sub s >= 0
-                    )
-                    tags_lowercase
-               )
-               ci_sub_tag_matches_required
-           in
-           let exact_tag_matches_fulfilled () =
-             String_set.(is_empty @@
-                         diff exact_tag_matches_required header.tags)
-           in
-           if exact_tag_matches_fulfilled ()
-           && ci_full_tag_matches_fulfilled ()
-           && ci_sub_tag_matches_fulfilled ()
-           && ci_fuzzy_tag_matches_fulfilled ()
-           then (
-             Fmt.pr "@[<v>%@ @[<v>%s@,>%s@,@[<h>[ %a ]@]@]@,@]" header.path
-               (match header.title with
-                | None -> ""
-                | Some s -> Printf.sprintf " %s" s)
-               Fmt.(list ~sep:sp string) (String_set.to_list header.tags)
-           )
-         )
-       | Error msg ->
-         Fmt.pr "Error: %s\n" msg
-      )
-    ) headers
+  if list_tags_lowercase then (
+    let tags_used = ref String_set.empty in
+    List.iter (unwrap_header (fun header ->
+        let tags_lowercase =
+          String_set.map String.lowercase_ascii header.tags
+        in
+        tags_used := String_set.(union tags_lowercase !tags_used)
+      )) headers;
+    print_tags !tags_used
+  )
+  else (
+    if list_tags then (
+      let tags_used = ref String_set.empty in
+      List.iter (
+        unwrap_header (fun header ->
+            tags_used := String_set.(union header.tags !tags_used))
+      ) headers;
+      print_tags !tags_used
+    ) else (
+      List.iter (unwrap_header (fun header ->
+          let tags_lowercase =
+            String_set.map String.lowercase_ascii header.tags
+          in
+          let index = tags_lowercase
+                      |> String_set.to_list
+                      |> List.map (fun s -> (s, ()))
+                      |> Spelll.Index.of_list
+          in
+          let ci_fuzzy_tag_matches_fulfilled () =
+            String_set.for_all
+              (fun s ->
+                 match
+                   Spelll.Index.retrieve_l ~limit:fuzzy_max_edit_distance index s
+                 with
+                 | [] -> false
+                 | _ -> true
+              )
+              ci_fuzzy_tag_matches_required
+          in
+          let ci_full_tag_matches_fulfilled () =
+            String_set.(is_empty @@
+                        diff ci_full_tag_matches_required tags_lowercase)
+          in
+          let ci_sub_tag_matches_fulfilled () =
+            String_set.for_all
+              (fun sub ->
+                 String_set.exists (fun s ->
+                     CCString.find ~sub s >= 0
+                   )
+                   tags_lowercase
+              )
+              ci_sub_tag_matches_required
+          in
+          let exact_tag_matches_fulfilled () =
+            String_set.(is_empty @@
+                        diff exact_tag_matches_required header.tags)
+          in
+          if exact_tag_matches_fulfilled ()
+          && ci_full_tag_matches_fulfilled ()
+          && ci_sub_tag_matches_fulfilled ()
+          && ci_fuzzy_tag_matches_fulfilled ()
+          then (
+            Fmt.pr "@[<v>%@ @[<v>%s@,>%s@,@[<h>[ %a ]@]@]@,@]" header.path
+              (match header.title with
+               | None -> ""
+               | Some s -> Printf.sprintf " %s" s)
+              Fmt.(list ~sep:sp string) (String_set.to_list header.tags)
+          )
+        )
+        ) headers
+    )
+  )
 
 let dir_arg = Arg.(value & pos 0 dir "." & info [])
 
@@ -259,6 +304,8 @@ let cmd =
            $ tag_ci_full_arg
            $ tag_ci_sub_arg
            $ tag_exact_arg
+           $ list_tags_arg
+           $ list_tags_lowercase_arg
            $ dir_arg))
 
 let () = exit (Cmd.eval cmd)

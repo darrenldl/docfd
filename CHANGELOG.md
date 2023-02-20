@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.5
+
+- Added `--tags` and `--ltags` flags
+
 ## 0.0.4
 
 - Fixed tag extraction
