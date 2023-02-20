@@ -32,12 +32,17 @@ Meeting YYYY-MM-DD
 
 The following types of tag matches are available:
 
-- `-e`, [E]xact tag match
-- `-f`, [F]uzzy case-insensitive tag match
-- `-i`, Case-[i]nsensitive full tag match
-- `-s`, Case-insensitive [s]ubstring tag match
+- `-e` [E]xact tag match
+- `-f` [F]uzzy case-insensitive tag match
+- `-i` Case-[i]nsensitive full tag match
+- `-s` Case-insensitive [s]ubstring tag match
 
 All search constraints are chained together by "and".
+
+#### List tags
+
+- `--tags` List all tags used
+- `--ltags` List all tags used in lowercase
 
 #### Output
 
