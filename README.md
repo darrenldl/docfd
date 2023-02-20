@@ -71,7 +71,7 @@ About topic ABC
 
 The final title is computed in the same way as above.
 
-#### Multiple tag section
+#### Multiple tag sections
 ```
 Meeting YYYY-MM-DD
 About topic ABC
