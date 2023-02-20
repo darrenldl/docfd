@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.6
+
+- Fixed Notefd to only handle consecutive tag sections
+
 ## 0.0.5
 
 - Added `--tags` and `--ltags` flags

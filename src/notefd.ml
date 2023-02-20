@@ -74,23 +74,27 @@ module Parsers = struct
 end
 
 let parse (l : string list) : string list * String_set.t =
-  let rec aux title tags l =
+  let rec aux handled_tag_section title tags l =
     match l with
     | [] -> (List.rev title, tags)
     | x :: xs ->
       match Angstrom.(parse_string ~consume:Consume.Prefix) Parsers.p x with
       | Ok x ->
         (match x with
-         | Title x -> aux (x :: title) tags xs
+         | Title x ->
+           if handled_tag_section then
+             aux handled_tag_section title tags []
+           else
+             aux handled_tag_section (x :: title) tags xs
          | Tags l ->
            let tags =
              String_set.add_list tags l
            in
-           aux title tags xs
+           aux true title tags xs
         )
-      | Error _ -> aux title tags xs
+      | Error _ -> aux handled_tag_section title tags xs
   in
-  aux [] String_set.empty l
+  aux false [] String_set.empty l
 
 let process path : (header, string) result =
   let+ lines = get_first_few_lines path in
