@@ -4,6 +4,8 @@
 
 - Added `--tags` and `--ltags` flags
 
+- Adjusted parsing to allow multiple tag sections
+
 ## 0.0.4
 
 - Fixed tag extraction

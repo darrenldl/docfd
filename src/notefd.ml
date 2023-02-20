@@ -6,7 +6,7 @@ let ( let+ ) r f = Result.map f r
 
 let file_read_limit = 2048
 
-let first_n_lines_to_parse = 5
+let first_n_lines_to_parse = 10
 
 let get_first_few_lines (path : string) : (string list, string) result =
   try
@@ -86,7 +86,7 @@ let parse (l : string list) : string list * String_set.t =
            let tags =
              String_set.add_list tags l
            in
-           aux title tags []
+           aux title tags xs
         )
       | Error _ -> aux title tags xs
   in

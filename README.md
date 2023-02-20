@@ -11,10 +11,10 @@ Notefd scans a given directory recursively (defaults to `.`),
 and processes files with names which contain "note" after splitting on '.', e.g.
 `meeting.note.md`, `timetable.note`, `note`.
 
-The first 2KiB of the file is extracted, of which the first 5 lines are extracted
+The first 2KiB of the file is extracted, of which the first 10 lines are extracted
 to try to parse a header.
 
-A header consists of two sections: title and tags.
+A header consists of two main sections: title and tags.
 
 Title is simply all text before the tag section (if present).
 
@@ -70,3 +70,13 @@ About topic ABC
 ```
 
 The final title is computed in the same way as above.
+
+#### Multiple tag section
+```
+Meeting YYYY-MM-DD
+About topic ABC
+[ tag0 tag1 tag2 ... ]
+[ tagA tagB tagC ... ]
+```
+
+The final set of tags is the union of all specified tags.
