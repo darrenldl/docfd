@@ -15,7 +15,7 @@
 
 (package
  (name notefd)
- (synopsis "Tag any text file with a simple header")
+ (synopsis "Tag your notes with a simple header")
  (description "")
  (documentation https://github.com/darrenldl/notefd)
  (depends

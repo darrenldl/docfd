@@ -299,7 +299,7 @@ let run
 let dir_arg = Arg.(value & pos 0 dir "." & info [])
 
 let cmd =
-  let doc = "Tag any text file with a simple header" in
+  let doc = "Tag your notes with a simple header" in
   let version = Version_string.s in
   Cmd.v (Cmd.info "notefd" ~version ~doc)
     (Term.(const run

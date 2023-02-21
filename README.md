@@ -1,5 +1,5 @@
 # Notefd
-Tag any text file with a simple header
+Tag your notes with a simple header
 
 ## Installation
 
