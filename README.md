@@ -8,8 +8,8 @@ Statically linked binaries are available via [GitHub releases](https://github.co
 ## Usage
 
 Notefd scans a given directory recursively (defaults to `.`),
-and processes files with names which contain "note" after splitting on '.', e.g.
-`meeting.note.md`, `timetable.note`, `note`.
+and processes files with names which contain "note" or "notes" after splitting on '.', e.g.
+`meeting.notes.md`, `timetable.note`, `note`.
 
 The first 2KiB of the file is extracted, of which the first 10 lines are extracted
 to try to parse a header.

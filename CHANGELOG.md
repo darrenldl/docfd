@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.7
+
+- Made file recognition more lenient
+
+- Added support for alternative tag section syntax
+
+  - `| ... | `
+  - `@ ... @`
+
 ## 0.0.6
 
 - Fixed Notefd to only handle consecutive tag sections

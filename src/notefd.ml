@@ -50,27 +50,27 @@ module Parsers = struct
 
   let any_string : string t = take_while1 (fun _ -> true)
 
-  let word_p =
+  let word_p ~delim =
     take_while1 (fun c ->
-        not (is_space c)
+        (not (is_space c))
         &&
-        (match c with
-         | '['
-         | ']' -> false
-         | _ -> true)
+        (not (String.contains delim c))
       )
 
+  let words_p ~delim = sep_by spaces1 (word_p ~delim)
+
   let p =
-    ( spaces *> char '[' *> spaces *> sep_by spaces1 word_p >>=
-      (fun l ->
-         spaces *> char ']' *>
-         return (Tags l)
-      )
-    )
-    <|>
-    ( spaces *> any_string >>=
-      (fun s -> return (Title (CCString.rtrim s)))
-    )
+    choice
+      [
+        spaces *> char '[' *> spaces *> words_p ~delim:"[]" >>=
+        (fun l -> spaces *> char ']' *> return (Tags l));
+        spaces *> char '|' *> spaces *> words_p ~delim:"|" >>=
+        (fun l -> spaces *> char '|' *> return (Tags l));
+        spaces *> char '@' *> spaces *> words_p ~delim:"@" >>=
+        (fun l -> spaces *> char '@' *> return (Tags l));
+        spaces *> any_string >>=
+        (fun s -> return (Title (CCString.rtrim s)));
+      ]
 end
 
 let parse (l : string list) : string list * String_set.t =
@@ -158,7 +158,9 @@ let list_files_recursively (dir : string) : string list =
         |> String.lowercase_ascii
         |> String.split_on_char '.'
       in
-      if List.mem "note" words then
+      if List.exists (fun s ->
+          s = "note" || s = "notes") words
+      then
         [ path ]
       else
         []
