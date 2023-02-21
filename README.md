@@ -18,8 +18,8 @@ A header consists of two main sections: title and tags.
 
 Title is simply all text before the tag section (if present).
 
-Tags are specified in `[]` as space separated list of words.
-Tags cannot contain spaces, `[`, or `]`.
+Tags are specified in `[]`, `||`, or `@@` as space separated list of words.
+Tags cannot contain spaces or the delimiter chosen for the section.
 Tag section must be specified within a single line.
 
 An example header reads as follows:
