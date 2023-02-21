@@ -12,7 +12,7 @@ and processes files with names which contain "note" or "notes" after splitting o
 `meeting.notes.md`, `timetable.note`, `note`.
 
 The first 2KiB of the file is extracted, of which the first 10 lines are extracted
-to try to parse a header.
+to be parsed as a header.
 
 A header consists of two main sections: title and tags.
 
