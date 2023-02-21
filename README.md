@@ -81,7 +81,8 @@ The final title is computed in the same way as above.
 Meeting YYYY-MM-DD
 About topic ABC
 [ tag0 tag1 tag2 ... ]
-[ tagA tagB tagC ... ]
+[ tagA ]
+| tagB ... |
 ```
 
 The final set of tags is the union of all specified tags.
