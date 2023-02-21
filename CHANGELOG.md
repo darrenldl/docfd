@@ -6,7 +6,7 @@
 
 - Added support for alternative tag section syntax
 
-  - `| ... | `
+  - `| ... |`
   - `@ ... @`
 
 ## 0.0.6
