@@ -59,15 +59,22 @@ module Parsers = struct
 
   let words_p ~delim = sep_by spaces1 (word_p ~delim)
 
+  let tags_p ~delim_start ~delim_end =
+    let delim =
+      if delim_start = delim_end then
+        Printf.sprintf "%c" delim_start
+      else
+        Printf.sprintf "%c%c" delim_start delim_end
+    in
+    spaces *> char delim_start *> spaces *> words_p ~delim >>=
+    (fun l -> spaces *> char delim_end *> return (Tags l))
+
   let p =
     choice
       [
-        spaces *> char '[' *> spaces *> words_p ~delim:"[]" >>=
-        (fun l -> spaces *> char ']' *> return (Tags l));
-        spaces *> char '|' *> spaces *> words_p ~delim:"|" >>=
-        (fun l -> spaces *> char '|' *> return (Tags l));
-        spaces *> char '@' *> spaces *> words_p ~delim:"@" >>=
-        (fun l -> spaces *> char '@' *> return (Tags l));
+        tags_p ~delim_start:'[' ~delim_end:']';
+        tags_p ~delim_start:'|' ~delim_end:'|';
+        tags_p ~delim_start:'@' ~delim_end:'@';
         spaces *> any_string >>=
         (fun s -> return (Title (CCString.rtrim s)));
       ]
