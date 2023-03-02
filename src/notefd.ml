@@ -249,6 +249,11 @@ let run
   let exact_tag_matches_required =
     String_set.of_list exact_tag_matches_required
   in
+  let fuzzy_index =
+    String_set.to_seq ci_fuzzy_tag_matches_required
+    |> Seq.map (fun x -> Spelll.of_string ~limit:fuzzy_max_edit_distance x)
+    |> List.of_seq
+  in
   let files =
     list_files_recursively dir
   in
@@ -287,21 +292,19 @@ let run
           let tags_lowercase =
             List.map String.lowercase_ascii tags
           in
-          let index = Spelll.Index.of_list
-              (List.mapi (fun i x -> (x, i)) tags_lowercase)
-          in
           let tag_arr = Array.of_list tags in
           let tag_matched = Array.make (Array.length tag_arr) false in
           let tag_lowercase_arr = Array.of_list tags_lowercase in
           (
-            String_set.iter
-              (fun s ->
-                 Spelll.Index.retrieve_l ~limit:fuzzy_max_edit_distance index s
-                 |> List.iter (fun i ->
-                     tag_matched.(i) <- true
+            List.iter
+              (fun dfa ->
+                 Array.iteri (fun i x ->
+                     if Spelll.match_with dfa x then
+                       tag_matched.(i) <- true
                    )
+                   tag_lowercase_arr
               )
-              ci_fuzzy_tag_matches_required
+              fuzzy_index
           );
           (
             String_set.iter
