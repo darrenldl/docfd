@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.9
+
+- Notefd now adds color to title and matching tags if output is terminal
+
+- Improved fuzzy search index building
+
 ## 0.0.8
 
 - Code cleanup
