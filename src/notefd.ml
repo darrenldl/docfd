@@ -8,6 +8,12 @@ let file_read_limit = 2048
 
 let first_n_lines_to_parse = 10
 
+let empty_list_if_not_atty l =
+  if Unix.isatty Unix.stderr then
+    l
+  else
+    []
+
 let get_first_few_lines (path : string) : (string list, string) result =
   try
     CCIO.with_in path (fun ic ->
@@ -27,7 +33,7 @@ let get_first_few_lines (path : string) : (string list, string) result =
 type header = {
   path : string;
   title : string option;
-  tags : String_set.t;
+  tags : string list;
 }
 
 type line_typ =
@@ -80,10 +86,14 @@ module Parsers = struct
       ]
 end
 
-let parse (l : string list) : string list * String_set.t =
+let parse (l : string list) : string list * string list =
   let rec aux handled_tag_section title tags l =
     match l with
-    | [] -> (List.rev title, tags)
+    | [] -> (List.rev title,
+             tags
+             |> String_set.to_seq
+             |> List.of_seq
+            )
     | x :: xs ->
       match Angstrom.(parse_string ~consume:Consume.Prefix) Parsers.p x with
       | Ok x ->
@@ -193,7 +203,21 @@ let unwrap_header (f : header -> unit) (header : (header, string) result) =
   | Ok header -> f header
   | Error msg -> Fmt.pr "Error: %s\n" msg
 
-let print_tags (tags : String_set.t) =
+let set_of_tags (tags : string list) : String_set.t =
+  List.fold_left (fun s x ->
+      String_set.add x s
+    )
+    String_set.empty
+    tags
+
+let lowercase_set_of_tags (tags : string list) : String_set.t =
+  List.fold_left (fun s x ->
+      String_set.add (String.lowercase_ascii x) s
+    )
+    String_set.empty
+    tags
+
+let print_tag_set (tags : String_set.t) =
   String_set.to_seq tags
   |> Seq.iter (fun s ->
       Fmt.pr "%s@ " s
@@ -235,70 +259,95 @@ let run
   if list_tags_lowercase then (
     let tags_used = ref String_set.empty in
     List.iter (unwrap_header (fun header ->
-        let tags_lowercase =
-          String_set.map String.lowercase_ascii header.tags
-        in
-        tags_used := String_set.(union tags_lowercase !tags_used)
+        tags_used := String_set.(union
+                                   (lowercase_set_of_tags header.tags)
+                                   !tags_used)
       )) headers;
-    print_tags !tags_used
+    print_tag_set !tags_used
   )
   else (
     if list_tags then (
       let tags_used = ref String_set.empty in
       List.iter (
         unwrap_header (fun header ->
-            tags_used := String_set.(union header.tags !tags_used))
+            tags_used := String_set.(union
+                                       (set_of_tags header.tags)
+                                       !tags_used))
       ) headers;
-      print_tags !tags_used
+      print_tag_set !tags_used
     ) else (
       List.iter (unwrap_header (fun header ->
+          let tags = header.tags in
           let tags_lowercase =
-            String_set.map String.lowercase_ascii header.tags
+            List.map String.lowercase_ascii tags
           in
-          let index = tags_lowercase
-                      |> String_set.to_list
-                      |> List.map (fun s -> (s, ()))
-                      |> Spelll.Index.of_list
+          let index = Spelll.Index.of_list
+              (List.mapi (fun i x -> (x, i)) tags_lowercase)
           in
-          let ci_fuzzy_tag_matches_fulfilled () =
-            String_set.for_all
+          let tag_arr = Array.of_list tags in
+          let tag_matched = Array.make (Array.length tag_arr) false in
+          let tag_lowercase_arr = Array.of_list tags_lowercase in
+          (
+            String_set.iter
               (fun s ->
-                 match
-                   Spelll.Index.retrieve_l ~limit:fuzzy_max_edit_distance index s
-                 with
-                 | [] -> false
-                 | _ -> true
+                 Spelll.Index.retrieve_l ~limit:fuzzy_max_edit_distance index s
+                 |> List.iter (fun i ->
+                     tag_matched.(i) <- true
+                   )
               )
               ci_fuzzy_tag_matches_required
-          in
-          let ci_full_tag_matches_fulfilled () =
-            String_set.(is_empty @@
-                        diff ci_full_tag_matches_required tags_lowercase)
-          in
-          let ci_sub_tag_matches_fulfilled () =
-            String_set.for_all
-              (fun sub ->
-                 String_set.exists (fun s ->
-                     CCString.find ~sub s >= 0
+          );
+          (
+            String_set.iter
+              (fun s ->
+                 Array.iteri (fun i x ->
+                     if String.equal x s then
+                       tag_matched.(i) <- true
                    )
-                   tags_lowercase
+                   tag_lowercase_arr
+              )
+              ci_full_tag_matches_required
+          );
+          (
+            String_set.iter
+              (fun sub ->
+                 Array.iteri (fun i x ->
+                     if CCString.find ~sub x >= 0 then
+                       tag_matched.(i) <- true
+                   )
+                   tag_lowercase_arr
               )
               ci_sub_tag_matches_required
-          in
-          let exact_tag_matches_fulfilled () =
-            String_set.(is_empty @@
-                        diff exact_tag_matches_required header.tags)
-          in
-          if exact_tag_matches_fulfilled ()
-          && ci_full_tag_matches_fulfilled ()
-          && ci_sub_tag_matches_fulfilled ()
-          && ci_fuzzy_tag_matches_fulfilled ()
-          then (
-            Fmt.pr "@[<v>%@ @[<v>%s@,>%s@,@[<h>[ %a ]@]@]@,@]" header.path
+          );
+          (
+            String_set.iter
+              (fun s ->
+                 Array.iteri (fun i x ->
+                     if String.equal x s then
+                       tag_matched.(i) <- true
+                   )
+                   tag_arr
+              )
+              exact_tag_matches_required
+          );
+          if Array.exists (fun x -> x) tag_matched then (
+            let colored_p formatter (i, s) =
+              if tag_matched.(i) then (
+                Fmt.pf formatter "%s"
+                  ANSITerminal.(sprintf
+                                  (empty_list_if_not_atty [ Bold; red ]) "%s" s)
+              ) else (
+                Fmt.pf formatter "%s" s
+              )
+            in
+            Fmt.pr "@[<v>> @[<v>%s@,%@ %s@,@[<h>[ %a ]@]@]@,@]"
               (match header.title with
                | None -> ""
-               | Some s -> Printf.sprintf " %s" s)
-              Fmt.(list ~sep:sp string) (String_set.to_list header.tags)
+               | Some s ->
+                 ANSITerminal.(sprintf
+                                 (empty_list_if_not_atty [ Bold; blue ]) "%s" s))
+              header.path
+              Fmt.(seq ~sep:sp colored_p) (Array.to_seqi tag_arr)
           )
         )
         ) headers

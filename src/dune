@@ -7,5 +7,6 @@
             cmdliner
             fmt
             spelll
+            ANSITerminal
  )
 )
