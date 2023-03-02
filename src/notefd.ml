@@ -276,6 +276,12 @@ let run
       ) headers;
       print_tag_set !tags_used
     ) else (
+      let no_requirements =
+        String_set.is_empty ci_fuzzy_tag_matches_required
+        && String_set.is_empty ci_full_tag_matches_required
+        && String_set.is_empty ci_sub_tag_matches_required
+        && String_set.is_empty exact_tag_matches_required
+      in
       List.iter (unwrap_header (fun header ->
           let tags = header.tags in
           let tags_lowercase =
@@ -330,9 +336,10 @@ let run
               )
               exact_tag_matches_required
           );
-          if Array.exists (fun x -> x) tag_matched then (
+          if no_requirements
+          || Array.exists (fun x -> x) tag_matched then (
             let colored_p formatter (i, s) =
-              if tag_matched.(i) then (
+              if no_requirements || tag_matched.(i) then (
                 Fmt.pf formatter "%s"
                   ANSITerminal.(sprintf
                                   (empty_list_if_not_atty [ Bold; red ]) "%s" s)
