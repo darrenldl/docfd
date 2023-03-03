@@ -8,11 +8,11 @@ let file_read_limit = 2048
 
 let first_n_lines_to_parse = 10
 
-let empty_list_if_not_atty l =
+let stylize_if_atty styles s =
   if Unix.isatty Unix.stdout then
-    l
+    ANSITerminal.sprintf styles "%s" s
   else
-    []
+    s
 
 let get_first_few_lines (path : string) : (string list, string) result =
   try
@@ -344,8 +344,7 @@ let run
             let colored_p formatter (i, s) =
               if no_requirements || tag_matched.(i) then (
                 Fmt.pf formatter "%s"
-                  ANSITerminal.(sprintf
-                                  (empty_list_if_not_atty [ Bold; red ]) "%s" s)
+                  (stylize_if_atty ANSITerminal.[ Bold; red ] s)
               ) else (
                 Fmt.pf formatter "%s" s
               )
@@ -353,9 +352,7 @@ let run
             Fmt.pr "@[<v>> @[<v>%s@,[ @[<hv>%a@] ]@,%@ %s@]@,@]"
               (match header.title with
                | None -> ""
-               | Some s ->
-                 ANSITerminal.(sprintf
-                                 (empty_list_if_not_atty [ Bold; blue ]) "%s" s))
+               | Some s -> stylize_if_atty ANSITerminal.[ Bold; blue ] s)
               Fmt.(seq ~sep:sp colored_p) (Array.to_seqi tag_arr)
               header.path
           )

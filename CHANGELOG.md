@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+
+- Fixed output text when output is not terminal
+
 ## 0.1.1
 
 - Fixed checking of whether output is terminal
