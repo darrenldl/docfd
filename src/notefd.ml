@@ -350,14 +350,14 @@ let run
                 Fmt.pf formatter "%s" s
               )
             in
-            Fmt.pr "@[<v>> @[<v>%s@,%@ %s@,@[<h>[ %a ]@]@]@,@]"
+            Fmt.pr "@[<v>> @[<v>%s@,[ @[<hv>%a@] ]@,%@ %s@]@,@]"
               (match header.title with
                | None -> ""
                | Some s ->
                  ANSITerminal.(sprintf
                                  (empty_list_if_not_atty [ Bold; blue ]) "%s" s))
-              header.path
               Fmt.(seq ~sep:sp colored_p) (Array.to_seqi tag_arr)
+              header.path
           )
         )
         ) headers

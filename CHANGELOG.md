@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.0
+
+- Flipped output positions of file path and tags
+
 ## 0.0.9
 
 - Notefd now adds color to title and matching tags if output is terminal
