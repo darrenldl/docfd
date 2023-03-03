@@ -9,7 +9,7 @@ let file_read_limit = 2048
 let first_n_lines_to_parse = 10
 
 let empty_list_if_not_atty l =
-  if Unix.isatty Unix.stderr then
+  if Unix.isatty Unix.stdout then
     l
   else
     []

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1
+
+- Fixed checking of whether output is terminal
+
 ## 0.1.0
 
 - Flipped output positions of file path and tags
