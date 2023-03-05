@@ -8,8 +8,11 @@ let file_read_limit = 2048
 
 let first_n_lines_to_parse = 10
 
+let stdout_is_terminal () =
+  Unix.isatty Unix.stdout
+
 let stylize_if_atty styles s =
-  if Unix.isatty Unix.stdout then
+  if stdout_is_terminal () then
     ANSITerminal.sprintf styles "%s" s
   else
     s
@@ -218,10 +221,29 @@ let lowercase_set_of_tags (tags : string list) : String_set.t =
     tags
 
 let print_tag_set (tags : String_set.t) =
-  String_set.to_seq tags
-  |> Seq.iter (fun s ->
-      Fmt.pr "%s@ " s
-    )
+  let s = String_set.to_seq tags in
+  if stdout_is_terminal () then (
+    let table = Array.make 256 [] in
+    Seq.iter (fun s ->
+        let row = Char.code s.[0] in
+        table.(row) <- s :: table.(row)
+      ) s;
+    Array.iteri (fun i l ->
+        table.(i) <- List.rev l
+      ) table;
+    Array.iteri (fun i l ->
+        match l with
+        | [] -> ()
+        | _ -> (
+            let c = Char.chr i in
+            Fmt.pr "@[<v>%c - @[<hv>%a@]@,@]" c Fmt.(list ~sep:sp string) l
+          )
+      ) table;
+  ) else (
+    Fmt.pr "@[<v>%a@]"
+      Fmt.(seq ~sep:cut string)
+      s
+  )
 
 let run
     (fuzzy_max_edit_distance : int)

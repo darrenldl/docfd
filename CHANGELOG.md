@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.3
+
+- Upgraded `--tags` and `--ltags` output to be more human readable
+  when output is terminal
+
+  - Changed behavior to output each tag in individual line when output
+    is not terminal
+
 ## 0.1.2
 
 - Fixed output text when output is not terminal
