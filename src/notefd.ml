@@ -236,7 +236,7 @@ let print_tag_set (tags : String_set.t) =
         | [] -> ()
         | _ -> (
             let c = Char.chr i in
-            Fmt.pr "@[<v>%c - @[<hv>%a@]@,@]" c Fmt.(list ~sep:sp string) l
+            Fmt.pr "@[<v>%c | @[<hv>%a@]@,@]" c Fmt.(list ~sep:sp string) l
           )
       ) table;
   ) else (

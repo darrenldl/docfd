@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.4
+
+- Adjusted `--tags` and `--ltags` output slightly
+
 ## 0.1.3
 
 - Upgraded `--tags` and `--ltags` output to be more human readable
