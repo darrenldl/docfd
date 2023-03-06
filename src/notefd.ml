@@ -67,7 +67,7 @@ module Parsers = struct
         (not (String.contains delim c))
       )
 
-  let words_p ~delim = sep_by spaces1 (word_p ~delim)
+  let words_p ~delim = many (word_p ~delim <* spaces)
 
   let tags_p ~delim_start ~delim_end =
     let delim =
@@ -77,7 +77,7 @@ module Parsers = struct
         Printf.sprintf "%c%c" delim_start delim_end
     in
     spaces *> char delim_start *> spaces *> words_p ~delim >>=
-    (fun l -> spaces *> char delim_end *> spaces *> return (Tags l))
+    (fun l -> char delim_end *> spaces *> return (Tags l))
 
   let p =
     choice
