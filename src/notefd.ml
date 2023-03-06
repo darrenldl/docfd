@@ -48,9 +48,10 @@ module Parsers = struct
 
   let is_space c =
     match c with
-    | ' ' -> true
-    | '\t' -> true
-    | '\n' -> true
+    | ' '
+    | '\t'
+    | '\n'
+    | '\r' -> true
     | _ -> false
 
   let spaces = skip_while is_space
@@ -76,7 +77,7 @@ module Parsers = struct
         Printf.sprintf "%c%c" delim_start delim_end
     in
     spaces *> char delim_start *> spaces *> words_p ~delim >>=
-    (fun l -> spaces *> char delim_end *> return (Tags l))
+    (fun l -> spaces *> char delim_end *> spaces *> return (Tags l))
 
   let p =
     choice
@@ -98,7 +99,7 @@ let parse (l : string list) : string list * string list =
              |> List.of_seq
             )
     | x :: xs ->
-      match Angstrom.(parse_string ~consume:Consume.Prefix) Parsers.p x with
+      match Angstrom.(parse_string ~consume:Consume.All) Parsers.p x with
       | Ok x ->
         (match x with
          | Title x ->

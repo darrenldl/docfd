@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.5
+
+- Adjusted parsing code slightly
+
 ## 0.1.4
 
 - Adjusted `--tags` and `--ltags` output slightly
