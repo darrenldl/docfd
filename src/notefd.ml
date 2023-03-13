@@ -361,6 +361,11 @@ let run
           || Array.exists (fun x -> x) tag_matched then (
             let open Notty in
             let open Notty.Infix in
+            let max_tag_len =
+              Array.fold_left (fun len s ->
+                  max len (String.length s))
+                0 tag_arr
+            in
             let image_of_tag i s : image =
               I.string
                 (if no_requirements || tag_matched.(i) then
@@ -368,9 +373,10 @@ let run
                  else
                    A.empty)
                 s
+              |> I.hpad 0 (max_tag_len - String.length s + 1)
             in
             let tag_images =
-              List.mapi image_of_tag tags
+              Array.mapi image_of_tag tag_arr
             in
             let img =
               (match header.title with
@@ -383,15 +389,19 @@ let run
                I.vcat
                  [
                    (
-                     if Array.length tag_arr <= 5 then (
-                       I.string A.empty "["
-                       <|> I.hcat @@ List.map (fun img -> I.string A.empty " " <|> img) tag_images
-                                     <|> I.string A.empty " ]"
-                     ) else (
-                       I.string A.empty "["
-                       <|> I.vcat @@ tag_images
-                                     <-> I.string A.empty "]"
-                     )
+                     let col_count = 5 in
+                     let row_count =
+                       (Array.length tag_arr + (col_count-1)) / col_count
+                     in
+                     I.string A.empty "[ "
+                     <|> I.tabulate col_count row_count (fun x y ->
+                         let i = col_count * x + y in
+                         if i < Array.length tag_arr then
+                           tag_images.(i)
+                         else
+                           I.empty
+                       )
+                     <|> I.string A.empty " ]"
                    );
                    I.string A.empty header.path;
                  ]
