@@ -11,12 +11,6 @@ let first_n_lines_to_parse = 10
 let stdout_is_terminal () =
   Unix.isatty Unix.stdout
 
-let stylize_if_atty styles s =
-  if stdout_is_terminal () then
-    ANSITerminal.sprintf styles "%s" s
-  else
-    s
-
 let get_first_few_lines (path : string) : (string list, string) result =
   try
     CCIO.with_in path (fun ic ->
@@ -367,22 +361,41 @@ let run
           || Array.exists (fun x -> x) tag_matched then (
             let open Notty in
             let open Notty.Infix in
+            let image_of_tag i s : image =
+              I.string
+                (if no_requirements || tag_matched.(i) then
+                   A.(fg red)
+                 else
+                   A.empty)
+                s
+            in
+            let tag_images =
+              List.mapi image_of_tag tags
+            in
             let img =
               (match header.title with
                | None -> I.string A.empty ""
                | Some s ->
                  I.string A.(fg blue) s)
               <->
-              ((Array.fold_left (fun img tag ->
-                   img <|> I.string A.empty " " <|> I.string A.empty tag
-                 )
-                   (I.string A.empty "[")
-                   tag_arr)
+              (I.string A.empty "  "
                <|>
-               I.string A.empty " ]"
+               I.vcat
+                 [
+                   (
+                     if Array.length tag_arr <= 5 then (
+                       I.string A.empty "["
+                       <|> I.hcat @@ List.map (fun img -> I.string A.empty " " <|> img) tag_images
+                                     <|> I.string A.empty " ]"
+                     ) else (
+                       I.string A.empty "["
+                       <|> I.vcat @@ tag_images
+                                     <-> I.string A.empty "]"
+                     )
+                   );
+                   I.string A.empty header.path;
+                 ]
               )
-              <->
-              (I.string A.empty header.path)
             in
             images := img :: !images
           )
