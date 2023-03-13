@@ -196,10 +196,10 @@ let ci_string_set_of_list (l : string list) =
   |> List.map String.lowercase_ascii
   |> String_set.of_list
 
-let unwrap_header (f : header -> unit) (header : (header, string) result) =
-  match header with
-  | Ok header -> f header
-  | Error msg -> Fmt.pr "Error: %s\n" msg
+(* let unwrap_header (f : header -> unit) (header : (header, string) result) =
+   match header with
+   | Ok header -> f header
+   | Error msg -> Fmt.pr "Error: %s\n" msg *)
 
 let set_of_tags (tags : string list) : String_set.t =
   List.fold_left (fun s x ->
@@ -276,26 +276,28 @@ let run
   in
   let files = List.sort_uniq String.compare files in
   let headers =
-    List.map process files
+    List.filter_map (fun path ->
+        match process path with
+        | Ok f -> Some f
+        | Error _ -> None) files
+    |> Array.of_list
   in
   if list_tags_lowercase then (
     let tags_used = ref String_set.empty in
-    List.iter (unwrap_header (fun header ->
+    Array.iter (fun header ->
         tags_used := String_set.(union
                                    (lowercase_set_of_tags header.tags)
                                    !tags_used)
-      )) headers;
+      ) headers;
     print_tag_set !tags_used
-  )
-  else (
+  ) else (
     if list_tags then (
       let tags_used = ref String_set.empty in
-      List.iter (
-        unwrap_header (fun header ->
-            tags_used := String_set.(union
-                                       (set_of_tags header.tags)
-                                       !tags_used))
-      ) headers;
+      Array.iter (fun header ->
+          tags_used := String_set.(union
+                                     (set_of_tags header.tags)
+                                     !tags_used)
+        ) headers;
       print_tag_set !tags_used
     ) else (
       let no_requirements =
@@ -304,8 +306,9 @@ let run
         && String_set.is_empty ci_sub_tag_matches_required
         && String_set.is_empty exact_tag_matches_required
       in
-      let images : Notty.image list ref = ref [] in
-      List.iter (unwrap_header (fun header ->
+      let images_selected : Notty.image list ref = ref [] in
+      let images_unselected : Notty.image list ref = ref [] in
+      Array.iter (fun header ->
           let tags = header.tags in
           let tags_lowercase =
             List.map String.lowercase_ascii tags
@@ -378,56 +381,116 @@ let run
             let tag_images =
               Array.mapi image_of_tag tag_arr
             in
-            let img =
-              (match header.title with
-               | None -> I.string A.empty ""
-               | Some s ->
-                 I.string A.(fg blue) s)
+            let col_count = 2 in
+            let row_count =
+              (Array.length tag_arr + (col_count-1)) / col_count
+            in
+            let img_selected =
+              I.string A.(fg blue ++ st bold)
+                (Option.value ~default:"" header.title)
               <->
               (I.string A.empty "  "
                <|>
                I.vcat
                  [
                    (
-                     let col_count = 5 in
-                     let row_count =
-                       (Array.length tag_arr + (col_count-1)) / col_count
-                     in
                      I.string A.empty "[ "
                      <|> I.tabulate col_count row_count (fun x y ->
-                         let i = col_count * x + y in
+                         let i = x + col_count * y in
                          if i < Array.length tag_arr then
                            tag_images.(i)
                          else
                            I.empty
                        )
-                     <|> I.string A.empty " ]"
+                     <|> I.string A.empty "]"
                    );
                    I.string A.empty header.path;
                  ]
               )
             in
-            images := img :: !images
+            let img_unselected =
+              I.string A.(fg blue)
+                (Option.value ~default:"" header.title)
+              <->
+              (I.string A.empty "  "
+               <|>
+               I.vcat
+                 [
+                   (
+                     I.string A.empty "[ "
+                     <|> I.tabulate col_count row_count (fun x y ->
+                         let i = x + col_count * y in
+                         if i < Array.length tag_arr then
+                           tag_images.(i)
+                         else
+                           I.empty
+                       )
+                     <|> I.string A.empty "]"
+                   );
+                   I.string A.empty header.path;
+                 ]
+              )
+            in
+            images_selected := img_selected :: !images_selected;
+            images_unselected := img_unselected :: !images_unselected
           )
-        )
         ) headers;
-      let images = Array.of_list (List.rev !images) in
-      let image_count = Array.length images in
+      let images_selected = Array.of_list (List.rev !images_selected) in
+      let images_unselected = Array.of_list (List.rev !images_unselected) in
+      let image_count = Array.length images_selected in
       if image_count = 0 then
         ()
       else (
         let term = Notty_unix.Term.create () in
         let rec loop i =
-          let i =
-            max 0 (min (image_count - 1) i)
+          let bound x =
+            max 0 (min (image_count - 1) x)
           in
-          Notty_unix.Term.image term images.(i);
+          let i = bound i in
+          let img =
+            let open Notty in
+            let open Notty.Infix in
+            let path = headers.(i).path in
+            let (width, height) = Notty_unix.Term.size term in
+            let content =
+              try
+                CCIO.with_in path (fun ic ->
+                    CCIO.read_lines_seq ic
+                    |> OSeq.take height
+                    |> Seq.map (fun s -> I.string A.empty s)
+                    |> List.of_seq
+                    |> I.vcat
+                  )
+              with
+              | _ -> I.strf "Error: Failed to access %s" path
+            in
+            let left_pane =
+              CCInt.range' i image_count
+              |> CCList.of_iter
+              |> List.map (fun j ->
+                  (if i = j then
+                     images_selected.(j)
+                   else
+                     images_unselected.(j))
+                  <->
+                  I.string A.empty ""
+                )
+              |> I.vcat
+            in
+            (I.hpad 0 (width / 2 - I.width left_pane) left_pane) <|> content
+          in
+          Notty_unix.Term.image term img;
           match Notty_unix.Term.event term with
-          | `End | `Key (`Escape, []) | `Key (`ASCII 'C', [`Ctrl]) -> ()
+          | `End
+          | `Key (`Escape, [])
+          | `Key (`ASCII 'q', [])
+          | `Key (`ASCII 'C', [`Ctrl]) -> ()
           | `Resize _ -> loop i
-          | `Key (`ASCII 'j', []) ->
+          | `Key (`ASCII 'j', [])
+          | `Key (`Arrow `Down, []) ->
             loop (i + 1)
-          | `Key (`ASCII 'k', []) ->
+          | `Key (`ASCII 'k', [])
+          | `Key (`Arrow `Up, []) ->
             loop (i - 1)
           | _ -> loop i
         in

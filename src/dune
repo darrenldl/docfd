@@ -9,5 +9,6 @@
             spelll
             notty
             notty.unix
+            oseq
  )
 )

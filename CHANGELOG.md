@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0
+
+- Switched to interactive TUI
+
 ## 0.1.6
 
 - Optimized parsing code slightly
