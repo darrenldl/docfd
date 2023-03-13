@@ -310,6 +310,7 @@ let run
         && String_set.is_empty ci_sub_tag_matches_required
         && String_set.is_empty exact_tag_matches_required
       in
+      let images : Notty.image list ref = ref [] in
       List.iter (unwrap_header (fun header ->
           let tags = header.tags in
           let tags_lowercase =
@@ -364,23 +365,51 @@ let run
           );
           if no_requirements
           || Array.exists (fun x -> x) tag_matched then (
-            let colored_p formatter (i, s) =
-              if no_requirements || tag_matched.(i) then (
-                Fmt.pf formatter "%s"
-                  (stylize_if_atty ANSITerminal.[ Bold; red ] s)
-              ) else (
-                Fmt.pf formatter "%s" s
-              )
-            in
-            Fmt.pr "@[<v>> @[<v>%s@,[ @[<hv>%a@] ]@,%@ %s@]@,@]"
+            let open Notty in
+            let open Notty.Infix in
+            let img =
               (match header.title with
-               | None -> ""
-               | Some s -> stylize_if_atty ANSITerminal.[ Bold; blue ] s)
-              Fmt.(seq ~sep:sp colored_p) (Array.to_seqi tag_arr)
-              header.path
+               | None -> I.string A.empty ""
+               | Some s ->
+                 I.string A.(fg blue) s)
+              <->
+              ((Array.fold_left (fun img tag ->
+                   img <|> I.string A.empty " " <|> I.string A.empty tag
+                 )
+                   (I.string A.empty "[")
+                   tag_arr)
+               <|>
+               I.string A.empty " ]"
+              )
+              <->
+              (I.string A.empty header.path)
+            in
+            images := img :: !images
           )
         )
-        ) headers
+        ) headers;
+      let images = Array.of_list (List.rev !images) in
+      let image_count = Array.length images in
+      if image_count = 0 then
+        ()
+      else (
+        let term = Notty_unix.Term.create () in
+        let rec loop i =
+          let i =
+            max 0 (min (image_count - 1) i)
+          in
+          Notty_unix.Term.image term images.(i);
+          match Notty_unix.Term.event term with
+          | `End | `Key (`Escape, []) | `Key (`ASCII 'C', [`Ctrl]) -> ()
+          | `Resize _ -> loop i
+          | `Key (`ASCII 'j', []) ->
+            loop (i + 1)
+          | `Key (`ASCII 'k', []) ->
+            loop (i - 1)
+          | _ -> loop i
+        in
+        loop 0
+      )
     )
   )
 
