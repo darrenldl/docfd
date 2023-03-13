@@ -31,6 +31,7 @@ type header = {
   path : string;
   title : string option;
   tags : string list;
+  tag_matched : bool list;
 }
 
 type line_typ =
@@ -120,6 +121,7 @@ let process path : (header, string) result =
         | [] -> None
         | l -> Some (String.concat " " l));
     tags;
+    tag_matched = [];
   }
 
 let fuzzy_max_edit_distance_arg =
@@ -280,11 +282,10 @@ let run
         match process path with
         | Ok f -> Some f
         | Error _ -> None) files
-    |> Array.of_list
   in
   if list_tags_lowercase then (
     let tags_used = ref String_set.empty in
-    Array.iter (fun header ->
+    List.iter (fun header ->
         tags_used := String_set.(union
                                    (lowercase_set_of_tags header.tags)
                                    !tags_used)
@@ -293,80 +294,95 @@ let run
   ) else (
     if list_tags then (
       let tags_used = ref String_set.empty in
-      Array.iter (fun header ->
+      List.iter (fun header ->
           tags_used := String_set.(union
                                      (set_of_tags header.tags)
                                      !tags_used)
         ) headers;
       print_tag_set !tags_used
     ) else (
-      if Array.length headers > 0 then (
-        let no_requirements =
-          String_set.is_empty ci_fuzzy_tag_matches_required
-          && String_set.is_empty ci_full_tag_matches_required
-          && String_set.is_empty ci_sub_tag_matches_required
-          && String_set.is_empty exact_tag_matches_required
-        in
-        let images_selected : Notty.image list ref = ref [] in
-        let images_unselected : Notty.image list ref = ref [] in
-        let term = Notty_unix.Term.create () in
-        let (term_width, term_height) = Notty_unix.Term.size term in
-        Array.iter (fun header ->
-            let tags = header.tags in
-            let tags_lowercase =
-              List.map String.lowercase_ascii tags
-            in
-            let tag_arr = Array.of_list tags in
-            let tag_matched = Array.make (Array.length tag_arr) false in
-            let tag_lowercase_arr = Array.of_list tags_lowercase in
-            (
-              List.iter
-                (fun dfa ->
-                   Array.iteri (fun i x ->
-                       if Spelll.match_with dfa x then
-                         tag_matched.(i) <- true
-                     )
-                     tag_lowercase_arr
+      match headers with
+      | [] -> ()
+      | _ -> (
+          let no_requirements =
+            String_set.is_empty ci_fuzzy_tag_matches_required
+            && String_set.is_empty ci_full_tag_matches_required
+            && String_set.is_empty ci_sub_tag_matches_required
+            && String_set.is_empty exact_tag_matches_required
+          in
+          let images_selected : Notty.image list ref = ref [] in
+          let images_unselected : Notty.image list ref = ref [] in
+          let term = Notty_unix.Term.create () in
+          let (term_width, term_height) = Notty_unix.Term.size term in
+          let headers =
+            headers
+            |> List.filter_map (fun header ->
+                let tags = header.tags in
+                let tags_lowercase =
+                  List.map String.lowercase_ascii tags
+                in
+                let tag_arr = Array.of_list tags in
+                let tag_matched = Array.make (Array.length tag_arr) false in
+                let tag_lowercase_arr = Array.of_list tags_lowercase in
+                (
+                  List.iter
+                    (fun dfa ->
+                       Array.iteri (fun i x ->
+                           if Spelll.match_with dfa x then
+                             tag_matched.(i) <- true
+                         )
+                         tag_lowercase_arr
+                    )
+                    fuzzy_index
+                );
+                (
+                  String_set.iter
+                    (fun s ->
+                       Array.iteri (fun i x ->
+                           if String.equal x s then
+                             tag_matched.(i) <- true
+                         )
+                         tag_lowercase_arr
+                    )
+                    ci_full_tag_matches_required
+                );
+                (
+                  String_set.iter
+                    (fun sub ->
+                       Array.iteri (fun i x ->
+                           if CCString.find ~sub x >= 0 then
+                             tag_matched.(i) <- true
+                         )
+                         tag_lowercase_arr
+                    )
+                    ci_sub_tag_matches_required
+                );
+                (
+                  String_set.iter
+                    (fun s ->
+                       Array.iteri (fun i x ->
+                           if String.equal x s then
+                             tag_matched.(i) <- true
+                         )
+                         tag_arr
+                    )
+                    exact_tag_matches_required
+                );
+                if no_requirements
+                || Array.exists (fun x -> x) tag_matched
+                then (
+                  Some { header with tag_matched = Array.to_list tag_matched }
+                ) else (
+                  None
                 )
-                fuzzy_index
-            );
-            (
-              String_set.iter
-                (fun s ->
-                   Array.iteri (fun i x ->
-                       if String.equal x s then
-                         tag_matched.(i) <- true
-                     )
-                     tag_lowercase_arr
-                )
-                ci_full_tag_matches_required
-            );
-            (
-              String_set.iter
-                (fun sub ->
-                   Array.iteri (fun i x ->
-                       if CCString.find ~sub x >= 0 then
-                         tag_matched.(i) <- true
-                     )
-                     tag_lowercase_arr
-                )
-                ci_sub_tag_matches_required
-            );
-            (
-              String_set.iter
-                (fun s ->
-                   Array.iteri (fun i x ->
-                       if String.equal x s then
-                         tag_matched.(i) <- true
-                     )
-                     tag_arr
-                )
-                exact_tag_matches_required
-            );
-            if no_requirements
-            || Array.exists (fun x -> x) tag_matched then (
+              )
+            |> Array.of_list
+          in
+          Array.iter (fun header ->
               let open Notty in
               let open Notty.Infix in
+              let tag_arr = Array.of_list header.tags in
+              let tag_matched = Array.of_list header.tag_matched  in
               let max_tag_len =
                 Array.fold_left (fun len s ->
                     max len (String.length s))
@@ -436,73 +452,72 @@ let run
               in
               images_selected := img_selected :: !images_selected;
               images_unselected := img_unselected :: !images_unselected
-            )
-          ) headers;
-        let images_selected = Array.of_list (List.rev !images_selected) in
-        let images_unselected = Array.of_list (List.rev !images_unselected) in
-        let image_count = Array.length images_selected in
-        let bound_selection (x : int) : int =
-          max 0 (min (image_count - 1) x)
-        in
-        let quit = Lwd.var false in
-        let selected = Lwd.var 0 in
-        let left_pane =
-          Lwd.get selected
-          |> Lwd.map ~f:(fun i ->
-              CCInt.range' i image_count
-              |> CCList.of_iter
-              |> List.map (fun j ->
-                  if Int.equal i j then
-                    images_selected.(j)
-                  else
-                    images_unselected.(j)
-                )
-              |> List.map Nottui.Ui.atom
-              |> Nottui.Ui.vcat
-              |> Nottui.Ui.keyboard_area (fun event ->
-                  match event with
-                  | (`Escape, [])
-                  | (`ASCII 'q', [])
-                  | (`ASCII 'C', [`Ctrl]) -> Lwd.set quit true; `Handled
-                  | (`ASCII 'j', [])
-                  | (`Arrow `Down, []) ->
-                    Lwd.set selected (bound_selection (i+1)); `Handled
-                  | (`ASCII 'k', [])
-                  | (`Arrow `Up, []) ->
-                    Lwd.set selected (bound_selection (i-1)); `Handled
-                  | _ -> `Unhandled)
-            ) 
-        in
-        let right_pane =
-          Lwd.get selected
-          |> Lwd.map ~f:(fun i ->
-              let path = headers.(i).path in
-              let content =
-                try
-                  CCIO.with_in path (fun ic ->
-                      CCIO.read_lines_seq ic
-                      |> OSeq.take term_height
-                      |> Seq.map (fun s -> Nottui.Ui.atom Notty.(I.string A.empty s))
-                      |> List.of_seq
-                      |> Nottui.Ui.vcat
-                    )
-                with
-                | _ -> Nottui.Ui.atom Notty.(I.strf "Error: Failed to access %s" path)
-              in
-              content
-            ) 
-        in
-        let screen =
-          Nottui_widgets.h_pane
-            left_pane
-            right_pane
-        in
-        Nottui.Ui_loop.run
-          ~quit
-          ~tick:(fun () -> ()
-                )
-          screen
-      )
+            ) headers;
+          let images_selected = Array.of_list (List.rev !images_selected) in
+          let images_unselected = Array.of_list (List.rev !images_unselected) in
+          let image_count = Array.length images_selected in
+          let bound_selection (x : int) : int =
+            max 0 (min (image_count - 1) x)
+          in
+          let quit = Lwd.var false in
+          let selected = Lwd.var 0 in
+          let left_pane =
+            Lwd.get selected
+            |> Lwd.map ~f:(fun i ->
+                CCInt.range' i image_count
+                |> CCList.of_iter
+                |> List.map (fun j ->
+                    if Int.equal i j then
+                      images_selected.(j)
+                    else
+                      images_unselected.(j)
+                  )
+                |> List.map Nottui.Ui.atom
+                |> Nottui.Ui.vcat
+                |> Nottui.Ui.keyboard_area (fun event ->
+                    match event with
+                    | (`Escape, [])
+                    | (`ASCII 'q', [])
+                    | (`ASCII 'C', [`Ctrl]) -> Lwd.set quit true; `Handled
+                    | (`ASCII 'j', [])
+                    | (`Arrow `Down, []) ->
+                      Lwd.set selected (bound_selection (i+1)); `Handled
+                    | (`ASCII 'k', [])
+                    | (`Arrow `Up, []) ->
+                      Lwd.set selected (bound_selection (i-1)); `Handled
+                    | _ -> `Unhandled)
+              ) 
+          in
+          let right_pane =
+            Lwd.get selected
+            |> Lwd.map ~f:(fun i ->
+                let path = headers.(i).path in
+                let content =
+                  try
+                    CCIO.with_in path (fun ic ->
+                        CCIO.read_lines_seq ic
+                        |> OSeq.take term_height
+                        |> Seq.map (fun s -> Nottui.Ui.atom Notty.(I.string A.empty s))
+                        |> List.of_seq
+                        |> Nottui.Ui.vcat
+                      )
+                  with
+                  | _ -> Nottui.Ui.atom Notty.(I.strf "Error: Failed to access %s" path)
+                in
+                content
+              ) 
+          in
+          let screen =
+            Nottui_widgets.h_pane
+              left_pane
+              right_pane
+          in
+          Nottui.Ui_loop.run
+            ~quit
+            ~tick:(fun () -> ()
+                  )
+            screen
+        )
     )
   )
 
