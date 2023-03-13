@@ -441,60 +441,67 @@ let run
         let images_selected = Array.of_list (List.rev !images_selected) in
         let images_unselected = Array.of_list (List.rev !images_unselected) in
         let image_count = Array.length images_selected in
-        let rec loop i =
-          let bound x =
-            max 0 (min (image_count - 1) x)
-          in
-          let i = bound i in
-          let img =
-            let open Notty in
-            let open Notty.Infix in
-            let path = headers.(i).path in
-            let content =
-              try
-                CCIO.with_in path (fun ic ->
-                    CCIO.read_lines_seq ic
-                    |> OSeq.take term_height
-                    |> Seq.map (fun s -> I.string A.empty s)
-                    |> List.of_seq
-                    |> I.vcat
-                  )
-              with
-              | _ -> I.strf "Error: Failed to access %s" path
-            in
-            let left_pane =
+        let bound_selection (x : int) : int =
+          max 0 (min (image_count - 1) x)
+        in
+        let quit = Lwd.var false in
+        let selected = Lwd.var 0 in
+        let left_pane =
+          Lwd.get selected
+          |> Lwd.map ~f:(fun i ->
               CCInt.range' i image_count
               |> CCList.of_iter
               |> List.map (fun j ->
-                  (if i = j then
-                     images_selected.(j)
-                   else
-                     images_unselected.(j))
-                  <->
-                  I.string A.empty ""
+                  if Int.equal i j then
+                    images_selected.(j)
+                  else
+                    images_unselected.(j)
                 )
-              |> I.vcat
-            in
-            (I.hpad 0 (term_width / 2 - I.width left_pane) left_pane) <|> content
-          in
-          Notty_unix.Term.image term img;
-          match Notty_unix.Term.event term with
-          | `End
-          | `Key (`Escape, [])
-          | `Key (`ASCII 'q', [])
-          | `Key (`ASCII 'C', [`Ctrl]) -> ()
-          | `Resize _ -> loop i
-          | `Key (`ASCII 'j', [])
-          | `Key (`Arrow `Down, [])
-          | `Mouse (`Press (`Scroll `Down), _, _) ->
-            loop (i + 1)
-          | `Key (`ASCII 'k', [])
-          | `Key (`Arrow `Up, [])
-          | `Mouse (`Press (`Scroll `Up), _, _) ->
-            loop (i - 1)
-          | _ -> loop i
+              |> List.map Nottui.Ui.atom
+              |> Nottui.Ui.vcat
+              |> Nottui.Ui.keyboard_area (fun event ->
+                  match event with
+                  | (`Escape, [])
+                  | (`ASCII 'q', [])
+                  | (`ASCII 'C', [`Ctrl]) -> Lwd.set quit true; `Handled
+                  | (`ASCII 'j', [])
+                  | (`Arrow `Down, []) ->
+                    Lwd.set selected (bound_selection (i+1)); `Handled
+                  | (`ASCII 'k', [])
+                  | (`Arrow `Up, []) ->
+                    Lwd.set selected (bound_selection (i-1)); `Handled
+                  | _ -> `Unhandled)
+            ) 
         in
-        loop 0
+        let right_pane =
+          Lwd.get selected
+          |> Lwd.map ~f:(fun i ->
+              let path = headers.(i).path in
+              let content =
+                try
+                  CCIO.with_in path (fun ic ->
+                      CCIO.read_lines_seq ic
+                      |> OSeq.take term_height
+                      |> Seq.map (fun s -> Nottui.Ui.atom Notty.(I.string A.empty s))
+                      |> List.of_seq
+                      |> Nottui.Ui.vcat
+                    )
+                with
+                | _ -> Nottui.Ui.atom Notty.(I.strf "Error: Failed to access %s" path)
+              in
+              content
+            ) 
+        in
+        let screen =
+          Nottui_widgets.h_pane
+            left_pane
+            right_pane
+        in
+        Nottui.Ui_loop.run
+          ~quit
+          ~tick:(fun () -> ()
+                )
+          screen
       )
     )
   )

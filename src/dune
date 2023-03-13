@@ -9,6 +9,7 @@
             spelll
             notty
             notty.unix
+            nottui
             oseq
  )
 )
