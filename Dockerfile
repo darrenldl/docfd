@@ -7,3 +7,4 @@ RUN opam install cmdliner
 RUN opam install angstrom
 RUN opam install spelll
 RUN opam install ANSITerminal
+RUN opam install notty
