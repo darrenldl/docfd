@@ -300,148 +300,147 @@ let run
         ) headers;
       print_tag_set !tags_used
     ) else (
-      let no_requirements =
-        String_set.is_empty ci_fuzzy_tag_matches_required
-        && String_set.is_empty ci_full_tag_matches_required
-        && String_set.is_empty ci_sub_tag_matches_required
-        && String_set.is_empty exact_tag_matches_required
-      in
-      let images_selected : Notty.image list ref = ref [] in
-      let images_unselected : Notty.image list ref = ref [] in
-      Array.iter (fun header ->
-          let tags = header.tags in
-          let tags_lowercase =
-            List.map String.lowercase_ascii tags
-          in
-          let tag_arr = Array.of_list tags in
-          let tag_matched = Array.make (Array.length tag_arr) false in
-          let tag_lowercase_arr = Array.of_list tags_lowercase in
-          (
-            List.iter
-              (fun dfa ->
-                 Array.iteri (fun i x ->
-                     if Spelll.match_with dfa x then
-                       tag_matched.(i) <- true
-                   )
-                   tag_lowercase_arr
-              )
-              fuzzy_index
-          );
-          (
-            String_set.iter
-              (fun s ->
-                 Array.iteri (fun i x ->
-                     if String.equal x s then
-                       tag_matched.(i) <- true
-                   )
-                   tag_lowercase_arr
-              )
-              ci_full_tag_matches_required
-          );
-          (
-            String_set.iter
-              (fun sub ->
-                 Array.iteri (fun i x ->
-                     if CCString.find ~sub x >= 0 then
-                       tag_matched.(i) <- true
-                   )
-                   tag_lowercase_arr
-              )
-              ci_sub_tag_matches_required
-          );
-          (
-            String_set.iter
-              (fun s ->
-                 Array.iteri (fun i x ->
-                     if String.equal x s then
-                       tag_matched.(i) <- true
-                   )
-                   tag_arr
-              )
-              exact_tag_matches_required
-          );
-          if no_requirements
-          || Array.exists (fun x -> x) tag_matched then (
-            let open Notty in
-            let open Notty.Infix in
-            let max_tag_len =
-              Array.fold_left (fun len s ->
-                  max len (String.length s))
-                0 tag_arr
-            in
-            let image_of_tag i s : image =
-              I.string
-                (if no_requirements || tag_matched.(i) then
-                   A.(fg red)
-                 else
-                   A.empty)
-                s
-              |> I.hpad 0 (max_tag_len - String.length s + 1)
-            in
-            let tag_images =
-              Array.mapi image_of_tag tag_arr
-            in
-            let col_count = 2 in
-            let row_count =
-              (Array.length tag_arr + (col_count-1)) / col_count
-            in
-            let img_selected =
-              I.string A.(fg blue ++ st bold)
-                (Option.value ~default:"" header.title)
-              <->
-              (I.string A.empty "  "
-               <|>
-               I.vcat
-                 [
-                   (
-                     I.string A.empty "[ "
-                     <|> I.tabulate col_count row_count (fun x y ->
-                         let i = x + col_count * y in
-                         if i < Array.length tag_arr then
-                           tag_images.(i)
-                         else
-                           I.empty
-                       )
-                     <|> I.string A.empty "]"
-                   );
-                   I.string A.empty header.path;
-                 ]
-              )
-            in
-            let img_unselected =
-              I.string A.(fg blue)
-                (Option.value ~default:"" header.title)
-              <->
-              (I.string A.empty "  "
-               <|>
-               I.vcat
-                 [
-                   (
-                     I.string A.empty "[ "
-                     <|> I.tabulate col_count row_count (fun x y ->
-                         let i = x + col_count * y in
-                         if i < Array.length tag_arr then
-                           tag_images.(i)
-                         else
-                           I.empty
-                       )
-                     <|> I.string A.empty "]"
-                   );
-                   I.string A.empty header.path;
-                 ]
-              )
-            in
-            images_selected := img_selected :: !images_selected;
-            images_unselected := img_unselected :: !images_unselected
-          )
-        ) headers;
-      let images_selected = Array.of_list (List.rev !images_selected) in
-      let images_unselected = Array.of_list (List.rev !images_unselected) in
-      let image_count = Array.length images_selected in
-      if image_count = 0 then
-        ()
-      else (
+      if Array.length headers > 0 then (
+        let no_requirements =
+          String_set.is_empty ci_fuzzy_tag_matches_required
+          && String_set.is_empty ci_full_tag_matches_required
+          && String_set.is_empty ci_sub_tag_matches_required
+          && String_set.is_empty exact_tag_matches_required
+        in
+        let images_selected : Notty.image list ref = ref [] in
+        let images_unselected : Notty.image list ref = ref [] in
         let term = Notty_unix.Term.create () in
+        let (term_width, term_height) = Notty_unix.Term.size term in
+        Array.iter (fun header ->
+            let tags = header.tags in
+            let tags_lowercase =
+              List.map String.lowercase_ascii tags
+            in
+            let tag_arr = Array.of_list tags in
+            let tag_matched = Array.make (Array.length tag_arr) false in
+            let tag_lowercase_arr = Array.of_list tags_lowercase in
+            (
+              List.iter
+                (fun dfa ->
+                   Array.iteri (fun i x ->
+                       if Spelll.match_with dfa x then
+                         tag_matched.(i) <- true
+                     )
+                     tag_lowercase_arr
+                )
+                fuzzy_index
+            );
+            (
+              String_set.iter
+                (fun s ->
+                   Array.iteri (fun i x ->
+                       if String.equal x s then
+                         tag_matched.(i) <- true
+                     )
+                     tag_lowercase_arr
+                )
+                ci_full_tag_matches_required
+            );
+            (
+              String_set.iter
+                (fun sub ->
+                   Array.iteri (fun i x ->
+                       if CCString.find ~sub x >= 0 then
+                         tag_matched.(i) <- true
+                     )
+                     tag_lowercase_arr
+                )
+                ci_sub_tag_matches_required
+            );
+            (
+              String_set.iter
+                (fun s ->
+                   Array.iteri (fun i x ->
+                       if String.equal x s then
+                         tag_matched.(i) <- true
+                     )
+                     tag_arr
+                )
+                exact_tag_matches_required
+            );
+            if no_requirements
+            || Array.exists (fun x -> x) tag_matched then (
+              let open Notty in
+              let open Notty.Infix in
+              let max_tag_len =
+                Array.fold_left (fun len s ->
+                    max len (String.length s))
+                  0 tag_arr
+              in
+              let image_of_tag i s : image =
+                I.string
+                  (if no_requirements || tag_matched.(i) then
+                     A.(fg red)
+                   else
+                     A.empty)
+                  s
+                |> I.hpad 0 (max_tag_len - String.length s + 1)
+              in
+              let tag_images =
+                Array.mapi image_of_tag tag_arr
+              in
+              let col_count = term_width / 2 / (max_tag_len + 2) in
+              let row_count =
+                (Array.length tag_arr + (col_count-1)) / col_count
+              in
+              let img_selected =
+                I.string A.(fg blue ++ st bold)
+                  (Option.value ~default:"" header.title)
+                <->
+                (I.string A.empty "  "
+                 <|>
+                 I.vcat
+                   [
+                     (
+                       I.string A.empty "[ "
+                       <|> I.tabulate col_count row_count (fun x y ->
+                           let i = x + col_count * y in
+                           if i < Array.length tag_arr then
+                             tag_images.(i)
+                           else
+                             I.empty
+                         )
+                       <|> I.string A.empty "]"
+                     );
+                     I.string A.empty header.path;
+                   ]
+                )
+              in
+              let img_unselected =
+                I.string A.(fg blue)
+                  (Option.value ~default:"" header.title)
+                <->
+                (I.string A.empty "  "
+                 <|>
+                 I.vcat
+                   [
+                     (
+                       I.string A.empty "[ "
+                       <|> I.tabulate col_count row_count (fun x y ->
+                           let i = x + col_count * y in
+                           if i < Array.length tag_arr then
+                             tag_images.(i)
+                           else
+                             I.empty
+                         )
+                       <|> I.string A.empty "]"
+                     );
+                     I.string A.empty header.path;
+                   ]
+                )
+              in
+              images_selected := img_selected :: !images_selected;
+              images_unselected := img_unselected :: !images_unselected
+            )
+          ) headers;
+        let images_selected = Array.of_list (List.rev !images_selected) in
+        let images_unselected = Array.of_list (List.rev !images_unselected) in
+        let image_count = Array.length images_selected in
         let rec loop i =
           let bound x =
             max 0 (min (image_count - 1) x)
@@ -451,12 +450,11 @@ let run
             let open Notty in
             let open Notty.Infix in
             let path = headers.(i).path in
-            let (width, height) = Notty_unix.Term.size term in
             let content =
               try
                 CCIO.with_in path (fun ic ->
                     CCIO.read_lines_seq ic
-                    |> OSeq.take height
+                    |> OSeq.take term_height
                     |> Seq.map (fun s -> I.string A.empty s)
                     |> List.of_seq
                     |> I.vcat
@@ -477,7 +475,7 @@ let run
                 )
               |> I.vcat
             in
-            (I.hpad 0 (width / 2 - I.width left_pane) left_pane) <|> content
+            (I.hpad 0 (term_width / 2 - I.width left_pane) left_pane) <|> content
           in
           Notty_unix.Term.image term img;
           match Notty_unix.Term.event term with
@@ -487,10 +485,12 @@ let run
           | `Key (`ASCII 'C', [`Ctrl]) -> ()
           | `Resize _ -> loop i
           | `Key (`ASCII 'j', [])
-          | `Key (`Arrow `Down, []) ->
+          | `Key (`Arrow `Down, [])
+          | `Mouse (`Press (`Scroll `Down), _, _) ->
             loop (i + 1)
           | `Key (`ASCII 'k', [])
-          | `Key (`Arrow `Up, []) ->
+          | `Key (`Arrow `Up, [])
+          | `Mouse (`Press (`Scroll `Up), _, _) ->
             loop (i - 1)
           | _ -> loop i
         in
