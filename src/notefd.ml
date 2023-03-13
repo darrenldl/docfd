@@ -461,62 +461,80 @@ let run
           in
           let quit = Lwd.var false in
           let selected = Lwd.var 0 in
-          let left_pane =
-            Lwd.get selected
-            |> Lwd.map ~f:(fun i ->
-                CCInt.range' i image_count
-                |> CCList.of_iter
-                |> List.map (fun j ->
-                    if Int.equal i j then
-                      images_selected.(j)
-                    else
-                      images_unselected.(j)
-                  )
-                |> List.map Nottui.Ui.atom
-                |> Nottui.Ui.vcat
-                |> Nottui.Ui.keyboard_area (fun event ->
-                    match event with
-                    | (`Escape, [])
-                    | (`ASCII 'q', [])
-                    | (`ASCII 'C', [`Ctrl]) -> Lwd.set quit true; `Handled
-                    | (`ASCII 'j', [])
-                    | (`Arrow `Down, []) ->
-                      Lwd.set selected (bound_selection (i+1)); `Handled
-                    | (`ASCII 'k', [])
-                    | (`Arrow `Up, []) ->
-                      Lwd.set selected (bound_selection (i-1)); `Handled
-                    | _ -> `Unhandled)
-              ) 
+          let rec loop () =
+            let file_to_open = ref None in
+            let left_pane =
+              Lwd.get selected
+              |> Lwd.map ~f:(fun i ->
+                  CCInt.range' i image_count
+                  |> CCList.of_iter
+                  |> List.map (fun j ->
+                      if Int.equal i j then
+                        images_selected.(j)
+                      else
+                        images_unselected.(j)
+                    )
+                  |> List.map Nottui.Ui.atom
+                  |> Nottui.Ui.vcat
+                  |> Nottui.Ui.keyboard_area (fun event ->
+                      match event with
+                      | (`Escape, [])
+                      | (`ASCII 'q', [])
+                      | (`ASCII 'C', [`Ctrl]) -> Lwd.set quit true; `Handled
+                      | (`ASCII 'j', [])
+                      | (`Arrow `Down, []) ->
+                        Lwd.set selected (bound_selection (i+1)); `Handled
+                      | (`ASCII 'k', [])
+                      | (`Arrow `Up, []) ->
+                        Lwd.set selected (bound_selection (i-1)); `Handled
+                      | (`Enter, []) -> (
+                          Lwd.set quit true;
+                          file_to_open := Some i;
+                          `Handled
+                        )
+                      | _ -> `Unhandled)
+                )
+            in
+            let right_pane =
+              Lwd.get selected
+              |> Lwd.map ~f:(fun i ->
+                  let path = headers.(i).path in
+                  let content =
+                    try
+                      CCIO.with_in path (fun ic ->
+                          CCIO.read_lines_seq ic
+                          |> OSeq.take term_height
+                          |> Seq.map (fun s -> Nottui.Ui.atom Notty.(I.string A.empty s))
+                          |> List.of_seq
+                          |> Nottui.Ui.vcat
+                        )
+                    with
+                    | _ -> Nottui.Ui.atom Notty.(I.strf "Error: Failed to access %s" path)
+                  in
+                  content
+                )
+            in
+            let screen =
+              Nottui_widgets.h_pane
+                left_pane
+                right_pane
+            in
+            Nottui.Ui_loop.run
+              ~quit
+              screen;
+            match !file_to_open with
+            | None -> ()
+            | Some i ->
+              match Sys.getenv_opt "EDITOR" with
+              | None ->
+                Printf.printf "Error: Failed to read environment variable EDITOR\n"; exit 1
+              | Some editor -> (
+                  Lwd.set quit false;
+                  Sys.command (Fmt.str "%s \'%s\'" editor headers.(i).path) |> ignore;
+                  loop ()
+                )
           in
-          let right_pane =
-            Lwd.get selected
-            |> Lwd.map ~f:(fun i ->
-                let path = headers.(i).path in
-                let content =
-                  try
-                    CCIO.with_in path (fun ic ->
-                        CCIO.read_lines_seq ic
-                        |> OSeq.take term_height
-                        |> Seq.map (fun s -> Nottui.Ui.atom Notty.(I.string A.empty s))
-                        |> List.of_seq
-                        |> Nottui.Ui.vcat
-                      )
-                  with
-                  | _ -> Nottui.Ui.atom Notty.(I.strf "Error: Failed to access %s" path)
-                in
-                content
-              ) 
-          in
-          let screen =
-            Nottui_widgets.h_pane
-              left_pane
-              right_pane
-          in
-          Nottui.Ui_loop.run
-            ~quit
-            ~tick:(fun () -> ()
-                  )
-            screen
+          loop ()
         )
     )
   )
