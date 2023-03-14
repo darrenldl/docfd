@@ -193,11 +193,6 @@ let list_files_recursively (dir : string) : string list =
   in
   aux dir
 
-let ci_string_set_of_list (l : string list) =
-  l
-  |> List.map String.lowercase_ascii
-  |> String_set.of_list
-
 let set_of_tags (tags : string list) : String_set.t =
   List.fold_left (fun s x ->
       String_set.add x s
@@ -250,51 +245,43 @@ let filter_headers
       let tag_arr = Array.of_list tags in
       let tag_matched = Array.make (Array.length tag_arr) false in
       let tag_lowercase_arr = Array.of_list tags_lowercase in
-      (
-        List.iter
-          (fun dfa ->
-             Array.iteri (fun i x ->
-                 if Spelll.match_with dfa x then
-                   tag_matched.(i) <- true
-               )
-               tag_lowercase_arr
-          )
-          (Search_constraints.fuzzy_index constraints)
-      );
-      (
-        String_set.iter
-          (fun s ->
-             Array.iteri (fun i x ->
-                 if String.equal x s then
-                   tag_matched.(i) <- true
-               )
-               tag_lowercase_arr
-          )
-          (Search_constraints.ci_full_tag_matches constraints)
-      );
-      (
-        String_set.iter
-          (fun sub ->
-             Array.iteri (fun i x ->
-                 if CCString.find ~sub x >= 0 then
-                   tag_matched.(i) <- true
-               )
-               tag_lowercase_arr
-          )
-          (Search_constraints.ci_sub_tag_matches constraints)
-      );
-      (
-        String_set.iter
-          (fun s ->
-             Array.iteri (fun i x ->
-                 if String.equal x s then
-                   tag_matched.(i) <- true
-               )
-               tag_arr
-          )
-          (Search_constraints.exact_tag_matches constraints)
-      );
-      if no_requirements
+      List.iter
+        (fun dfa ->
+           Array.iteri (fun i x ->
+               if Spelll.match_with dfa x then
+                 tag_matched.(i) <- true
+             )
+             tag_lowercase_arr
+        )
+        (Search_constraints.fuzzy_index constraints);
+      String_set.iter
+        (fun s ->
+           Array.iteri (fun i x ->
+               if String.equal x s then
+                 tag_matched.(i) <- true
+             )
+             tag_lowercase_arr
+        )
+        (Search_constraints.ci_full constraints);
+      String_set.iter
+        (fun sub ->
+           Array.iteri (fun i x ->
+               if CCString.find ~sub x >= 0 then
+                 tag_matched.(i) <- true
+             )
+             tag_lowercase_arr
+        )
+        (Search_constraints.ci_sub constraints);
+      String_set.iter
+        (fun s ->
+           Array.iteri (fun i x ->
+               if String.equal x s then
+                 tag_matched.(i) <- true
+             )
+             tag_arr
+        )
+        (Search_constraints.exact constraints);
+      if Search_constraints.is_empty constraints
       || Array.exists (fun x -> x) tag_matched
       then (
         Some { header with tag_matched = Array.to_list tag_matched }
@@ -303,8 +290,118 @@ let filter_headers
       )
     )
 
+let render_headers
+    (term : Notty_unix.Term.t)
+    (constraints : Search_constraints.t)
+    (headers : header array) : Notty.image array * Notty.image array =
+  let (term_width, _term_height) = Notty_unix.Term.size term in
+  let images_selected : Notty.image list ref = ref [] in
+  let images_unselected : Notty.image list ref = ref [] in
+  Array.iter (fun header ->
+      let open Notty in
+      let open Notty.Infix in
+      let tag_arr = Array.of_list header.tags in
+      let tag_matched = Array.of_list header.tag_matched  in
+      let max_tag_len =
+        Array.fold_left (fun len s ->
+            max len (String.length s))
+          0 tag_arr
+      in
+      let image_of_tag i s : image =
+        I.string
+          (if Search_constraints.is_empty constraints
+           || tag_matched.(i)
+           then
+             A.(fg red)
+           else
+             A.empty)
+          s
+        |> I.hpad 0 (max_tag_len - String.length s + 1)
+      in
+      let tag_images =
+        Array.mapi image_of_tag tag_arr
+      in
+      let col_count = term_width / 2 / (max_tag_len + 2) in
+      let row_count =
+        (Array.length tag_arr + (col_count-1)) / col_count
+      in
+      let img_selected =
+        I.string A.(fg blue ++ st bold)
+          (Option.value ~default:"" header.title)
+        <->
+        (I.string A.empty "  "
+         <|>
+         I.vcat
+           [
+             (
+               I.string A.empty "[ "
+               <|> I.tabulate col_count row_count (fun x y ->
+                   let i = x + col_count * y in
+                   if i < Array.length tag_arr then
+                     tag_images.(i)
+                   else
+                     I.empty
+                 )
+               <|> I.string A.empty "]"
+             );
+             I.string A.empty header.path;
+           ]
+        )
+      in
+      let img_unselected =
+        I.string A.(fg blue)
+          (Option.value ~default:"" header.title)
+        <->
+        (I.string A.empty "  "
+         <|>
+         I.vcat
+           [
+             (
+               I.string A.empty "[ "
+               <|> I.tabulate col_count row_count (fun x y ->
+                   let i = x + col_count * y in
+                   if i < Array.length tag_arr then
+                     tag_images.(i)
+                   else
+                     I.empty
+                 )
+               <|> I.string A.empty "]"
+             );
+             I.string A.empty header.path;
+           ]
+        )
+      in
+      images_selected := img_selected :: !images_selected;
+      images_unselected := img_unselected :: !images_unselected
+    ) headers;
+  let images_selected = Array.of_list (List.rev !images_selected) in
+  let images_unselected = Array.of_list (List.rev !images_unselected) in
+  (images_selected, images_unselected)
+
+type mode = [
+  | `Navigate
+  | `Ci_fuzzy
+  | `Ci_full
+  | `Ci_sub
+  | `Exact
+]
+
+let make_label_widget ~s ~len (mode : mode) (v : mode Lwd.var) =
+  Lwd.map ~f:(fun mode' ->
+      (if mode = mode' then
+         Notty.(I.string A.(st bold) s)
+       else
+         Notty.(I.string A.empty s))
+      |> Notty.I.hsnap ~align:`Left len
+      |> Nottui.Ui.atom
+    ) (Lwd.get v)
+
 let run
     (fuzzy_max_edit_distance : int)
+    (ci_fuzzy : string list)
+    (ci_full : string list)
+    (ci_sub : string list)
+    (exact : string list)
     (list_tags : bool)
     (list_tags_lowercase : bool)
     (dir : string)
@@ -313,23 +410,11 @@ let run
     Fmt.pr "Error: Please select only --tags or --ltags\n";
     exit 1
   );
-  let ci_fuzzy_tag_matches_required =
-    ci_string_set_of_list ci_fuzzy_tag_matches_required
-  in
-  let ci_full_tag_matches_required =
-    ci_string_set_of_list ci_full_tag_matches_required
-  in
-  let ci_sub_tag_matches_required =
-    ci_string_set_of_list ci_sub_tag_matches_required
-  in
-  let exact_tag_matches_required =
-    String_set.of_list exact_tag_matches_required
-  in
   let files =
     list_files_recursively dir
   in
   let files = List.sort_uniq String.compare files in
-  let headers =
+  let all_headers =
     List.filter_map (fun path ->
         match process path with
         | Ok f -> Some f
@@ -341,7 +426,7 @@ let run
         tags_used := String_set.(union
                                    (lowercase_set_of_tags header.tags)
                                    !tags_used)
-      ) headers;
+      ) all_headers;
     print_tag_set !tags_used
   ) else (
     if list_tags then (
@@ -350,165 +435,240 @@ let run
           tags_used := String_set.(union
                                      (set_of_tags header.tags)
                                      !tags_used)
-        ) headers;
+        ) all_headers;
       print_tag_set !tags_used
     ) else (
-      match headers with
+      match all_headers with
       | [] -> ()
       | _ -> (
-          let no_requirements =
-            String_set.is_empty ci_fuzzy_tag_matches_required
-            && String_set.is_empty ci_full_tag_matches_required
-            && String_set.is_empty ci_sub_tag_matches_required
-            && String_set.is_empty exact_tag_matches_required
-          in
-          let images_selected : Notty.image list ref = ref [] in
-          let images_unselected : Notty.image list ref = ref [] in
           let term = Notty_unix.Term.create () in
           let renderer = Nottui.Renderer.make () in
-          let (term_width, term_height) = Notty_unix.Term.size term in
-          let headers =
-            Array.of_list (filter_headers ~fuzzy_max_edit_distance empty_constraints headers)
-          in
-          Array.iter (fun header ->
-              let open Notty in
-              let open Notty.Infix in
-              let tag_arr = Array.of_list header.tags in
-              let tag_matched = Array.of_list header.tag_matched  in
-              let max_tag_len =
-                Array.fold_left (fun len s ->
-                    max len (String.length s))
-                  0 tag_arr
-              in
-              let image_of_tag i s : image =
-                I.string
-                  (if no_requirements || tag_matched.(i) then
-                     A.(fg red)
-                   else
-                     A.empty)
-                  s
-                |> I.hpad 0 (max_tag_len - String.length s + 1)
-              in
-              let tag_images =
-                Array.mapi image_of_tag tag_arr
-              in
-              let col_count = term_width / 2 / (max_tag_len + 2) in
-              let row_count =
-                (Array.length tag_arr + (col_count-1)) / col_count
-              in
-              let img_selected =
-                I.string A.(fg blue ++ st bold)
-                  (Option.value ~default:"" header.title)
-                <->
-                (I.string A.empty "  "
-                 <|>
-                 I.vcat
-                   [
-                     (
-                       I.string A.empty "[ "
-                       <|> I.tabulate col_count row_count (fun x y ->
-                           let i = x + col_count * y in
-                           if i < Array.length tag_arr then
-                             tag_images.(i)
-                           else
-                             I.empty
-                         )
-                       <|> I.string A.empty "]"
-                     );
-                     I.string A.empty header.path;
-                   ]
-                )
-              in
-              let img_unselected =
-                I.string A.(fg blue)
-                  (Option.value ~default:"" header.title)
-                <->
-                (I.string A.empty "  "
-                 <|>
-                 I.vcat
-                   [
-                     (
-                       I.string A.empty "[ "
-                       <|> I.tabulate col_count row_count (fun x y ->
-                           let i = x + col_count * y in
-                           if i < Array.length tag_arr then
-                             tag_images.(i)
-                           else
-                             I.empty
-                         )
-                       <|> I.string A.empty "]"
-                     );
-                     I.string A.empty header.path;
-                   ]
-                )
-              in
-              images_selected := img_selected :: !images_selected;
-              images_unselected := img_unselected :: !images_unselected
-            ) headers;
-          let images_selected = Array.of_list (List.rev !images_selected) in
-          let images_unselected = Array.of_list (List.rev !images_unselected) in
-          let image_count = Array.length images_selected in
-          let bound_selection (x : int) : int =
-            max 0 (min (image_count - 1) x)
+          let constraints =
+            Lwd.var (Search_constraints.make
+                       ~fuzzy_max_edit_distance
+                       ~ci_fuzzy
+                       ~ci_full
+                       ~ci_sub
+                       ~exact)
           in
           let quit = Lwd.var false in
           let selected = Lwd.var 0 in
           let file_to_open = ref None in
+          let mode : mode Lwd.var = Lwd.var `Navigate in
+          let headers = Lwd.map ~f:(fun constraints ->
+              let x = Array.of_list (filter_headers constraints all_headers) in
+              x
+            )
+              (Lwd.get constraints)
+          in
+          let ci_fuzzy_focus_handle = Nottui.Focus.make () in
+          let ci_full_focus_handle = Nottui.Focus.make () in
+          let ci_sub_focus_handle = Nottui.Focus.make () in
+          let exact_focus_handle = Nottui.Focus.make () in
           let left_pane =
-            Lwd.get selected
-            |> Lwd.map ~f:(fun i ->
-                CCInt.range' i image_count
-                |> CCList.of_iter
-                |> List.map (fun j ->
-                    if Int.equal i j then
-                      images_selected.(j)
-                    else
-                      images_unselected.(j)
-                  )
-                |> List.map Nottui.Ui.atom
-                |> Nottui.Ui.vcat
-                |> Nottui.Ui.keyboard_area (fun event ->
-                    match event with
-                    | (`Escape, [])
-                    | (`ASCII 'q', [])
-                    | (`ASCII 'C', [`Ctrl]) -> Lwd.set quit true; `Handled
-                    | (`ASCII 'j', [])
-                    | (`Arrow `Down, []) ->
-                      Lwd.set selected (bound_selection (i+1)); `Handled
-                    | (`ASCII 'k', [])
-                    | (`Arrow `Up, []) ->
-                      Lwd.set selected (bound_selection (i-1)); `Handled
-                    | (`Enter, []) -> (
-                        Lwd.set quit true;
-                        file_to_open := Some i;
-                        `Handled
+            Lwd.map2 ~f:(fun headers i ->
+                let image_count = Array.length headers in
+                let bound_selection (x : int) : int =
+                  max 0 (min (image_count - 1) x)
+                in
+                let pane =
+                  if Array.length headers = 0 then (
+                    Nottui.Ui.empty
+                  ) else (
+                    let (images_selected, images_unselected) =
+                      render_headers term (Lwd.peek constraints) headers
+                    in
+                    CCInt.range' i image_count
+                    |> CCList.of_iter
+                    |> List.map (fun j ->
+                        if Int.equal i j then
+                          images_selected.(j)
+                        else
+                          images_unselected.(j)
                       )
-                    | _ -> `Unhandled)
+                    |> List.map Nottui.Ui.atom
+                    |> Nottui.Ui.vcat
+                  )
+                in
+                pane
+                |> Nottui.Ui.keyboard_area (fun event ->
+                    match Lwd.peek mode with
+                    | `Navigate -> (
+                        match event with
+                        | (`Escape, [])
+                        | (`ASCII 'q', [])
+                        | (`ASCII 'C', [`Ctrl]) -> Lwd.set quit true; `Handled
+                        | (`ASCII 'j', [])
+                        | (`Arrow `Down, []) ->
+                          Lwd.set selected (bound_selection (i+1)); `Handled
+                        | (`ASCII 'k', [])
+                        | (`Arrow `Up, []) ->
+                          Lwd.set selected (bound_selection (i-1)); `Handled
+                        | (`ASCII 'f', []) ->
+                          Nottui.Focus.request ci_fuzzy_focus_handle;
+                          Lwd.set mode `Ci_fuzzy;
+                          `Handled
+                        | (`ASCII 'i', []) ->
+                          Nottui.Focus.request ci_full_focus_handle;
+                          Lwd.set mode `Ci_full;
+                          `Handled
+                        | (`ASCII 's', []) ->
+                          Nottui.Focus.request ci_sub_focus_handle;
+                          Lwd.set mode `Ci_sub;
+                          `Handled
+                        | (`ASCII 'e', []) ->
+                          Nottui.Focus.request exact_focus_handle;
+                          Lwd.set mode `Exact;
+                          `Handled
+                        | (`Enter, []) -> (
+                            Lwd.set quit true;
+                            file_to_open := Some headers.(i);
+                            `Handled
+                          )
+                        | _ -> `Unhandled
+                      )
+                    | _ -> `Unhandled
+                  )
               )
+              headers
+              (Lwd.get selected)
           in
           let right_pane =
-            Lwd.get selected
-            |> Lwd.map ~f:(fun i ->
-                let path = headers.(i).path in
-                let content =
-                  try
-                    CCIO.with_in path (fun ic ->
-                        CCIO.read_lines_seq ic
-                        |> OSeq.take term_height
-                        |> Seq.map (fun s -> Nottui.Ui.atom Notty.(I.string A.empty s))
-                        |> List.of_seq
-                        |> Nottui.Ui.vcat
-                      )
-                  with
-                  | _ -> Nottui.Ui.atom Notty.(I.strf "Error: Failed to access %s" path)
-                in
-                content
+            Lwd.map2 ~f:(fun headers i ->
+                if Array.length headers = 0 then
+                  Nottui.Ui.empty
+                else (
+                  let path = headers.(i).path in
+                  let (_term_width, term_height) = Notty_unix.Term.size term in
+                  let content =
+                    try
+                      CCIO.with_in path (fun ic ->
+                          CCIO.read_lines_seq ic
+                          |> OSeq.take term_height
+                          |> Seq.map (fun s -> Nottui.Ui.atom Notty.(I.string A.empty s))
+                          |> List.of_seq
+                          |> Nottui.Ui.vcat
+                        )
+                    with
+                    | _ -> Nottui.Ui.atom Notty.(I.strf "Error: Failed to access %s" path)
+                  in
+                  content
+                )
               )
+              headers
+              (Lwd.get selected)
+          in
+          let ci_fuzzy_label_str = "[F]uzzy case-insensitive:" in
+          let ci_full_label_str = "Case-[i]sensitive full:" in
+          let ci_sub_label_str = "Case-insensitive [s]ubstring:" in
+          let exact_label_str = "[E]exact:" in
+          let max_label_len =
+            List.fold_left (fun x s ->
+                max x (String.length s))
+              0
+              [
+                ci_fuzzy_label_str;
+                ci_full_label_str;
+                ci_sub_label_str;
+                exact_label_str;
+              ]
+          in
+          let label_widget_len = max_label_len + 1 in
+          let ci_fuzzy_label =
+            make_label_widget ~s:ci_fuzzy_label_str ~len:label_widget_len `Ci_fuzzy mode
+          in
+          let ci_full_label =
+            make_label_widget ~s:ci_full_label_str ~len:label_widget_len `Ci_full mode
+          in
+          let ci_sub_label =
+            make_label_widget ~s:ci_sub_label_str ~len:label_widget_len `Ci_sub mode
+          in
+          let exact_label =
+            make_label_widget ~s:exact_label_str ~len:label_widget_len `Exact mode
+          in
+          let ci_fuzzy_field =
+            let s = String.concat " " ci_fuzzy in
+            Lwd.var (s, String.length s)
+          in
+          let ci_full_field =
+            let s = String.concat " " ci_full in
+            Lwd.var (s, String.length s)
+          in
+          let ci_sub_field =
+            let s = String.concat " " ci_sub in
+            Lwd.var (s, String.length s)
+          in
+          let exact_field =
+            let s = String.concat " " exact in
+            Lwd.var (s, String.length s)
+          in
+          let update_constraints () =
+            let constraints' =
+              (Search_constraints.make
+                 ~fuzzy_max_edit_distance
+                 ~ci_fuzzy:(String.split_on_char ' ' (fst @@ Lwd.peek ci_fuzzy_field))
+                 ~ci_full:(String.split_on_char ' ' (fst @@ Lwd.peek ci_full_field))
+                 ~ci_sub:(String.split_on_char ' ' (fst @@ Lwd.peek ci_sub_field))
+                 ~exact:(String.split_on_char ' ' (fst @@ Lwd.peek exact_field))
+              )
+            in
+            Lwd.set constraints constraints'
           in
           let screen =
-            Nottui_widgets.h_pane
-              left_pane
-              right_pane
+            Nottui_widgets.vbox
+              [
+                Nottui_widgets.h_pane
+                  left_pane
+                  right_pane;
+                Nottui_widgets.hbox
+                  [
+                    ci_fuzzy_label;
+                    Nottui_widgets.edit_field (Lwd.get ci_fuzzy_field)
+                      ~focus:ci_fuzzy_focus_handle
+                      ~on_change:(fun (text, x) -> Lwd.set ci_fuzzy_field (text, x))
+                      ~on_submit:(fun (text, x) ->
+                          update_constraints ();
+                          Nottui.Focus.release ci_fuzzy_focus_handle;
+                          Lwd.set mode `Navigate
+                        );
+                  ];
+                Nottui_widgets.hbox
+                  [
+                    ci_full_label;
+                    Nottui_widgets.edit_field (Lwd.get ci_full_field)
+                      ~focus:ci_full_focus_handle
+                      ~on_change:(fun (text, x) -> Lwd.set ci_full_field (text, x))
+                      ~on_submit:(fun (text, x) ->
+                          update_constraints ();
+                          Nottui.Focus.release ci_full_focus_handle;
+                          Lwd.set mode `Navigate
+                        );
+                  ];
+                Nottui_widgets.hbox
+                  [
+                    ci_sub_label;
+                    Nottui_widgets.edit_field (Lwd.get ci_sub_field)
+                      ~focus:ci_sub_focus_handle
+                      ~on_change:(fun (text, x) -> Lwd.set ci_sub_field (text, x))
+                      ~on_submit:(fun (text, x) ->
+                          update_constraints ();
+                          Nottui.Focus.release ci_sub_focus_handle;
+                          Lwd.set mode `Navigate
+                        );
+                  ];
+                Nottui_widgets.hbox
+                  [
+                    exact_label;
+                    Nottui_widgets.edit_field (Lwd.get exact_field)
+                      ~focus:exact_focus_handle
+                      ~on_change:(fun (text, x) -> Lwd.set exact_field (text, x))
+                      ~on_submit:(fun (text, x) ->
+                          update_constraints ();
+                          Nottui.Focus.release exact_focus_handle;
+                          Lwd.set mode `Navigate
+                        );
+                  ];
+              ]
           in
           let rec loop () =
             file_to_open := None;
@@ -520,12 +680,12 @@ let run
               screen;
             match !file_to_open with
             | None -> ()
-            | Some i ->
+            | Some header ->
               match Sys.getenv_opt "EDITOR" with
               | None ->
                 Printf.printf "Error: Failed to read environment variable EDITOR\n"; exit 1
               | Some editor -> (
-                  Sys.command (Fmt.str "%s \'%s\'" editor headers.(i).path) |> ignore;
+                  Sys.command (Fmt.str "%s \'%s\'" editor header.path) |> ignore;
                   loop ()
                 )
           in
@@ -542,7 +702,10 @@ let cmd =
   Cmd.v (Cmd.info "notefd" ~version ~doc)
     (Term.(const run
            $ fuzzy_max_edit_distance_arg
-           $ list_tags_arg
+           $ tag_ci_fuzzy_arg
+           $ tag_ci_full_arg
+           $ tag_ci_sub_arg
+           $ tag_exact_arg$ list_tags_arg
            $ list_tags_lowercase_arg
            $ dir_arg))
 

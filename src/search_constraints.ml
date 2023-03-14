@@ -6,6 +6,13 @@ type t = {
   fuzzy_index : Spelll.automaton list;
 }
 
+let pp formatter (t : t) : unit =
+  Fmt.pf formatter "@[f:[%a]@,i:[%a]@,s:[%a],e:[%a]@]"
+    Fmt.(seq ~sep:sp string) (String_set.to_seq t.ci_fuzzy)
+    Fmt.(seq ~sep:sp string) (String_set.to_seq t.ci_full)
+    Fmt.(seq ~sep:sp string) (String_set.to_seq t.ci_sub)
+    Fmt.(seq ~sep:sp string) (String_set.to_seq t.exact)
+
 let ci_fuzzy t =
   t.ci_fuzzy
 
@@ -35,6 +42,17 @@ let is_empty (t : t) =
   && String_set.is_empty t.ci_sub
   && String_set.is_empty t.exact
 
+let equal t1 t2 =
+  String_set.equal t1.ci_fuzzy t2.ci_fuzzy
+  && String_set.equal t1.ci_full t2.ci_full
+  && String_set.equal t1.ci_sub t2.ci_sub
+  && String_set.equal t1.exact t2.exact
+
+let ci_string_set_of_list (l : string list) =
+  l
+  |> List.map String.lowercase_ascii
+  |> String_set.of_list
+
 let make
     ~fuzzy_max_edit_distance
     ~ci_fuzzy
@@ -42,10 +60,13 @@ let make
     ~ci_sub
     ~exact
   =
-  let ci_fuzzy = String_set.of_list ci_fuzzy in
-  let ci_full = String_set.of_list ci_full in
-  let ci_sub = String_set.of_list ci_sub in
-  let exact = String_set.of_list exact in
+  let filter l =
+    List.filter (fun s -> String.length s > 0) l
+  in
+  let ci_fuzzy = ci_fuzzy |> filter |> ci_string_set_of_list in
+  let ci_full = ci_full |> filter |> ci_string_set_of_list in
+  let ci_sub = ci_sub |> filter |> ci_string_set_of_list in
+  let exact = exact |> filter |> String_set.of_list in
   let fuzzy_index =
     String_set.to_seq ci_fuzzy
     |> Seq.map (fun x -> Spelll.of_string ~limit:fuzzy_max_edit_distance x)

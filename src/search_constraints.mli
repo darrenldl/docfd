@@ -2,6 +2,10 @@ type t
 
 val empty : t
 
+val is_empty : t -> bool
+
+val equal : t -> t -> bool
+
 val make :
   fuzzy_max_edit_distance : int ->
   ci_fuzzy : string list ->
@@ -19,3 +23,5 @@ val ci_sub : t -> String_set.t
 val exact : t -> String_set.t
 
 val fuzzy_index : t -> Spelll.automaton list
+
+val pp : Format.formatter -> t -> unit
