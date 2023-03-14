@@ -525,7 +525,7 @@ let run
                             file_to_open := Some headers.(i);
                             `Handled
                           )
-                        | _ -> `Unhandled
+                        | _ -> `Handled
                       )
                     | _ -> `Unhandled
                   )
@@ -612,6 +612,7 @@ let run
                  ~exact:(String.split_on_char ' ' (fst @@ Lwd.peek exact_field))
               )
             in
+            Lwd.set selected 0;
             Lwd.set constraints constraints'
           in
           let make_search_field ~edit_field ~focus_handle =
