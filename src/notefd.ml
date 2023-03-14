@@ -313,6 +313,7 @@ let run
           let images_selected : Notty.image list ref = ref [] in
           let images_unselected : Notty.image list ref = ref [] in
           let term = Notty_unix.Term.create () in
+          let renderer = Nottui.Renderer.make () in
           let (term_width, term_height) = Notty_unix.Term.size term in
           let headers =
             headers
@@ -520,6 +521,8 @@ let run
                 right_pane
             in
             Nottui.Ui_loop.run
+              ~term
+              ~renderer
               ~quit
               screen;
             match !file_to_open with
