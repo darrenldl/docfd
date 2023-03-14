@@ -614,6 +614,16 @@ let run
             in
             Lwd.set constraints constraints'
           in
+          let make_search_field ~edit_field ~focus_handle =
+            Nottui_widgets.edit_field (Lwd.get edit_field)
+              ~focus:focus_handle
+              ~on_change:(fun (text, x) -> Lwd.set edit_field (text, x))
+              ~on_submit:(fun _ ->
+                  update_constraints ();
+                  Nottui.Focus.release focus_handle;
+                  Lwd.set mode `Navigate
+                )
+          in
           let screen =
             Nottui_widgets.vbox
               [
@@ -623,50 +633,30 @@ let run
                 Nottui_widgets.hbox
                   [
                     ci_fuzzy_label;
-                    Nottui_widgets.edit_field (Lwd.get ci_fuzzy_field)
-                      ~focus:ci_fuzzy_focus_handle
-                      ~on_change:(fun (text, x) -> Lwd.set ci_fuzzy_field (text, x))
-                      ~on_submit:(fun (text, x) ->
-                          update_constraints ();
-                          Nottui.Focus.release ci_fuzzy_focus_handle;
-                          Lwd.set mode `Navigate
-                        );
+                    make_search_field
+                      ~edit_field:ci_fuzzy_field
+                      ~focus_handle:ci_fuzzy_focus_handle;
                   ];
                 Nottui_widgets.hbox
                   [
                     ci_full_label;
-                    Nottui_widgets.edit_field (Lwd.get ci_full_field)
-                      ~focus:ci_full_focus_handle
-                      ~on_change:(fun (text, x) -> Lwd.set ci_full_field (text, x))
-                      ~on_submit:(fun (text, x) ->
-                          update_constraints ();
-                          Nottui.Focus.release ci_full_focus_handle;
-                          Lwd.set mode `Navigate
-                        );
+                    make_search_field
+                      ~edit_field:ci_full_field
+                      ~focus_handle:ci_full_focus_handle;
                   ];
                 Nottui_widgets.hbox
                   [
                     ci_sub_label;
-                    Nottui_widgets.edit_field (Lwd.get ci_sub_field)
-                      ~focus:ci_sub_focus_handle
-                      ~on_change:(fun (text, x) -> Lwd.set ci_sub_field (text, x))
-                      ~on_submit:(fun (text, x) ->
-                          update_constraints ();
-                          Nottui.Focus.release ci_sub_focus_handle;
-                          Lwd.set mode `Navigate
-                        );
+                    make_search_field
+                      ~edit_field:ci_sub_field
+                      ~focus_handle:ci_sub_focus_handle;
                   ];
                 Nottui_widgets.hbox
                   [
                     exact_label;
-                    Nottui_widgets.edit_field (Lwd.get exact_field)
-                      ~focus:exact_focus_handle
-                      ~on_change:(fun (text, x) -> Lwd.set exact_field (text, x))
-                      ~on_submit:(fun (text, x) ->
-                          update_constraints ();
-                          Nottui.Focus.release exact_focus_handle;
-                          Lwd.set mode `Navigate
-                        );
+                    make_search_field
+                      ~edit_field:exact_field
+                      ~focus_handle:exact_focus_handle;
                   ];
               ]
           in
