@@ -198,11 +198,6 @@ let ci_string_set_of_list (l : string list) =
   |> List.map String.lowercase_ascii
   |> String_set.of_list
 
-(* let unwrap_header (f : header -> unit) (header : (header, string) result) =
-   match header with
-   | Ok header -> f header
-   | Error msg -> Fmt.pr "Error: %s\n" msg *)
-
 let set_of_tags (tags : string list) : String_set.t =
   List.fold_left (fun s x ->
       String_set.add x s
@@ -264,7 +259,7 @@ let filter_headers
                )
                tag_lowercase_arr
           )
-          fuzzy_index
+          (Search_constraints.fuzzy_index constraints)
       );
       (
         String_set.iter
@@ -275,7 +270,7 @@ let filter_headers
                )
                tag_lowercase_arr
           )
-          ci_full_tag_matches_required
+          (Search_constraints.ci_full_tag_matches constraints)
       );
       (
         String_set.iter
@@ -286,7 +281,7 @@ let filter_headers
                )
                tag_lowercase_arr
           )
-          ci_sub_tag_matches_required
+          (Search_constraints.ci_sub_tag_matches constraints)
       );
       (
         String_set.iter
@@ -297,7 +292,7 @@ let filter_headers
                )
                tag_arr
           )
-          exact_tag_matches_required
+          (Search_constraints.exact_tag_matches constraints)
       );
       if no_requirements
       || Array.exists (fun x -> x) tag_matched
