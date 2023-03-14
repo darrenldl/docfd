@@ -8,5 +8,5 @@ bisect*.coverage
 fuzz-*-input
 fuzz-*-output
 fuzz-logs/
-test.note.md
-test.notes.md
+test*.note.md
+test*.notes.md
