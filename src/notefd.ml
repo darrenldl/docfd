@@ -242,12 +242,74 @@ let print_tag_set (tags : String_set.t) =
       s
   )
 
+let filter_headers
+    (constraints : Search_constraints.t)
+    (headers : header list)
+  : header list =
+  headers
+  |> List.filter_map (fun header ->
+      let tags = header.tags in
+      let tags_lowercase =
+        List.map String.lowercase_ascii tags
+      in
+      let tag_arr = Array.of_list tags in
+      let tag_matched = Array.make (Array.length tag_arr) false in
+      let tag_lowercase_arr = Array.of_list tags_lowercase in
+      (
+        List.iter
+          (fun dfa ->
+             Array.iteri (fun i x ->
+                 if Spelll.match_with dfa x then
+                   tag_matched.(i) <- true
+               )
+               tag_lowercase_arr
+          )
+          fuzzy_index
+      );
+      (
+        String_set.iter
+          (fun s ->
+             Array.iteri (fun i x ->
+                 if String.equal x s then
+                   tag_matched.(i) <- true
+               )
+               tag_lowercase_arr
+          )
+          ci_full_tag_matches_required
+      );
+      (
+        String_set.iter
+          (fun sub ->
+             Array.iteri (fun i x ->
+                 if CCString.find ~sub x >= 0 then
+                   tag_matched.(i) <- true
+               )
+               tag_lowercase_arr
+          )
+          ci_sub_tag_matches_required
+      );
+      (
+        String_set.iter
+          (fun s ->
+             Array.iteri (fun i x ->
+                 if String.equal x s then
+                   tag_matched.(i) <- true
+               )
+               tag_arr
+          )
+          exact_tag_matches_required
+      );
+      if no_requirements
+      || Array.exists (fun x -> x) tag_matched
+      then (
+        Some { header with tag_matched = Array.to_list tag_matched }
+      ) else (
+        None
+      )
+    )
+
 let run
     (fuzzy_max_edit_distance : int)
-    (ci_fuzzy_tag_matches_required : string list)
-    (ci_full_tag_matches_required : string list)
-    (ci_sub_tag_matches_required : string list)
-    (exact_tag_matches_required : string list)
     (list_tags : bool)
     (list_tags_lowercase : bool)
     (dir : string)
@@ -267,11 +329,6 @@ let run
   in
   let exact_tag_matches_required =
     String_set.of_list exact_tag_matches_required
-  in
-  let fuzzy_index =
-    String_set.to_seq ci_fuzzy_tag_matches_required
-    |> Seq.map (fun x -> Spelll.of_string ~limit:fuzzy_max_edit_distance x)
-    |> List.of_seq
   in
   let files =
     list_files_recursively dir
@@ -316,68 +373,7 @@ let run
           let renderer = Nottui.Renderer.make () in
           let (term_width, term_height) = Notty_unix.Term.size term in
           let headers =
-            headers
-            |> List.filter_map (fun header ->
-                let tags = header.tags in
-                let tags_lowercase =
-                  List.map String.lowercase_ascii tags
-                in
-                let tag_arr = Array.of_list tags in
-                let tag_matched = Array.make (Array.length tag_arr) false in
-                let tag_lowercase_arr = Array.of_list tags_lowercase in
-                (
-                  List.iter
-                    (fun dfa ->
-                       Array.iteri (fun i x ->
-                           if Spelll.match_with dfa x then
-                             tag_matched.(i) <- true
-                         )
-                         tag_lowercase_arr
-                    )
-                    fuzzy_index
-                );
-                (
-                  String_set.iter
-                    (fun s ->
-                       Array.iteri (fun i x ->
-                           if String.equal x s then
-                             tag_matched.(i) <- true
-                         )
-                         tag_lowercase_arr
-                    )
-                    ci_full_tag_matches_required
-                );
-                (
-                  String_set.iter
-                    (fun sub ->
-                       Array.iteri (fun i x ->
-                           if CCString.find ~sub x >= 0 then
-                             tag_matched.(i) <- true
-                         )
-                         tag_lowercase_arr
-                    )
-                    ci_sub_tag_matches_required
-                );
-                (
-                  String_set.iter
-                    (fun s ->
-                       Array.iteri (fun i x ->
-                           if String.equal x s then
-                             tag_matched.(i) <- true
-                         )
-                         tag_arr
-                    )
-                    exact_tag_matches_required
-                );
-                if no_requirements
-                || Array.exists (fun x -> x) tag_matched
-                then (
-                  Some { header with tag_matched = Array.to_list tag_matched }
-                ) else (
-                  None
-                )
-              )
-            |> Array.of_list
+            Array.of_list (filter_headers ~fuzzy_max_edit_distance empty_constraints headers)
           in
           Array.iter (fun header ->
               let open Notty in
@@ -551,10 +547,6 @@ let cmd =
   Cmd.v (Cmd.info "notefd" ~version ~doc)
     (Term.(const run
            $ fuzzy_max_edit_distance_arg
-           $ tag_ci_fuzzy_arg
-           $ tag_ci_full_arg
-           $ tag_ci_sub_arg
-           $ tag_exact_arg
            $ list_tags_arg
            $ list_tags_lowercase_arg
            $ dir_arg))
