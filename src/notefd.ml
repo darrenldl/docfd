@@ -27,11 +27,13 @@ let get_first_few_lines (path : string) : (string list, string) result =
   with
   | _ -> Error (Printf.sprintf "Failed to read file: %s" path)
 
-type header = {
+type note = {
   path : string;
   title : string option;
   tags : string list;
   tag_matched : bool list;
+  content_words : String_set.t;
+  content_words_ci : String_set.t;
 }
 
 type line_typ =
@@ -74,7 +76,7 @@ module Parsers = struct
     spaces *> char delim_start *> spaces *> words_p ~delim >>=
     (fun l -> char delim_end *> spaces *> return (Tags l))
 
-  let p =
+  let tag_section_p =
     choice
       [
         tags_p ~delim_start:'[' ~delim_end:']';
