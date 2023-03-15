@@ -243,13 +243,12 @@ let filter_headers
         List.map String.lowercase_ascii tags
       in
       let tag_arr = Array.of_list tags in
-      let tag_matched = Array.make (Array.length tag_arr) false in
+      let tag_matched = Array.make (Array.length tag_arr) true in
       let tag_lowercase_arr = Array.of_list tags_lowercase in
       List.iter
         (fun dfa ->
            Array.iteri (fun i x ->
-               if Spelll.match_with dfa x then
-                 tag_matched.(i) <- true
+               tag_matched.(i) <- tag_matched.(i) && (Spelll.match_with dfa x)
              )
              tag_lowercase_arr
         )
@@ -257,8 +256,7 @@ let filter_headers
       String_set.iter
         (fun s ->
            Array.iteri (fun i x ->
-               if String.equal x s then
-                 tag_matched.(i) <- true
+               tag_matched.(i) <- tag_matched.(i) && (String.equal x s)
              )
              tag_lowercase_arr
         )
@@ -266,8 +264,7 @@ let filter_headers
       String_set.iter
         (fun sub ->
            Array.iteri (fun i x ->
-               if CCString.find ~sub x >= 0 then
-                 tag_matched.(i) <- true
+               tag_matched.(i) <- tag_matched.(i) && (CCString.find ~sub x >= 0)
              )
              tag_lowercase_arr
         )
@@ -275,8 +272,7 @@ let filter_headers
       String_set.iter
         (fun s ->
            Array.iteri (fun i x ->
-               if String.equal x s then
-                 tag_matched.(i) <- true
+               tag_matched.(i) <- tag_matched.(i) && (String.equal x s)
              )
              tag_arr
         )
