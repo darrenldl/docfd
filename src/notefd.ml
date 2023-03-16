@@ -4,136 +4,8 @@ let ( let* ) = Result.bind
 
 let ( let+ ) r f = Result.map f r
 
-let file_read_limit = 2048
-
-let first_n_lines_to_parse = 10
-
 let stdout_is_terminal () =
   Unix.isatty Unix.stdout
-
-let get_first_few_lines (path : string) : (string list, string) result =
-  try
-    CCIO.with_in path (fun ic ->
-        let s =
-          match CCIO.read_chunks_seq ~size:file_read_limit ic () with
-          | Seq.Nil -> ""
-          | Seq.Cons (s, _) -> s
-        in
-        CCString.lines_seq s
-        |> Seq.take first_n_lines_to_parse
-        |> List.of_seq
-        |> Result.ok
-      )
-  with
-  | _ -> Error (Printf.sprintf "Failed to read file: %s" path)
-
-type document = {
-  path : string;
-  title : string option;
-  tags : string list;
-  tag_matched : bool list;
-  content_words : Int_set.t String_map.t;
-  content_words_ci : Int_set.t String_map.t;
-}
-
-let path_is_note s =
-      let words =
-        Filename.basename path
-        |> String.lowercase_ascii
-        |> String.split_on_char '.'
-      in
-List.exists (fun s ->
-          s = "note" || s = "notes") words
-
-type line_typ =
-  | Line of string
-  | Tags of string list
-
-module Parsers = struct
-  open Angstrom
-
-  let is_space c =
-    match c with
-    | ' '
-    | '\t'
-    | '\n'
-    | '\r' -> true
-    | _ -> false
-
-  let spaces = skip_while is_space
-
-  let spaces1 = take_while1 is_space *> return ()
-
-  let any_string : string t = take_while1 (fun _ -> true)
-
-  let word_p ~delim =
-    take_while1 (fun c ->
-        (not (is_space c))
-        &&
-        (not (String.contains delim c))
-      )
-
-  let words_p ~delim = many (word_p ~delim <* spaces)
-
-  let tags_p ~delim_start ~delim_end =
-    let delim =
-      if delim_start = delim_end then
-        Printf.sprintf "%c" delim_start
-      else
-        Printf.sprintf "%c%c" delim_start delim_end
-    in
-    spaces *> char delim_start *> spaces *> words_p ~delim >>=
-    (fun l -> char delim_end *> spaces *> return (Tags l))
-
-  let header_p =
-    choice
-      [
-        tags_p ~delim_start:'[' ~delim_end:']';
-        tags_p ~delim_start:'|' ~delim_end:'|';
-        tags_p ~delim_start:'@' ~delim_end:'@';
-        spaces *> any_string >>=
-        (fun s -> return (Title (CCString.rtrim s)));
-      ]
-end
-
-let parse (l : string list) : string list * string list * string list =
-  let rec aux handled_tag_section title tags content l =
-    match l with
-    | [] -> (List.rev title,
-             tags
-             |> String_set.to_seq
-             |> List.of_seq
-            )
-    | x :: xs ->
-      match Angstrom.(parse_string ~consume:Consume.All) Parsers.header_p x with
-      | Ok x ->
-        (match x with
-         | Title x ->
-           if handled_tag_section then
-             aux handled_tag_section title tags l []
-           else
-             aux handled_tag_section (x :: title) tags [] xs
-         | Tags l ->
-           let tags =
-             String_set.add_list tags l
-           in
-           aux true title tags [] xs
-        )
-      | Error _ -> aux handled_tag_section title tags [] xs
-  in
-  aux false [] String_set.empty [] l
-
-let process path : (header, string) result =
-  let+ lines = get_first_few_lines path in
-  let (title_lines, tags, content_lines) = parse lines in
-  {
-    path;
-    title = (match title_lines with
-        | [] -> None
-        | l -> Some (String.concat " " l));
-    tags;
-    tag_matched = [];
-  }
 
 let fuzzy_max_edit_distance_arg =
   let doc =
@@ -182,7 +54,7 @@ let list_files_recursively (dir : string) : string list =
     match Sys.is_directory path with
     | false ->
       let ext = Filename.extension path in
-      if path_is_note path
+      if Document.path_is_note path
       || ext = ".txt"
       || ext = ".md"
       then
