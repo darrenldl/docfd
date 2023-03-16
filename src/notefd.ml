@@ -27,17 +27,26 @@ let get_first_few_lines (path : string) : (string list, string) result =
   with
   | _ -> Error (Printf.sprintf "Failed to read file: %s" path)
 
-type note = {
+type document = {
   path : string;
   title : string option;
   tags : string list;
   tag_matched : bool list;
-  content_words : String_set.t;
-  content_words_ci : String_set.t;
+  content_words : Int_set.t String_map.t;
+  content_words_ci : Int_set.t String_map.t;
 }
 
+let path_is_note s =
+      let words =
+        Filename.basename path
+        |> String.lowercase_ascii
+        |> String.split_on_char '.'
+      in
+List.exists (fun s ->
+          s = "note" || s = "notes") words
+
 type line_typ =
-  | Title of string
+  | Line of string
   | Tags of string list
 
 module Parsers = struct
@@ -76,7 +85,7 @@ module Parsers = struct
     spaces *> char delim_start *> spaces *> words_p ~delim >>=
     (fun l -> char delim_end *> spaces *> return (Tags l))
 
-  let tag_section_p =
+  let header_p =
     choice
       [
         tags_p ~delim_start:'[' ~delim_end:']';
@@ -87,8 +96,8 @@ module Parsers = struct
       ]
 end
 
-let parse (l : string list) : string list * string list =
-  let rec aux handled_tag_section title tags l =
+let parse (l : string list) : string list * string list * string list =
+  let rec aux handled_tag_section title tags content l =
     match l with
     | [] -> (List.rev title,
              tags
@@ -96,27 +105,27 @@ let parse (l : string list) : string list * string list =
              |> List.of_seq
             )
     | x :: xs ->
-      match Angstrom.(parse_string ~consume:Consume.All) Parsers.p x with
+      match Angstrom.(parse_string ~consume:Consume.All) Parsers.header_p x with
       | Ok x ->
         (match x with
          | Title x ->
            if handled_tag_section then
-             aux handled_tag_section title tags []
+             aux handled_tag_section title tags l []
            else
-             aux handled_tag_section (x :: title) tags xs
+             aux handled_tag_section (x :: title) tags [] xs
          | Tags l ->
            let tags =
              String_set.add_list tags l
            in
-           aux true title tags xs
+           aux true title tags [] xs
         )
-      | Error _ -> aux handled_tag_section title tags xs
+      | Error _ -> aux handled_tag_section title tags [] xs
   in
-  aux false [] String_set.empty l
+  aux false [] String_set.empty [] l
 
 let process path : (header, string) result =
   let+ lines = get_first_few_lines path in
-  let (title_lines, tags) = parse lines in
+  let (title_lines, tags, content_lines) = parse lines in
   {
     path;
     title = (match title_lines with
@@ -172,13 +181,10 @@ let list_files_recursively (dir : string) : string list =
   let rec aux path =
     match Sys.is_directory path with
     | false ->
-      let words =
-        Filename.basename path
-        |> String.lowercase_ascii
-        |> String.split_on_char '.'
-      in
-      if List.exists (fun s ->
-          s = "note" || s = "notes") words
+      let ext = Filename.extension path in
+      if path_is_note path
+      || ext = ".txt"
+      || ext = ".md"
       then
         [ path ]
       else
