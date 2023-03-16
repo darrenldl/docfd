@@ -1,10 +1,21 @@
+type content_index = {
+  locations_of_word_ci : Int_set.t String_map.t;
+  line_of_location_ci : int Int_map.t;
+  word_of_location_ci : string Int_map.t;
+}
+
+let empty_content_index : content_index = {
+  locations_of_word_ci = String_map.empty;
+  line_of_location_ci = Int_map.empty;
+  word_of_location_ci = Int_map.empty;
+}
+
 type t = {
   path : string;
   title : string option;
   tags : string list;
   tag_matched : bool list;
-  content_words : Int_set.t String_map.t;
-  content_words_ci : Int_set.t String_map.t;
+  content_index : content_index;
 }
 
 let empty : t =
@@ -13,18 +24,8 @@ let empty : t =
     title = None;
     tags = [];
     tag_matched = [];
-    content_words = String_map.empty;
-    content_words_ci = String_map.empty;
+    content_index = empty_content_index;
   }
-
-let path_is_note path =
-      let words =
-        Filename.basename path
-        |> String.lowercase_ascii
-        |> String.split_on_char '.'
-      in
-List.exists (fun s ->
-          s = "note" || s = "notes") words
 
 type line_typ =
   | Line of string
@@ -77,28 +78,32 @@ module Parsers = struct
       ]
 end
 
-let words_of_lines (s : string Seq.t) : string Seq.t =
+let words_of_lines (s : string Seq.t) : (int * int * string) Seq.t =
   s
-  |> Seq.flat_map (fun s -> String.split_on_char ' ' s |> List.to_seq)
-  |> Seq.filter (fun s -> s <> "")
+    |> Seq.mapi (fun line_num s -> (line_num, s))
+  |> Seq.flat_map (fun (line_num, s) ->
+      String.split_on_char ' ' s
+  |> List.to_seq
+  |> Seq.map (fun s -> (line_num, s)))
+  |> Seq.filter (fun (_line_num, s) -> s <> "")
+  |> Seq.mapi (fun i (line_num, s) ->
+      (i, line_num, s))
 
-let index_content (s : string Seq.t) : Int_set.t String_map.t * Int_set.t String_map.t =
+let index_content (s : string Seq.t) : content_index =
   s
   |> words_of_lines
-  |> Seq.fold_lefti (fun (words, words_ci) i word ->
+  |> Seq.fold_left (fun {locations_of_word_ci; line_of_location_ci; word_of_location_ci } (loc, line, word) ->
       let word_ci = String.lowercase_ascii word in
-      let set = Option.value ~default:Int_set.empty
-      (String_map.find_opt word words)
-  |> Int_set.add i
+      let locations_ci = Option.value ~default:Int_set.empty
+        (String_map.find_opt word locations_of_word_ci)
+  |> Int_set.add loc
       in
-      let set_ci = Option.value ~default:Int_set.empty
-      (String_map.find_opt word_ci words_ci)
-  |> Int_set.add i
-      in
-      (String_map.add word set words,
-      String_map.add word_ci set_ci words_ci)
+      { locations_of_word_ci = String_map.add word_ci locations_ci locations_of_word_ci;
+      line_of_location_ci = Int_map.add loc line line_of_location_ci;
+      word_of_location_ci = Int_map.add loc word_ci word_of_location_ci;
+        }
       )
-  (String_map.empty, String_map.empty)
+  empty_content_index
 
   type note_work_stage = [
     | `Parsing_title
@@ -115,13 +120,12 @@ let parse_note (s : string Seq.t) : t =
   let rec aux (stage : note_work_stage) title tags s =
     match stage with
     | `Header_completed -> (
-      let (content_words, content_words_ci) = index_content s in
+      let content_index = index_content s in
       {
         empty with
         title = Some (String.concat " " title);
         tags = String_set.to_list tags;
-        content_words;
-        content_words_ci;
+        content_index;
       }
     )
     | `Parsing_title | `Parsing_tag_section -> (
@@ -153,12 +157,11 @@ let parse_text (s : string Seq.t) : t =
   let rec aux (stage : text_work_stage) title s =
     match stage with
     | `Header_completed -> (
-      let (content_words, content_words_ci) = index_content s in
+      let content_index = index_content s in
       {
         empty with
         title = title;
-        content_words;
-        content_words_ci;
+        content_index;
       }
     )
     | `Parsing_title -> (
@@ -175,10 +178,92 @@ let of_path path : (t, string) result =
   try
     CCIO.with_in path (fun ic ->
       let s = CCIO.read_lines_seq ic in
-      if path_is_note path then
+      if Misc_utils.path_is_note path then
         Ok (parse_note s)
       else
         Ok (parse_text s)
       )
   with
   | _ -> Error (Printf.sprintf "Failed to read file: %s" path)
+
+let satisfies_tag_search_constraints
+(constraints : Tag_search_constraints.t)
+(t : t)
+: t option =
+      let tags = t.tags in
+      let tags_lowercase =
+        List.map String.lowercase_ascii tags
+      in
+      let tag_arr = Array.of_list tags in
+      let tag_matched = Array.make (Array.length tag_arr) true in
+      let tag_lowercase_arr = Array.of_list tags_lowercase in
+      List.iter
+        (fun dfa ->
+           Array.iteri (fun i x ->
+               tag_matched.(i) <- tag_matched.(i) && (Spelll.match_with dfa x)
+             )
+             tag_lowercase_arr
+        )
+        (Tag_search_constraints.fuzzy_index constraints);
+      String_set.iter
+        (fun s ->
+           Array.iteri (fun i x ->
+               tag_matched.(i) <- tag_matched.(i) && (String.equal x s)
+             )
+             tag_lowercase_arr
+        )
+        (Tag_search_constraints.ci_full constraints);
+      String_set.iter
+        (fun sub ->
+           Array.iteri (fun i x ->
+               tag_matched.(i) <- tag_matched.(i) && (CCString.find ~sub x >= 0)
+             )
+             tag_lowercase_arr
+        )
+        (Tag_search_constraints.ci_sub constraints);
+      String_set.iter
+        (fun s ->
+           Array.iteri (fun i x ->
+               tag_matched.(i) <- tag_matched.(i) && (String.equal x s)
+             )
+             tag_arr
+        )
+        (Tag_search_constraints.exact constraints);
+      if Tag_search_constraints.is_empty constraints
+      || Array.exists (fun x -> x) tag_matched
+      then (
+        Some { t with tag_matched = Array.to_list tag_matched }
+      ) else (
+        None
+      )
+
+let ranked_content_search_results
+(constraints : Content_search_constraints.t)
+(t : t)
+: Content_search_result.t list =
+  let locations_of_word_ci' =
+    String_map.bindings t.content_index.locations_of_word_ci
+      |> List.to_seq
+  in
+  List.map2 (fun word dfa ->
+locations_of_word_ci'
+    |> Seq.filter (fun (s, locations) ->
+        String.equal word s
+    || CCString.find ~sub:s word >= 0
+    || Spelll.match_with dfa s
+    )
+    |> Seq.flat_map (fun (_, locations) ->
+        Int_set.to_seq locations
+        )
+  )
+ constraints.phrase
+ constraints.fuzzy_index
+    |> List.to_seq
+    |> OSeq.cartesian_product
+    |> Seq.map (fun l ->
+        ({ original_phrase = constraints.phrase;
+        found_phrase = List.map
+        (fun i -> (Int_map.find i t.content_index.word_of_location_ci, i)) l;
+        } : Content_search_result.t)
+        )
+    |> List.of_seq

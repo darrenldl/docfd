@@ -112,60 +112,6 @@ let print_tag_set (tags : String_set.t) =
       s
   )
 
-let filter_headers
-    (constraints : Search_constraints.t)
-    (headers : header list)
-  : header list =
-  headers
-  |> List.filter_map (fun header ->
-      let tags = header.tags in
-      let tags_lowercase =
-        List.map String.lowercase_ascii tags
-      in
-      let tag_arr = Array.of_list tags in
-      let tag_matched = Array.make (Array.length tag_arr) true in
-      let tag_lowercase_arr = Array.of_list tags_lowercase in
-      List.iter
-        (fun dfa ->
-           Array.iteri (fun i x ->
-               tag_matched.(i) <- tag_matched.(i) && (Spelll.match_with dfa x)
-             )
-             tag_lowercase_arr
-        )
-        (Search_constraints.fuzzy_index constraints);
-      String_set.iter
-        (fun s ->
-           Array.iteri (fun i x ->
-               tag_matched.(i) <- tag_matched.(i) && (String.equal x s)
-             )
-             tag_lowercase_arr
-        )
-        (Search_constraints.ci_full constraints);
-      String_set.iter
-        (fun sub ->
-           Array.iteri (fun i x ->
-               tag_matched.(i) <- tag_matched.(i) && (CCString.find ~sub x >= 0)
-             )
-             tag_lowercase_arr
-        )
-        (Search_constraints.ci_sub constraints);
-      String_set.iter
-        (fun s ->
-           Array.iteri (fun i x ->
-               tag_matched.(i) <- tag_matched.(i) && (String.equal x s)
-             )
-             tag_arr
-        )
-        (Search_constraints.exact constraints);
-      if Search_constraints.is_empty constraints
-      || Array.exists (fun x -> x) tag_matched
-      then (
-        Some { header with tag_matched = Array.to_list tag_matched }
-      ) else (
-        None
-      )
-    )
-
 let render_headers
     (term : Notty_unix.Term.t)
     (constraints : Search_constraints.t)

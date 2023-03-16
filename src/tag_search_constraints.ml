@@ -48,11 +48,6 @@ let equal t1 t2 =
   && String_set.equal t1.ci_sub t2.ci_sub
   && String_set.equal t1.exact t2.exact
 
-let ci_string_set_of_list (l : string list) =
-  l
-  |> List.map String.lowercase_ascii
-  |> String_set.of_list
-
 let make
     ~fuzzy_max_edit_distance
     ~ci_fuzzy
@@ -61,11 +56,11 @@ let make
     ~exact
   =
   let filter l =
-    List.filter (fun s -> String.length s > 0) l
+    List.filter (fun s -> s <> "") l
   in
-  let ci_fuzzy = ci_fuzzy |> filter |> ci_string_set_of_list in
-  let ci_full = ci_full |> filter |> ci_string_set_of_list in
-  let ci_sub = ci_sub |> filter |> ci_string_set_of_list in
+  let ci_fuzzy = ci_fuzzy |> filter |> Misc_utils.ci_string_set_of_list in
+  let ci_full = ci_full |> filter |> Misc_utils.ci_string_set_of_list in
+  let ci_sub = ci_sub |> filter |> Misc_utils.ci_string_set_of_list in
   let exact = exact |> filter |> String_set.of_list in
   let fuzzy_index =
     String_set.to_seq ci_fuzzy
