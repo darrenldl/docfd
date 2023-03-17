@@ -10,7 +10,7 @@ let score (t : t) : float =
         else if CCString.find ~sub:x y >= 0 then
           (e, s+1, f)
         else
-          (e, s, f)
+          (e, s, f+1)
       )
       (0, 0, 0)
       t.original_phrase
@@ -32,7 +32,7 @@ let score (t : t) : float =
     (Int.to_float total_distance) /. (Int.to_float (List.length t.found_phrase))
   in
   (average_distance +. 1.0)
-  *. (0.5 *. exact_matches +. 1.0 *. sub_matches +. 2.0 *. fuzzy_matches)
+  *. (0.1 *. exact_matches +. 0.5 *. sub_matches +. 1.0 *. fuzzy_matches)
 
 let compare t1 t2 =
   Float.compare (score t1) (score t2)

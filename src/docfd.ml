@@ -33,6 +33,12 @@ let tag_exact_arg =
   in
   Arg.(value & opt_all string [] & info [ "e" ] ~doc ~docv:"TAG")
 
+let debug_arg =
+  let doc =
+    Fmt.str "Display debug info."
+  in
+  Arg.(value & flag & info [ "debug" ] ~doc)
+
 let list_tags_arg =
   let doc =
     Fmt.str "List all tags used."
@@ -118,6 +124,15 @@ let render_documents
   Array.iter (fun (doc : Document.t) ->
       let open Notty in
       let open Notty.Infix in
+      let content_search_result_score_image =
+        if !Params.debug then
+          match doc.content_search_results with
+          | [] -> I.empty
+          | x :: _ ->
+            I.strf "(content search result score: %f)" (Content_search_result.score x)
+        else
+          I.empty
+      in
       let preview_images =
         List.map (fun line ->
             I.strf "|  %s" line
@@ -134,7 +149,7 @@ let render_documents
         (I.string A.empty "  "
          <|>
          I.vcat
-           (path_image :: preview_images)
+           (content_search_result_score_image :: path_image :: preview_images)
         )
       in
       let img_unselected =
@@ -144,7 +159,7 @@ let render_documents
         (I.string A.empty "  "
          <|>
          I.vcat
-           (path_image :: preview_images)
+           (content_search_result_score_image :: path_image :: preview_images)
         )
       in
       images_selected := img_selected :: !images_selected;
@@ -262,6 +277,7 @@ let make_label_widget ~s ~len (mode : mode) (v : mode Lwd.var) =
     ) (Lwd.get v)
 
 let run
+    (debug : bool)
     (fuzzy_max_edit_distance : int)
     (tag_ci_fuzzy : string list)
     (tag_ci_full : string list)
@@ -271,6 +287,7 @@ let run
     (list_tags_lowercase : bool)
     (dir : string)
   =
+  Params.debug := debug;
   if list_tags_lowercase && list_tags then (
     Fmt.pr "Error: Please select only --tags or --ltags\n";
     exit 1
@@ -331,29 +348,29 @@ let run
                   match Document.satisfies_tag_search_constraints tag_constraints doc with
                   | None -> None
                   | Some doc ->
-                      if Content_search_constraints.is_empty content_constraints then
-                        Some doc
-                      else (
-                  match Document.content_search_results content_constraints doc () with
-                  | Seq.Nil -> None
-                  | Seq.Cons _ as s ->
-                      let content_search_results = (fun () -> s)
-                  |> List.of_seq
-                  |> List.sort Content_search_result.compare
-                      in
-                      Some { doc with content_search_results }
-                      )
+                    if Content_search_constraints.is_empty content_constraints then
+                      Some doc
+                    else (
+                      match Document.content_search_results content_constraints doc () with
+                      | Seq.Nil -> None
+                      | Seq.Cons _ as s ->
+                        let content_search_results = (fun () -> s)
+                                                     |> List.of_seq
+                                                     |> List.sort Content_search_result.compare
+                        in
+                        Some { doc with content_search_results }
+                    )
                 )
               |> (fun l ->
-                      if Content_search_constraints.is_empty content_constraints then
-                        l
-                      else
-                        List.sort (fun (doc1 : Document.t) (doc2 : Document.t) ->
-                          Content_search_result.compare
+                  if Content_search_constraints.is_empty content_constraints then
+                    l
+                  else
+                    List.sort (fun (doc1 : Document.t) (doc2 : Document.t) ->
+                        Content_search_result.compare
                           (List.hd doc1.content_search_results)
                           (List.hd doc2.content_search_results)
-                        ) l
-                  )
+                      ) l
+                )
               |> Array.of_list
             )
               (Lwd.get tag_constraints)
@@ -404,7 +421,7 @@ let run
                         | (`Arrow `Up, []) ->
                           Lwd.set selected (bound_selection (i-1)); `Handled
                         | (`ASCII '/', []) ->
-                            Nottui.Focus.request content_focus_handle;
+                          Nottui.Focus.request content_focus_handle;
                           Lwd.set mode `Content;
                           `Handled
                         | (`ASCII 'f', [`Ctrl]) ->
@@ -481,38 +498,38 @@ let run
           let label_widget_len = max_label_len + 1 in
           let content_label =
             make_label_widget
-            ~s:content_label_str
-            ~len:label_widget_len
-            `Content
-            mode
+              ~s:content_label_str
+              ~len:label_widget_len
+              `Content
+              mode
           in
           let tag_ci_fuzzy_label =
             make_label_widget
-            ~s:tag_ci_fuzzy_label_str
-            ~len:label_widget_len
-            `Tag_ci_fuzzy
-            mode
+              ~s:tag_ci_fuzzy_label_str
+              ~len:label_widget_len
+              `Tag_ci_fuzzy
+              mode
           in
           let tag_ci_full_label =
             make_label_widget
-            ~s:tag_ci_full_label_str
-            ~len:label_widget_len
-            `Tag_ci_full
-            mode
+              ~s:tag_ci_full_label_str
+              ~len:label_widget_len
+              `Tag_ci_full
+              mode
           in
           let tag_ci_sub_label =
             make_label_widget
-            ~s:tag_ci_sub_label_str
-            ~len:label_widget_len
-            `Tag_ci_sub
-            mode
+              ~s:tag_ci_sub_label_str
+              ~len:label_widget_len
+              `Tag_ci_sub
+              mode
           in
           let tag_exact_label =
             make_label_widget
-            ~s:tag_exact_label_str
-            ~len:label_widget_len
-            `Tag_exact
-            mode
+              ~s:tag_exact_label_str
+              ~len:label_widget_len
+              `Tag_exact
+              mode
           in
           let content_field =
             Lwd.var ("", 0)
@@ -645,11 +662,13 @@ let cmd =
   let version = Version_string.s in
   Cmd.v (Cmd.info "notefd" ~version ~doc)
     (Term.(const run
+           $ debug_arg
            $ fuzzy_max_edit_distance_arg
            $ tag_ci_fuzzy_arg
            $ tag_ci_full_arg
            $ tag_ci_sub_arg
-           $ tag_exact_arg$ list_tags_arg
+           $ tag_exact_arg
+           $ list_tags_arg
            $ list_tags_lowercase_arg
            $ dir_arg))
 

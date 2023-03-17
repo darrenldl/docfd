@@ -104,7 +104,12 @@ let parse_note (s : (int * string) Seq.t) : t =
     match stage with
     | `Header_completed -> (
         let (preview_lines, s) = peek_for_preview_lines s in
-        let content_index = Content_index.index s in
+        let title_seq =
+          title
+          |> List.to_seq
+          |> Seq.mapi (fun i line -> (i, line))
+        in
+        let content_index = Content_index.(union (index title_seq) (index s)) in
         {
           empty with
           title = Some (String.concat " " title);
@@ -143,10 +148,16 @@ let parse_text (s : (int * string) Seq.t) : t =
     match stage with
     | `Header_completed -> (
         let (preview_lines, s) = peek_for_preview_lines s in
+        let s = 
+          match title with
+          | None -> s
+          | Some title ->
+            Seq.cons (0, title) s
+        in
         let content_index = Content_index.index s in
         {
           empty with
-          title = title;
+          title;
           content_index;
           preview_lines;
         }
@@ -165,8 +176,8 @@ let of_path path : (t, string) result =
   try
     CCIO.with_in path (fun ic ->
         let s = CCIO.read_lines_seq ic
-        |> Seq.mapi (fun i line -> (i, line))
-  in
+                |> Seq.mapi (fun i line -> (i, line))
+        in
         let document =
           if Misc_utils.path_is_note path then
             parse_note s
