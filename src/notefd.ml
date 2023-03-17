@@ -54,7 +54,7 @@ let list_files_recursively (dir : string) : string list =
     match Sys.is_directory path with
     | false ->
       let ext = Filename.extension path in
-      if Document.path_is_note path
+      if Misc_utils.path_is_note path
       || ext = ".txt"
       || ext = ".md"
       then
@@ -114,7 +114,7 @@ let print_tag_set (tags : String_set.t) =
 
 let render_headers
     (term : Notty_unix.Term.t)
-    (constraints : Search_constraints.t)
+    (constraints : Tag_search_constraints.t)
     (headers : header array) : Notty.image array * Notty.image array =
   let (term_width, _term_height) = Notty_unix.Term.size term in
   let images_selected : Notty.image list ref = ref [] in
