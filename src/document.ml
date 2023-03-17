@@ -1,23 +1,10 @@
-open Result_let
-
-type content_index = {
-  locations_of_word_ci : Int_set.t String_map.t;
-  line_of_location_ci : int Int_map.t;
-  word_of_location_ci : string Int_map.t;
-}
-
-let empty_content_index : content_index = {
-  locations_of_word_ci = String_map.empty;
-  line_of_location_ci = Int_map.empty;
-  word_of_location_ci = Int_map.empty;
-}
-
 type t = {
   path : string;
   title : string option;
   tags : string list;
   tag_matched : bool list;
-  content_index : content_index;
+  content_index : Content_index.t;
+  content_search_results : Content_search_result.t list;
   preview_lines : string list;
 }
 
@@ -27,7 +14,8 @@ let empty : t =
     title = None;
     tags = [];
     tag_matched = [];
-    content_index = empty_content_index;
+    content_index = Content_index.empty;
+    content_search_results = [];
     preview_lines = [];
   }
 
@@ -82,33 +70,6 @@ module Parsers = struct
       ]
 end
 
-let words_of_lines (s : string Seq.t) : (int * int * string) Seq.t =
-  s
-  |> Seq.mapi (fun line_num s -> (line_num, s))
-  |> Seq.flat_map (fun (line_num, s) ->
-      String.split_on_char ' ' s
-      |> List.to_seq
-      |> Seq.map (fun s -> (line_num, s)))
-  |> Seq.filter (fun (_line_num, s) -> s <> "")
-  |> Seq.mapi (fun i (line_num, s) ->
-      (i, line_num, s))
-
-let index_content (s : string Seq.t) : content_index =
-  s
-  |> words_of_lines
-  |> Seq.fold_left (fun {locations_of_word_ci; line_of_location_ci; word_of_location_ci } (loc, line, word) ->
-      let word_ci = String.lowercase_ascii word in
-      let locations_ci = Option.value ~default:Int_set.empty
-          (String_map.find_opt word locations_of_word_ci)
-                         |> Int_set.add loc
-      in
-      { locations_of_word_ci = String_map.add word_ci locations_ci locations_of_word_ci;
-        line_of_location_ci = Int_map.add loc line line_of_location_ci;
-        word_of_location_ci = Int_map.add loc word_ci word_of_location_ci;
-      }
-    )
-    empty_content_index
-
 type note_work_stage = [
   | `Parsing_title
   | `Parsing_tag_section
@@ -120,25 +81,30 @@ type text_work_stage = [
   | `Header_completed
 ]
 
-let peek_for_preview_lines (s : string Seq.t) : string list * string Seq.t =
+let peek_for_preview_lines (s : (int * string) Seq.t) : string list * (int * string) Seq.t =
+  let cleanup_acc acc =
+    acc
+    |> List.map snd
+    |> List.rev
+  in
   let rec aux acc i s =
     match s () with
-    | Seq.Nil -> (List.rev acc, acc |> List.rev |> List.to_seq)
-    | Seq.Cons (x, xs) ->
-      let acc = x :: acc in
+    | Seq.Nil -> (cleanup_acc acc, acc |> List.rev |> List.to_seq)
+    | Seq.Cons ((line_num, x), xs) ->
+      let acc = (line_num, x) :: acc in
       if i >= Params.preview_line_count then
-        (List.rev acc, Seq.append (acc |> List.rev |> List.to_seq) xs)
+        (cleanup_acc acc, Seq.append (acc |> List.rev |> List.to_seq) xs)
       else
         aux acc (i+1) xs
   in
   aux [] 0 s
 
-let parse_note (s : string Seq.t) : t =
+let parse_note (s : (int * string) Seq.t) : t =
   let rec aux (stage : note_work_stage) title tags s =
     match stage with
     | `Header_completed -> (
         let (preview_lines, s) = peek_for_preview_lines s in
-        let content_index = index_content s in
+        let content_index = Content_index.index s in
         {
           empty with
           title = Some (String.concat " " title);
@@ -150,7 +116,7 @@ let parse_note (s : string Seq.t) : t =
     | `Parsing_title | `Parsing_tag_section -> (
         match s () with
         | Seq.Nil -> aux `Header_completed title tags Seq.empty
-        | Seq.Cons (x, xs) -> (
+        | Seq.Cons ((line_num, x), xs) -> (
             match Angstrom.(parse_string ~consume:Consume.All) Parsers.header_p x with
             | Ok x ->
               (match x with
@@ -159,7 +125,7 @@ let parse_note (s : string Seq.t) : t =
                    | `Parsing_title ->
                      aux `Parsing_title (x :: title) tags xs
                    | `Parsing_tag_section | `Header_completed ->
-                     aux `Header_completed title tags (Seq.cons x xs)
+                     aux `Header_completed title tags (Seq.cons (line_num, x) xs)
                  )
                | Tags l -> (
                    let tags = String_set.add_list tags l in
@@ -172,12 +138,12 @@ let parse_note (s : string Seq.t) : t =
   in
   aux `Parsing_title [] String_set.empty s
 
-let parse_text (s : string Seq.t) : t =
+let parse_text (s : (int * string) Seq.t) : t =
   let rec aux (stage : text_work_stage) title s =
     match stage with
     | `Header_completed -> (
         let (preview_lines, s) = peek_for_preview_lines s in
-        let content_index = index_content s in
+        let content_index = Content_index.index s in
         {
           empty with
           title = title;
@@ -188,7 +154,7 @@ let parse_text (s : string Seq.t) : t =
     | `Parsing_title -> (
         match s () with
         | Seq.Nil -> aux `Header_completed title Seq.empty
-        | Seq.Cons (x, xs) -> (
+        | Seq.Cons ((_line_num, x), xs) -> (
             aux `Header_completed (Some x) xs
           )
       )
@@ -198,7 +164,9 @@ let parse_text (s : string Seq.t) : t =
 let of_path path : (t, string) result =
   try
     CCIO.with_in path (fun ic ->
-        let s = CCIO.read_lines_seq ic in
+        let s = CCIO.read_lines_seq ic
+        |> Seq.mapi (fun i line -> (i, line))
+  in
         let document =
           if Misc_utils.path_is_note path then
             parse_note s
@@ -271,7 +239,7 @@ let content_search_results
   in
   List.map2 (fun word dfa ->
       locations_of_word_ci'
-      |> Seq.filter (fun (s, locations) ->
+      |> Seq.filter (fun (s, _locations) ->
           String.equal word s
           || CCString.find ~sub:s word >= 0
           || Spelll.match_with dfa s

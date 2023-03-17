@@ -112,7 +112,7 @@ let render_documents
     (term : Notty_unix.Term.t)
     (documents : Document.t array)
   : Notty.image array * Notty.image array =
-  let (term_width, _term_height) = Notty_unix.Term.size term in
+  let (_term_width, _term_height) = Notty_unix.Term.size term in
   let images_selected : Notty.image list ref = ref [] in
   let images_unselected : Notty.image list ref = ref [] in
   Array.iter (fun (doc : Document.t) ->
@@ -327,10 +327,33 @@ let run
           let mode : mode Lwd.var = Lwd.var `Navigate in
           let documents = Lwd.map2 ~f:(fun tag_constraints content_constraints ->
               all_documents
-              |> List.filter (fun doc ->
-                  Option.is_some (Document.satisfies_tag_search_constraints tag_constraints doc)
-                  && not (Seq.is_empty (Document.content_search_results content_constraints doc))
+              |> List.filter_map (fun doc ->
+                  match Document.satisfies_tag_search_constraints tag_constraints doc with
+                  | None -> None
+                  | Some doc ->
+                      if Content_search_constraints.is_empty content_constraints then
+                        Some doc
+                      else (
+                  match Document.content_search_results content_constraints doc () with
+                  | Seq.Nil -> None
+                  | Seq.Cons _ as s ->
+                      let content_search_results = (fun () -> s)
+                  |> List.of_seq
+                  |> List.sort Content_search_result.compare
+                      in
+                      Some { doc with content_search_results }
+                      )
                 )
+              |> (fun l ->
+                      if Content_search_constraints.is_empty content_constraints then
+                        l
+                      else
+                        List.sort (fun (doc1 : Document.t) (doc2 : Document.t) ->
+                          Content_search_result.compare
+                          (List.hd doc1.content_search_results)
+                          (List.hd doc2.content_search_results)
+                        ) l
+                  )
               |> Array.of_list
             )
               (Lwd.get tag_constraints)
