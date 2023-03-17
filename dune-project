@@ -1,6 +1,6 @@
 (lang dune 3.4)
 
-(name notefd)
+(name docfd)
 
 (generate_opam_files true)
 
@@ -14,10 +14,10 @@
 (license MIT)
 
 (package
- (name notefd)
- (synopsis "Tag your notes with a simple header")
+ (name docfd)
+ (synopsis "TUI fuzzy document finder")
  (description "")
- (documentation https://github.com/darrenldl/notefd)
+ (documentation https://github.com/darrenldl/docfd)
  (depends
    (ocaml (>= "4.14"))
    ocaml
@@ -28,6 +28,6 @@
    cmdliner
    )
  (tags
-  ("note"
+  ("document"
    ))
  )

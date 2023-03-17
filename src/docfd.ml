@@ -1,9 +1,5 @@
 open Cmdliner
 
-let ( let* ) = Result.bind
-
-let ( let+ ) r f = Result.map f r
-
 let stdout_is_terminal () =
   Unix.isatty Unix.stdout
 
@@ -112,14 +108,60 @@ let print_tag_set (tags : String_set.t) =
       s
   )
 
-let render_headers
+let render_documents
     (term : Notty_unix.Term.t)
-    (constraints : Tag_search_constraints.t)
-    (headers : header array) : Notty.image array * Notty.image array =
+    (documents : Document.t array)
+  : Notty.image array * Notty.image array =
   let (term_width, _term_height) = Notty_unix.Term.size term in
   let images_selected : Notty.image list ref = ref [] in
   let images_unselected : Notty.image list ref = ref [] in
-  Array.iter (fun header ->
+  Array.iter (fun (doc : Document.t) ->
+      let open Notty in
+      let open Notty.Infix in
+      let preview_images =
+        List.map (fun line ->
+            I.strf "|  %s" line
+          )
+          doc.preview_lines
+      in
+      let path_image =
+        I.string A.empty doc.path;
+      in
+      let img_selected =
+        I.string A.(fg blue ++ st bold)
+          (Option.value ~default:"" doc.title)
+        <->
+        (I.string A.empty "  "
+         <|>
+         I.vcat
+           (path_image :: preview_images)
+        )
+      in
+      let img_unselected =
+        I.string A.(fg blue)
+          (Option.value ~default:"" doc.title)
+        <->
+        (I.string A.empty "  "
+         <|>
+         I.vcat
+           (path_image :: preview_images)
+        )
+      in
+      images_selected := img_selected :: !images_selected;
+      images_unselected := img_unselected :: !images_unselected
+    ) documents;
+  let images_selected = Array.of_list (List.rev !images_selected) in
+  let images_unselected = Array.of_list (List.rev !images_unselected) in
+  (images_selected, images_unselected)
+
+(* let render_headers
+    (term : Notty_unix.Term.t)
+    (constraints : Tag_search_constraints.t)
+    (headers : header array) : Notty.image array * Notty.image array =
+   let (term_width, _term_height) = Notty_unix.Term.size term in
+   let images_selected : Notty.image list ref = ref [] in
+   let images_unselected : Notty.image list ref = ref [] in
+   Array.iter (fun header ->
       let open Notty in
       let open Notty.Infix in
       let tag_arr = Array.of_list header.tags in
@@ -196,9 +238,9 @@ let render_headers
       images_selected := img_selected :: !images_selected;
       images_unselected := img_unselected :: !images_unselected
     ) headers;
-  let images_selected = Array.of_list (List.rev !images_selected) in
-  let images_unselected = Array.of_list (List.rev !images_unselected) in
-  (images_selected, images_unselected)
+   let images_selected = Array.of_list (List.rev !images_selected) in
+   let images_unselected = Array.of_list (List.rev !images_unselected) in
+   (images_selected, images_unselected) *)
 
 type mode = [
   | `Navigate
@@ -236,52 +278,62 @@ let run
     list_files_recursively dir
   in
   let files = List.sort_uniq String.compare files in
-  let all_headers =
+  let all_documents =
     List.filter_map (fun path ->
-        match process path with
-        | Ok f -> Some f
+        match Document.of_path path with
+        | Ok x -> Some x
         | Error _ -> None) files
   in
   if list_tags_lowercase then (
     let tags_used = ref String_set.empty in
-    List.iter (fun header ->
+    List.iter (fun (doc : Document.t) ->
         tags_used := String_set.(union
-                                   (lowercase_set_of_tags header.tags)
+                                   (lowercase_set_of_tags doc.tags)
                                    !tags_used)
-      ) all_headers;
+      ) all_documents;
     print_tag_set !tags_used
   ) else (
     if list_tags then (
       let tags_used = ref String_set.empty in
-      List.iter (fun header ->
+      List.iter (fun (doc : Document.t) ->
           tags_used := String_set.(union
-                                     (set_of_tags header.tags)
+                                     (set_of_tags doc.tags)
                                      !tags_used)
-        ) all_headers;
+        ) all_documents;
       print_tag_set !tags_used
     ) else (
-      match all_headers with
+      match all_documents with
       | [] -> ()
       | _ -> (
           let term = Notty_unix.Term.create () in
           let renderer = Nottui.Renderer.make () in
-          let constraints =
-            Lwd.var (Search_constraints.make
+          let tag_constraints =
+            Lwd.var (Tag_search_constraints.make
                        ~fuzzy_max_edit_distance
                        ~ci_fuzzy
                        ~ci_full
                        ~ci_sub
                        ~exact)
           in
+          let content_constraints =
+            Lwd.var (Content_search_constraints.make
+                       ~fuzzy_max_edit_distance
+                       ~phrase:[])
+          in
           let quit = Lwd.var false in
           let selected = Lwd.var 0 in
           let file_to_open = ref None in
           let mode : mode Lwd.var = Lwd.var `Navigate in
-          let headers = Lwd.map ~f:(fun constraints ->
-              let x = Array.of_list (filter_headers constraints all_headers) in
-              x
+          let documents = Lwd.map2 ~f:(fun tag_constraints content_constraints ->
+              all_documents
+              |> List.filter (fun doc ->
+                  Option.is_some (Document.satisfies_tag_search_constraints tag_constraints doc)
+                  && not (Seq.is_empty (Document.content_search_results content_constraints doc))
+                )
+              |> Array.of_list
             )
-              (Lwd.get constraints)
+              (Lwd.get tag_constraints)
+              (Lwd.get content_constraints)
           in
           let ci_fuzzy_focus_handle = Nottui.Focus.make () in
           let ci_full_focus_handle = Nottui.Focus.make () in
@@ -298,7 +350,7 @@ let run
                     Nottui.Ui.empty
                   ) else (
                     let (images_selected, images_unselected) =
-                      render_headers term (Lwd.peek constraints) headers
+                      render_documents term headers
                     in
                     CCInt.range' i image_count
                     |> CCList.of_iter
@@ -352,15 +404,15 @@ let run
                     | _ -> `Unhandled
                   )
               )
-              headers
+              documents
               (Lwd.get selected)
           in
           let right_pane =
-            Lwd.map2 ~f:(fun headers i ->
-                if Array.length headers = 0 then
+            Lwd.map2 ~f:(fun documents i ->
+                if Array.length documents = 0 then
                   Nottui.Ui.empty
                 else (
-                  let path = headers.(i).path in
+                  let path = documents.(i).path in
                   let (_term_width, term_height) = Notty_unix.Term.size term in
                   let content =
                     try
@@ -377,7 +429,7 @@ let run
                   content
                 )
               )
-              headers
+              documents
               (Lwd.get selected)
           in
           let ci_fuzzy_label_str = "[F]uzzy case-insensitive:" in
@@ -424,9 +476,9 @@ let run
             let s = String.concat " " exact in
             Lwd.var (s, String.length s)
           in
-          let update_constraints () =
+          let update_tag_constraints () =
             let constraints' =
-              (Search_constraints.make
+              (Tag_search_constraints.make
                  ~fuzzy_max_edit_distance
                  ~ci_fuzzy:(String.split_on_char ' ' (fst @@ Lwd.peek ci_fuzzy_field))
                  ~ci_full:(String.split_on_char ' ' (fst @@ Lwd.peek ci_full_field))
@@ -435,14 +487,14 @@ let run
               )
             in
             Lwd.set selected 0;
-            Lwd.set constraints constraints'
+            Lwd.set tag_constraints constraints'
           in
           let make_search_field ~edit_field ~focus_handle =
             Nottui_widgets.edit_field (Lwd.get edit_field)
               ~focus:focus_handle
               ~on_change:(fun (text, x) -> Lwd.set edit_field (text, x))
               ~on_submit:(fun _ ->
-                  update_constraints ();
+                  update_tag_constraints ();
                   Nottui.Focus.release focus_handle;
                   Lwd.set mode `Navigate
                 )

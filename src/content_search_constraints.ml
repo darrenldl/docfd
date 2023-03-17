@@ -18,7 +18,7 @@ let equal (t1 : t) (t2 : t) =
 let make
     ~fuzzy_max_edit_distance
     ~phrase
-=
+  =
   let phrase = List.filter (fun s -> s <> "") phrase in
   let fuzzy_index =
     phrase

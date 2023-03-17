@@ -1,1 +1,1 @@
-./_build/default/src/notefd.exe "$@"
+./_build/default/src/docfd.exe "$@"
