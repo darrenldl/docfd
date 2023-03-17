@@ -244,10 +244,11 @@ let render_documents
 
 type mode = [
   | `Navigate
-  | `Ci_fuzzy
-  | `Ci_full
-  | `Ci_sub
-  | `Exact
+  | `Content
+  | `Tag_ci_fuzzy
+  | `Tag_ci_full
+  | `Tag_ci_sub
+  | `Tag_exact
 ]
 
 let make_label_widget ~s ~len (mode : mode) (v : mode Lwd.var) =
@@ -262,10 +263,10 @@ let make_label_widget ~s ~len (mode : mode) (v : mode Lwd.var) =
 
 let run
     (fuzzy_max_edit_distance : int)
-    (ci_fuzzy : string list)
-    (ci_full : string list)
-    (ci_sub : string list)
-    (exact : string list)
+    (tag_ci_fuzzy : string list)
+    (tag_ci_full : string list)
+    (tag_ci_sub : string list)
+    (tag_exact : string list)
     (list_tags : bool)
     (list_tags_lowercase : bool)
     (dir : string)
@@ -310,10 +311,10 @@ let run
           let tag_constraints =
             Lwd.var (Tag_search_constraints.make
                        ~fuzzy_max_edit_distance
-                       ~ci_fuzzy
-                       ~ci_full
-                       ~ci_sub
-                       ~exact)
+                       ~ci_fuzzy:tag_ci_fuzzy
+                       ~ci_full:tag_ci_fuzzy
+                       ~ci_sub:tag_ci_fuzzy
+                       ~exact:tag_exact)
           in
           let content_constraints =
             Lwd.var (Content_search_constraints.make
@@ -335,22 +336,23 @@ let run
               (Lwd.get tag_constraints)
               (Lwd.get content_constraints)
           in
-          let ci_fuzzy_focus_handle = Nottui.Focus.make () in
-          let ci_full_focus_handle = Nottui.Focus.make () in
-          let ci_sub_focus_handle = Nottui.Focus.make () in
-          let exact_focus_handle = Nottui.Focus.make () in
+          let content_focus_handle = Nottui.Focus.make () in
+          let tag_ci_fuzzy_focus_handle = Nottui.Focus.make () in
+          let tag_ci_full_focus_handle = Nottui.Focus.make () in
+          let tag_ci_sub_focus_handle = Nottui.Focus.make () in
+          let tag_exact_focus_handle = Nottui.Focus.make () in
           let left_pane =
-            Lwd.map2 ~f:(fun headers i ->
-                let image_count = Array.length headers in
+            Lwd.map2 ~f:(fun documents i ->
+                let image_count = Array.length documents in
                 let bound_selection (x : int) : int =
                   max 0 (min (image_count - 1) x)
                 in
                 let pane =
-                  if Array.length headers = 0 then (
+                  if Array.length documents = 0 then (
                     Nottui.Ui.empty
                   ) else (
                     let (images_selected, images_unselected) =
-                      render_documents term headers
+                      render_documents term documents
                     in
                     CCInt.range' i image_count
                     |> CCList.of_iter
@@ -378,25 +380,29 @@ let run
                         | (`ASCII 'k', [])
                         | (`Arrow `Up, []) ->
                           Lwd.set selected (bound_selection (i-1)); `Handled
-                        | (`ASCII 'f', []) ->
-                          Nottui.Focus.request ci_fuzzy_focus_handle;
-                          Lwd.set mode `Ci_fuzzy;
+                        | (`ASCII '/', []) ->
+                            Nottui.Focus.request content_focus_handle;
+                          Lwd.set mode `Content;
                           `Handled
-                        | (`ASCII 'i', []) ->
-                          Nottui.Focus.request ci_full_focus_handle;
-                          Lwd.set mode `Ci_full;
+                        | (`ASCII 'f', [`Ctrl]) ->
+                          Nottui.Focus.request tag_ci_fuzzy_focus_handle;
+                          Lwd.set mode `Tag_ci_fuzzy;
                           `Handled
-                        | (`ASCII 's', []) ->
-                          Nottui.Focus.request ci_sub_focus_handle;
-                          Lwd.set mode `Ci_sub;
+                        | (`ASCII 'i', [`Ctrl]) ->
+                          Nottui.Focus.request tag_ci_full_focus_handle;
+                          Lwd.set mode `Tag_ci_full;
                           `Handled
-                        | (`ASCII 'e', []) ->
-                          Nottui.Focus.request exact_focus_handle;
-                          Lwd.set mode `Exact;
+                        | (`ASCII 's', [`Ctrl]) ->
+                          Nottui.Focus.request tag_ci_sub_focus_handle;
+                          Lwd.set mode `Tag_ci_sub;
+                          `Handled
+                        | (`ASCII 'e', [`Ctrl]) ->
+                          Nottui.Focus.request tag_exact_focus_handle;
+                          Lwd.set mode `Tag_exact;
                           `Handled
                         | (`Enter, []) -> (
                             Lwd.set quit true;
-                            file_to_open := Some headers.(i);
+                            file_to_open := Some documents.(i);
                             `Handled
                           )
                         | _ -> `Handled
@@ -432,69 +438,107 @@ let run
               documents
               (Lwd.get selected)
           in
-          let ci_fuzzy_label_str = "[F]uzzy case-insensitive:" in
-          let ci_full_label_str = "Case-[i]sensitive full:" in
-          let ci_sub_label_str = "Case-insensitive [s]ubstring:" in
-          let exact_label_str = "[E]exact:" in
+          let content_label_str = "(/) Content search:" in
+          let tag_ci_fuzzy_label_str = "(Ctrl+f) [F]uzzy case-insensitive tags:" in
+          let tag_ci_full_label_str = "(Ctrl+i) Case-[i]sensitive full tags:" in
+          let tag_ci_sub_label_str = "(Ctrl+s) Case-insensitive [s]ubstring tags:" in
+          let tag_exact_label_str = "(Ctrl+e) [E]exact tags:" in
           let max_label_len =
             List.fold_left (fun x s ->
                 max x (String.length s))
               0
               [
-                ci_fuzzy_label_str;
-                ci_full_label_str;
-                ci_sub_label_str;
-                exact_label_str;
+                content_label_str;
+                tag_ci_fuzzy_label_str;
+                tag_ci_full_label_str;
+                tag_ci_sub_label_str;
+                tag_exact_label_str;
               ]
           in
           let label_widget_len = max_label_len + 1 in
-          let ci_fuzzy_label =
-            make_label_widget ~s:ci_fuzzy_label_str ~len:label_widget_len `Ci_fuzzy mode
+          let content_label =
+            make_label_widget
+            ~s:content_label_str
+            ~len:label_widget_len
+            `Content
+            mode
           in
-          let ci_full_label =
-            make_label_widget ~s:ci_full_label_str ~len:label_widget_len `Ci_full mode
+          let tag_ci_fuzzy_label =
+            make_label_widget
+            ~s:tag_ci_fuzzy_label_str
+            ~len:label_widget_len
+            `Tag_ci_fuzzy
+            mode
           in
-          let ci_sub_label =
-            make_label_widget ~s:ci_sub_label_str ~len:label_widget_len `Ci_sub mode
+          let tag_ci_full_label =
+            make_label_widget
+            ~s:tag_ci_full_label_str
+            ~len:label_widget_len
+            `Tag_ci_full
+            mode
           in
-          let exact_label =
-            make_label_widget ~s:exact_label_str ~len:label_widget_len `Exact mode
+          let tag_ci_sub_label =
+            make_label_widget
+            ~s:tag_ci_sub_label_str
+            ~len:label_widget_len
+            `Tag_ci_sub
+            mode
           in
-          let ci_fuzzy_field =
-            let s = String.concat " " ci_fuzzy in
+          let tag_exact_label =
+            make_label_widget
+            ~s:tag_exact_label_str
+            ~len:label_widget_len
+            `Tag_exact
+            mode
+          in
+          let content_field =
+            Lwd.var ("", 0)
+          in
+          let tag_ci_fuzzy_field =
+            let s = String.concat " " tag_ci_fuzzy in
             Lwd.var (s, String.length s)
           in
-          let ci_full_field =
-            let s = String.concat " " ci_full in
+          let tag_ci_full_field =
+            let s = String.concat " " tag_ci_full in
             Lwd.var (s, String.length s)
           in
-          let ci_sub_field =
-            let s = String.concat " " ci_sub in
+          let tag_ci_sub_field =
+            let s = String.concat " " tag_ci_sub in
             Lwd.var (s, String.length s)
           in
-          let exact_field =
-            let s = String.concat " " exact in
+          let tag_exact_field =
+            let s = String.concat " " tag_exact in
             Lwd.var (s, String.length s)
+          in
+          let update_content_constraints () =
+            let constraints' =
+              (Content_search_constraints.make
+                 ~fuzzy_max_edit_distance
+                 ~phrase:(String.split_on_char ' ' (fst @@ Lwd.peek content_field))
+              )
+            in
+            Lwd.set selected 0;
+            Lwd.set content_constraints constraints'
           in
           let update_tag_constraints () =
             let constraints' =
               (Tag_search_constraints.make
                  ~fuzzy_max_edit_distance
-                 ~ci_fuzzy:(String.split_on_char ' ' (fst @@ Lwd.peek ci_fuzzy_field))
-                 ~ci_full:(String.split_on_char ' ' (fst @@ Lwd.peek ci_full_field))
-                 ~ci_sub:(String.split_on_char ' ' (fst @@ Lwd.peek ci_sub_field))
-                 ~exact:(String.split_on_char ' ' (fst @@ Lwd.peek exact_field))
+                 ~ci_fuzzy:(String.split_on_char ' ' (fst @@ Lwd.peek tag_ci_fuzzy_field))
+                 ~ci_full:(String.split_on_char ' ' (fst @@ Lwd.peek tag_ci_full_field))
+                 ~ci_sub:(String.split_on_char ' ' (fst @@ Lwd.peek tag_ci_sub_field))
+                 ~exact:(String.split_on_char ' ' (fst @@ Lwd.peek tag_exact_field))
               )
             in
             Lwd.set selected 0;
             Lwd.set tag_constraints constraints'
           in
-          let make_search_field ~edit_field ~focus_handle =
+          let make_search_field ~edit_field ~focus_handle ~f =
             Nottui_widgets.edit_field (Lwd.get edit_field)
               ~focus:focus_handle
               ~on_change:(fun (text, x) -> Lwd.set edit_field (text, x))
               ~on_submit:(fun _ ->
-                  update_tag_constraints ();
+                  f ();
                   Nottui.Focus.release focus_handle;
                   Lwd.set mode `Navigate
                 )
@@ -507,31 +551,43 @@ let run
                   right_pane;
                 Nottui_widgets.hbox
                   [
-                    ci_fuzzy_label;
+                    content_label;
                     make_search_field
-                      ~edit_field:ci_fuzzy_field
-                      ~focus_handle:ci_fuzzy_focus_handle;
+                      ~edit_field:content_field
+                      ~focus_handle:content_focus_handle
+                      ~f:update_content_constraints;
                   ];
                 Nottui_widgets.hbox
                   [
-                    ci_full_label;
+                    tag_ci_fuzzy_label;
                     make_search_field
-                      ~edit_field:ci_full_field
-                      ~focus_handle:ci_full_focus_handle;
+                      ~edit_field:tag_ci_fuzzy_field
+                      ~focus_handle:tag_ci_fuzzy_focus_handle
+                      ~f:update_tag_constraints;
                   ];
                 Nottui_widgets.hbox
                   [
-                    ci_sub_label;
+                    tag_ci_full_label;
                     make_search_field
-                      ~edit_field:ci_sub_field
-                      ~focus_handle:ci_sub_focus_handle;
+                      ~edit_field:tag_ci_full_field
+                      ~focus_handle:tag_ci_full_focus_handle
+                      ~f:update_tag_constraints;
                   ];
                 Nottui_widgets.hbox
                   [
-                    exact_label;
+                    tag_ci_sub_label;
                     make_search_field
-                      ~edit_field:exact_field
-                      ~focus_handle:exact_focus_handle;
+                      ~edit_field:tag_ci_sub_field
+                      ~focus_handle:tag_ci_sub_focus_handle
+                      ~f:update_tag_constraints;
+                  ];
+                Nottui_widgets.hbox
+                  [
+                    tag_exact_label;
+                    make_search_field
+                      ~edit_field:tag_exact_field
+                      ~focus_handle:tag_exact_focus_handle
+                      ~f:update_tag_constraints;
                   ];
               ]
           in
