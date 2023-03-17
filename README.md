@@ -1,9 +1,9 @@
-# Notefd
-Tag your notes with a simple header
+# Docfd
+TUI fuzzy document finder
 
 ## Installation
 
-Statically linked binaries are available via [GitHub releases](https://github.com/darrenldl/notefd/releases)
+Statically linked binaries are available via [GitHub releases](https://github.com/darrenldl/docfd/releases)
 
 ## Usage
 

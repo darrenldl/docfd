@@ -1,2 +1,2 @@
 #!/bin/bash
-podman run -it -v ~/notefd:/root/notefd --rm localhost/notefd
+podman run -it -v ~/docfd:/root/docfd --rm localhost/docfd
