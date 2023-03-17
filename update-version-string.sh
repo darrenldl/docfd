@@ -7,7 +7,7 @@ ver=$(cat CHANGELOG.md \
   | head -n 1 \
   | sed -n 's/^## \s*\(\S*\)$/\1/p')
 
-echo "Detected version for Notefd:" $ver
+echo "Detected version for Docfd:" $ver
 
 echo "Writing to" $path
 

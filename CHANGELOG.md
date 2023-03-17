@@ -4,6 +4,8 @@
 
 - Switched to interactive TUI
 
+- Renamed to Docfd
+
 ## 0.1.6
 
 - Optimized parsing code slightly
