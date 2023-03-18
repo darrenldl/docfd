@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+- Optimized file discovery procedure
+
+- Added `--max-depth` option to limit scanning depth
+
 ## 0.2.0
 
 - Switched to interactive TUI

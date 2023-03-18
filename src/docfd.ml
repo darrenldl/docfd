@@ -3,6 +3,12 @@ open Cmdliner
 let stdout_is_terminal () =
   Unix.isatty Unix.stdout
 
+let max_depth_arg =
+  let doc =
+    "Scan up to N levels in the file tree."
+  in
+  Arg.(value & opt int Params.default_max_file_tree_depth & info [ "max-depth" ] ~doc ~docv:"N")
+
 let fuzzy_max_edit_distance_arg =
   let doc =
     "Maximum edit distance for fuzzy matches."
@@ -57,7 +63,7 @@ let list_files_recursively (dir : string) : string list =
     l := x :: !l
   in
   let rec aux depth path =
-    if depth >= Params.max_file_tree_depth then ()
+    if depth >= !Params.max_file_tree_depth then ()
     else (
       if Sys.is_directory path then (
         let next_choices =
@@ -201,6 +207,7 @@ let make_label_widget ~s ~len (mode : mode) (v : mode Lwd.var) =
 
 let run
     (debug : bool)
+    (max_depth : int)
     (fuzzy_max_edit_distance : int)
     (tag_ci_fuzzy : string list)
     (tag_ci_full : string list)
@@ -211,6 +218,7 @@ let run
     (dir : string)
   =
   Params.debug := debug;
+  Params.max_file_tree_depth := max_depth;
   if list_tags_lowercase && list_tags then (
     Fmt.pr "Error: Please select only --tags or --ltags\n";
     exit 1
@@ -647,6 +655,7 @@ let cmd =
   Cmd.v (Cmd.info "docfd" ~version ~doc)
     (Term.(const run
            $ debug_arg
+           $ max_depth_arg
            $ fuzzy_max_edit_distance_arg
            $ tag_ci_fuzzy_arg
            $ tag_ci_full_arg
