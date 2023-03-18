@@ -66,8 +66,8 @@ let content_search_results
     let images = ref [] in
     List.iter (fun (search_result : Content_search_result.t) ->
         let (relevant_start_line, relevant_end_inc_line) =
-          List.fold_left (fun s_e (_word, loc) ->
-              let (line_num, _pos) = Int_map.find loc document.content_index.line_pos_of_location_ci in
+          List.fold_left (fun s_e (_word, pos) ->
+              let (line_num, _) = Int_map.find pos document.content_index.line_pos_of_pos in
               match s_e with
               | None -> Some (line_num, line_num)
               | Some (s, e) ->
@@ -85,10 +85,10 @@ let content_search_results
               |> Array.of_seq
             )
         in
-        List.iter (fun (_word, loc) ->
-            let (line_num, pos) = Int_map.find loc document.content_index.line_pos_of_location_ci in
-            let word = Int_map.find loc document.content_index.word_of_location in
-            word_image_grid.(line_num - relevant_start_line).(pos) <-
+        List.iter (fun (_word, pos) ->
+            let (line_num, pos_in_line) = Int_map.find pos document.content_index.line_pos_of_pos in
+            let word = Int_map.find pos document.content_index.word_of_pos in
+            word_image_grid.(line_num - relevant_start_line).(pos_in_line) <-
               I.string A.(fg red ++ st bold) word
           )
           search_result.found_phrase;

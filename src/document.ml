@@ -236,19 +236,20 @@ let content_search_results
     (constraints : Content_search_constraints.t)
     (t : t)
   : Content_search_result.t Seq.t =
-  let locations_of_word_ci' =
-    String_map.bindings t.content_index.locations_of_word_ci
+  let pos_s_of_word_ci' =
+    String_map.bindings t.content_index.pos_s_of_word_ci
     |> List.to_seq
   in
-  List.map2 (fun word dfa ->
-      locations_of_word_ci'
-      |> Seq.filter (fun (s, _locations) ->
-          String.equal word s
-          || CCString.find ~sub:word s >= 0
-          || (Misc_utils.first_n_chars_of_string_contains ~n:5 s word.[0] && Spelll.match_with dfa s)
+  List.map2 (fun search_word dfa ->
+      pos_s_of_word_ci'
+      |> Seq.filter (fun (indexed_word, _pos_s) ->
+          String.equal search_word indexed_word
+          || CCString.find ~sub:search_word indexed_word >= 0
+          || (Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word search_word.[0]
+              && Spelll.match_with dfa indexed_word)
         )
-      |> Seq.flat_map (fun (_, locations) ->
-          Int_set.to_seq locations
+      |> Seq.flat_map (fun (_, pos_s) ->
+          Int_set.to_seq pos_s
         )
     )
     constraints.phrase
@@ -258,6 +259,6 @@ let content_search_results
   |> Seq.map (fun l ->
       ({ original_phrase = constraints.phrase;
          found_phrase = List.map
-             (fun i -> (Int_map.find i t.content_index.word_of_location_ci, i)) l;
+             (fun i -> (Int_map.find i t.content_index.word_of_pos_ci, i)) l;
        } : Content_search_result.t)
     )
