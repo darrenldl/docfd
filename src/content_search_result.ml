@@ -20,10 +20,10 @@ let score (t : t) : float =
   let sub_matches = Int.to_float sub_matches in
   let fuzzy_matches = Int.to_float fuzzy_matches in
   let (total_distance, _) =
-    List.fold_left (fun (n, last_loc) (_, d) ->
-        match last_loc with
+    List.fold_left (fun (n, last_pos) (_, d) ->
+        match last_pos with
         | None -> (n, Some d)
-        | Some last_loc -> (n + abs (d - last_loc), Some d)
+        | Some last_pos -> (n + abs (d - last_pos), Some d)
       )
       (0, None)
       t.found_phrase
