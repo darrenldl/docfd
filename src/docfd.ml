@@ -321,7 +321,7 @@ let run
       print_tag_set !tags_used
     ) else (
       match all_documents with
-      | [] -> ()
+      | [] -> Printf.printf "No text files detected\n"
       | _ -> (
           let handle_tag_ui =
             List.exists (fun (doc : Document.t) ->
