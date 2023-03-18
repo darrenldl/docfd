@@ -323,6 +323,12 @@ let run
       match all_documents with
       | [] -> ()
       | _ -> (
+          let handle_tag_ui =
+            List.exists (fun (doc : Document.t) ->
+                Misc_utils.path_is_note doc.path
+              )
+              all_documents
+          in
           let term = Notty_unix.Term.create () in
           let renderer = Nottui.Renderer.make () in
           let tag_constraints =
@@ -381,12 +387,54 @@ let run
           let tag_ci_full_focus_handle = Nottui.Focus.make () in
           let tag_ci_sub_focus_handle = Nottui.Focus.make () in
           let tag_exact_focus_handle = Nottui.Focus.make () in
+          let keyboard_handler ~choice_count ~current_choice (documents : Document.t array) (key : Nottui.Ui.key) =
+            let bound_selection (x : int) : int =
+              max 0 (min (choice_count - 1) x)
+            in
+            match Lwd.peek mode with
+            | `Navigate -> (
+                match key with
+                | (`Escape, [])
+                | (`ASCII 'q', [])
+                | (`ASCII 'C', [`Ctrl]) -> Lwd.set quit true; `Handled
+                | (`ASCII 'j', [])
+                | (`Arrow `Down, []) ->
+                  Lwd.set selected (bound_selection (current_choice+1)); `Handled
+                | (`ASCII 'k', [])
+                | (`Arrow `Up, []) ->
+                  Lwd.set selected (bound_selection (current_choice-1)); `Handled
+                | (`ASCII '/', []) ->
+                  Nottui.Focus.request content_focus_handle;
+                  Lwd.set mode `Content;
+                  `Handled
+                | (`ASCII 'f', [`Ctrl]) when handle_tag_ui ->
+                  Nottui.Focus.request tag_ci_fuzzy_focus_handle;
+                  Lwd.set mode `Tag_ci_fuzzy;
+                  `Handled
+                | (`ASCII 'i', [`Ctrl]) when handle_tag_ui ->
+                  Nottui.Focus.request tag_ci_full_focus_handle;
+                  Lwd.set mode `Tag_ci_full;
+                  `Handled
+                | (`ASCII 's', [`Ctrl]) when handle_tag_ui ->
+                  Nottui.Focus.request tag_ci_sub_focus_handle;
+                  Lwd.set mode `Tag_ci_sub;
+                  `Handled
+                | (`ASCII 'e', [`Ctrl]) when handle_tag_ui ->
+                  Nottui.Focus.request tag_exact_focus_handle;
+                  Lwd.set mode `Tag_exact;
+                  `Handled
+                | (`Enter, []) -> (
+                    Lwd.set quit true;
+                    file_to_open := Some documents.(current_choice);
+                    `Handled
+                  )
+                | _ -> `Handled
+              )
+            | _ -> `Unhandled
+          in
           let left_pane =
             Lwd.map2 ~f:(fun documents i ->
                 let image_count = Array.length documents in
-                let bound_selection (x : int) : int =
-                  max 0 (min (image_count - 1) x)
-                in
                 let pane =
                   if Array.length documents = 0 then (
                     Nottui.Ui.empty
@@ -407,48 +455,11 @@ let run
                   )
                 in
                 pane
-                |> Nottui.Ui.keyboard_area (fun event ->
-                    match Lwd.peek mode with
-                    | `Navigate -> (
-                        match event with
-                        | (`Escape, [])
-                        | (`ASCII 'q', [])
-                        | (`ASCII 'C', [`Ctrl]) -> Lwd.set quit true; `Handled
-                        | (`ASCII 'j', [])
-                        | (`Arrow `Down, []) ->
-                          Lwd.set selected (bound_selection (i+1)); `Handled
-                        | (`ASCII 'k', [])
-                        | (`Arrow `Up, []) ->
-                          Lwd.set selected (bound_selection (i-1)); `Handled
-                        | (`ASCII '/', []) ->
-                          Nottui.Focus.request content_focus_handle;
-                          Lwd.set mode `Content;
-                          `Handled
-                        | (`ASCII 'f', [`Ctrl]) ->
-                          Nottui.Focus.request tag_ci_fuzzy_focus_handle;
-                          Lwd.set mode `Tag_ci_fuzzy;
-                          `Handled
-                        | (`ASCII 'i', [`Ctrl]) ->
-                          Nottui.Focus.request tag_ci_full_focus_handle;
-                          Lwd.set mode `Tag_ci_full;
-                          `Handled
-                        | (`ASCII 's', [`Ctrl]) ->
-                          Nottui.Focus.request tag_ci_sub_focus_handle;
-                          Lwd.set mode `Tag_ci_sub;
-                          `Handled
-                        | (`ASCII 'e', [`Ctrl]) ->
-                          Nottui.Focus.request tag_exact_focus_handle;
-                          Lwd.set mode `Tag_exact;
-                          `Handled
-                        | (`Enter, []) -> (
-                            Lwd.set quit true;
-                            file_to_open := Some documents.(i);
-                            `Handled
-                          )
-                        | _ -> `Handled
-                      )
-                    | _ -> `Unhandled
-                  )
+                |> Nottui.Ui.keyboard_area
+                  (keyboard_handler
+                     ~choice_count:image_count
+                     ~current_choice:i
+                     documents)
               )
               documents
               (Lwd.get selected)
@@ -585,51 +596,62 @@ let run
           in
           let screen =
             Nottui_widgets.vbox
-              [
-                Nottui_widgets.h_pane
-                  left_pane
-                  right_pane;
-                Nottui_widgets.hbox
-                  [
-                    content_label;
-                    make_search_field
-                      ~edit_field:content_field
-                      ~focus_handle:content_focus_handle
-                      ~f:update_content_constraints;
-                  ];
-                Nottui_widgets.hbox
-                  [
-                    tag_ci_fuzzy_label;
-                    make_search_field
-                      ~edit_field:tag_ci_fuzzy_field
-                      ~focus_handle:tag_ci_fuzzy_focus_handle
-                      ~f:update_tag_constraints;
-                  ];
-                Nottui_widgets.hbox
-                  [
-                    tag_ci_full_label;
-                    make_search_field
-                      ~edit_field:tag_ci_full_field
-                      ~focus_handle:tag_ci_full_focus_handle
-                      ~f:update_tag_constraints;
-                  ];
-                Nottui_widgets.hbox
-                  [
-                    tag_ci_sub_label;
-                    make_search_field
-                      ~edit_field:tag_ci_sub_field
-                      ~focus_handle:tag_ci_sub_focus_handle
-                      ~f:update_tag_constraints;
-                  ];
-                Nottui_widgets.hbox
-                  [
-                    tag_exact_label;
-                    make_search_field
-                      ~edit_field:tag_exact_field
-                      ~focus_handle:tag_exact_focus_handle
-                      ~f:update_tag_constraints;
-                  ];
-              ]
+              (List.filter_map (fun x -> x)
+                 [
+                   Some
+                     (Nottui_widgets.h_pane
+                        left_pane
+                        right_pane);
+                   Some
+                     (Nottui_widgets.hbox
+                        [
+                          content_label;
+                          make_search_field
+                            ~edit_field:content_field
+                            ~focus_handle:content_focus_handle
+                            ~f:update_content_constraints;
+                        ]);
+                   (if handle_tag_ui then
+                      Some (Nottui_widgets.hbox
+                              [
+                                tag_ci_fuzzy_label;
+                                make_search_field
+                                  ~edit_field:tag_ci_fuzzy_field
+                                  ~focus_handle:tag_ci_fuzzy_focus_handle
+                                  ~f:update_tag_constraints;
+                              ])
+                    else None);
+                   (if handle_tag_ui then
+                      Some (Nottui_widgets.hbox
+                              [
+                                tag_ci_full_label;
+                                make_search_field
+                                  ~edit_field:tag_ci_full_field
+                                  ~focus_handle:tag_ci_full_focus_handle
+                                  ~f:update_tag_constraints;
+                              ])
+                    else None);
+                   (if handle_tag_ui then
+                      Some (Nottui_widgets.hbox
+                              [
+                                tag_ci_sub_label;
+                                make_search_field
+                                  ~edit_field:tag_ci_sub_field
+                                  ~focus_handle:tag_ci_sub_focus_handle
+                                  ~f:update_tag_constraints;
+                              ])
+                    else None);
+                   (if handle_tag_ui then
+                      Some (Nottui_widgets.hbox
+                              [
+                                tag_exact_label;
+                                make_search_field
+                                  ~edit_field:tag_exact_field
+                                  ~focus_handle:tag_exact_focus_handle
+                                  ~f:update_tag_constraints;
+                              ])
+                    else None);
+                 ]
           in
           let rec loop () =
             file_to_open := None;

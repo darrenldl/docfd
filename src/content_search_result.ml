@@ -31,8 +31,8 @@ let score (t : t) : float =
   let average_distance =
     (Int.to_float total_distance) /. (Int.to_float (List.length t.found_phrase))
   in
-  (average_distance +. 1.0)
-  *. (0.1 *. exact_matches +. 0.5 *. sub_matches +. 1.0 *. fuzzy_matches)
+  (if Float.abs average_distance < 0.01 then 1.0 else 1.0 /. average_distance)
+  *. (1.0 *. exact_matches +. 0.5 *. sub_matches +. 0.2 *. fuzzy_matches)
 
 let compare t1 t2 =
-  Float.compare (score t1) (score t2)
+  Float.compare (score t2) (score t1)

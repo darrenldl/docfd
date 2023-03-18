@@ -12,7 +12,7 @@ all :
 .PHONY: release-static
 release-static :
 	./update-version-string.sh
-	OCAMLPARAM='_,ccopt=-static' dune build --release src/notefd.exe
+	OCAMLPARAM='_,ccopt=-static' dune build --release src/docfd.exe
 
 .PHONY: format
 format :
