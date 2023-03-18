@@ -35,10 +35,9 @@ let union (t1 : t) (t2 : t) : t =
 let words_of_lines (s : (int * string) Seq.t) : (int * (int * int) * string) Seq.t =
   s
   |> Seq.flat_map (fun (line_num, s) ->
-      Tokenize.f s
-      |> List.to_seq
-      |> Seq.mapi (fun i s -> ((line_num, i), s)))
-  |> Seq.filter (fun (_line_pos, s) -> s <> "")
+      Tokenize.f_with_pos ~drop_spaces:true s
+      |> Seq.map (fun (i, s) -> ((line_num, i), s))
+    )
   |> Seq.mapi (fun i (line_pos, s) ->
       (i, line_pos, s))
 

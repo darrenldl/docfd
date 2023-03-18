@@ -20,8 +20,8 @@ let make
     ~phrase
   =
   let phrase = phrase
-               |> Tokenize.f
-               |> List.filter (fun s -> s <> "")
+               |> Tokenize.f ~drop_spaces:true
+               |> List.of_seq
   in
   let fuzzy_index =
     phrase

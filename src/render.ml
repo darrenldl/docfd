@@ -80,9 +80,9 @@ let content_search_results
         let word_image_grid =
           Array.sub doc_lines relevant_start_line (relevant_end_inc_line - relevant_start_line + 1)
           |> Array.map (fun line ->
-              Tokenize.f line
-              |> List.map (fun word -> I.string A.empty word)
-              |> Array.of_list
+              Tokenize.f ~drop_spaces:false line
+              |> Seq.map (fun word -> I.string A.empty word)
+              |> Array.of_seq
             )
         in
         List.iter (fun (_word, loc) ->
