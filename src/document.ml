@@ -25,20 +25,7 @@ type line_typ =
 
 module Parsers = struct
   open Angstrom
-
-  let is_space c =
-    match c with
-    | ' '
-    | '\t'
-    | '\n'
-    | '\r' -> true
-    | _ -> false
-
-  let spaces = skip_while is_space
-
-  let spaces1 = take_while1 is_space *> return ()
-
-  let any_string : string t = take_while1 (fun _ -> true)
+  open Parser_components
 
   let word_p ~delim =
     take_while1 (fun c ->

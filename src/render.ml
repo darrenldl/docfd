@@ -57,7 +57,6 @@ let content_search_results
     (document : Document.t)
   : Notty.image array =
   let open Notty in
-  let open Notty.Infix in
   try
     let doc_lines =
       CCIO.with_in document.path (fun ic ->
@@ -81,7 +80,7 @@ let content_search_results
         let word_image_grid =
           Array.sub doc_lines relevant_start_line (relevant_end_inc_line - relevant_start_line + 1)
           |> Array.map (fun line ->
-              String.split_on_char ' ' line
+              Content_index.tokenize line
               |> List.map (fun word -> I.string A.empty word)
               |> Array.of_list
             )
@@ -102,9 +101,7 @@ let content_search_results
                 (
                   I.strf ~attr:A.(fg yellow) "%d" (relevant_start_line + i)
                   :: I.strf ": "
-                  :: List.map
-                    (fun word -> word <|> I.string A.empty " ")
-                    words
+                  :: words
                 )
             )
           |> I.vcat
