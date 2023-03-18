@@ -100,19 +100,24 @@ let peek_for_preview_lines (s : (int * string) Seq.t) : string list * (int * str
   aux [] 0 s
 
 let parse_note (s : (int * string) Seq.t) : t =
-  let rec aux (stage : note_work_stage) title tags s =
+  let rec aux (last_stage : note_work_stage) (stage : note_work_stage) title tags s =
     match stage with
     | `Header_completed -> (
-        let (preview_lines, s) = peek_for_preview_lines s in
-        let title_seq =
-          title
-          |> List.to_seq
-          |> Seq.mapi (fun i line -> (i, line))
+        let title_seq, s =
+          match last_stage with
+          | `Parsing_title -> (
+              match title with
+              | [] -> (Seq.empty, s)
+              | x :: xs -> (Seq.return x, Seq.append (List.to_seq xs) s)
+            )
+          | _ ->
+            (List.to_seq title, s)
         in
+        let (preview_lines, s) = peek_for_preview_lines s in
         let content_index = Content_index.(union (index title_seq) (index s)) in
         {
           empty with
-          title = Some (String.concat " " title);
+          title = Some (String.concat " " (List.map snd title));
           tags = String_set.to_list tags;
           content_index;
           preview_lines;
@@ -120,7 +125,7 @@ let parse_note (s : (int * string) Seq.t) : t =
       )
     | `Parsing_title | `Parsing_tag_section -> (
         match s () with
-        | Seq.Nil -> aux `Header_completed title tags Seq.empty
+        | Seq.Nil -> aux stage `Header_completed title tags Seq.empty
         | Seq.Cons ((line_num, x), xs) -> (
             match Angstrom.(parse_string ~consume:Consume.All) Parsers.header_p x with
             | Ok x ->
@@ -128,20 +133,20 @@ let parse_note (s : (int * string) Seq.t) : t =
                | Line x -> (
                    match stage with
                    | `Parsing_title ->
-                     aux `Parsing_title (x :: title) tags xs
+                     aux stage `Parsing_title ((line_num, x) :: title) tags xs
                    | `Parsing_tag_section | `Header_completed ->
-                     aux `Header_completed title tags (Seq.cons (line_num, x) xs)
+                     aux stage `Header_completed title tags (Seq.cons (line_num, x) xs)
                  )
                | Tags l -> (
                    let tags = String_set.add_list tags l in
-                   aux `Parsing_tag_section title tags xs
+                   aux stage `Parsing_tag_section title tags xs
                  )
               )
-            | Error _ -> aux stage title tags xs
+            | Error _ -> aux last_stage stage title tags xs
           )
       )
   in
-  aux `Parsing_title [] String_set.empty s
+  aux `Parsing_title `Parsing_title [] String_set.empty s
 
 let parse_text (s : (int * string) Seq.t) : t =
   let rec aux (stage : text_work_stage) title s =

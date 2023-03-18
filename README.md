@@ -3,16 +3,26 @@ TUI fuzzy document finder
 
 ## Installation
 
-Statically linked binaries are available via [GitHub releases](https://github.com/darrenldl/docfd/releases)
+Statically linked binaries are available via
+[GitHub releases](https://github.com/darrenldl/docfd/releases)
 
 ## Usage
 
-Notefd scans a given directory recursively (defaults to `.`),
+Docfd scans for files recursively (defaults to `.`) with the following extensions:
+
+- `.md`
+- `.txt`
+
+and builds an index of the "document" content.
+
+## Advanced usage
+
+Docfd recognizes "note" files, which can contain tags.
+A file is classified as a note if scans a given directory recursively (defaults to `.`),
 and processes files with names which contain "note" or "notes" after splitting on '.', e.g.
 `meeting.notes.md`, `timetable.note`, `note`.
 
-The first 2KiB of the file is extracted, of which the first 10 lines are extracted
-to be parsed as a header.
+If any such file is detected, then tag related UI components become visible.
 
 A header consists of two main sections: title and tags.
 
@@ -28,7 +38,10 @@ Meeting YYYY-MM-DD
 [ tag0 tag1 tag2 ... ]
 ```
 
-#### Searching
+The remainder of the file is considered content, and is indexed
+in the same way as a document.
+
+#### Tag search
 
 The following types of tag matches are available:
 
@@ -43,18 +56,6 @@ All search constraints are chained together by "and".
 
 - `--tags` List all tags used
 - `--ltags` List all tags used in lowercase
-
-#### Output
-
-Notefd lists the headers of all note files which satisfy the search constraints.
-
-Example output:
-```
-$ notefd
-@ ./test.note.md
-  > Meeting YYYY-MM-DD
-  [ tag0 tag1 ]
-```
 
 ## Other valid header structure
 
@@ -74,7 +75,7 @@ Meeting YYYY-MM-DD
 About topic ABC
 ```
 
-The final title is computed in the same way as above.
+The first line is used as the final title.
 
 #### Multiple consecutive tag sections
 ```
