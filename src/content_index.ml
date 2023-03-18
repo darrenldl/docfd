@@ -32,29 +32,10 @@ let union (t1 : t) (t2 : t) : t =
         t2.word_of_location;
   }
 
-module Parsers = struct
-  open Angstrom
-  open Parser_components
-  let token_p =
-    choice [
-      take_while1 is_alphanum;
-      take_while1 is_space;
-      any_char >>| (fun c -> Printf.sprintf "%c" c);
-    ]
-
-  let tokens_p =
-    many token_p
-end
-
-let tokenize (s : string) : string list =
-  match Angstrom.(parse_string ~consume:Consume.All) Parsers.tokens_p s with
-  | Ok l -> l
-  | Error _ -> []
-
 let words_of_lines (s : (int * string) Seq.t) : (int * (int * int) * string) Seq.t =
   s
   |> Seq.flat_map (fun (line_num, s) ->
-      tokenize s
+      Tokenize.f s
       |> List.to_seq
       |> Seq.mapi (fun i s -> ((line_num, i), s)))
   |> Seq.filter (fun (_line_pos, s) -> s <> "")

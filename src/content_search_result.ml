@@ -23,7 +23,7 @@ let score (t : t) : float =
     List.fold_left (fun (n, last_loc) (_, d) ->
         match last_loc with
         | None -> (n, Some d)
-        | Some last_loc -> (n + (d - last_loc), Some d)
+        | Some last_loc -> (n + abs (d - last_loc), Some d)
       )
       (0, None)
       t.found_phrase

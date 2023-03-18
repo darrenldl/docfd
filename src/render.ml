@@ -80,7 +80,7 @@ let content_search_results
         let word_image_grid =
           Array.sub doc_lines relevant_start_line (relevant_end_inc_line - relevant_start_line + 1)
           |> Array.map (fun line ->
-              Content_index.tokenize line
+              Tokenize.f line
               |> List.map (fun word -> I.string A.empty word)
               |> Array.of_list
             )

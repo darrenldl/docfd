@@ -20,7 +20,7 @@ let make
     ~phrase
   =
   let phrase = phrase
-               |> Content_index.tokenize
+               |> Tokenize.f
                |> List.filter (fun s -> s <> "")
   in
   let fuzzy_index =
