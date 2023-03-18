@@ -12,3 +12,12 @@ let path_is_note path =
   List.exists (fun s ->
       s = "note" || s = "notes") words
 
+let first_n_chars_of_string_contains ~n s c =
+  let s_len = String.length s in
+  let s =
+    if s_len <= n then
+      s
+    else
+      String.sub s 0 n
+  in
+  String.contains s c

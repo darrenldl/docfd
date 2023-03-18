@@ -86,9 +86,11 @@ let content_search_results
               |> Array.of_list
             )
         in
-        List.iter (fun (word, loc) ->
+        List.iter (fun (_word, loc) ->
             let (line_num, pos) = Int_map.find loc document.content_index.line_pos_of_location_ci in
-            word_image_grid.(line_num - relevant_start_line).(pos) <- I.string A.(fg red ++ st bold) word
+            let word = Int_map.find loc document.content_index.word_of_location in
+            word_image_grid.(line_num - relevant_start_line).(pos) <-
+              I.string A.(fg red ++ st bold) word
           )
           search_result.found_phrase;
         let img =

@@ -258,7 +258,7 @@ let content_search_results
       |> Seq.filter (fun (s, _locations) ->
           String.equal word s
           || CCString.find ~sub:word s >= 0
-          || (String.contains (String.sub s 0 5) word.[0] && Spelll.match_with dfa s)
+          || (Misc_utils.first_n_chars_of_string_contains ~n:5 s word.[0] && Spelll.match_with dfa s)
         )
       |> Seq.flat_map (fun (_, locations) ->
           Int_set.to_seq locations
