@@ -52,7 +52,7 @@ A file is classified as a note if scans a given directory recursively (defaults 
 and processes files with names which contain "note" or "notes" after splitting on '.', e.g.
 `meeting.notes.md`, `timetable.note`, `note`.
 
-If any such file is detected, then tag related UI components become visible.
+If any such file is detected, then tag related UI components and control become visible.
 
 A header consists of two main sections: title and tags.
 

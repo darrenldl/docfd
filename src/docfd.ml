@@ -387,10 +387,32 @@ let run
           let tag_ci_full_focus_handle = Nottui.Focus.make () in
           let tag_ci_sub_focus_handle = Nottui.Focus.make () in
           let tag_exact_focus_handle = Nottui.Focus.make () in
-          let keyboard_handler ~choice_count ~current_choice (documents : Document.t array) (key : Nottui.Ui.key) =
-            let bound_selection (x : int) : int =
-              max 0 (min (choice_count - 1) x)
-            in
+          let bound_selection ~choice_count (x : int) : int =
+            max 0 (min (choice_count - 1) x)
+          in
+          let mouse_handler
+              ~choice_count
+              ~current_choice
+              ~x ~y
+              (button : Notty.Unescape.button)
+            =
+            let _ = x in
+            let _ = y in
+            match button with
+            | `Scroll `Down ->
+              Lwd.set selected (bound_selection ~choice_count (current_choice+1));
+              `Handled
+            | `Scroll `Up ->
+              Lwd.set selected (bound_selection ~choice_count (current_choice-1));
+              `Handled
+            | _ -> `Unhandled
+          in
+          let keyboard_handler
+              ~choice_count
+              ~current_choice
+              (documents : Document.t array)
+              (key : Nottui.Ui.key)
+            =
             match Lwd.peek mode with
             | `Navigate -> (
                 match key with
@@ -399,10 +421,12 @@ let run
                 | (`ASCII 'C', [`Ctrl]) -> Lwd.set quit true; `Handled
                 | (`ASCII 'j', [])
                 | (`Arrow `Down, []) ->
-                  Lwd.set selected (bound_selection (current_choice+1)); `Handled
+                  Lwd.set selected (bound_selection ~choice_count (current_choice+1));
+                  `Handled
                 | (`ASCII 'k', [])
                 | (`Arrow `Up, []) ->
-                  Lwd.set selected (bound_selection (current_choice-1)); `Handled
+                  Lwd.set selected (bound_selection ~choice_count (current_choice-1));
+                  `Handled
                 | (`ASCII '/', []) ->
                   Nottui.Focus.request content_focus_handle;
                   Lwd.set mode `Content;
@@ -455,11 +479,6 @@ let run
                   )
                 in
                 pane
-                |> Nottui.Ui.keyboard_area
-                  (keyboard_handler
-                     ~choice_count:image_count
-                     ~current_choice:i
-                     documents)
               )
               documents
               (Lwd.get selected)
@@ -598,14 +617,33 @@ let run
                   Lwd.set mode `Navigate
                 )
           in
+          let top_pane_no_control =
+            Nottui_widgets.h_pane
+              left_pane
+              right_pane
+          in
+          let top_pane =
+            Lwd.map2 ~f:(fun (pane, documents) i ->
+                let image_count = Array.length documents in
+                pane
+                |> Nottui.Ui.keyboard_area
+                  (keyboard_handler
+                     ~choice_count:image_count
+                     ~current_choice:i
+                     documents)
+                |> Nottui.Ui.mouse_area
+                  (mouse_handler
+                     ~choice_count:image_count
+                     ~current_choice:i)
+              )
+              (Lwd.pair top_pane_no_control documents )
+              (Lwd.get selected)
+          in
           let screen =
             Nottui_widgets.vbox
               (List.flatten
                  [
-                   [ Nottui_widgets.h_pane
-                       left_pane
-                       right_pane
-                   ];
+                   [ top_pane ];
                    [ Nottui_widgets.hbox
                        [
                          content_label;
