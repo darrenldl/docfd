@@ -22,7 +22,7 @@ The TUI is divided into three sections:
 - Right is the preview of the document
 - Bottom is the search interface
 
-#### Controls
+### Controls
 
 Docfd operates in modes, the initial mode is __Navigation__ mode
 
@@ -71,7 +71,7 @@ Meeting YYYY-MM-DD
 The remainder of the file is considered content, and is indexed
 in the same way as a document.
 
-#### Tag search
+### Tag search
 
 The following types of tag matches are available:
 
@@ -82,14 +82,14 @@ The following types of tag matches are available:
 
 All search constraints are chained together by "and".
 
-#### List tags
+### List tags
 
 - `--tags` List all tags used
 - `--ltags` List all tags used in lowercase
 
 ## Other valid header structure
 
-#### Multiline title
+### Multiline title
 ```
 Meeting YYYY-MM-DD
 About topic ABC
@@ -99,7 +99,7 @@ About topic ABC
 The final title computed by Notefd is simply all title lines
 concatenated using ` `, i.e. `Meeting YYYY-MM-DD About topic ABC`.
 
-#### Missing tag section
+### Missing tag section
 ```
 Meeting YYYY-MM-DD
 About topic ABC
@@ -107,7 +107,7 @@ About topic ABC
 
 The first line is used as the final title.
 
-#### Multiple consecutive tag sections
+### Multiple consecutive tag sections
 ```
 Meeting YYYY-MM-DD
 About topic ABC
