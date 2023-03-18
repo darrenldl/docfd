@@ -25,13 +25,13 @@ The TUI is divided into three sections:
 - Left is the list of documents which satisfy the search constraints
 - Top right is the preview of the document
 - Bottom right is the ranked content search result list
-- Bottom is the search interface
+- Bottom bar is the search interface
 
 ### Controls
 
-Docfd operates in modes, the initial mode is __NAVIGATION__ mode
+Docfd operates in modes, the initial mode is `NAVIGATION` mode
 
-__NAVIGATION__ mode
+`NAVIGATION` mode
 - Scroll down the document list
   - `j` or down arrow
   - Scroll down with mouse wheel when hovering above the area
@@ -47,12 +47,12 @@ __NAVIGATION__ mode
 - Open document
   - `Enter`
     - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
-- Switch to __CONTENT SEARCH__ mode
+- Switch to `CONTENT SEARCH` mode
   - `/`
 - Exit Docfd
   - `q` or `Ctrl+c`
 
-__CONTENT SEARCH__ mode
+`CONTENT SEARCH` mode
 
 - Content search field is active in this mode
 - `Enter` to confirm search constraints and exit search mode
