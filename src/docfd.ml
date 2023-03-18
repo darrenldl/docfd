@@ -52,28 +52,39 @@ let list_tags_lowercase_arg =
   Arg.(value & flag & info [ "ltags" ] ~doc)
 
 let list_files_recursively (dir : string) : string list =
-  let rec aux path =
-    match Sys.is_directory path with
-    | false ->
-      let ext = Filename.extension path in
-      if Misc_utils.path_is_note path
-      || ext = ".txt"
-      || ext = ".md"
-      then
-        [ path ]
-      else
-        []
-    | true -> (
-        try
-          let l = Array.to_list (Sys.readdir path) in
-          List.map (Filename.concat path) l
-          |> CCList.flat_map aux
-        with
-        | _ -> []
-      )
-    | exception _ -> []
+  let l = ref [] in
+  let add x =
+    l := x :: !l
   in
-  aux dir
+  let rec aux depth path =
+    if depth >= Params.max_file_tree_depth then ()
+    else (
+      if Sys.is_directory path then (
+        let next_choices =
+          try
+            Sys.readdir path
+          with
+          | _ -> [||]
+        in
+        Array.iter (fun f ->
+            aux (depth + 1) (Filename.concat path f)
+          )
+          next_choices
+      ) else (
+        let ext = Filename.extension path in
+        if List.mem ext Params.recognized_exts then (
+          add path
+        )
+      )
+    )
+  in
+  (
+    try
+      aux 0 dir
+    with
+    | _ -> ()
+  );
+  !l
 
 let set_of_tags (tags : string list) : String_set.t =
   List.fold_left (fun s x ->
@@ -169,94 +180,6 @@ let render_documents
   let images_unselected = Array.of_list (List.rev !images_unselected) in
   (images_selected, images_unselected)
 
-(* let render_headers
-    (term : Notty_unix.Term.t)
-    (constraints : Tag_search_constraints.t)
-    (headers : header array) : Notty.image array * Notty.image array =
-   let (term_width, _term_height) = Notty_unix.Term.size term in
-   let images_selected : Notty.image list ref = ref [] in
-   let images_unselected : Notty.image list ref = ref [] in
-   Array.iter (fun header ->
-      let open Notty in
-      let open Notty.Infix in
-      let tag_arr = Array.of_list header.tags in
-      let tag_matched = Array.of_list header.tag_matched  in
-      let max_tag_len =
-        Array.fold_left (fun len s ->
-            max len (String.length s))
-          0 tag_arr
-      in
-      let image_of_tag i s : image =
-        I.string
-          (if Search_constraints.is_empty constraints
-           || tag_matched.(i)
-           then
-             A.(fg red)
-           else
-             A.empty)
-          s
-        |> I.hpad 0 (max_tag_len - String.length s + 1)
-      in
-      let tag_images =
-        Array.mapi image_of_tag tag_arr
-      in
-      let col_count = term_width / 2 / (max_tag_len + 2) in
-      let row_count =
-        (Array.length tag_arr + (col_count-1)) / col_count
-      in
-      let img_selected =
-        I.string A.(fg blue ++ st bold)
-          (Option.value ~default:"" header.title)
-        <->
-        (I.string A.empty "  "
-         <|>
-         I.vcat
-           [
-             (
-               I.string A.empty "[ "
-               <|> I.tabulate col_count row_count (fun x y ->
-                   let i = x + col_count * y in
-                   if i < Array.length tag_arr then
-                     tag_images.(i)
-                   else
-                     I.empty
-                 )
-               <|> I.string A.empty "]"
-             );
-             I.string A.empty header.path;
-           ]
-        )
-      in
-      let img_unselected =
-        I.string A.(fg blue)
-          (Option.value ~default:"" header.title)
-        <->
-        (I.string A.empty "  "
-         <|>
-         I.vcat
-           [
-             (
-               I.string A.empty "[ "
-               <|> I.tabulate col_count row_count (fun x y ->
-                   let i = x + col_count * y in
-                   if i < Array.length tag_arr then
-                     tag_images.(i)
-                   else
-                     I.empty
-                 )
-               <|> I.string A.empty "]"
-             );
-             I.string A.empty header.path;
-           ]
-        )
-      in
-      images_selected := img_selected :: !images_selected;
-      images_unselected := img_unselected :: !images_unselected
-    ) headers;
-   let images_selected = Array.of_list (List.rev !images_selected) in
-   let images_unselected = Array.of_list (List.rev !images_unselected) in
-   (images_selected, images_unselected) *)
-
 type mode = [
   | `Navigate
   | `Content
@@ -292,9 +215,9 @@ let run
     Fmt.pr "Error: Please select only --tags or --ltags\n";
     exit 1
   );
-  let files =
-    list_files_recursively dir
-  in
+  Printf.printf "Scanning for text files\n";
+  let files = list_files_recursively dir in
+  Printf.printf "Scanning completed\n";
   let files = List.sort_uniq String.compare files in
   let all_documents =
     List.filter_map (fun path ->
@@ -321,7 +244,7 @@ let run
       print_tag_set !tags_used
     ) else (
       match all_documents with
-      | [] -> Printf.printf "No text files detected\n"
+      | [] -> Printf.printf "No suitable text files found\n"
       | _ -> (
           let handle_tag_ui =
             List.exists (fun (doc : Document.t) ->
