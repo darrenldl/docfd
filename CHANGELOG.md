@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2
+
+- Fixed tokenization of user provided content search input
+
+- Fixed content indexing to not include spaces
+
 ## 0.2.1
 
 - Optimized file discovery procedure
