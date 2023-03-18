@@ -6,6 +6,8 @@
 
 - Added `--max-depth` option to limit scanning depth
 
+- Added content search results view
+
 ## 0.2.0
 
 - Switched to interactive TUI

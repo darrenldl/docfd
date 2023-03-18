@@ -9,11 +9,11 @@ let max_depth_arg =
   in
   Arg.(value & opt int Params.default_max_file_tree_depth & info [ "max-depth" ] ~doc ~docv:"N")
 
-let fuzzy_max_edit_distance_arg =
+let max_fuzzy_edit_distance_arg =
   let doc =
     "Maximum edit distance for fuzzy matches."
   in
-  Arg.(value & opt int 3 & info [ "fuzzy-max-edit" ] ~doc ~docv:"N")
+  Arg.(value & opt int Params.default_max_fuzzy_edit_distance & info [ "max-fuzzy-edit" ] ~doc ~docv:"N")
 
 let tag_ci_fuzzy_arg =
   let doc =
@@ -131,61 +131,6 @@ let print_tag_set (tags : String_set.t) =
       s
   )
 
-let render_documents
-    (term : Notty_unix.Term.t)
-    (documents : Document.t array)
-  : Notty.image array * Notty.image array =
-  let (_term_width, _term_height) = Notty_unix.Term.size term in
-  let images_selected : Notty.image list ref = ref [] in
-  let images_unselected : Notty.image list ref = ref [] in
-  Array.iter (fun (doc : Document.t) ->
-      let open Notty in
-      let open Notty.Infix in
-      let content_search_result_score_image =
-        if !Params.debug then
-          match doc.content_search_results with
-          | [] -> I.empty
-          | x :: _ ->
-            I.strf "(content search result score: %f)" (Content_search_result.score x)
-        else
-          I.empty
-      in
-      let preview_images =
-        List.map (fun line ->
-            I.strf "|  %s" line
-          )
-          doc.preview_lines
-      in
-      let path_image =
-        I.string A.empty doc.path;
-      in
-      let img_selected =
-        I.string A.(fg blue ++ st bold)
-          (Option.value ~default:"" doc.title)
-        <->
-        (I.string A.empty "  "
-         <|>
-         I.vcat
-           (content_search_result_score_image :: path_image :: preview_images)
-        )
-      in
-      let img_unselected =
-        I.string A.(fg blue)
-          (Option.value ~default:"" doc.title)
-        <->
-        (I.string A.empty "  "
-         <|>
-         I.vcat
-           (content_search_result_score_image :: path_image :: preview_images)
-        )
-      in
-      images_selected := img_selected :: !images_selected;
-      images_unselected := img_unselected :: !images_unselected
-    ) documents;
-  let images_selected = Array.of_list (List.rev !images_selected) in
-  let images_unselected = Array.of_list (List.rev !images_unselected) in
-  (images_selected, images_unselected)
-
 type mode = [
   | `Navigate
   | `Content
@@ -276,7 +221,8 @@ let run
                        ~phrase:[])
           in
           let quit = Lwd.var false in
-          let selected = Lwd.var 0 in
+          let document_selected = Lwd.var 0 in
+          let content_search_result_selected = Lwd.var 0 in
           let file_to_open = ref None in
           let mode : mode Lwd.var = Lwd.var `Navigate in
           let documents = Lwd.map2 ~f:(fun tag_constraints content_constraints ->
@@ -321,9 +267,9 @@ let run
           let bound_selection ~choice_count (x : int) : int =
             max 0 (min (choice_count - 1) x)
           in
-          let mouse_handler
-              ~choice_count
-              ~current_choice
+          let document_list_mouse_handler
+              ~document_choice_count
+              ~document_current_choice
               ~x ~y
               (button : Notty.Unescape.button)
             =
@@ -331,19 +277,48 @@ let run
             let _ = y in
             match button with
             | `Scroll `Down ->
-              Lwd.set selected (bound_selection ~choice_count (current_choice+1));
+              Lwd.set document_selected
+                (bound_selection ~choice_count:document_choice_count (document_current_choice+1));
               `Handled
             | `Scroll `Up ->
-              Lwd.set selected (bound_selection ~choice_count (current_choice-1));
+              Lwd.set document_selected
+                (bound_selection ~choice_count:document_choice_count (document_current_choice-1));
+              `Handled
+            | _ -> `Unhandled
+          in
+          let content_search_result_list_mouse_handler
+              ~content_search_result_choice_count
+              ~content_search_result_current_choice
+              ~x ~y
+              (button : Notty.Unescape.button)
+            =
+            let _ = x in
+            let _ = y in
+            match button with
+            | `Scroll `Down ->
+              Lwd.set content_search_result_selected
+                (bound_selection
+                   ~choice_count:content_search_result_choice_count
+                   (content_search_result_current_choice+1));
+              `Handled
+            | `Scroll `Up ->
+              Lwd.set content_search_result_selected
+                (bound_selection
+                   ~choice_count:content_search_result_choice_count
+                   (content_search_result_current_choice-1));
               `Handled
             | _ -> `Unhandled
           in
           let keyboard_handler
-              ~choice_count
-              ~current_choice
+              ~document_choice_count
+              ~document_current_choice
+              ~content_search_result_current_choice
               (documents : Document.t array)
               (key : Nottui.Ui.key)
             =
+            let content_search_result_choice_count () =
+              List.length documents.(document_current_choice).content_search_results
+            in
             match Lwd.peek mode with
             | `Navigate -> (
                 match key with
@@ -352,11 +327,31 @@ let run
                 | (`ASCII 'C', [`Ctrl]) -> Lwd.set quit true; `Handled
                 | (`ASCII 'j', [])
                 | (`Arrow `Down, []) ->
-                  Lwd.set selected (bound_selection ~choice_count (current_choice+1));
+                  Lwd.set document_selected
+                    (bound_selection
+                       ~choice_count:document_choice_count
+                       (document_current_choice+1));
+                  `Handled
+                | (`ASCII 'J', [])
+                | (`Arrow `Down, [`Shift]) ->
+                  Lwd.set content_search_result_selected
+                    (bound_selection
+                       ~choice_count:(content_search_result_choice_count ())
+                       (content_search_result_current_choice+1));
                   `Handled
                 | (`ASCII 'k', [])
                 | (`Arrow `Up, []) ->
-                  Lwd.set selected (bound_selection ~choice_count (current_choice-1));
+                  Lwd.set document_selected
+                    (bound_selection
+                       ~choice_count:document_choice_count
+                       (document_current_choice-1));
+                  `Handled
+                | (`ASCII 'K', [])
+                | (`Arrow `Up, [`Shift]) ->
+                  Lwd.set content_search_result_selected
+                    (bound_selection
+                       ~choice_count:(content_search_result_choice_count ())
+                       (content_search_result_current_choice-1));
                   `Handled
                 | (`ASCII '/', []) ->
                   Nottui.Focus.request content_focus_handle;
@@ -380,24 +375,30 @@ let run
                   `Handled
                 | (`Enter, []) -> (
                     Lwd.set quit true;
-                    file_to_open := Some documents.(current_choice);
+                    file_to_open := Some documents.(document_current_choice);
                     `Handled
                   )
                 | _ -> `Handled
               )
             | _ -> `Unhandled
           in
+          let full_term_sized_background () =
+            let (term_width, term_height) = Notty_unix.Term.size term in
+            Notty.I.void term_width term_height
+            |> Nottui.Ui.atom
+          in
           let left_pane =
             Lwd.map2 ~f:(fun documents i ->
                 let image_count = Array.length documents in
+                let (_term_width, term_height) = Notty_unix.Term.size term in
                 let pane =
                   if Array.length documents = 0 then (
                     Nottui.Ui.empty
                   ) else (
                     let (images_selected, images_unselected) =
-                      render_documents term documents
+                      Render.documents term documents
                     in
-                    CCInt.range' i image_count
+                    CCInt.range' i (min (i + term_height / 2) image_count)
                     |> CCList.of_iter
                     |> List.map (fun j ->
                         if Int.equal i j then
@@ -409,16 +410,20 @@ let run
                     |> Nottui.Ui.vcat
                   )
                 in
-                pane
+                Nottui.Ui.join_z (full_term_sized_background ()) pane
+                |> Nottui.Ui.mouse_area
+                  (document_list_mouse_handler
+                     ~document_choice_count:image_count
+                     ~document_current_choice:i)
               )
               documents
-              (Lwd.get selected)
+              (Lwd.get document_selected)
           in
-          let right_pane =
+          let file_view =
             Lwd.map2 ~f:(fun documents i ->
-                if Array.length documents = 0 then
+                if Array.length documents = 0 then (
                   Nottui.Ui.empty
-                else (
+                ) else (
                   let path = documents.(i).path in
                   let (_term_width, term_height) = Notty_unix.Term.size term in
                   let content =
@@ -437,7 +442,43 @@ let run
                 )
               )
               documents
-              (Lwd.get selected)
+              (Lwd.get document_selected)
+          in
+          let content_search_results =
+            Lwd.map2 ~f:(fun (documents, i) search_result_i ->
+                if Array.length documents = 0 then (
+                  Nottui.Ui.empty
+                ) else (
+                  let images =
+                    Render.content_search_results documents.(i)
+                  in
+                  let image_count = Array.length images in
+                  if image_count = 0 then (
+                    Nottui.Ui.empty
+                  ) else (
+                    let (_term_width, term_height) = Notty_unix.Term.size term in
+                    let pane =
+                      CCInt.range' search_result_i (min (search_result_i + term_height / 2) image_count)
+                      |> CCList.of_iter
+                      |> List.map (fun i -> Notty.I.(images.(i) <-> strf ""))
+                      |> List.map Nottui.Ui.atom
+                      |> Nottui.Ui.vcat
+                    in
+                    Nottui.Ui.join_z (full_term_sized_background ()) pane
+                    |> Nottui.Ui.mouse_area
+                      (content_search_result_list_mouse_handler
+                         ~content_search_result_choice_count:image_count
+                         ~content_search_result_current_choice:search_result_i)
+                  )
+                )
+              )
+              Lwd.(pair documents (Lwd.get document_selected))
+              (Lwd.get content_search_result_selected)
+          in
+          let right_pane =
+            Nottui_widgets.v_pane
+              file_view
+              content_search_results
           in
           let content_label_str = "(/) Content search:" in
           let tag_ci_fuzzy_label_str = "(Ctrl+f) [F]uzzy case-insensitive tags:" in
@@ -522,7 +563,8 @@ let run
                  ~phrase:(String.split_on_char ' ' (fst @@ Lwd.peek content_field))
               )
             in
-            Lwd.set selected 0;
+            Lwd.set document_selected 0;
+            Lwd.set content_search_result_selected 0;
             Lwd.set content_constraints constraints'
           in
           let update_tag_constraints () =
@@ -535,7 +577,8 @@ let run
                  ~exact:(String.split_on_char ' ' (fst @@ Lwd.peek tag_exact_field))
               )
             in
-            Lwd.set selected 0;
+            Lwd.set document_selected 0;
+            Lwd.set content_search_result_selected 0;
             Lwd.set tag_constraints constraints'
           in
           let make_search_field ~edit_field ~focus_handle ~f =
@@ -548,27 +591,28 @@ let run
                   Lwd.set mode `Navigate
                 )
           in
-          let top_pane_no_control =
+          let top_pane_no_keyboard_control =
             Nottui_widgets.h_pane
               left_pane
               right_pane
           in
           let top_pane =
-            Lwd.map2 ~f:(fun (pane, documents) i ->
-                let image_count = Array.length documents in
-                pane
-                |> Nottui.Ui.keyboard_area
-                  (keyboard_handler
-                     ~choice_count:image_count
-                     ~current_choice:i
-                     documents)
-                |> Nottui.Ui.mouse_area
-                  (mouse_handler
-                     ~choice_count:image_count
-                     ~current_choice:i)
-              )
-              (Lwd.pair top_pane_no_control documents )
-              (Lwd.get selected)
+            Lwd.map2 ~f:(fun
+                          (pane, documents)
+                          (document_current_choice, content_search_result_current_choice) ->
+                          let image_count = Array.length documents in
+                          pane
+                          |> Nottui.Ui.keyboard_area
+                            (keyboard_handler
+                               ~document_choice_count:image_count
+                               ~document_current_choice
+                               ~content_search_result_current_choice
+                               documents)
+                        )
+              (Lwd.pair top_pane_no_keyboard_control documents)
+              (Lwd.pair
+                 (Lwd.get document_selected)
+                 (Lwd.get content_search_result_selected))
           in
           let screen =
             Nottui_widgets.vbox
@@ -635,7 +679,7 @@ let run
             | Some header ->
               match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
               | None, None ->
-                Printf.printf "Error: Failed to both env variables VISUAL and EDITOR are unset\n"; exit 1
+                Printf.printf "Error: Both env variables VISUAL and EDITOR are unset\n"; exit 1
               | Some editor, _
               | None, Some editor -> (
                   Sys.command (Fmt.str "%s \'%s\'" editor header.path) |> ignore;
@@ -656,7 +700,7 @@ let cmd =
     (Term.(const run
            $ debug_arg
            $ max_depth_arg
-           $ fuzzy_max_edit_distance_arg
+           $ max_fuzzy_edit_distance_arg
            $ tag_ci_fuzzy_arg
            $ tag_ci_full_arg
            $ tag_ci_sub_arg
