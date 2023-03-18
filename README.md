@@ -24,9 +24,9 @@ The TUI is divided into three sections:
 
 ### Controls
 
-Docfd operates in modes, the initial mode is __Navigation__ mode
+Docfd operates in modes, the initial mode is __NAVIGATION__ mode
 
-__Navigation__ mode
+__NAVIGATION__ mode
 - Scroll down the document list
   - `j` or down arrow
   - Scroll down with mouse wheel
@@ -35,12 +35,12 @@ __Navigation__ mode
   - Scroll up with mouse wheel
 - Open document
   - `Enter`
-- Switch to __Content search__ mode
+- Switch to __CONTENT SEARCH__ mode
   - `/`
 - Exit Docfd
   - `q` or `Ctrl+c`
 
-__Content search__ mode
+__CONTENT SEARCH__ mode
 
 - Content search field is active in this mode
 - `Enter` to confirm search constraints and exit search mode
