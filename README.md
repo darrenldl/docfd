@@ -35,6 +35,7 @@ __NAVIGATION__ mode
   - Scroll up with mouse wheel
 - Open document
   - `Enter`
+    - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
 - Switch to __CONTENT SEARCH__ mode
   - `/`
 - Exit Docfd

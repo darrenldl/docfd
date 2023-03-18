@@ -704,7 +704,7 @@ let run
             | Some header ->
               match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
               | None, None ->
-                Printf.printf "Error: Failed to both env variable VISUAL and EDITOR are unset\n"; exit 1
+                Printf.printf "Error: Failed to both env variables VISUAL and EDITOR are unset\n"; exit 1
               | Some editor, _
               | None, Some editor -> (
                   Sys.command (Fmt.str "%s \'%s\'" editor header.path) |> ignore;
