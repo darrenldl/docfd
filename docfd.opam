@@ -6,9 +6,9 @@ maintainer: ["Darren Ldl"]
 authors: ["Darren Ldl"]
 license: "MIT"
 tags: ["document"]
-homepage: "https://github.com/darrenldl/notefd"
+homepage: "https://github.com/darrenldl/docfd"
 doc: "https://github.com/darrenldl/docfd"
-bug-reports: "https://github.com/darrenldl/notefd/issues"
+bug-reports: "https://github.com/darrenldl/docfd/issues"
 depends: [
   "ocaml" {>= "4.14"}
   "ocaml"
@@ -33,4 +33,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/darrenldl/notefd.git"
+dev-repo: "git+https://github.com/darrenldl/docfd.git"

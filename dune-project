@@ -5,7 +5,7 @@
 (generate_opam_files true)
 
 (source
- (github darrenldl/notefd))
+ (github darrenldl/docfd))
 
 (authors "Darren Ldl")
 
