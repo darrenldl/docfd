@@ -498,13 +498,17 @@ let run
             List.fold_left (fun x s ->
                 max x (String.length s))
               0
-              [
-                content_label_str;
-                tag_ci_fuzzy_label_str;
-                tag_ci_full_label_str;
-                tag_ci_sub_label_str;
-                tag_exact_label_str;
-              ]
+              (
+                content_label_str
+                ::
+                (if handle_tag_ui then
+                   [tag_ci_fuzzy_label_str;
+                    tag_ci_full_label_str;
+                    tag_ci_sub_label_str;
+                    tag_exact_label_str;
+                   ]
+                 else [])
+              )
           in
           let label_widget_len = max_label_len + 1 in
           let content_label =
@@ -596,62 +600,58 @@ let run
           in
           let screen =
             Nottui_widgets.vbox
-              (List.filter_map (fun x -> x)
+              (List.flatten
                  [
-                   Some
-                     (Nottui_widgets.h_pane
-                        left_pane
-                        right_pane);
-                   Some
-                     (Nottui_widgets.hbox
-                        [
-                          content_label;
-                          make_search_field
-                            ~edit_field:content_field
-                            ~focus_handle:content_focus_handle
-                            ~f:update_content_constraints;
-                        ]);
+                   [ Nottui_widgets.h_pane
+                       left_pane
+                       right_pane
+                   ];
+                   [ Nottui_widgets.hbox
+                       [
+                         content_label;
+                         make_search_field
+                           ~edit_field:content_field
+                           ~focus_handle:content_focus_handle
+                           ~f:update_content_constraints;
+                       ]
+                   ];
                    (if handle_tag_ui then
-                      Some (Nottui_widgets.hbox
-                              [
-                                tag_ci_fuzzy_label;
-                                make_search_field
-                                  ~edit_field:tag_ci_fuzzy_field
-                                  ~focus_handle:tag_ci_fuzzy_focus_handle
-                                  ~f:update_tag_constraints;
-                              ])
-                    else None);
-                   (if handle_tag_ui then
-                      Some (Nottui_widgets.hbox
-                              [
-                                tag_ci_full_label;
-                                make_search_field
-                                  ~edit_field:tag_ci_full_field
-                                  ~focus_handle:tag_ci_full_focus_handle
-                                  ~f:update_tag_constraints;
-                              ])
-                    else None);
-                   (if handle_tag_ui then
-                      Some (Nottui_widgets.hbox
-                              [
-                                tag_ci_sub_label;
-                                make_search_field
-                                  ~edit_field:tag_ci_sub_field
-                                  ~focus_handle:tag_ci_sub_focus_handle
-                                  ~f:update_tag_constraints;
-                              ])
-                    else None);
-                   (if handle_tag_ui then
-                      Some (Nottui_widgets.hbox
-                              [
-                                tag_exact_label;
-                                make_search_field
-                                  ~edit_field:tag_exact_field
-                                  ~focus_handle:tag_exact_focus_handle
-                                  ~f:update_tag_constraints;
-                              ])
-                    else None);
+                      [ Nottui_widgets.hbox
+                          [
+                            tag_ci_fuzzy_label;
+                            make_search_field
+                              ~edit_field:tag_ci_fuzzy_field
+                              ~focus_handle:tag_ci_fuzzy_focus_handle
+                              ~f:update_tag_constraints;
+                          ];
+                        Nottui_widgets.hbox
+                          [
+                            tag_ci_full_label;
+                            make_search_field
+                              ~edit_field:tag_ci_full_field
+                              ~focus_handle:tag_ci_full_focus_handle
+                              ~f:update_tag_constraints;
+                          ];
+                        Nottui_widgets.hbox
+                          [
+                            tag_ci_sub_label;
+                            make_search_field
+                              ~edit_field:tag_ci_sub_field
+                              ~focus_handle:tag_ci_sub_focus_handle
+                              ~f:update_tag_constraints;
+                          ];
+                        Nottui_widgets.hbox
+                          [
+                            tag_exact_label;
+                            make_search_field
+                              ~edit_field:tag_exact_field
+                              ~focus_handle:tag_exact_focus_handle
+                              ~f:update_tag_constraints;
+                          ];
+                      ]
+                    else []);
                  ]
+              )
           in
           let rec loop () =
             file_to_open := None;
