@@ -15,6 +15,36 @@ Docfd scans for files recursively (defaults to `.`) with the following extension
 
 and builds an index of the "document" content.
 
+[TODO screenshot]
+
+The TUI is divided into three sections:
+- Left is the list of documents which satisfy the search constraints
+- Right is the preview of the document
+- Bottom is the search interface
+
+#### Controls
+
+Docfd operates in modes, the initial mode is __Navigation__ mode
+
+__Navigation__ mode
+- Scroll down the document list
+  - `j` or down arrow
+  - Scroll down with mouse wheel
+- Scroll up the document list
+  - `k` or up arrow
+  - Scroll up with mouse wheel
+- Open document
+  - `Enter`
+- Switch to content search mode
+  - `/`
+- Exit Docfd
+  - `q` or `Ctrl+c`
+
+__Content search__ mode
+
+- Content search field is active in this mode
+- `Enter` to confirm search constraints and exit search mode
+
 ## Advanced usage
 
 Docfd recognizes "note" files, which can contain tags.
