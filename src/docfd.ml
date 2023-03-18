@@ -642,9 +642,9 @@ let run
 let dir_arg = Arg.(value & pos 0 dir "." & info [])
 
 let cmd =
-  let doc = "Tag your notes with a simple header" in
+  let doc = "TUI fuzzy document finder" in
   let version = Version_string.s in
-  Cmd.v (Cmd.info "notefd" ~version ~doc)
+  Cmd.v (Cmd.info "docfd" ~version ~doc)
     (Term.(const run
            $ debug_arg
            $ fuzzy_max_edit_distance_arg
