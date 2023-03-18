@@ -35,7 +35,7 @@ __Navigation__ mode
   - Scroll up with mouse wheel
 - Open document
   - `Enter`
-- Switch to content search mode
+- Switch to __Content search__ mode
   - `/`
 - Exit Docfd
   - `q` or `Ctrl+c`
