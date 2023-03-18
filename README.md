@@ -23,7 +23,8 @@ Searching `[github]` in repo root:
 
 The TUI is divided into three sections:
 - Left is the list of documents which satisfy the search constraints
-- Right is the preview of the document
+- Top right is the preview of the document
+- Bottom right is the ranked content search result list
 - Bottom is the search interface
 
 ### Controls
