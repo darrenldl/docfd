@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.3
+
+- Added sanitization to file view text
+
+- Docfd now accepts file being passed as argument
+
 ## 0.2.2
 
 - Fixed tokenization of user provided content search input

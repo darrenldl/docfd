@@ -160,7 +160,7 @@ let run
     (tag_exact : string list)
     (list_tags : bool)
     (list_tags_lowercase : bool)
-    (dir : string)
+    (file : string)
   =
   Params.debug := debug;
   Params.max_file_tree_depth := max_depth;
@@ -169,9 +169,20 @@ let run
     exit 1
   );
   Printf.printf "Scanning for text files\n";
-  let files = list_files_recursively dir in
+  let files =
+    if Sys.is_directory file then
+      list_files_recursively file
+    else
+      [ file ]
+  in
   Printf.printf "Scanning completed\n";
   let files = List.sort_uniq String.compare files in
+  if !Params.debug then (
+    List.iter (fun file ->
+        Printf.printf "File: %s\n" file;
+      )
+      files
+  );
   let all_documents =
     List.filter_map (fun path ->
         match Document.of_path path with
@@ -390,7 +401,6 @@ let run
           let left_pane =
             Lwd.map2 ~f:(fun documents i ->
                 let image_count = Array.length documents in
-                let (_term_width, term_height) = Notty_unix.Term.size term in
                 let pane =
                   if Array.length documents = 0 then (
                     Nottui.Ui.empty
@@ -398,7 +408,7 @@ let run
                     let (images_selected, images_unselected) =
                       Render.documents term documents
                     in
-                    CCInt.range' i (min (i + term_height / 2) image_count)
+                    CCInt.range' i (min (i + 10) image_count)
                     |> CCList.of_iter
                     |> List.map (fun j ->
                         if Int.equal i j then
@@ -431,6 +441,7 @@ let run
                       CCIO.with_in path (fun ic ->
                           CCIO.read_lines_seq ic
                           |> OSeq.take term_height
+                          |> Seq.map Misc_utils.sanitize_string_for_printing
                           |> Seq.map (fun s -> Nottui.Ui.atom Notty.(I.string A.empty s))
                           |> List.of_seq
                           |> Nottui.Ui.vcat
@@ -669,20 +680,24 @@ let run
           let rec loop () =
             file_to_open := None;
             Lwd.set quit false;
-            Nottui.Ui_loop.run
-              ~term
-              ~renderer
-              ~quit
-              screen;
+            (try
+               Nottui.Ui_loop.run
+                 ~term
+                 ~renderer
+                 ~quit
+                 screen;
+             with
+             | _ -> Printf.printf "Error: TUI crashed\n"; exit 1
+            );
             match !file_to_open with
             | None -> ()
-            | Some header ->
+            | Some doc ->
               match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
               | None, None ->
                 Printf.printf "Error: Both env variables VISUAL and EDITOR are unset\n"; exit 1
               | Some editor, _
               | None, Some editor -> (
-                  Sys.command (Fmt.str "%s \'%s\'" editor header.path) |> ignore;
+                  Sys.command (Fmt.str "%s \'%s\'" editor doc.path) |> ignore;
                   loop ()
                 )
           in
@@ -691,7 +706,7 @@ let run
     )
   )
 
-let dir_arg = Arg.(value & pos 0 dir "." & info [])
+let file_arg = Arg.(value & pos 0 file "." & info [])
 
 let cmd =
   let doc = "TUI fuzzy document finder" in
@@ -707,6 +722,6 @@ let cmd =
            $ tag_exact_arg
            $ list_tags_arg
            $ list_tags_lowercase_arg
-           $ dir_arg))
+           $ file_arg))
 
 let () = exit (Cmd.eval cmd)

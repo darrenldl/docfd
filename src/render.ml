@@ -19,16 +19,19 @@ let documents
       in
       let preview_images =
         List.map (fun line ->
-            I.strf "|  %s" line
+            I.strf "|  %s" (Misc_utils.sanitize_string_for_printing line)
           )
           doc.preview_lines
       in
       let path_image =
         I.string A.empty doc.path;
       in
+      let title =
+        Option.value ~default:"" doc.title
+        |> Misc_utils.sanitize_string_for_printing
+      in
       let img_selected =
-        I.string A.(fg blue ++ st bold)
-          (Option.value ~default:"" doc.title)
+        I.string A.(fg blue ++ st bold) title
         <->
         (I.string A.empty "  "
          <|>
@@ -37,8 +40,7 @@ let documents
         )
       in
       let img_unselected =
-        I.string A.(fg blue)
-          (Option.value ~default:"" doc.title)
+        I.string A.(fg blue) title
         <->
         (I.string A.empty "  "
          <|>
@@ -81,13 +83,16 @@ let content_search_results
           Array.sub doc_lines relevant_start_line (relevant_end_inc_line - relevant_start_line + 1)
           |> Array.map (fun line ->
               Tokenize.f ~drop_spaces:false line
+              |> Seq.map Misc_utils.sanitize_string_for_printing
               |> Seq.map (fun word -> I.string A.empty word)
               |> Array.of_seq
             )
         in
         List.iter (fun (_word, pos) ->
             let (line_num, pos_in_line) = Int_map.find pos document.content_index.line_pos_of_pos in
-            let word = Int_map.find pos document.content_index.word_of_pos in
+            let word = Int_map.find pos document.content_index.word_of_pos
+                       |> Misc_utils.sanitize_string_for_printing
+            in
             word_image_grid.(line_num - relevant_start_line).(pos_in_line) <-
               I.string A.(fg red ++ st bold) word
           )
