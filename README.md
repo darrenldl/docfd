@@ -60,11 +60,10 @@ Docfd operates in modes, the initial mode is `NAVIGATION` mode
 ## Advanced usage
 
 Docfd recognizes "note" files, which can contain tags.
-A file is classified as a note if scans a given directory recursively (defaults to `.`),
-and processes files with names which contain "note" or "notes" after splitting on '.', e.g.
+A file is classified as a note if the name contains "note" or "notes" after splitting on '.', e.g.
 `meeting.notes.md`, `timetable.note`, `note`.
 
-If any such file is detected, then tag related UI components and control become visible.
+If any such file is detected, then tag related UI components become active.
 
 A header consists of two main sections: title and tags.
 
