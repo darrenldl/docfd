@@ -15,7 +15,10 @@ Docfd scans for files recursively (defaults to `.`) with the following extension
 
 and builds an index of the "document" content.
 
+Searching `left is` in repo root:
 ![](screenshots/main0.png)
+
+Searching `[github]` in repo root:
 ![](screenshots/main1.png)
 
 The TUI is divided into three sections:
@@ -30,10 +33,16 @@ Docfd operates in modes, the initial mode is __NAVIGATION__ mode
 __NAVIGATION__ mode
 - Scroll down the document list
   - `j` or down arrow
-  - Scroll down with mouse wheel
+  - Scroll down with mouse wheel when hovering above the area
 - Scroll up the document list
   - `k` or up arrow
-  - Scroll up with mouse wheel
+  - Scroll up with mouse wheel when hovering above the area
+- Scroll down the content search result list
+  - `Shift`+`j` or `Shift`+Down arrow
+  - Scroll down with mouse wheel when hovering above the area
+- Scroll up the document list
+  - `Shift`+`k` or `Shift`+Up arrow
+  - Scroll up with mouse wheel when hovering above the area
 - Open document
   - `Enter`
     - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
