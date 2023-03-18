@@ -19,7 +19,10 @@ let make
     ~fuzzy_max_edit_distance
     ~phrase
   =
-  let phrase = List.filter (fun s -> s <> "") phrase in
+  let phrase = phrase
+               |> Content_index.tokenize
+               |> List.filter (fun s -> s <> "")
+  in
   let fuzzy_index =
     phrase
     |> List.map (fun x -> Spelll.of_string ~limit:fuzzy_max_edit_distance x)

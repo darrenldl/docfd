@@ -218,7 +218,7 @@ let run
           let content_constraints =
             Lwd.var (Content_search_constraints.make
                        ~fuzzy_max_edit_distance
-                       ~phrase:[])
+                       ~phrase:"")
           in
           let quit = Lwd.var false in
           let document_selected = Lwd.var 0 in
@@ -560,7 +560,7 @@ let run
             let constraints' =
               (Content_search_constraints.make
                  ~fuzzy_max_edit_distance
-                 ~phrase:(String.split_on_char ' ' (fst @@ Lwd.peek content_field))
+                 ~phrase:(fst @@ Lwd.peek content_field)
               )
             in
             Lwd.set document_selected 0;

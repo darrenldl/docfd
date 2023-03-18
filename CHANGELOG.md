@@ -8,6 +8,8 @@
 
 - Added content search results view
 
+- Adjusted tokenization procedure
+
 ## 0.2.0
 
 - Switched to interactive TUI
