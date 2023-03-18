@@ -15,7 +15,7 @@ Docfd scans for files recursively (defaults to `.`) with the following extension
 
 and builds an index of the "document" content.
 
-[TODO screenshot]
+![](screenshots/main.png)
 
 The TUI is divided into three sections:
 - Left is the list of documents which satisfy the search constraints
