@@ -29,9 +29,9 @@ The TUI is divided into three sections:
 
 ### Controls
 
-Docfd operates in modes, the initial mode is `NAVIGATION` mode
+Docfd operates in modes, the initial mode is `Navigation` mode
 
-`NAVIGATION` mode
+`Navigation` mode
 - Scroll down the document list
   - `j` or down arrow
   - Scroll down with mouse wheel when hovering above the area
@@ -47,12 +47,12 @@ Docfd operates in modes, the initial mode is `NAVIGATION` mode
 - Open document
   - `Enter`
     - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
-- Switch to `CONTENT SEARCH` mode
+- Switch to `Content search` mode
   - `/`
 - Exit Docfd
   - `q` or `Ctrl+c`
 
-`CONTENT SEARCH` mode
+`Content search` mode
 
 - Content search field is active in this mode
 - `Enter` to confirm search constraints and exit search mode
