@@ -408,7 +408,8 @@ let run
                     let (images_selected, images_unselected) =
                       Render.documents term documents
                     in
-                    CCInt.range' i (min (i + 10) image_count)
+                    let (_term_width, term_height) = Notty_unix.Term.size term in
+                    CCInt.range' i (min (i + term_height / 2) image_count)
                     |> CCList.of_iter
                     |> List.map (fun j ->
                         if Int.equal i j then

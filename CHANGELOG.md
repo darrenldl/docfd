@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.4
+
+- Adjusted displayed document list size
+
+- Updated style of document list view
+
 ## 0.2.3
 
 - Added sanitization to file view text

@@ -1,8 +1,7 @@
 let documents
-    (term : Notty_unix.Term.t)
+    (_term : Notty_unix.Term.t)
     (documents : Document.t array)
   : Notty.image array * Notty.image array =
-  let (_term_width, _term_height) = Notty_unix.Term.size term in
   let images_selected : Notty.image list ref = ref [] in
   let images_unselected : Notty.image list ref = ref [] in
   Array.iter (fun (doc : Document.t) ->
@@ -17,35 +16,48 @@ let documents
         else
           I.empty
       in
-      let preview_images =
+      let bullet = I.string A.(bg yellow) " " in
+      let preview_line_images =
         List.map (fun line ->
-            I.strf "|  %s" (Misc_utils.sanitize_string_for_printing line)
+            (bullet
+             <|>
+             I.strf " %s" (Misc_utils.sanitize_string_for_printing line)
+            )
           )
           doc.preview_lines
       in
+      let preview_image =
+        I.vcat preview_line_images
+      in
       let path_image =
-        I.string A.empty doc.path;
+        I.string A.(fg yellow) "@ " <|> I.string A.empty doc.path;
       in
       let title =
         Option.value ~default:"" doc.title
         |> Misc_utils.sanitize_string_for_printing
       in
       let img_selected =
-        I.string A.(fg blue ++ st bold) title
+        (I.string A.(fg blue ++ st bold) title)
         <->
         (I.string A.empty "  "
          <|>
          I.vcat
-           (content_search_result_score_image :: path_image :: preview_images)
+           [ content_search_result_score_image;
+             path_image;
+             preview_image;
+           ]
         )
       in
       let img_unselected =
-        I.string A.(fg blue) title
+        (I.string A.(fg blue) title)
         <->
         (I.string A.empty "  "
          <|>
          I.vcat
-           (content_search_result_score_image :: path_image :: preview_images)
+           [ content_search_result_score_image;
+             path_image;
+             preview_image;
+           ]
         )
       in
       images_selected := img_selected :: !images_selected;
