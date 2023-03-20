@@ -265,6 +265,15 @@ let content_search_results
               |> Seq.map (fun word ->
                   (word, String_map.find word t.content_index.pos_s_of_word_ci)
                 )
+              |> Seq.map (fun (word, pos_s) ->
+                  let _, _, m =
+                    Int_set.split (last_pos - (!Params.max_word_search_range+1)) pos_s
+                  in
+                  let m, _, _ =
+                    Int_set.split (last_pos + (!Params.max_word_search_range+1)) m
+                  in
+                  (word, m)
+                )
           in
           let usable_positions =
             word_ci_and_positions_to_consider
@@ -274,21 +283,7 @@ let content_search_results
                 || (Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word search_word.[0]
                     && Spelll.match_with dfa indexed_word)
               )
-            |> (fun s ->
-                match last_pos with
-                | None -> Seq.map snd s
-                | Some last_pos ->
-                  Seq.map (fun (_indexed_word, pos_s) ->
-                      let _, _, s1 =
-                        Int_set.split (last_pos - (!Params.max_word_search_range+1)) pos_s
-                      in
-                      let s2, _, _ =
-                        Int_set.split (last_pos + (!Params.max_word_search_range+1)) pos_s
-                      in
-                      Int_set.union s1 s2
-                    ) s
-              )
-            |> Seq.flat_map Int_set.to_seq
+            |> Seq.flat_map (fun (_indexed_word, pos_s) -> Int_set.to_seq pos_s)
           in
           usable_positions
           |> Seq.flat_map (fun pos ->

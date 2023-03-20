@@ -15,6 +15,13 @@ let max_fuzzy_edit_distance_arg =
   in
   Arg.(value & opt int Params.default_max_fuzzy_edit_distance & info [ "max-fuzzy-edit" ] ~doc ~docv:"N")
 
+let max_word_search_range_arg =
+  let doc =
+    "Maximum range to look for the next matching word/symbol in content search."
+  in
+  Arg.(value & opt int Params.default_max_word_search_range
+       & info [ "max-word-search-range" ] ~doc ~docv:"N")
+
 let tag_ci_fuzzy_arg =
   let doc =
     Fmt.str "[F]uzzy case-insensitive tag match, up to fuzzy-max-edit edit distance."
@@ -154,6 +161,7 @@ let run
     (debug : bool)
     (max_depth : int)
     (fuzzy_max_edit_distance : int)
+    (max_word_search_range : int)
     (tag_ci_fuzzy : string list)
     (tag_ci_full : string list)
     (tag_ci_sub : string list)
@@ -164,6 +172,7 @@ let run
   =
   Params.debug := debug;
   Params.max_file_tree_depth := max_depth;
+  Params.max_word_search_range := max_word_search_range;
   if list_tags_lowercase && list_tags then (
     Fmt.pr "Error: Please select only --tags or --ltags\n";
     exit 1
@@ -717,6 +726,7 @@ let cmd =
            $ debug_arg
            $ max_depth_arg
            $ max_fuzzy_edit_distance_arg
+           $ max_word_search_range_arg
            $ tag_ci_fuzzy_arg
            $ tag_ci_full_arg
            $ tag_ci_sub_arg
