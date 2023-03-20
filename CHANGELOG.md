@@ -4,7 +4,8 @@
 
 - Added limit to word search range in content search
 
-  - This prevents search from becoming very slow in large documents
+  - This speeds up usual search while giving good enough results,
+    and prevents search from becoming very slow in large documents
 
 ## 0.2.4
 
