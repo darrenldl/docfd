@@ -2,7 +2,9 @@
 
 # 0.2.5
 
-- Added limit to word search range
+- Added limit to word search range in content search
+
+  - This prevents search from becoming very slow in large documents
 
 ## 0.2.4
 
