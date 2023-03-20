@@ -236,26 +236,71 @@ let content_search_results
     (constraints : Content_search_constraints.t)
     (t : t)
   : Content_search_result.t Seq.t =
-  let pos_s_of_word_ci' =
-    String_map.bindings t.content_index.pos_s_of_word_ci
-    |> List.to_seq
+  let find_possible_combinations_within_range
+      (word_dfa_pairs : (string * Spelll.automaton) list)
+    : int list Seq.t
+    =
+    let rec aux (last_pos : int option) (l : (string * Spelll.automaton) list) =
+      match l with
+      | [] -> Seq.return []
+      | (search_word, dfa) :: rest -> (
+          let word_ci_and_positions_to_consider =
+            match last_pos with
+            | None -> String_map.to_seq t.content_index.pos_s_of_word_ci
+            | Some last_pos ->
+              let _, _, m =
+                Int_map.split (last_pos - (!Params.max_word_search_range+1))
+                  t.content_index.word_of_pos_ci
+              in
+              let m, _, _ =
+                Int_map.split (last_pos + (!Params.max_word_search_range+1))
+                  m
+              in
+              let words_to_consider =
+                Int_map.fold (fun _ word s ->
+                    String_set.add word s
+                  ) m String_set.empty
+              in
+              String_set.to_seq words_to_consider
+              |> Seq.map (fun word ->
+                  (word, String_map.find word t.content_index.pos_s_of_word_ci)
+                )
+          in
+          let usable_positions =
+            word_ci_and_positions_to_consider
+            |> Seq.filter (fun (indexed_word, _pos_s) ->
+                String.equal search_word indexed_word
+                || CCString.find ~sub:search_word indexed_word >= 0
+                || (Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word search_word.[0]
+                    && Spelll.match_with dfa indexed_word)
+              )
+            |> (fun s ->
+                match last_pos with
+                | None -> Seq.map snd s
+                | Some last_pos ->
+                  Seq.map (fun (_indexed_word, pos_s) ->
+                      let _, _, s1 =
+                        Int_set.split (last_pos - (!Params.max_word_search_range+1)) pos_s
+                      in
+                      let s2, _, _ =
+                        Int_set.split (last_pos + (!Params.max_word_search_range+1)) pos_s
+                      in
+                      Int_set.union s1 s2
+                    ) s
+              )
+            |> Seq.flat_map Int_set.to_seq
+          in
+          usable_positions
+          |> Seq.flat_map (fun pos ->
+              aux (Some pos) rest
+              |> Seq.map (fun l -> (pos :: l))
+            )
+        )
+    in
+    aux None word_dfa_pairs
   in
-  List.map2 (fun search_word dfa ->
-      pos_s_of_word_ci'
-      |> Seq.filter (fun (indexed_word, _pos_s) ->
-          String.equal search_word indexed_word
-          || CCString.find ~sub:search_word indexed_word >= 0
-          || (Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word search_word.[0]
-              && Spelll.match_with dfa indexed_word)
-        )
-      |> Seq.flat_map (fun (_, pos_s) ->
-          Int_set.to_seq pos_s
-        )
-    )
-    constraints.phrase
-    constraints.fuzzy_index
-  |> List.to_seq
-  |> OSeq.cartesian_product
+  find_possible_combinations_within_range
+    (List.combine constraints.phrase constraints.fuzzy_index)
   |> Seq.map (fun l ->
       ({ original_phrase = constraints.phrase;
          found_phrase = List.map

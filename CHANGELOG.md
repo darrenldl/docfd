@@ -1,5 +1,9 @@
 # Changelog
 
+# 0.2.5
+
+- Added limit to word search range
+
 ## 0.2.4
 
 - Adjusted displayed document list size
