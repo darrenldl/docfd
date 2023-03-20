@@ -15,7 +15,7 @@ Docfd scans for files recursively (defaults to `.`) with the following extension
 
 and builds an index of the "document" content.
 
-Searching `left is` in repo root:
+Searching `is left` in repo root:
 ![](screenshots/main0.png)
 
 Searching `[github]` in repo root:
