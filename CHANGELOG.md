@@ -1,6 +1,6 @@
 # Changelog
 
-# 0.2.5
+## 0.2.5
 
 - Added limit to word search range in content search
 
