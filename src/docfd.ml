@@ -138,16 +138,19 @@ let print_tag_set (tags : String_set.t) =
       s
   )
 
-type mode = [
-  | `Navigate
-  | `Content
-  | `Tag_ci_fuzzy
-  | `Tag_ci_full
-  | `Tag_ci_sub
-  | `Tag_exact
-]
+type input_mode =
+  | Navigate
+  | Content
+  | Tag_ci_fuzzy
+  | Tag_ci_full
+  | Tag_ci_sub
+  | Tag_exact
 
-let make_label_widget ~s ~len (mode : mode) (v : mode Lwd.var) =
+type ui_mode =
+  | Ui_single_file
+  | Ui_all_files
+
+let make_label_widget ~s ~len (mode : input_mode) (v : input_mode Lwd.var) =
   Lwd.map ~f:(fun mode' ->
       (if mode = mode' then
          Notty.(I.string A.(st bold) s)
@@ -178,11 +181,11 @@ let run
     exit 1
   );
   Printf.printf "Scanning for text files\n";
-  let files =
+  let (ui_mode : ui_mode), files =
     if Sys.is_directory file then
-      list_files_recursively file
+      (Ui_all_files, list_files_recursively file)
     else
-      [ file ]
+      (Ui_single_file, [ file ])
   in
   Printf.printf "Scanning completed\n";
   let files = List.sort_uniq String.compare files in
@@ -244,7 +247,7 @@ let run
           let document_selected = Lwd.var 0 in
           let content_search_result_selected = Lwd.var 0 in
           let file_to_open = ref None in
-          let mode : mode Lwd.var = Lwd.var `Navigate in
+          let input_mode : input_mode Lwd.var = Lwd.var Navigate in
           let documents = Lwd.map2 ~f:(fun tag_constraints content_constraints ->
               all_documents
               |> List.filter_map (fun doc ->
@@ -339,61 +342,65 @@ let run
             let content_search_result_choice_count () =
               List.length documents.(document_current_choice).content_search_results
             in
-            match Lwd.peek mode with
-            | `Navigate -> (
-                match key with
-                | (`Escape, [])
-                | (`ASCII 'q', [])
-                | (`ASCII 'C', [`Ctrl]) -> Lwd.set quit true; `Handled
-                | (`ASCII 'j', [])
-                | (`Arrow `Down, []) ->
+            match Lwd.peek input_mode with
+            | Navigate -> (
+                match key, ui_mode with
+                | ((`Escape, []), _)
+                | ((`ASCII 'q', []), _)
+                | ((`ASCII 'C', [`Ctrl]), _) -> Lwd.set quit true; `Handled
+                | ((`ASCII 'j', []), Ui_all_files)
+                | ((`Arrow `Down, []), Ui_all_files) ->
                   Lwd.set document_selected
                     (bound_selection
                        ~choice_count:document_choice_count
                        (document_current_choice+1));
                   `Handled
-                | (`ASCII 'J', [])
-                | (`Arrow `Down, [`Shift]) ->
-                  Lwd.set content_search_result_selected
-                    (bound_selection
-                       ~choice_count:(content_search_result_choice_count ())
-                       (content_search_result_current_choice+1));
-                  `Handled
-                | (`ASCII 'k', [])
-                | (`Arrow `Up, []) ->
+                | ((`ASCII 'k', []), Ui_all_files)
+                | ((`Arrow `Up, []), Ui_all_files) ->
                   Lwd.set document_selected
                     (bound_selection
                        ~choice_count:document_choice_count
                        (document_current_choice-1));
                   `Handled
-                | (`ASCII 'K', [])
-                | (`Arrow `Up, [`Shift]) ->
+                | ((`ASCII 'J', []), _)
+                | ((`Arrow `Down, [`Shift]), _)
+                | ((`ASCII 'j', []), Ui_single_file)
+                | ((`Arrow `Down, []), Ui_single_file) ->
+                  Lwd.set content_search_result_selected
+                    (bound_selection
+                       ~choice_count:(content_search_result_choice_count ())
+                       (content_search_result_current_choice+1));
+                  `Handled
+                | ((`ASCII 'K', []), _)
+                | ((`Arrow `Up, [`Shift]), _)
+                | ((`ASCII 'k', []), Ui_single_file)
+                | ((`Arrow `Up, []), Ui_single_file) ->
                   Lwd.set content_search_result_selected
                     (bound_selection
                        ~choice_count:(content_search_result_choice_count ())
                        (content_search_result_current_choice-1));
                   `Handled
-                | (`ASCII '/', []) ->
+                | ((`ASCII '/', []), _) ->
                   Nottui.Focus.request content_focus_handle;
-                  Lwd.set mode `Content;
+                  Lwd.set input_mode Content;
                   `Handled
-                | (`ASCII 'f', [`Ctrl]) when handle_tag_ui ->
+                | ((`ASCII 'f', [`Ctrl]), _) when handle_tag_ui ->
                   Nottui.Focus.request tag_ci_fuzzy_focus_handle;
-                  Lwd.set mode `Tag_ci_fuzzy;
+                  Lwd.set input_mode Tag_ci_fuzzy;
                   `Handled
-                | (`ASCII 'i', [`Ctrl]) when handle_tag_ui ->
+                | ((`ASCII 'i', [`Ctrl]), _) when handle_tag_ui ->
                   Nottui.Focus.request tag_ci_full_focus_handle;
-                  Lwd.set mode `Tag_ci_full;
+                  Lwd.set input_mode Tag_ci_full;
                   `Handled
-                | (`ASCII 's', [`Ctrl]) when handle_tag_ui ->
+                | ((`ASCII 's', [`Ctrl]), _) when handle_tag_ui ->
                   Nottui.Focus.request tag_ci_sub_focus_handle;
-                  Lwd.set mode `Tag_ci_sub;
+                  Lwd.set input_mode Tag_ci_sub;
                   `Handled
-                | (`ASCII 'e', [`Ctrl]) when handle_tag_ui ->
+                | ((`ASCII 'e', [`Ctrl]), _) when handle_tag_ui ->
                   Nottui.Focus.request tag_exact_focus_handle;
-                  Lwd.set mode `Tag_exact;
+                  Lwd.set input_mode Tag_exact;
                   `Handled
-                | (`Enter, []) -> (
+                | ((`Enter, []), _) -> (
                     Lwd.set quit true;
                     file_to_open := Some documents.(document_current_choice);
                     `Handled
@@ -407,7 +414,7 @@ let run
             Notty.I.void term_width term_height
             |> Nottui.Ui.atom
           in
-          let left_pane =
+          let left_pane () =
             Lwd.map2 ~f:(fun documents i ->
                 let image_count = Array.length documents in
                 let pane =
@@ -439,7 +446,7 @@ let run
               documents
               (Lwd.get document_selected)
           in
-          let file_view =
+          let file_view () =
             Lwd.map2 ~f:(fun documents i ->
                 if Array.length documents = 0 then (
                   Nottui.Ui.empty
@@ -478,8 +485,13 @@ let run
                     Nottui.Ui.empty
                   ) else (
                     let (_term_width, term_height) = Notty_unix.Term.size term in
+                    let count =
+                      match ui_mode with
+                      | Ui_all_files -> term_height / 2
+                      | Ui_single_file -> term_height / 2
+                    in
                     let pane =
-                      CCInt.range' search_result_i (min (search_result_i + term_height / 2) image_count)
+                      CCInt.range' search_result_i (min (search_result_i + count) image_count)
                       |> CCList.of_iter
                       |> List.map (fun i -> Notty.I.(images.(i) <-> strf ""))
                       |> List.map Nottui.Ui.atom
@@ -496,9 +508,9 @@ let run
               Lwd.(pair documents (Lwd.get document_selected))
               (Lwd.get content_search_result_selected)
           in
-          let right_pane =
+          let right_pane () =
             Nottui_widgets.v_pane
-              file_view
+              (file_view ())
               content_search_results
           in
           let content_label_str = "(/) Content search:" in
@@ -506,57 +518,58 @@ let run
           let tag_ci_full_label_str = "(Ctrl+i) Case-[i]sensitive full tags:" in
           let tag_ci_sub_label_str = "(Ctrl+s) Case-insensitive [s]ubstring tags:" in
           let tag_exact_label_str = "(Ctrl+e) [E]exact tags:" in
+          let label_strs =
+            content_label_str
+            ::
+            (if handle_tag_ui then
+               [tag_ci_fuzzy_label_str;
+                tag_ci_full_label_str;
+                tag_ci_sub_label_str;
+                tag_exact_label_str;
+               ]
+             else [])
+          in
           let max_label_len =
             List.fold_left (fun x s ->
                 max x (String.length s))
               0
-              (
-                content_label_str
-                ::
-                (if handle_tag_ui then
-                   [tag_ci_fuzzy_label_str;
-                    tag_ci_full_label_str;
-                    tag_ci_sub_label_str;
-                    tag_exact_label_str;
-                   ]
-                 else [])
-              )
+              label_strs
           in
           let label_widget_len = max_label_len + 1 in
           let content_label =
             make_label_widget
               ~s:content_label_str
               ~len:label_widget_len
-              `Content
-              mode
+              Content
+              input_mode
           in
           let tag_ci_fuzzy_label =
             make_label_widget
               ~s:tag_ci_fuzzy_label_str
               ~len:label_widget_len
-              `Tag_ci_fuzzy
-              mode
+              Tag_ci_fuzzy
+              input_mode
           in
           let tag_ci_full_label =
             make_label_widget
               ~s:tag_ci_full_label_str
               ~len:label_widget_len
-              `Tag_ci_full
-              mode
+              Tag_ci_full
+              input_mode
           in
           let tag_ci_sub_label =
             make_label_widget
               ~s:tag_ci_sub_label_str
               ~len:label_widget_len
-              `Tag_ci_sub
-              mode
+              Tag_ci_sub
+              input_mode
           in
           let tag_exact_label =
             make_label_widget
               ~s:tag_exact_label_str
               ~len:label_widget_len
-              `Tag_exact
-              mode
+              Tag_exact
+              input_mode
           in
           let content_field =
             Lwd.var ("", 0)
@@ -609,13 +622,24 @@ let run
               ~on_submit:(fun _ ->
                   f ();
                   Nottui.Focus.release focus_handle;
-                  Lwd.set mode `Navigate
+                  Lwd.set input_mode Navigate
                 )
           in
           let top_pane_no_keyboard_control =
-            Nottui_widgets.h_pane
-              left_pane
-              right_pane
+            match ui_mode with
+            | Ui_all_files ->
+              Nottui_widgets.h_pane
+                (left_pane ())
+                (right_pane ())
+            | Ui_single_file ->
+              Lwd.map ~f:(fun results ->
+                  let (_term_width, term_height) = Notty_unix.Term.size term in
+                  let h =
+                    term_height - (List.length label_strs)
+                  in
+                  Nottui.Ui.resize ~h results
+                )
+                content_search_results
           in
           let top_pane =
             Lwd.map2 ~f:(fun

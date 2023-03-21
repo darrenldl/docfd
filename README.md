@@ -21,15 +21,15 @@ Searching `is left` in repo root:
 Searching `[github]` in repo root:
 ![](screenshots/main1.png)
 
-The TUI is divided into three sections:
+The default TUI is divided into four sections:
 - Left is the list of documents which satisfy the search constraints
 - Top right is the preview of the document
 - Bottom right is the ranked content search result list
-- Bottom bar is the search interface
+- Bottom is the search interface
 
 ### Controls
 
-Docfd operates in modes, the initial mode is `Navigation` mode
+Docfd operates in modes, the initial mode is `Navigation` mode.
 
 `Navigation` mode
 - Scroll down the document list
@@ -56,6 +56,19 @@ Docfd operates in modes, the initial mode is `Navigation` mode
 
 - Content search field is active in this mode
 - `Enter` to confirm search constraints and exit search mode
+
+### Single file mode
+
+If the specified path to Docfd is not a directory, then single file mode
+is used.
+
+In this mode, the TUI is divided into only two sections:
+- Top is ranked content search result list
+- Bottom is the search interface
+
+The controls are also simplified:
+- `j`, `k`, Up arrow and Down arrow can now be used to scroll the content search result
+  list without `Shift`.
 
 ## Advanced usage
 

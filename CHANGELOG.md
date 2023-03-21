@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.6
+
+- Added single file UI mode
+
 ## 0.2.5
 
 - Added limit to word search range in content search
