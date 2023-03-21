@@ -6,7 +6,7 @@ TUI fuzzy document finder
 Statically linked binaries are available via
 [GitHub releases](https://github.com/darrenldl/docfd/releases)
 
-## Usage
+## Normal mode
 
 Docfd scans for files recursively (defaults to `.`) with the following extensions:
 
@@ -57,10 +57,16 @@ Docfd operates in modes, the initial mode is `Navigation` mode.
 - Content search field is active in this mode
 - `Enter` to confirm search constraints and exit search mode
 
-### Single file mode
+## Single file mode
 
 If the specified path to Docfd is not a directory, then single file mode
 is used.
+
+Searching `is left` in repo root:
+![](screenshots/single-file0.png)
+
+Searching `[github]` in repo root:
+![](screenshots/single-file1.png)
 
 In this mode, the TUI is divided into only two sections:
 - Top is ranked content search result list
