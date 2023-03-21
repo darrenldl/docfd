@@ -485,13 +485,8 @@ let run
                     Nottui.Ui.empty
                   ) else (
                     let (_term_width, term_height) = Notty_unix.Term.size term in
-                    let count =
-                      match ui_mode with
-                      | Ui_all_files -> term_height / 2
-                      | Ui_single_file -> term_height / 2
-                    in
                     let pane =
-                      CCInt.range' search_result_i (min (search_result_i + count) image_count)
+                      CCInt.range' search_result_i (min (search_result_i + term_height / 2) image_count)
                       |> CCList.of_iter
                       |> List.map (fun i -> Notty.I.(images.(i) <-> strf ""))
                       |> List.map Nottui.Ui.atom
