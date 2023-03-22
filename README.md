@@ -6,14 +6,29 @@ TUI fuzzy document finder
 Statically linked binaries are available via
 [GitHub releases](https://github.com/darrenldl/docfd/releases)
 
-## Normal mode
+## Usage
 
-Docfd scans for files recursively (defaults to `.`) with the following extensions:
+```
+docfd [PATH...]
+```
+
+The list of paths can contain directories.
+Each directory in the list is scanned recursively for
+files with one of the following extensions:
 
 - `.md`
 - `.txt`
 
-and builds an index of the "document" content.
+If the list of paths is empty,
+then Docfd defaults to scanning the
+current directory `.`.
+
+If exactly one file is specified
+in the list of paths, then Docfd operates
+in **Single file mode**.
+Otherwise Docfd operates in **Normal mode**
+
+## Normal mode
 
 Searching `is left` in repo root:
 ![](screenshots/main0.png)

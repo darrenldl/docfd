@@ -8,7 +8,7 @@
 
 ## 0.2.5
 
-- Added limit to word search range in content search
+- Added limit to word search range of each step in content search
 
   - This speeds up usual search while giving good enough results,
     and prevents search from becoming very slow in large documents
