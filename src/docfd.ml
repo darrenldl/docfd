@@ -752,7 +752,7 @@ let run
     )
   )
 
-let files_arg = Arg.(non_empty & pos_all file [ "." ] & info [])
+let files_arg = Arg.(value & pos_all file [ "." ] & info [])
 
 let cmd =
   let doc = "TUI fuzzy document finder" in
