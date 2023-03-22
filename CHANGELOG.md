@@ -4,6 +4,8 @@
 
 - Added single file UI mode
 
+- Added support for specifying multiple files in command line
+
 ## 0.2.5
 
 - Added limit to word search range in content search
