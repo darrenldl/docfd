@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.7
+
+- Changed to vim style highlighting for content search results
+
+- Color adjustments in general
+
 ## 0.2.6
 
 - Added single file UI mode
