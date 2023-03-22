@@ -16,13 +16,11 @@ let documents
         else
           I.empty
       in
-      let bullet = I.string A.(bg yellow) " " in
       let preview_line_images =
         List.map (fun line ->
-            (bullet
-             <|>
-             I.strf " %s" (Misc_utils.sanitize_string_for_printing line)
-            )
+            (I.string A.(bg lightgreen) " ")
+            <|>
+            (I.strf " %s" (Misc_utils.sanitize_string_for_printing line))
           )
           doc.preview_lines
       in
@@ -30,14 +28,14 @@ let documents
         I.vcat preview_line_images
       in
       let path_image =
-        I.string A.(fg yellow) "@ " <|> I.string A.empty doc.path;
+        I.string A.(fg lightgreen) "@ " <|> I.string A.empty doc.path;
       in
       let title =
         Option.value ~default:"" doc.title
         |> Misc_utils.sanitize_string_for_printing
       in
       let img_selected =
-        (I.string A.(fg blue ++ st bold) title)
+        (I.string A.(fg lightcyan ++ st bold) title)
         <->
         (I.string A.empty "  "
          <|>
@@ -49,7 +47,7 @@ let documents
         )
       in
       let img_unselected =
-        (I.string A.(fg blue) title)
+        (I.string A.(fg lightblue) title)
         <->
         (I.string A.empty "  "
          <|>
@@ -106,7 +104,7 @@ let content_search_results
                        |> Misc_utils.sanitize_string_for_printing
             in
             word_image_grid.(line_num - relevant_start_line).(pos_in_line) <-
-              I.string A.(fg red ++ st bold) word
+              I.string A.(fg black ++ bg lightyellow) word
           )
           search_result.found_phrase;
         let img =
@@ -116,7 +114,7 @@ let content_search_results
               let words = Array.to_list words in
               I.hcat
                 (
-                  I.strf ~attr:A.(fg yellow) "%d" (relevant_start_line + i)
+                  I.strf ~attr:A.(fg lightyellow) "%d" (relevant_start_line + i)
                   :: I.strf ": "
                   :: words
                 )
