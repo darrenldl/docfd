@@ -171,7 +171,7 @@ let run
     (tag_exact : string list)
     (list_tags : bool)
     (list_tags_lowercase : bool)
-    (file : string)
+    (files : string list)
   =
   Params.debug := debug;
   Params.max_file_tree_depth := max_depth;
@@ -181,11 +181,28 @@ let run
     exit 1
   );
   Printf.printf "Scanning for text files\n";
-  let (ui_mode : ui_mode), files =
-    if Sys.is_directory file then
-      (Ui_all_files, list_files_recursively file)
-    else
-      (Ui_single_file, [ file ])
+  let ui_mode, files =
+    match files with
+    | [] -> Fmt.pr "Error: No files provided"; exit 1
+    | [ f ] -> (
+        if Sys.is_directory f then
+          (Ui_all_files, list_files_recursively f)
+        else
+          (Ui_single_file, [ f ])
+      )
+    | _ -> (
+        (Ui_all_files,
+         files
+         |> List.to_seq
+         |> Seq.flat_map (fun f ->
+             if Sys.is_directory f then
+               List.to_seq (list_files_recursively f)
+             else
+               Seq.return f
+           )
+         |> List.of_seq
+        )
+      )
   in
   Printf.printf "Scanning completed\n";
   let files = List.sort_uniq String.compare files in
@@ -735,23 +752,23 @@ let run
     )
   )
 
-let file_arg = Arg.(value & pos 0 file "." & info [])
+let files_arg = Arg.(non_empty & pos_all file [ "." ] & info [])
 
 let cmd =
   let doc = "TUI fuzzy document finder" in
   let version = Version_string.s in
   Cmd.v (Cmd.info "docfd" ~version ~doc)
-    (Term.(const run
-           $ debug_arg
-           $ max_depth_arg
-           $ max_fuzzy_edit_distance_arg
-           $ max_word_search_range_arg
-           $ tag_ci_fuzzy_arg
-           $ tag_ci_full_arg
-           $ tag_ci_sub_arg
-           $ tag_exact_arg
-           $ list_tags_arg
-           $ list_tags_lowercase_arg
-           $ file_arg))
+    Term.(const run
+          $ debug_arg
+          $ max_depth_arg
+          $ max_fuzzy_edit_distance_arg
+          $ max_word_search_range_arg
+          $ tag_ci_fuzzy_arg
+          $ tag_ci_full_arg
+          $ tag_ci_sub_arg
+          $ tag_exact_arg
+          $ list_tags_arg
+          $ list_tags_lowercase_arg
+          $ files_arg)
 
 let () = exit (Cmd.eval cmd)
