@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2
+
+- Fixed internal line numbering, but displayed line numbering
+  still begins at 1
+
 ## 0.3.1
 
 - Adjusted line number to begin at 1

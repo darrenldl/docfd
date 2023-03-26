@@ -114,7 +114,8 @@ let content_search_results
               let words = Array.to_list words in
               I.hcat
                 (
-                  I.strf ~attr:A.(fg lightyellow) "%d" (relevant_start_line + i)
+                  let displayed_line_num = relevant_start_line + i + 1 in
+                  I.strf ~attr:A.(fg lightyellow) "%d" displayed_line_num
                   :: I.strf ": "
                   :: words
                 )
