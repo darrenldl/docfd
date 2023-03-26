@@ -101,7 +101,7 @@ let parse_note (s : (int * string) Seq.t) : t =
             (List.to_seq title, s)
         in
         let (preview_lines, s) = peek_for_preview_lines s in
-        let content_index = Content_index.(union (index title_seq) (index s)) in
+        let content_index = Content_index.index (Seq.append title_seq s) in
         {
           empty with
           title = Some (String.concat " " (List.map snd title));

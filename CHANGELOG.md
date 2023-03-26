@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.9
+
+- Fixed word position tracking in content indexing
+
 ## 0.2.8
 
 - Fixed content indexing
