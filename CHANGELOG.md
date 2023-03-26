@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+
+- Adjusted colouring
+
 ## 0.2.9
 
 - Fixed word position tracking in content indexing

@@ -35,7 +35,7 @@ let documents
         |> Misc_utils.sanitize_string_for_printing
       in
       let img_selected =
-        (I.string A.(fg lightcyan ++ st bold) title)
+        (I.string A.(fg lightblue ++ st bold) title)
         <->
         (I.string A.empty "  "
          <|>
