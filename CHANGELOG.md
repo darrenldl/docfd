@@ -3,7 +3,7 @@
 ## 0.3.3
 
 - Fixed crash due to not resetting content search result selection
-  when switching document selection
+  when changing document selection
 
 ## 0.3.2
 
