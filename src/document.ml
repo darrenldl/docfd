@@ -168,7 +168,7 @@ let of_path path : (t, string) result =
   try
     CCIO.with_in path (fun ic ->
         let s = CCIO.read_lines_seq ic
-                |> Seq.mapi (fun i line -> (i, line))
+                |> Seq.mapi (fun i line -> (i + 1, line))
         in
         let document =
           if Misc_utils.path_is_note path then

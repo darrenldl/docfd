@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+- Adjusted line number to begin at 1
+
 ## 0.3.0
 
 - Adjusted colouring
