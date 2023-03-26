@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.3
+
+- Fixed crash due to not resetting content search result selection
+  when switching document selection
+
 ## 0.3.2
 
 - Fixed internal line numbering, but displayed line numbering

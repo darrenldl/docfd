@@ -307,6 +307,10 @@ let run
           let bound_selection ~choice_count (x : int) : int =
             max 0 (min (choice_count - 1) x)
           in
+          let set_document_selected n =
+            Lwd.set document_selected n;
+            Lwd.set content_search_result_selected 0
+          in
           let document_list_mouse_handler
               ~document_choice_count
               ~document_current_choice
@@ -317,11 +321,11 @@ let run
             let _ = y in
             match button with
             | `Scroll `Down ->
-              Lwd.set document_selected
+              set_document_selected
                 (bound_selection ~choice_count:document_choice_count (document_current_choice+1));
               `Handled
             | `Scroll `Up ->
-              Lwd.set document_selected
+              set_document_selected
                 (bound_selection ~choice_count:document_choice_count (document_current_choice-1));
               `Handled
             | _ -> `Unhandled
@@ -367,14 +371,14 @@ let run
                 | ((`ASCII 'C', [`Ctrl]), _) -> Lwd.set quit true; `Handled
                 | ((`ASCII 'j', []), Ui_all_files)
                 | ((`Arrow `Down, []), Ui_all_files) ->
-                  Lwd.set document_selected
+                  set_document_selected
                     (bound_selection
                        ~choice_count:document_choice_count
                        (document_current_choice+1));
                   `Handled
                 | ((`ASCII 'k', []), Ui_all_files)
                 | ((`Arrow `Up, []), Ui_all_files) ->
-                  Lwd.set document_selected
+                  set_document_selected
                     (bound_selection
                        ~choice_count:document_choice_count
                        (document_current_choice-1));
@@ -609,8 +613,7 @@ let run
                  ~phrase:(fst @@ Lwd.peek content_field)
               )
             in
-            Lwd.set document_selected 0;
-            Lwd.set content_search_result_selected 0;
+            set_document_selected 0;
             Lwd.set content_constraints constraints'
           in
           let update_tag_constraints () =
@@ -623,8 +626,7 @@ let run
                  ~exact:(String.split_on_char ' ' (fst @@ Lwd.peek tag_exact_field))
               )
             in
-            Lwd.set document_selected 0;
-            Lwd.set content_search_result_selected 0;
+            set_document_selected 0;
             Lwd.set tag_constraints constraints'
           in
           let make_search_field ~edit_field ~focus_handle ~f =
