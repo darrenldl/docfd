@@ -19,15 +19,15 @@ let union (t1 : t) (t2 : t) : t =
         t1.pos_s_of_word_ci
         t2.pos_s_of_word_ci;
     line_pos_of_pos =
-      Int_map.union (fun _ _ _ -> failwith "Unexpected")
+      Int_map.union (fun _ x _ -> Some x)
         t1.line_pos_of_pos
         t2.line_pos_of_pos;
     word_of_pos_ci =
-      Int_map.union (fun _ _ _ -> failwith "Unexpected")
+      Int_map.union (fun _ x _ -> Some x)
         t1.word_of_pos_ci
         t2.word_of_pos_ci;
     word_of_pos =
-      Int_map.union (fun _ _ _ -> failwith "Unexpected")
+      Int_map.union (fun _ x _ -> Some x)
         t1.word_of_pos
         t2.word_of_pos;
   }

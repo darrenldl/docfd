@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.8
+
+- Fixed content indexing
+
 ## 0.2.7
 
 - Changed to vim style highlighting for content search results
