@@ -26,6 +26,9 @@
    (angstrom (>= "0.15.0"))
    (containers (>= "3.6"))
    oseq
+   spelll
+   notty
+   nottui
    cmdliner
    )
  (tags
