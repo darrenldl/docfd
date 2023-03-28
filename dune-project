@@ -29,7 +29,7 @@
    notty
    nottui
    (lwd (>= "0.2"))
-   cmdliner
+   (cmdliner (>= "1.1.0"))
    )
  (tags
   ("fuzzy" "document" "finder"
