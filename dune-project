@@ -20,7 +20,6 @@
  (documentation https://github.com/darrenldl/docfd)
  (depends
    (ocaml (>= "4.14"))
-   ocaml
    dune
    (fmt (>= "0.9.0"))
    (angstrom (>= "0.15.0"))
@@ -29,6 +28,7 @@
    spelll
    notty
    nottui
+   (lwd (>= "0.2"))
    cmdliner
    )
  (tags
