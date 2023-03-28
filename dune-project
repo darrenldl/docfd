@@ -25,6 +25,7 @@
    (fmt (>= "0.9.0"))
    (angstrom (>= "0.15.0"))
    (containers (>= "3.6"))
+   oseq
    cmdliner
    )
  (tags
