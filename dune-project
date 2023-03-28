@@ -28,6 +28,6 @@
    cmdliner
    )
  (tags
-  ("document" "fuzzy" "finder"
+  ("fuzzy" "document" "finder"
    ))
  )
