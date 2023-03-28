@@ -74,7 +74,7 @@ archive_hash=$("$hash_cmd" "$archive" | awk '{ print $1 }')
 echo "Hash from $hash_cmd:" $archive_hash
 
 packages=(
-  "stramon-lib"
+  "docfd"
 )
 
 for package in ${packages[@]}; do
