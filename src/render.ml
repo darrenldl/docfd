@@ -9,9 +9,10 @@ let documents
       let open Notty.Infix in
       let content_search_result_score_image =
         if !Params.debug then
-          match doc.content_search_results with
-          | [] -> I.empty
-          | x :: _ ->
+          if Array.length doc.content_search_results = 0 then
+            I.empty
+          else
+            let x = doc.content_search_results.(0) in
             I.strf "(best content search result score: %f)" (Content_search_result.score x)
         else
           I.empty
@@ -66,6 +67,8 @@ let documents
   (images_selected, images_unselected)
 
 let content_search_results
+    ~start
+    ~end_exc
     (document : Document.t)
   : Notty.image array =
   let open Notty in
@@ -76,8 +79,12 @@ let content_search_results
           Array.of_list (CCIO.read_lines_l ic)
         )
     in
-    let images = ref [] in
-    List.iter (fun (search_result : Content_search_result.t) ->
+    let results = Array.sub
+        document.content_search_results
+        start
+        (end_exc - start)
+    in
+    Array.map (fun (search_result : Content_search_result.t) ->
         let (relevant_start_line, relevant_end_inc_line) =
           List.fold_left (fun s_e (_word, pos) ->
               let (line_num, _) = Int_map.find pos document.content_index.line_pos_of_pos in
@@ -123,18 +130,14 @@ let content_search_results
             )
           |> I.vcat
         in
-        let img =
-          if !Params.debug then
-            let score = Content_search_result.score search_result in
-            I.strf "(score: %f)" score
-            <->
-              img
-          else
-            img
-        in
-        images := img :: !images
+        if !Params.debug then
+          let score = Content_search_result.score search_result in
+          I.strf "(score: %f)" score
+          <->
+          img
+        else
+          img
       )
-      document.content_search_results;
-    Array.of_list (List.rev !images)
+      results
   with
   | _ -> [| I.strf "Failed to access %s" document.path |]

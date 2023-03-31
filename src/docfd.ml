@@ -99,15 +99,15 @@ let list_files_recursively (dir : string) : string list =
   );
   !l
 
-let set_of_tags (tags : string list) : String_set.t =
-  List.fold_left (fun s x ->
+let set_of_tags (tags : string array) : String_set.t =
+  Array.fold_left (fun s x ->
       String_set.add x s
     )
     String_set.empty
     tags
 
-let lowercase_set_of_tags (tags : string list) : String_set.t =
-  List.fold_left (fun s x ->
+let lowercase_set_of_tags (tags : string array) : String_set.t =
+  Array.fold_left (fun s x ->
       String_set.add (String.lowercase_ascii x) s
     )
     String_set.empty
@@ -279,9 +279,9 @@ let run
                       | Seq.Cons _ as s ->
                         let content_search_results = (fun () -> s)
                                                      |> OSeq.take Params.content_search_result_limit
-                                                     |> List.of_seq
-                                                     |> List.sort Content_search_result.compare
+                                                     |> Array.of_seq
                         in
+                        Array.sort Content_search_result.compare content_search_results;
                         Some { doc with content_search_results }
                     )
                 )
@@ -291,8 +291,8 @@ let run
                   else
                     List.sort (fun (doc1 : Document.t) (doc2 : Document.t) ->
                         Content_search_result.compare
-                          (List.hd doc1.content_search_results)
-                          (List.hd doc2.content_search_results)
+                          (doc1.content_search_results.(0))
+                          (doc2.content_search_results.(0))
                       ) l
                 )
               |> Array.of_list
@@ -362,7 +362,7 @@ let run
               (key : Nottui.Ui.key)
             =
             let content_search_result_choice_count () =
-              List.length documents.(document_current_choice).content_search_results
+              Array.length documents.(document_current_choice).content_search_results
             in
             match Lwd.peek input_mode with
             | Navigate -> (
@@ -499,25 +499,31 @@ let run
                 if Array.length documents = 0 then (
                   Nottui.Ui.empty
                 ) else (
-                  let images =
-                    Render.content_search_results documents.(i)
+                  let result_count =
+                    Array.length documents.(i).content_search_results
                   in
-                  let image_count = Array.length images in
-                  if image_count = 0 then (
+                  if result_count = 0 then (
                     Nottui.Ui.empty
                   ) else (
                     let (_term_width, term_height) = Notty_unix.Term.size term in
+                    let images =
+                      Render.content_search_results
+                        ~start:search_result_i
+                        ~end_exc:(min (search_result_i + term_height / 2) result_count)
+                        documents.(i)
+                    in
                     let pane =
-                      CCInt.range' search_result_i (min (search_result_i + term_height / 2) image_count)
-                      |> CCList.of_iter
-                      |> List.map (fun i -> Notty.I.(images.(i) <-> strf ""))
-                      |> List.map Nottui.Ui.atom
+                      images
+                      |> Array.map (fun img ->
+                          Nottui.Ui.atom (Notty.I.(img <-> strf ""))
+                        )
+                      |> Array.to_list
                       |> Nottui.Ui.vcat
                     in
                     Nottui.Ui.join_z (full_term_sized_background ()) pane
                     |> Nottui.Ui.mouse_area
                       (content_search_result_list_mouse_handler
-                         ~content_search_result_choice_count:image_count
+                         ~content_search_result_choice_count:result_count
                          ~content_search_result_current_choice:search_result_i)
                   )
                 )
