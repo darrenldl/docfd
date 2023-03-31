@@ -12,7 +12,7 @@ let documents
           match doc.content_search_results with
           | [] -> I.empty
           | x :: _ ->
-            I.strf "(content search result score: %f)" (Content_search_result.score x)
+            I.strf "(best content search result score: %f)" (Content_search_result.score x)
         else
           I.empty
       in
@@ -69,6 +69,7 @@ let content_search_results
     (document : Document.t)
   : Notty.image array =
   let open Notty in
+  let open Notty.Infix in
   try
     let doc_lines =
       CCIO.with_in document.path (fun ic ->
@@ -121,6 +122,15 @@ let content_search_results
                 )
             )
           |> I.vcat
+        in
+        let img =
+          if !Params.debug then
+            let score = Content_search_result.score search_result in
+            I.strf "(score: %f)" score
+            <->
+              img
+          else
+            img
         in
         images := img :: !images
       )
