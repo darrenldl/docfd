@@ -2,7 +2,7 @@
 
 ## 0.4.0
 
-- Tuning content search result scoring
+- Improved content search result scoring
 
 - Added limit on content search results to consider to avoid
   slowdown
