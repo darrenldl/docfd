@@ -1,21 +1,21 @@
 type t = {
   path : string;
   title : string option;
-  tags : string list;
-  tag_matched : bool list;
+  tags : string array;
+  tag_matched : bool array;
   content_index : Content_index.t;
-  content_search_results : Content_search_result.t list;
+  content_search_results : Content_search_result.t array;
   preview_lines : string list;
 }
 
-let empty : t =
+let make_empty () : t =
   {
     path = "";
     title = None;
-    tags = [];
-    tag_matched = [];
+    tags = [||];
+    tag_matched = [||];
     content_index = Content_index.empty;
-    content_search_results = [];
+    content_search_results = [||];
     preview_lines = [];
   }
 
@@ -102,10 +102,11 @@ let parse_note (s : (int * string) Seq.t) : t =
         in
         let (preview_lines, s) = peek_for_preview_lines s in
         let content_index = Content_index.index (Seq.append title_seq s) in
+        let empty = make_empty () in
         {
           empty with
           title = Some (String.concat " " (List.map snd title));
-          tags = String_set.to_list tags;
+          tags = Array.of_list @@ String_set.to_list tags;
           content_index;
           preview_lines;
         }
@@ -147,6 +148,7 @@ let parse_text (s : (int * string) Seq.t) : t =
             Seq.cons (0, title) s
         in
         let content_index = Content_index.index s in
+        let empty = make_empty () in
         {
           empty with
           title;
@@ -187,17 +189,15 @@ let satisfies_tag_search_constraints
   : t option =
   let tags = t.tags in
   let tags_lowercase =
-    List.map String.lowercase_ascii tags
+    Array.map String.lowercase_ascii tags
   in
-  let tag_arr = Array.of_list tags in
-  let tag_matched = Array.make (Array.length tag_arr) true in
-  let tag_lowercase_arr = Array.of_list tags_lowercase in
+  let tag_matched = Array.make (Array.length tags) true in
   List.iter
     (fun dfa ->
        Array.iteri (fun i x ->
            tag_matched.(i) <- tag_matched.(i) && (Spelll.match_with dfa x)
          )
-         tag_lowercase_arr
+         tags_lowercase
     )
     (Tag_search_constraints.fuzzy_index constraints);
   String_set.iter
@@ -205,7 +205,7 @@ let satisfies_tag_search_constraints
        Array.iteri (fun i x ->
            tag_matched.(i) <- tag_matched.(i) && (String.equal x s)
          )
-         tag_lowercase_arr
+         tags_lowercase
     )
     (Tag_search_constraints.ci_full constraints);
   String_set.iter
@@ -213,7 +213,7 @@ let satisfies_tag_search_constraints
        Array.iteri (fun i x ->
            tag_matched.(i) <- tag_matched.(i) && (CCString.find ~sub x >= 0)
          )
-         tag_lowercase_arr
+         tags_lowercase
     )
     (Tag_search_constraints.ci_sub constraints);
   String_set.iter
@@ -221,13 +221,13 @@ let satisfies_tag_search_constraints
        Array.iteri (fun i x ->
            tag_matched.(i) <- tag_matched.(i) && (String.equal x s)
          )
-         tag_arr
+         tags
     )
     (Tag_search_constraints.exact constraints);
   if Tag_search_constraints.is_empty constraints
   || Array.exists (fun x -> x) tag_matched
   then (
-    Some { t with tag_matched = Array.to_list tag_matched }
+    Some { t with tag_matched }
   ) else (
     None
   )
