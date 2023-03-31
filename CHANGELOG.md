@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0
+
+- Tuning content search result scoring
+
+- Added limit on content search results to consider to avoid
+  slowdown
+
+- General optimizations
+
 ## 0.3.3
 
 - Fixed crash due to not resetting content search result selection
