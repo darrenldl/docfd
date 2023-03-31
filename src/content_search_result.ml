@@ -4,7 +4,8 @@ type t = {
 }
 
 type score_ctx = {
-  exact_match_count : float;
+  total_found_char_count : float;
+  exact_match_found_char_count : float;
   sub_match_search_char_count : float;
   sub_match_found_char_count : float;
   fuzzy_match_edit_distance : float;
@@ -12,7 +13,8 @@ type score_ctx = {
 }
 
 let empty_score_ctx = {
-  exact_match_count = 0.0;
+  total_found_char_count = 0.0;
+  exact_match_found_char_count = 0.0;
   sub_match_search_char_count = 0.0;
   sub_match_found_char_count = 0.0;
   fuzzy_match_edit_distance = 0.0;
@@ -25,8 +27,14 @@ let score (t : t) : float =
   in
   let ctx =
     List.fold_left2 (fun (ctx : score_ctx) x (y, _) ->
+        let ctx =
+          { ctx with
+            total_found_char_count = ctx.total_found_char_count +. Int.to_float (String.length y) }
+        in
         if String.equal x y then
-          { ctx with exact_match_count = ctx.exact_match_count +. 1.0 }
+          { ctx with
+            exact_match_found_char_count =
+              ctx.exact_match_found_char_count +. Int.to_float (String.length y) }
         else if CCString.find ~sub:x y >= 0 then
           { ctx with
             sub_match_search_char_count =
@@ -39,7 +47,7 @@ let score (t : t) : float =
             fuzzy_match_edit_distance =
               ctx.fuzzy_match_edit_distance +. Int.to_float (Spelll.edit_distance x y);
             fuzzy_match_found_char_count =
-              ctx.fuzzy_match_found_char_count +. Int.to_float (String.length x);
+              ctx.fuzzy_match_found_char_count +. Int.to_float (String.length y);
           }
         )
       )
@@ -70,7 +78,13 @@ let score (t : t) : float =
   let average_distance =
     total_distance /. unique_match_count
   in
-  let sub_matches_closeness =
+  let exact_match_score =
+    if quite_close_to_zero ctx.exact_match_found_char_count then
+      0.0
+    else
+      1.0
+  in
+  let sub_match_score =
     if quite_close_to_zero ctx.sub_match_found_char_count then
       0.0
     else
@@ -78,7 +92,7 @@ let score (t : t) : float =
       /.
       ctx.sub_match_found_char_count
   in
-  let fuzzy_matches_closeness =
+  let fuzzy_match_score =
     if quite_close_to_zero ctx.fuzzy_match_found_char_count then
       0.0
     else
@@ -93,11 +107,11 @@ let score (t : t) : float =
   (if quite_close_to_zero average_distance then 1.0 else 1.0 /. average_distance)
   *.
   (
-    (if quite_close_to_zero ctx.exact_match_count then 0.0 else 1.0)
+    (exact_match_score *. (ctx.exact_match_found_char_count /. ctx.total_found_char_count))
     +.
-    sub_matches_closeness
+    (sub_match_score *. (ctx.sub_match_found_char_count /. ctx.total_found_char_count))
     +.
-    fuzzy_matches_closeness
+    (fuzzy_match_score *. (ctx.fuzzy_match_found_char_count /. ctx.total_found_char_count))
   )
 
 let compare t1 t2 =

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1
+
+- Tuning content search result scoring
+
 ## 0.4.0
 
 - Improved content search result scoring
