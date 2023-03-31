@@ -93,7 +93,7 @@ let score (t : t) : float =
   (if quite_close_to_zero average_distance then 1.0 else 1.0 /. average_distance)
   *.
   (
-    1.0 *. ctx.exact_match_count
+    (if quite_close_to_zero ctx.exact_match_count then 0.0 else 1.0)
     +.
     sub_matches_closeness
     +.
