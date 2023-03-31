@@ -278,6 +278,7 @@ let run
                       | Seq.Nil -> None
                       | Seq.Cons _ as s ->
                         let content_search_results = (fun () -> s)
+                                                     |> OSeq.take Params.content_search_result_limit
                                                      |> List.of_seq
                                                      |> List.sort Content_search_result.compare
                         in
