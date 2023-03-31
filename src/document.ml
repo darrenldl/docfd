@@ -297,7 +297,7 @@ let content_search_results
   find_possible_combinations_within_range
     (List.combine constraints.phrase constraints.fuzzy_index)
   |> Seq.map (fun l ->
-      ({ original_phrase = constraints.phrase;
+      ({ search_phrase = constraints.phrase;
          found_phrase = List.map
              (fun i -> (Int_map.find i t.content_index.word_of_pos_ci, i)) l;
        } : Content_search_result.t)
