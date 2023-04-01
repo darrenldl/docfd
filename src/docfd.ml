@@ -160,6 +160,10 @@ let make_label_widget ~s ~len (mode : input_mode) (v : input_mode Lwd.var) =
       |> Nottui.Ui.atom
     ) (Lwd.get v)
 
+type document_src =
+  | Stdin
+  | Files of string list
+
 let run
     (debug : bool)
     (max_depth : int)
@@ -181,26 +185,31 @@ let run
     exit 1
   );
   Printf.printf "Scanning for text files\n";
-  let ui_mode, files =
+  let ui_mode, document_src =
     match files with
     | [] -> Fmt.pr "Error: No files provided"; exit 1
+    | [ "-" ] -> (
+        (Ui_single_file, Stdin)
+      )
     | [ f ] -> (
         if Sys.is_directory f then
-          (Ui_all_files, list_files_recursively f)
+          (Ui_all_files, Files (list_files_recursively f))
         else
-          (Ui_single_file, [ f ])
+          (Ui_single_file, Files [ f ])
       )
     | _ -> (
         (Ui_all_files,
-         files
-         |> List.to_seq
-         |> Seq.flat_map (fun f ->
-             if Sys.is_directory f then
-               List.to_seq (list_files_recursively f)
-             else
-               Seq.return f
-           )
-         |> List.of_seq
+         Files (
+           files
+           |> List.to_seq
+           |> Seq.flat_map (fun f ->
+               if Sys.is_directory f then
+                 List.to_seq (list_files_recursively f)
+               else
+                 Seq.return f
+             )
+           |> List.of_seq
+         )
         )
       )
   in
@@ -213,10 +222,14 @@ let run
       files
   );
   let all_documents =
-    List.filter_map (fun path ->
-        match Document.of_path path with
-        | Ok x -> Some x
-        | Error _ -> None) files
+    match document_src with
+    | Stdin ->
+      [ Document.of_in_channel ~path:None stdin ]
+    | Files files ->
+      List.filter_map (fun path ->
+          match Document.of_path path with
+          | Ok x -> Some x
+          | Error _ -> None) files
   in
   if list_tags_lowercase then (
     let tags_used = ref String_set.empty in
@@ -241,7 +254,10 @@ let run
       | _ -> (
           let handle_tag_ui =
             List.exists (fun (doc : Document.t) ->
-                Misc_utils.path_is_note doc.path
+                match doc.path with
+                | None -> false
+                | Some path ->
+                  Misc_utils.path_is_note path
               )
               all_documents
           in
@@ -473,20 +489,31 @@ let run
                 if Array.length documents = 0 then (
                   Nottui.Ui.empty
                 ) else (
-                  let path = documents.(i).path in
                   let (_term_width, term_height) = Notty_unix.Term.size term in
+                  let render_seq s =
+                    s
+                    |> OSeq.take term_height
+                    |> Seq.map Misc_utils.sanitize_string_for_printing
+                    |> Seq.map (fun s -> Nottui.Ui.atom Notty.(I.string A.empty s))
+                    |> List.of_seq
+                    |> Nottui.Ui.vcat
+                  in
+                  let doc = documents.(i) in
                   let content =
-                    try
-                      CCIO.with_in path (fun ic ->
-                          CCIO.read_lines_seq ic
-                          |> OSeq.take term_height
-                          |> Seq.map Misc_utils.sanitize_string_for_printing
-                          |> Seq.map (fun s -> Nottui.Ui.atom Notty.(I.string A.empty s))
-                          |> List.of_seq
-                          |> Nottui.Ui.vcat
-                        )
-                    with
-                    | _ -> Nottui.Ui.atom Notty.(I.strf "Error: Failed to access %s" path)
+                    match doc.content_lines with
+                    | None -> (
+                        let path = Option.get doc.path in
+                        try
+                          CCIO.with_in path (fun ic ->
+                              CCIO.read_lines_seq ic
+                              |> render_seq
+                            )
+                        with
+                        | _ -> Nottui.Ui.atom Notty.(I.strf "Error: Failed to access %s" path)
+                      )
+                    | Some lines ->
+                      Array.to_seq lines
+                      |> render_seq
                   in
                   content
                 )
@@ -747,21 +774,24 @@ let run
             match !file_to_open with
             | None -> ()
             | Some doc ->
-              match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
-              | None, None ->
-                Printf.printf "Error: Both env variables VISUAL and EDITOR are unset\n"; exit 1
-              | Some editor, _
-              | None, Some editor -> (
-                  Sys.command (Fmt.str "%s \'%s\'" editor doc.path) |> ignore;
-                  loop ()
-                )
+              match doc.path with
+              | None -> ()
+              | Some path ->
+                match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
+                | None, None ->
+                  Printf.printf "Error: Both env variables VISUAL and EDITOR are unset\n"; exit 1
+                | Some editor, _
+                | None, Some editor -> (
+                    Sys.command (Fmt.str "%s \'%s\'" editor path) |> ignore;
+                    loop ()
+                  )
           in
           loop ()
         )
     )
   )
 
-let files_arg = Arg.(value & pos_all file [ "." ] & info [])
+let files_arg = Arg.(value & pos_all string [ "." ] & info [])
 
 let cmd =
   let doc = "TUI fuzzy document finder" in

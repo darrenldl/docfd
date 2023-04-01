@@ -1,22 +1,24 @@
 type t = {
-  path : string;
+  path : string option;
   title : string option;
   tags : string array;
   tag_matched : bool array;
   content_index : Content_index.t;
   content_search_results : Content_search_result.t array;
   preview_lines : string list;
+  content_lines : string array option;
 }
 
 let make_empty () : t =
   {
-    path = "";
+    path = None;
     title = None;
     tags = [||];
     tag_matched = [||];
     content_index = Content_index.empty;
     content_search_results = [||];
     preview_lines = [];
+    content_lines = None;
   }
 
 type line_typ =
@@ -136,7 +138,7 @@ let parse_note (s : (int * string) Seq.t) : t =
   in
   aux `Parsing_title `Parsing_title [] String_set.empty s
 
-let parse_text (s : (int * string) Seq.t) : t =
+let parse_text ~store_all_lines (s : (int * string) Seq.t) : t =
   let rec aux (stage : text_work_stage) title s =
     match stage with
     | `Header_completed -> (
@@ -147,13 +149,20 @@ let parse_text (s : (int * string) Seq.t) : t =
           | Some title ->
             Seq.cons (0, title) s
         in
-        let content_index = Content_index.index s in
+        let content_index, content_lines =
+          if store_all_lines then
+            let arr = Array.of_seq s in
+            (Content_index.index (Array.to_seq arr), Some (Array.map snd arr))
+          else
+            (Content_index.index s, None)
+        in
         let empty = make_empty () in
         {
           empty with
           title;
           content_index;
           preview_lines;
+          content_lines;
         }
       )
     | `Parsing_title -> (
@@ -166,19 +175,28 @@ let parse_text (s : (int * string) Seq.t) : t =
   in
   aux `Parsing_title None s
 
+let of_in_channel ~path ic : t =
+  let s = CCIO.read_lines_seq ic
+          |> Seq.mapi (fun i line -> (i, line))
+  in
+  let document =
+    match path with
+    | None -> (
+        parse_text ~store_all_lines:true s
+      )
+    | Some path -> (
+        if Misc_utils.path_is_note path then
+          parse_note s
+        else
+          parse_text ~store_all_lines:false s
+      )
+  in
+  { document with path }
+
 let of_path path : (t, string) result =
   try
     CCIO.with_in path (fun ic ->
-        let s = CCIO.read_lines_seq ic
-                |> Seq.mapi (fun i line -> (i, line))
-        in
-        let document =
-          if Misc_utils.path_is_note path then
-            parse_note s
-          else
-            parse_text s
-        in
-        Ok { document with path }
+        Ok (of_in_channel ~path:(Some path) ic)
       )
   with
   | _ -> Error (Printf.sprintf "Failed to read file: %s" path)

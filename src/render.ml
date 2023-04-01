@@ -29,7 +29,7 @@ let documents
         I.vcat preview_line_images
       in
       let path_image =
-        I.string A.(fg lightgreen) "@ " <|> I.string A.empty doc.path;
+        I.string A.(fg lightgreen) "@ " <|> I.string A.empty (Option.value ~default:"<stdin>" doc.path);
       in
       let title =
         Option.value ~default:"" doc.title
@@ -75,9 +75,12 @@ let content_search_results
   let open Notty.Infix in
   try
     let doc_lines =
-      CCIO.with_in document.path (fun ic ->
-          Array.of_list (CCIO.read_lines_l ic)
-        )
+      match document.content_lines with
+      | None ->
+        CCIO.with_in (Option.get document.path) (fun ic ->
+            Array.of_list (CCIO.read_lines_l ic)
+          )
+      | Some arr -> arr
     in
     let results = Array.sub
         document.content_search_results
@@ -140,4 +143,4 @@ let content_search_results
       )
       results
   with
-  | _ -> [| I.strf "Failed to access %s" document.path |]
+  | _ -> [| I.strf "Failed to access %s" (Option.get document.path) |]
