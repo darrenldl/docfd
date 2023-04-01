@@ -65,16 +65,23 @@ let score (t : t) : float =
     |> List.length
     |> Int.to_float
   in
-  let (total_distance, _) =
-    List.fold_left (fun (n, last_pos) (_, d) ->
+  let (total_distance, out_of_order_match_count, _) =
+    List.fold_left (fun (total_dist, out_of_order_match_count, last_pos) (_, d) ->
         match last_pos with
-        | None -> (n, Some d)
-        | Some last_pos -> (n + abs (d - last_pos), Some d)
+        | None -> (total_dist, out_of_order_match_count, Some d)
+        | Some last_pos ->
+          let total_dist = total_dist +. Int.to_float (abs (d - last_pos)) in
+          let out_of_order_match_count =
+            if last_pos < d then
+              out_of_order_match_count
+            else
+              out_of_order_match_count +. 1.0
+          in
+          (total_dist, out_of_order_match_count, Some d)
       )
-      (0, None)
+      (0.0, 0.0, None)
       t.found_phrase
   in
-  let total_distance = Int.to_float total_distance in
   let average_distance =
     total_distance /. unique_match_count
   in
@@ -103,6 +110,8 @@ let score (t : t) : float =
        ctx.fuzzy_match_found_char_count)
   in
   (unique_match_count /. search_phrase_length)
+  *.
+  (1.0 -. (out_of_order_match_count /. search_phrase_length))
   *.
   (if quite_close_to_zero average_distance then 1.0 else 1.0 /. average_distance)
   *.
