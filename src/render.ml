@@ -29,7 +29,10 @@ let documents
         I.vcat preview_line_images
       in
       let path_image =
-        I.string A.(fg lightgreen) "@ " <|> I.string A.empty (Option.value ~default:"<stdin>" doc.path);
+        I.string A.(fg lightgreen) "@ "
+        <|>
+        I.string A.empty
+          (Option.value ~default:Params.stdin_doc_path_placeholder doc.path);
       in
       let title =
         Option.value ~default:"" doc.title

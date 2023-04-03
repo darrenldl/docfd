@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+
+- Removed tags handling
+
+- Added stdin piping support
+
 ## 0.4.1
 
 - Tuning content search result scoring

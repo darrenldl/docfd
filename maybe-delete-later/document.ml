@@ -201,6 +201,55 @@ let of_path path : (t, string) result =
   with
   | _ -> Error (Printf.sprintf "Failed to read file: %s" path)
 
+let satisfies_tag_search_constraints
+    (constraints : Tag_search_constraints.t)
+    (t : t)
+  : t option =
+  let tags = t.tags in
+  let tags_lowercase =
+    Array.map String.lowercase_ascii tags
+  in
+  let tag_matched = Array.make (Array.length tags) true in
+  List.iter
+    (fun dfa ->
+       Array.iteri (fun i x ->
+           tag_matched.(i) <- tag_matched.(i) && (Spelll.match_with dfa x)
+         )
+         tags_lowercase
+    )
+    (Tag_search_constraints.fuzzy_index constraints);
+  String_set.iter
+    (fun s ->
+       Array.iteri (fun i x ->
+           tag_matched.(i) <- tag_matched.(i) && (String.equal x s)
+         )
+         tags_lowercase
+    )
+    (Tag_search_constraints.ci_full constraints);
+  String_set.iter
+    (fun sub ->
+       Array.iteri (fun i x ->
+           tag_matched.(i) <- tag_matched.(i) && (CCString.find ~sub x >= 0)
+         )
+         tags_lowercase
+    )
+    (Tag_search_constraints.ci_sub constraints);
+  String_set.iter
+    (fun s ->
+       Array.iteri (fun i x ->
+           tag_matched.(i) <- tag_matched.(i) && (String.equal x s)
+         )
+         tags
+    )
+    (Tag_search_constraints.exact constraints);
+  if Tag_search_constraints.is_empty constraints
+  || Array.exists (fun x -> x) tag_matched
+  then (
+    Some { t with tag_matched }
+  ) else (
+    None
+  )
+
 let content_search_results
     (constraints : Content_search_constraints.t)
     (t : t)

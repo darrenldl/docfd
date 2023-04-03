@@ -91,6 +91,3 @@ The controls are also simplified:
 - `j`, `k`, Up arrow and Down arrow can now be used to scroll the content search result
   list without `Shift`.
 
-## Advanced usage
-
-See [here](advanced_usage.md)

@@ -15,3 +15,5 @@ let default_max_word_search_range = 15
 let max_word_search_range = ref default_max_word_search_range
 
 let content_search_result_limit = 10000
+
+let stdin_doc_path_placeholder = "<stdin>"
