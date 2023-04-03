@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1
+
+- Cleaned up code and debug info print a bit
+
 ## 0.5.0
 
 - Removed tags handling
