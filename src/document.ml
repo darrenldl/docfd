@@ -31,7 +31,7 @@ module Parsers = struct
   let words_p ~delim = many (word_p ~delim <* spaces)
 end
 
-type text_work_stage = [
+type work_stage = [
   | `Parsing_title
   | `Header_completed
 ]
@@ -54,8 +54,8 @@ let peek_for_preview_lines (s : (int * string) Seq.t) : string list * (int * str
   in
   aux [] 0 s
 
-let parse_text ~store_all_lines (s : (int * string) Seq.t) : t =
-  let rec aux (stage : text_work_stage) title s =
+let parse ~store_all_lines (s : (int * string) Seq.t) : t =
+  let rec aux (stage : work_stage) title s =
     match stage with
     | `Header_completed -> (
         let (preview_lines, s) = peek_for_preview_lines s in
@@ -97,12 +97,10 @@ let of_in_channel ~path ic : t =
   in
   let document =
     match path with
-    | None -> (
-        parse_text ~store_all_lines:true s
-      )
-    | Some _ -> (
-        parse_text ~store_all_lines:false s
-      )
+    | None ->
+      parse ~store_all_lines:true s
+    | Some _ ->
+      parse ~store_all_lines:false s
   in
   { document with path }
 
