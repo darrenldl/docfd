@@ -1,6 +1,9 @@
 open Cmdliner
 
-let stdout_is_terminal () =
+let stdin_is_atty () =
+  Unix.isatty Unix.stdin
+
+let stdout_is_atty () =
   Unix.isatty Unix.stdout
 
 let max_depth_arg =
@@ -115,7 +118,7 @@ let lowercase_set_of_tags (tags : string array) : String_set.t =
 
 let print_tag_set (tags : String_set.t) =
   let s = String_set.to_seq tags in
-  if stdout_is_terminal () then (
+  if stdout_is_atty () then (
     let table = Array.make 256 [] in
     Seq.iter (fun s ->
         let row = Char.code s.[0] in
@@ -186,32 +189,33 @@ let run
   );
   Printf.printf "Scanning for text files\n";
   let ui_mode, document_src =
-    match files with
-    | [] -> Fmt.pr "Error: No files provided"; exit 1
-    | [ "-" ] -> (
-        (Ui_single_file, Stdin)
-      )
-    | [ f ] -> (
-        if Sys.is_directory f then
-          (Ui_all_files, Files (list_files_recursively f))
-        else
-          (Ui_single_file, Files [ f ])
-      )
-    | _ -> (
-        (Ui_all_files,
-         Files (
-           files
-           |> List.to_seq
-           |> Seq.flat_map (fun f ->
-               if Sys.is_directory f then
-                 List.to_seq (list_files_recursively f)
-               else
-                 Seq.return f
-             )
-           |> List.of_seq
-         )
+    if not (stdin_is_atty ()) then
+      (Ui_single_file, Stdin)
+    else (
+      match files with
+      | [] -> Fmt.pr "Error: No files provided"; exit 1
+      | [ f ] -> (
+          if Sys.is_directory f then
+            (Ui_all_files, Files (list_files_recursively f))
+          else
+            (Ui_single_file, Files [ f ])
         )
-      )
+      | _ -> (
+          (Ui_all_files,
+           Files (
+             files
+             |> List.to_seq
+             |> Seq.flat_map (fun f ->
+                 if Sys.is_directory f then
+                   List.to_seq (list_files_recursively f)
+                 else
+                   Seq.return f
+               )
+             |> List.of_seq
+           )
+          )
+        )
+    )
   in
   Printf.printf "Scanning completed\n";
   let files = List.sort_uniq String.compare files in
@@ -261,7 +265,16 @@ let run
               )
               all_documents
           in
-          let term = Notty_unix.Term.create () in
+          let term =
+            match document_src with
+            | Stdin ->
+              let input =
+                Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
+              in
+              Notty_unix.Term.create ~input ()
+            | Files _ ->
+              Notty_unix.Term.create ()
+          in
           let renderer = Nottui.Renderer.make () in
           let tag_constraints =
             Lwd.var (Tag_search_constraints.make
@@ -439,9 +452,13 @@ let run
                   Lwd.set input_mode Tag_exact;
                   `Handled
                 | ((`Enter, []), _) -> (
-                    Lwd.set quit true;
-                    file_to_open := Some documents.(document_current_choice);
-                    `Handled
+                    match document_src with
+                    | Stdin -> `Handled
+                    | Files _ -> (
+                        Lwd.set quit true;
+                        file_to_open := Some documents.(document_current_choice);
+                        `Handled
+                      )
                   )
                 | _ -> `Handled
               )
