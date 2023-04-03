@@ -454,9 +454,26 @@ let run
           (file_view ())
           content_search_results
       in
-      let content_label_str = "(/) Content search:" in
+      let content_search_control_label =
+        let attr = Notty.A.(st bold ++ fg lightyellow) in
+        Notty.(I.hcat
+                 [ I.string attr  "/"
+                 ; I.string A.empty " to input search phrase, "
+                 ; I.string attr "Enter"
+                 ; I.string A.empty " to confirm, "
+                 ; I.string attr "x"
+                 ; I.string A.empty " to clear"
+                 ]
+              )
+        |> Nottui.Ui.atom
+        |> Lwd.return
+      in
+      let content_search_label_str = "Content search:" in
+      let control_labels =
+        [ content_search_control_label ]
+      in
       let label_strs =
-        [ content_label_str ]
+        [ content_search_label_str ]
       in
       let max_label_len =
         List.fold_left (fun x s ->
@@ -465,9 +482,9 @@ let run
           label_strs
       in
       let label_widget_len = max_label_len + 1 in
-      let content_label =
+      let content_search_label =
         make_label_widget
-          ~s:content_label_str
+          ~s:content_search_label_str
           ~len:label_widget_len
           Content
           input_mode
@@ -492,7 +509,7 @@ let run
           Lwd.map ~f:(fun results ->
               let (_term_width, term_height) = Notty_unix.Term.size term in
               let h =
-                term_height - (List.length label_strs)
+                term_height - (List.length label_strs + List.length control_labels)
               in
               Nottui.Ui.resize ~h results
             )
@@ -518,20 +535,18 @@ let run
       in
       let screen =
         Nottui_widgets.vbox
-          (List.flatten
-             [
-               [ top_pane ];
-               [ Nottui_widgets.hbox
-                   [
-                     content_label;
-                     make_search_field
-                       ~edit_field:content_field
-                       ~focus_handle:content_focus_handle
-                       ~f:update_content_search_constraints;
-                   ]
-               ];
-             ]
-          )
+          [
+            top_pane;
+            content_search_control_label;
+            Nottui_widgets.hbox
+              [
+                content_search_label;
+                make_search_field
+                  ~edit_field:content_field
+                  ~focus_handle:content_focus_handle
+                  ~f:update_content_search_constraints;
+              ];
+          ]
       in
       let rec loop () =
         file_to_open := None;
