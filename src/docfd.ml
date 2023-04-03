@@ -470,9 +470,6 @@ let run
         |> Lwd.return
       in
       let content_search_label_str = "Content search:" in
-      let control_labels =
-        [ content_search_control_label ]
-      in
       let label_strs =
         [ content_search_label_str ]
       in
@@ -500,6 +497,19 @@ let run
               Lwd.set input_mode Navigate
             )
       in
+      let bottom_pane_components =
+        [
+          content_search_control_label;
+          Nottui_widgets.hbox
+            [
+              content_search_label;
+              make_search_field
+                ~edit_field:content_field
+                ~focus_handle:content_focus_handle
+                ~f:update_content_search_constraints;
+            ];
+        ]
+      in
       let top_pane_no_keyboard_control =
         match ui_mode with
         | Ui_all_files ->
@@ -510,7 +520,7 @@ let run
           Lwd.map ~f:(fun results ->
               let (_term_width, term_height) = Notty_unix.Term.size term in
               let h =
-                term_height - (List.length label_strs + List.length control_labels)
+                term_height - (List.length bottom_pane_components)
               in
               Nottui.Ui.resize ~h results
             )
@@ -536,18 +546,9 @@ let run
       in
       let screen =
         Nottui_widgets.vbox
-          [
-            top_pane;
-            content_search_control_label;
-            Nottui_widgets.hbox
-              [
-                content_search_label;
-                make_search_field
-                  ~edit_field:content_field
-                  ~focus_handle:content_focus_handle
-                  ~f:update_content_search_constraints;
-              ];
-          ]
+          (top_pane
+           ::
+           bottom_pane_components)
       in
       let rec loop () =
         file_to_open := None;
