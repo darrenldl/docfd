@@ -153,15 +153,6 @@ let run
   match all_documents with
   | [] -> Printf.printf "No suitable text files found\n"
   | _ -> (
-      let handle_tag_ui =
-        List.exists (fun (doc : Document.t) ->
-            match doc.path with
-            | None -> false
-            | Some path ->
-              Misc_utils.path_is_note path
-          )
-          all_documents
-      in
       let term =
         match document_src with
         | Stdin ->
@@ -215,10 +206,6 @@ let run
           (Lwd.get content_constraints)
       in
       let content_focus_handle = Nottui.Focus.make () in
-      let tag_ci_fuzzy_focus_handle = Nottui.Focus.make () in
-      let tag_ci_full_focus_handle = Nottui.Focus.make () in
-      let tag_ci_sub_focus_handle = Nottui.Focus.make () in
-      let tag_exact_focus_handle = Nottui.Focus.make () in
       let bound_selection ~choice_count (x : int) : int =
         max 0 (min (choice_count - 1) x)
       in
@@ -320,22 +307,6 @@ let run
               Nottui.Focus.request content_focus_handle;
               Lwd.set input_mode Content;
               `Handled
-            | ((`ASCII 'f', [`Ctrl]), _) when handle_tag_ui ->
-              Nottui.Focus.request tag_ci_fuzzy_focus_handle;
-              Lwd.set input_mode Tag_ci_fuzzy;
-              `Handled
-            | ((`ASCII 'i', [`Ctrl]), _) when handle_tag_ui ->
-              Nottui.Focus.request tag_ci_full_focus_handle;
-              Lwd.set input_mode Tag_ci_full;
-              `Handled
-            | ((`ASCII 's', [`Ctrl]), _) when handle_tag_ui ->
-              Nottui.Focus.request tag_ci_sub_focus_handle;
-              Lwd.set input_mode Tag_ci_sub;
-              `Handled
-            | ((`ASCII 'e', [`Ctrl]), _) when handle_tag_ui ->
-              Nottui.Focus.request tag_exact_focus_handle;
-              Lwd.set input_mode Tag_exact;
-              `Handled
             | ((`Enter, []), _) -> (
                 match document_src with
                 | Stdin -> `Handled
@@ -362,7 +333,7 @@ let run
                 Nottui.Ui.empty
               ) else (
                 let (images_selected, images_unselected) =
-                  Render.documents term documents
+                  Render.documents documents
                 in
                 let (_term_width, term_height) = Notty_unix.Term.size term in
                 CCInt.range' i (min (i + term_height / 2) image_count)
@@ -466,20 +437,8 @@ let run
           content_search_results
       in
       let content_label_str = "(/) Content search:" in
-      let tag_ci_fuzzy_label_str = "(Ctrl+f) [F]uzzy case-insensitive tags:" in
-      let tag_ci_full_label_str = "(Ctrl+i) Case-[i]sensitive full tags:" in
-      let tag_ci_sub_label_str = "(Ctrl+s) Case-insensitive [s]ubstring tags:" in
-      let tag_exact_label_str = "(Ctrl+e) [E]exact tags:" in
       let label_strs =
-        content_label_str
-        ::
-        (if handle_tag_ui then
-           [tag_ci_fuzzy_label_str;
-            tag_ci_full_label_str;
-            tag_ci_sub_label_str;
-            tag_exact_label_str;
-           ]
-         else [])
+        [ content_label_str ]
       in
       let max_label_len =
         List.fold_left (fun x s ->

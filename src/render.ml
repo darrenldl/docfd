@@ -1,5 +1,4 @@
 let documents
-    (_term : Notty_unix.Term.t)
     (documents : Document.t array)
   : Notty.image array * Notty.image array =
   let images_selected : Notty.image list ref = ref [] in

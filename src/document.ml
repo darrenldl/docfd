@@ -1,8 +1,6 @@
 type t = {
   path : string option;
   title : string option;
-  tags : string array;
-  tag_matched : bool array;
   content_index : Content_index.t;
   content_search_results : Content_search_result.t array;
   preview_lines : string list;
@@ -13,17 +11,11 @@ let make_empty () : t =
   {
     path = None;
     title = None;
-    tags = [||];
-    tag_matched = [||];
     content_index = Content_index.empty;
     content_search_results = [||];
     preview_lines = [];
     content_lines = None;
   }
-
-type line_typ =
-  | Line of string
-  | Tags of string list
 
 module Parsers = struct
   open Angstrom
@@ -37,26 +29,6 @@ module Parsers = struct
       )
 
   let words_p ~delim = many (word_p ~delim <* spaces)
-
-  let tags_p ~delim_start ~delim_end =
-    let delim =
-      if delim_start = delim_end then
-        Printf.sprintf "%c" delim_start
-      else
-        Printf.sprintf "%c%c" delim_start delim_end
-    in
-    spaces *> char delim_start *> spaces *> words_p ~delim >>=
-    (fun l -> char delim_end *> spaces *> return (Tags l))
-
-  let header_p =
-    choice
-      [
-        tags_p ~delim_start:'[' ~delim_end:']';
-        tags_p ~delim_start:'|' ~delim_end:'|';
-        tags_p ~delim_start:'@' ~delim_end:'@';
-        spaces *> any_string >>=
-        (fun s -> return (Line (CCString.rtrim s)));
-      ]
 end
 
 type note_work_stage = [
@@ -87,56 +59,6 @@ let peek_for_preview_lines (s : (int * string) Seq.t) : string list * (int * str
         aux acc (i+1) xs
   in
   aux [] 0 s
-
-let parse_note (s : (int * string) Seq.t) : t =
-  let rec aux (last_stage : note_work_stage) (stage : note_work_stage) title tags s =
-    match stage with
-    | `Header_completed -> (
-        let title_seq, s =
-          match last_stage with
-          | `Parsing_title -> (
-              match title with
-              | [] -> (Seq.empty, s)
-              | x :: xs -> (Seq.return x, Seq.append (List.to_seq xs) s)
-            )
-          | _ ->
-            (List.to_seq title, s)
-        in
-        let (preview_lines, s) = peek_for_preview_lines s in
-        let content_index = Content_index.index (Seq.append title_seq s) in
-        let empty = make_empty () in
-        {
-          empty with
-          title = Some (String.concat " " (List.map snd title));
-          tags = Array.of_list @@ String_set.to_list tags;
-          content_index;
-          preview_lines;
-        }
-      )
-    | `Parsing_title | `Parsing_tag_section -> (
-        match s () with
-        | Seq.Nil -> aux stage `Header_completed title tags Seq.empty
-        | Seq.Cons ((line_num, x), xs) -> (
-            match Angstrom.(parse_string ~consume:Consume.All) Parsers.header_p x with
-            | Ok x ->
-              (match x with
-               | Line x -> (
-                   match stage with
-                   | `Parsing_title ->
-                     aux stage `Parsing_title ((line_num, x) :: title) tags xs
-                   | `Parsing_tag_section | `Header_completed ->
-                     aux stage `Header_completed title tags (Seq.cons (line_num, x) xs)
-                 )
-               | Tags l -> (
-                   let tags = String_set.add_list tags l in
-                   aux stage `Parsing_tag_section title tags xs
-                 )
-              )
-            | Error _ -> aux last_stage stage title tags xs
-          )
-      )
-  in
-  aux `Parsing_title `Parsing_title [] String_set.empty s
 
 let parse_text ~store_all_lines (s : (int * string) Seq.t) : t =
   let rec aux (stage : text_work_stage) title s =
@@ -184,11 +106,8 @@ let of_in_channel ~path ic : t =
     | None -> (
         parse_text ~store_all_lines:true s
       )
-    | Some path -> (
-        if Misc_utils.path_is_note path then
-          parse_note s
-        else
-          parse_text ~store_all_lines:false s
+    | Some _ -> (
+        parse_text ~store_all_lines:false s
       )
   in
   { document with path }
