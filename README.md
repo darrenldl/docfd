@@ -83,7 +83,7 @@ Docfd operates in modes, the initial mode is `Navigation` mode.
 `Content Search` mode
 
 - Content search field is active in this mode
-- `Enter` to confirm search constraints and exit search mode
+- `Enter` to confirm search phrase and exit search mode
 
 ## Single file mode
 
