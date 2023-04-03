@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.3
+
+- Cleaned up code
+
 ## 0.5.2
 
 - Cleaned up code

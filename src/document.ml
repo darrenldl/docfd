@@ -31,12 +31,6 @@ module Parsers = struct
   let words_p ~delim = many (word_p ~delim <* spaces)
 end
 
-type note_work_stage = [
-  | `Parsing_title
-  | `Parsing_tag_section
-  | `Header_completed
-]
-
 type text_work_stage = [
   | `Parsing_title
   | `Header_completed
