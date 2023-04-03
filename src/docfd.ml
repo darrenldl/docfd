@@ -69,10 +69,6 @@ let list_files_recursively (dir : string) : string list =
 type input_mode =
   | Navigate
   | Content
-  | Tag_ci_fuzzy
-  | Tag_ci_full
-  | Tag_ci_sub
-  | Tag_exact
 
 type ui_mode =
   | Ui_single_file
