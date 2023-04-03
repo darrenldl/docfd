@@ -131,10 +131,15 @@ let run
   Printf.printf "Scanning completed\n";
   let files = List.sort_uniq String.compare files in
   if !Params.debug then (
-    List.iter (fun file ->
-        Printf.printf "File: %s\n" file;
+    match document_src with
+    | Stdin -> Printf.printf "Document source: stdin\n"
+    | Files _ -> (
+        Printf.printf "Document source: file\n";
+        List.iter (fun file ->
+            Printf.printf "File: %s\n" file;
+          )
+          files
       )
-      files
   );
   let all_documents =
     match document_src with
