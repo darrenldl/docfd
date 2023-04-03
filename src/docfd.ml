@@ -205,13 +205,27 @@ let run
         )
           (Lwd.get content_constraints)
       in
-      let content_focus_handle = Nottui.Focus.make () in
       let bound_selection ~choice_count (x : int) : int =
         max 0 (min (choice_count - 1) x)
       in
       let set_document_selected n =
         Lwd.set document_selected n;
         Lwd.set content_search_result_selected 0
+      in
+      let empty_content_field = ("", 0) in
+      let content_field =
+        Lwd.var empty_content_field
+      in
+      let content_focus_handle = Nottui.Focus.make () in
+      let update_content_search_constraints () =
+        let constraints' =
+          (Content_search_constraints.make
+             ~fuzzy_max_edit_distance
+             ~phrase:(fst @@ Lwd.peek content_field)
+          )
+        in
+        set_document_selected 0;
+        Lwd.set content_constraints constraints'
       in
       let document_list_mouse_handler
           ~document_choice_count
@@ -306,6 +320,10 @@ let run
             | ((`ASCII '/', []), _) ->
               Nottui.Focus.request content_focus_handle;
               Lwd.set input_mode Content;
+              `Handled
+            | ((`ASCII 'x', []), _) ->
+              Lwd.set content_field empty_content_field;
+              update_content_search_constraints ();
               `Handled
             | ((`Enter, []), _) -> (
                 match document_src with
@@ -454,19 +472,6 @@ let run
           Content
           input_mode
       in
-      let content_field =
-        Lwd.var ("", 0)
-      in
-      let update_content_constraints () =
-        let constraints' =
-          (Content_search_constraints.make
-             ~fuzzy_max_edit_distance
-             ~phrase:(fst @@ Lwd.peek content_field)
-          )
-        in
-        set_document_selected 0;
-        Lwd.set content_constraints constraints'
-      in
       let make_search_field ~edit_field ~focus_handle ~f =
         Nottui_widgets.edit_field (Lwd.get edit_field)
           ~focus:focus_handle
@@ -522,7 +527,7 @@ let run
                      make_search_field
                        ~edit_field:content_field
                        ~focus_handle:content_focus_handle
-                       ~f:update_content_constraints;
+                       ~f:update_content_search_constraints;
                    ]
                ];
              ]

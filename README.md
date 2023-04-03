@@ -8,6 +8,17 @@ Statically linked binaries are available via
 
 ## Usage
 
+#### Read from stdin
+
+```
+command | docfd
+```
+
+Docfd operates in **Single file mode**
+when input is stdin.
+
+#### Read from files
+
 ```
 docfd [PATH...]
 ```
@@ -64,6 +75,8 @@ Docfd operates in modes, the initial mode is `Navigation` mode.
     - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
 - Switch to `Content Search` mode
   - `/`
+- Clear search phrase
+  - `x`
 - Exit Docfd
   - `q` or `Ctrl+c`
 
