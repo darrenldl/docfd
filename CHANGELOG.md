@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.5
+
+- Fixed weighing of fuzzy matches
+
 ## 0.5.4
 
 - Fixed handling of search phrase with uppercase characters

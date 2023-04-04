@@ -12,6 +12,7 @@ type score_ctx = {
   ci_sub_match_search_char_count : float;
   ci_sub_match_found_char_count : float;
   fuzzy_match_edit_distance : float;
+  fuzzy_match_search_char_count : float;
   fuzzy_match_found_char_count : float;
 }
 
@@ -24,6 +25,7 @@ let empty_score_ctx = {
   ci_sub_match_search_char_count = 0.0;
   ci_sub_match_found_char_count = 0.0;
   fuzzy_match_edit_distance = 0.0;
+  fuzzy_match_search_char_count = 0.0;
   fuzzy_match_found_char_count = 0.0;
 }
 
@@ -71,6 +73,8 @@ let score (t : t) : float =
             fuzzy_match_edit_distance =
               ctx.fuzzy_match_edit_distance
               +. Int.to_float (Spelll.edit_distance search_word_ci found_word_ci);
+            fuzzy_match_search_char_count =
+              ctx.fuzzy_match_search_char_count +. search_word_len;
             fuzzy_match_found_char_count =
               ctx.fuzzy_match_found_char_count +. found_word_len;
           }
@@ -141,14 +145,14 @@ let score (t : t) : float =
        ctx.ci_sub_match_found_char_count)
   in
   let fuzzy_match_score =
-    if quite_close_to_zero ctx.fuzzy_match_found_char_count then
+    if quite_close_to_zero ctx.fuzzy_match_search_char_count then
       0.0
     else
       1.0
       -.
       (ctx.fuzzy_match_edit_distance
        /.
-       ctx.fuzzy_match_found_char_count)
+       ctx.fuzzy_match_search_char_count)
   in
   (unique_match_count /. search_phrase_length)
   *.
