@@ -134,9 +134,11 @@ let score (t : t) : float =
     if quite_close_to_zero ctx.ci_sub_match_found_char_count then
       0.0
     else
-      ctx.ci_sub_match_search_char_count
-      /.
-      ctx.ci_sub_match_found_char_count
+      0.9
+      *.
+      (ctx.ci_sub_match_search_char_count
+       /.
+       ctx.ci_sub_match_found_char_count)
   in
   let fuzzy_match_score =
     if quite_close_to_zero ctx.fuzzy_match_found_char_count then
