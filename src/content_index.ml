@@ -1,14 +1,14 @@
 type t = {
   pos_s_of_word_ci : Int_set.t String_map.t;
   line_pos_of_pos : (int * int) Int_map.t;
-  word_of_pos_ci : string Int_map.t;
+  word_ci_of_pos : string Int_map.t;
   word_of_pos : string Int_map.t;
 }
 
 let empty : t = {
   pos_s_of_word_ci = String_map.empty;
   line_pos_of_pos = Int_map.empty;
-  word_of_pos_ci = Int_map.empty;
+  word_ci_of_pos = Int_map.empty;
   word_of_pos = Int_map.empty;
 }
 
@@ -27,7 +27,7 @@ let index (s : (int * string) Seq.t) : t =
   |> Seq.fold_left (fun
                      { pos_s_of_word_ci;
                        line_pos_of_pos;
-                       word_of_pos_ci;
+                       word_ci_of_pos;
                        word_of_pos;
                      }
                      (pos, line_pos, word) ->
@@ -38,7 +38,7 @@ let index (s : (int * string) Seq.t) : t =
                      in
                      { pos_s_of_word_ci = String_map.add word_ci pos_s pos_s_of_word_ci;
                        line_pos_of_pos = Int_map.add pos line_pos line_pos_of_pos;
-                       word_of_pos_ci = Int_map.add pos word_ci word_of_pos_ci;
+                       word_ci_of_pos = Int_map.add pos word_ci word_ci_of_pos;
                        word_of_pos = Int_map.add pos word word_of_pos;
                      }
                    )

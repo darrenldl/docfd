@@ -4,6 +4,8 @@
 
 - Fixed handling of search phrase with uppercase characters
 
+- Prioritized search results that match the case
+
 ## 0.5.3
 
 - Cleaned up code

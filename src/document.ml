@@ -130,7 +130,7 @@ let content_search_results
             | Some last_pos ->
               let _, _, m =
                 Int_map.split (last_pos - (!Params.max_word_search_range+1))
-                  t.content_index.word_of_pos_ci
+                  t.content_index.word_ci_of_pos
               in
               let m, _, _ =
                 Int_map.split (last_pos + (!Params.max_word_search_range+1))
@@ -182,6 +182,11 @@ let content_search_results
   |> Seq.map (fun l ->
       ({ search_phrase = constraints.phrase;
          found_phrase = List.map
-             (fun i -> (Int_map.find i t.content_index.word_of_pos_ci, i)) l;
+             (fun i ->
+                (i,
+                 Int_map.find i t.content_index.word_ci_of_pos,
+                 Int_map.find i t.content_index.word_of_pos
+                )
+             ) l;
        } : Content_search_result.t)
     )
