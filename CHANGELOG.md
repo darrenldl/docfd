@@ -4,6 +4,8 @@
 
 - Fixed weighing of fuzzy matches
 
+- Fixed bug in scoring of substring matches
+
 ## 0.5.4
 
 - Fixed handling of search phrase with uppercase characters

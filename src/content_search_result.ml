@@ -3,7 +3,7 @@ type t = {
   found_phrase : (int * string * string) list;
 }
 
-type score_ctx = {
+type stats = {
   total_found_char_count : float;
   exact_match_found_char_count : float;
   ci_exact_match_found_char_count : float;
@@ -16,7 +16,7 @@ type score_ctx = {
   fuzzy_match_found_char_count : float;
 }
 
-let empty_score_ctx = {
+let empty_stats = {
   total_found_char_count = 0.0;
   exact_match_found_char_count = 0.0;
   ci_exact_match_found_char_count = 0.0;
@@ -33,54 +33,54 @@ let score (t : t) : float =
   let quite_close_to_zero x =
     -0.01 < x && x < 0.01
   in
-  let ctx =
-    List.fold_left2 (fun (ctx : score_ctx) search_word (_found_word_pos, found_word_ci, found_word) ->
+  let stats =
+    List.fold_left2 (fun (stats : stats) search_word (_found_word_pos, found_word_ci, found_word) ->
         let search_word_len = Int.to_float (String.length search_word) in
         let found_word_len = Int.to_float (String.length found_word) in
         let search_word_ci = String.lowercase_ascii search_word in
-        let ctx =
-          { ctx with
+        let stats =
+          { stats with
             total_found_char_count =
-              ctx.total_found_char_count +. found_word_len;
+              stats.total_found_char_count +. found_word_len;
           }
         in
         if String.equal search_word found_word then
-          { ctx with
+          { stats with
             exact_match_found_char_count =
-              ctx.exact_match_found_char_count +. found_word_len;
+              stats.exact_match_found_char_count +. found_word_len;
           }
         else if String.equal search_word_ci found_word_ci then
-          { ctx with
+          { stats with
             ci_exact_match_found_char_count =
-              ctx.ci_exact_match_found_char_count +. found_word_len;
+              stats.ci_exact_match_found_char_count +. found_word_len;
           }
         else if CCString.find ~sub:search_word found_word >= 0 then
-          { ctx with
+          { stats with
             sub_match_search_char_count =
-              ctx.sub_match_search_char_count +. search_word_len;
+              stats.sub_match_search_char_count +. search_word_len;
             sub_match_found_char_count =
-              ctx.sub_match_found_char_count +. found_word_len;
+              stats.sub_match_found_char_count +. found_word_len;
           }
-        else if CCString.find ~sub:search_word_ci search_word_ci >= 0 then
-          { ctx with
+        else if CCString.find ~sub:search_word_ci found_word_ci >= 0 then
+          { stats with
             ci_sub_match_search_char_count =
-              ctx.ci_sub_match_search_char_count +. search_word_len;
+              stats.ci_sub_match_search_char_count +. search_word_len;
             ci_sub_match_found_char_count =
-              ctx.ci_sub_match_found_char_count +. found_word_len;
+              stats.ci_sub_match_found_char_count +. found_word_len;
           }
         else (
-          { ctx with
+          { stats with
             fuzzy_match_edit_distance =
-              ctx.fuzzy_match_edit_distance
+              stats.fuzzy_match_edit_distance
               +. Int.to_float (Spelll.edit_distance search_word_ci found_word_ci);
             fuzzy_match_search_char_count =
-              ctx.fuzzy_match_search_char_count +. search_word_len;
+              stats.fuzzy_match_search_char_count +. search_word_len;
             fuzzy_match_found_char_count =
-              ctx.fuzzy_match_found_char_count +. found_word_len;
+              stats.fuzzy_match_found_char_count +. found_word_len;
           }
         )
       )
-      empty_score_ctx
+      empty_stats
       t.search_phrase
       t.found_phrase
   in
@@ -115,44 +115,44 @@ let score (t : t) : float =
     total_distance /. unique_match_count
   in
   let exact_match_score =
-    if quite_close_to_zero ctx.exact_match_found_char_count then
+    if quite_close_to_zero stats.exact_match_found_char_count then
       0.0
     else
       1.4
   in
   let ci_exact_match_score =
-    if quite_close_to_zero ctx.ci_exact_match_found_char_count then
+    if quite_close_to_zero stats.ci_exact_match_found_char_count then
       0.0
     else
       1.2
   in
   let sub_match_score =
-    if quite_close_to_zero ctx.sub_match_found_char_count then
+    if quite_close_to_zero stats.sub_match_found_char_count then
       0.0
     else
-      ctx.sub_match_search_char_count
+      stats.sub_match_search_char_count
       /.
-      ctx.sub_match_found_char_count
+      stats.sub_match_found_char_count
   in
   let ci_sub_match_score =
-    if quite_close_to_zero ctx.ci_sub_match_found_char_count then
+    if quite_close_to_zero stats.ci_sub_match_found_char_count then
       0.0
     else
       0.9
       *.
-      (ctx.ci_sub_match_search_char_count
+      (stats.ci_sub_match_search_char_count
        /.
-       ctx.ci_sub_match_found_char_count)
+       stats.ci_sub_match_found_char_count)
   in
   let fuzzy_match_score =
-    if quite_close_to_zero ctx.fuzzy_match_search_char_count then
+    if quite_close_to_zero stats.fuzzy_match_search_char_count then
       0.0
     else
       1.0
       -.
-      (ctx.fuzzy_match_edit_distance
+      (stats.fuzzy_match_edit_distance
        /.
-       ctx.fuzzy_match_search_char_count)
+       stats.fuzzy_match_search_char_count)
   in
   (unique_match_count /. search_phrase_length)
   *.
@@ -161,15 +161,15 @@ let score (t : t) : float =
   (if quite_close_to_zero average_distance then 1.0 else 1.0 /. average_distance)
   *.
   (
-    (exact_match_score *. (ctx.exact_match_found_char_count /. ctx.total_found_char_count))
+    (exact_match_score *. (stats.exact_match_found_char_count /. stats.total_found_char_count))
     +.
-    (ci_exact_match_score *. (ctx.ci_exact_match_found_char_count /. ctx.total_found_char_count))
+    (ci_exact_match_score *. (stats.ci_exact_match_found_char_count /. stats.total_found_char_count))
     +.
-    (sub_match_score *. (ctx.sub_match_found_char_count /. ctx.total_found_char_count))
+    (sub_match_score *. (stats.sub_match_found_char_count /. stats.total_found_char_count))
     +.
-    (ci_sub_match_score *. (ctx.ci_sub_match_found_char_count /. ctx.total_found_char_count))
+    (ci_sub_match_score *. (stats.ci_sub_match_found_char_count /. stats.total_found_char_count))
     +.
-    (fuzzy_match_score *. (ctx.fuzzy_match_found_char_count /. ctx.total_found_char_count))
+    (fuzzy_match_score *. (stats.fuzzy_match_found_char_count /. stats.total_found_char_count))
   )
 
 let compare t1 t2 =
