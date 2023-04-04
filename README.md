@@ -8,14 +8,14 @@ Statically linked binaries are available via
 
 ## Usage
 
-#### Read from stdin
+#### Read from piped stdin
 
 ```
 command | docfd
 ```
 
 Docfd operates in **Single file mode**
-when input is stdin.
+when source of document is piped stdin.
 
 #### Read from files
 
