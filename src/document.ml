@@ -155,12 +155,15 @@ let content_search_results
                   (word, m)
                 )
           in
+          let search_word_ci =
+            String.lowercase_ascii search_word
+          in
           let usable_positions =
             word_ci_and_positions_to_consider
             |> Seq.filter (fun (indexed_word, _pos_s) ->
-                String.equal search_word indexed_word
-                || CCString.find ~sub:search_word indexed_word >= 0
-                || (Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word search_word.[0]
+                String.equal search_word_ci indexed_word
+                || CCString.find ~sub:search_word_ci indexed_word >= 0
+                || (Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word search_word_ci.[0]
                     && Spelll.match_with dfa indexed_word)
               )
             |> Seq.flat_map (fun (_indexed_word, pos_s) -> Int_set.to_seq pos_s)

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.4
+
+- Fixed handling of search phrase with uppercase characters
+
 ## 0.5.3
 
 - Cleaned up code
