@@ -114,8 +114,8 @@ let words_of_line_num line_num t : string Seq.t =
   match Int_map.find_opt line_num t.start_end_inc_pos_of_line_num with
   | None -> Seq.empty
   | Some (start, end_inc) ->
-  OSeq.(start -- end_inc)
-  |> Seq.map (fun pos -> word_of_pos pos t)
+    OSeq.(start -- end_inc)
+    |> Seq.map (fun pos -> word_of_pos pos t)
 
 let line_of_line_num line_num t =
   words_of_line_num line_num t
