@@ -95,34 +95,11 @@ let content_search_results
       | (search_word, dfa) :: rest -> (
           let word_ci_and_positions_to_consider =
             match last_pos with
-            | None -> String_map.to_seq t.content_index.pos_s_of_word_ci
+            | None -> Content_index.word_ci_and_pos_s t.content_index
             | Some last_pos ->
-              let _, _, m =
-                Int_map.split (last_pos - (!Params.max_word_search_range+1))
-                  t.content_index.word_ci_of_pos
-              in
-              let m, _, _ =
-                Int_map.split (last_pos + (!Params.max_word_search_range+1))
-                  m
-              in
-              let words_to_consider =
-                Int_map.fold (fun _ word s ->
-                    String_set.add word s
-                  ) m String_set.empty
-              in
-              String_set.to_seq words_to_consider
-              |> Seq.map (fun word ->
-                  (word, String_map.find word t.content_index.pos_s_of_word_ci)
-                )
-              |> Seq.map (fun (word, pos_s) ->
-                  let _, _, m =
-                    Int_set.split (last_pos - (!Params.max_word_search_range+1)) pos_s
-                  in
-                  let m, _, _ =
-                    Int_set.split (last_pos + (!Params.max_word_search_range+1)) m
-                  in
-                  (word, m)
-                )
+                let start = last_pos - (!Params.max_word_search_range+1) in
+                let end_inc = last_pos + (!Params.max_word_search_range+1) in
+                Content_index.word_ci_and_pos_s ~range_inc:(start, end_inc) t.content_index
           in
           let search_word_ci =
             String.lowercase_ascii search_word
@@ -151,11 +128,14 @@ let content_search_results
   |> Seq.map (fun l ->
       ({ search_phrase = constraints.phrase;
          found_phrase = List.map
-             (fun i ->
-                (i,
-                 Int_map.find i t.content_index.word_ci_of_pos,
-                 Int_map.find i t.content_index.word_of_pos
-                )
+             (fun pos ->
+               let word_ci = 
+                 Content_index.word_ci_of_pos pos t.content_index
+                 in
+                 let word =
+                 Content_index.word_of_pos pos t.content_index
+                 in
+                (pos, word_ci, word)
              ) l;
        } : Content_search_result.t)
     )

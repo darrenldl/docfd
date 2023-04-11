@@ -2,7 +2,7 @@
 
 ## 0.5.6
 
-- Code refactoring, simplified some data structures
+- Optimized content index memory footage
 
 ## 0.5.5
 
