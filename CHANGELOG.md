@@ -2,7 +2,12 @@
 
 ## 0.5.6
 
-- Optimized content index memory footage
+- Optimized overall memory footage
+
+  - Content index memory usage
+
+  - Switched to using content index to render content
+    lines instead of storing file lines again after indexing
 
 ## 0.5.5
 
