@@ -111,7 +111,9 @@ let word_ci_and_pos_s ?range_inc t : (string * Int_set.t) Seq.t =
     )
 
 let words_of_line_num line_num t : string Seq.t =
-  let (start, end_inc) = Int_map.find line_num t.start_end_inc_pos_of_line_num in
+  match Int_map.find_opt line_num t.start_end_inc_pos_of_line_num with
+  | None -> Seq.empty
+  | Some (start, end_inc) ->
   OSeq.(start -- end_inc)
   |> Seq.map (fun pos -> word_of_pos pos t)
 

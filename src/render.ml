@@ -143,4 +143,4 @@ let content_search_results
       )
       results
   with
-  | _ -> [| I.strf "Failed to access %s" (Option.get doc.path) |]
+  | _ -> [| I.strf "Failed to render content search results" |]
