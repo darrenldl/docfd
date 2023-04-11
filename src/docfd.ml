@@ -392,20 +392,8 @@ let run
               in
               let doc = documents.(i) in
               let content =
-                match doc.content_lines with
-                | None -> (
-                    let path = Option.get doc.path in
-                    try
-                      CCIO.with_in path (fun ic ->
-                          CCIO.read_lines_seq ic
-                          |> render_seq
-                        )
-                    with
-                    | _ -> Nottui.Ui.atom Notty.(I.strf "Error: Failed to access %s" path)
-                  )
-                | Some lines ->
-                  Array.to_seq lines
-                  |> render_seq
+                Array.to_seq doc.content_lines
+                |> render_seq
               in
               content
             )

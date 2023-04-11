@@ -3,8 +3,7 @@ type t = {
   title : string option;
   content_index : Content_index.t;
   content_search_results : Content_search_result.t array;
-  preview_lines : string list;
-  content_lines : string array option;
+  content_lines : string array;
 }
 
 let make_empty () : t =
@@ -13,8 +12,7 @@ let make_empty () : t =
     title = None;
     content_index = Content_index.empty;
     content_search_results = [||];
-    preview_lines = [];
-    content_lines = None;
+    content_lines = [||];
   }
 
 module Parsers = struct
@@ -54,11 +52,10 @@ let peek_for_preview_lines (s : (int * string) Seq.t) : string list * (int * str
   in
   aux [] 0 s
 
-let parse ~store_all_lines (s : (int * string) Seq.t) : t =
+let parse (s : (int * string) Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
     | `Header_completed -> (
-        let (preview_lines, s) = peek_for_preview_lines s in
         let s = 
           match title with
           | None -> s
@@ -66,18 +63,14 @@ let parse ~store_all_lines (s : (int * string) Seq.t) : t =
             Seq.cons (0, title) s
         in
         let content_index, content_lines =
-          if store_all_lines then
-            let arr = Array.of_seq s in
-            (Content_index.index (Array.to_seq arr), Some (Array.map snd arr))
-          else
-            (Content_index.index s, None)
+          let arr = Array.of_seq s in
+          (Content_index.index (Array.to_seq arr), (Array.map snd arr))
         in
         let empty = make_empty () in
         {
           empty with
           title;
           content_index;
-          preview_lines;
           content_lines;
         }
       )
@@ -95,13 +88,7 @@ let of_in_channel ~path ic : t =
   let s = CCIO.read_lines_seq ic
           |> Seq.mapi (fun i line -> (i, line))
   in
-  let document =
-    match path with
-    | None ->
-      parse ~store_all_lines:true s
-    | Some _ ->
-      parse ~store_all_lines:false s
-  in
+  let document = parse s in
   { document with path }
 
 let of_path path : (t, string) result =

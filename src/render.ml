@@ -17,12 +17,14 @@ let documents
           I.empty
       in
       let preview_line_images =
-        List.map (fun line ->
+        Array.sub doc.content_lines 0
+          (min Params.preview_line_count (Array.length doc.content_lines))
+        |> Array.to_list
+        |> List.map (fun line ->
             (I.string A.(bg lightgreen) " ")
             <|>
             (I.strf " %s" (Misc_utils.sanitize_string_for_printing line))
           )
-          doc.preview_lines
       in
       let preview_image =
         I.vcat preview_line_images
@@ -76,14 +78,6 @@ let content_search_results
   let open Notty in
   let open Notty.Infix in
   try
-    let doc_lines =
-      match document.content_lines with
-      | None ->
-        CCIO.with_in (Option.get document.path) (fun ic ->
-            Array.of_list (CCIO.read_lines_l ic)
-          )
-      | Some arr -> arr
-    in
     let results = Array.sub
         document.content_search_results
         start
@@ -103,7 +97,9 @@ let content_search_results
           |> Option.get
         in
         let word_image_grid =
-          Array.sub doc_lines relevant_start_line (relevant_end_inc_line - relevant_start_line + 1)
+          Array.sub document.content_lines
+            relevant_start_line
+            (relevant_end_inc_line - relevant_start_line + 1)
           |> Array.map (fun line ->
               Tokenize.f ~drop_spaces:false line
               |> Seq.map Misc_utils.sanitize_string_for_printing
