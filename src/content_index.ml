@@ -82,12 +82,10 @@ let word_ci_and_pos_s ?range_inc t : (string * Int_set.t) Seq.t =
   | Some (start, end_inc) -> (
       assert (start <= end_inc);
       let _, _, m =
-        Int_map.split (start-1)
-          t.word_ci_of_pos
+        Int_map.split (start-1) t.word_ci_of_pos
       in
       let m, _, _ =
-        Int_map.split (end_inc+1)
-          m
+        Int_map.split (end_inc+1) m
       in
       let words_to_consider =
         Int_map.fold (fun _ index set ->
