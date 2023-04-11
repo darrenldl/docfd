@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.6
+
+- Code refactoring, simplified some data structures
+
 ## 0.5.5
 
 - Fixed weighing of fuzzy matches

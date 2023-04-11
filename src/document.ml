@@ -30,32 +30,14 @@ module Parsers = struct
 end
 
 type work_stage = [
-  | `Parsing_title
-  | `Header_completed
+  | `Title
+  | `Content
 ]
-
-let peek_for_preview_lines (s : (int * string) Seq.t) : string list * (int * string) Seq.t =
-  let cleanup_acc acc =
-    acc
-    |> List.map snd
-    |> List.rev
-  in
-  let rec aux acc i s =
-    match s () with
-    | Seq.Nil -> (cleanup_acc acc, acc |> List.rev |> List.to_seq)
-    | Seq.Cons ((line_num, x), xs) ->
-      let acc = (line_num, x) :: acc in
-      if i >= Params.preview_line_count then
-        (cleanup_acc acc, Seq.append (acc |> List.rev |> List.to_seq) xs)
-      else
-        aux acc (i+1) xs
-  in
-  aux [] 0 s
 
 let parse (s : (int * string) Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
-    | `Header_completed -> (
+    | `Content -> (
         let s = 
           match title with
           | None -> s
@@ -74,15 +56,15 @@ let parse (s : (int * string) Seq.t) : t =
           content_lines;
         }
       )
-    | `Parsing_title -> (
+    | `Title -> (
         match s () with
-        | Seq.Nil -> aux `Header_completed title Seq.empty
+        | Seq.Nil -> aux `Content title Seq.empty
         | Seq.Cons ((_line_num, x), xs) -> (
-            aux `Header_completed (Some x) xs
+            aux `Content (Some x) xs
           )
       )
   in
-  aux `Parsing_title None s
+  aux `Title None s
 
 let of_in_channel ~path ic : t =
   let s = CCIO.read_lines_seq ic
