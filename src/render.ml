@@ -92,7 +92,7 @@ let content_search_results
     Array.map (fun (search_result : Content_search_result.t) ->
         let (relevant_start_line, relevant_end_inc_line) =
           List.fold_left (fun s_e (pos, _, _) ->
-              let (line_num, _) = Int_map.find pos document.content_index.line_pos_of_pos in
+              let (line_num, _) = Int_map.find pos document.content_index.loc_of_pos in
               match s_e with
               | None -> Some (line_num, line_num)
               | Some (s, e) ->
@@ -112,7 +112,7 @@ let content_search_results
             )
         in
         List.iter (fun (pos, _word_ci, word) ->
-            let (line_num, pos_in_line) = Int_map.find pos document.content_index.line_pos_of_pos in
+            let (line_num, pos_in_line) = Int_map.find pos document.content_index.loc_of_pos in
             let word = Misc_utils.sanitize_string_for_printing word in
             word_image_grid.(line_num - relevant_start_line).(pos_in_line) <-
               I.string A.(fg black ++ bg lightyellow) word
