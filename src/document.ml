@@ -3,7 +3,6 @@ type t = {
   title : string option;
   content_index : Content_index.t;
   content_search_results : Content_search_result.t array;
-  content_lines : string array;
 }
 
 let make_empty () : t =
@@ -12,7 +11,6 @@ let make_empty () : t =
     title = None;
     content_index = Content_index.empty;
     content_search_results = [||];
-    content_lines = [||];
   }
 
 module Parsers = struct
@@ -44,16 +42,12 @@ let parse (s : (int * string) Seq.t) : t =
           | Some title ->
             Seq.cons (0, title) s
         in
-        let content_index, content_lines =
-          let arr = Array.of_seq s in
-          (Content_index.index (Array.to_seq arr), (Array.map snd arr))
-        in
+        let content_index = Content_index.index s in
         let empty = make_empty () in
         {
           empty with
           title;
           content_index;
-          content_lines;
         }
       )
     | `Title -> (
@@ -97,9 +91,9 @@ let content_search_results
             match last_pos with
             | None -> Content_index.word_ci_and_pos_s t.content_index
             | Some last_pos ->
-                let start = last_pos - (!Params.max_word_search_range+1) in
-                let end_inc = last_pos + (!Params.max_word_search_range+1) in
-                Content_index.word_ci_and_pos_s ~range_inc:(start, end_inc) t.content_index
+              let start = last_pos - (!Params.max_word_search_range+1) in
+              let end_inc = last_pos + (!Params.max_word_search_range+1) in
+              Content_index.word_ci_and_pos_s ~range_inc:(start, end_inc) t.content_index
           in
           let search_word_ci =
             String.lowercase_ascii search_word
@@ -129,12 +123,12 @@ let content_search_results
       ({ search_phrase = constraints.phrase;
          found_phrase = List.map
              (fun pos ->
-               let word_ci = 
-                 Content_index.word_ci_of_pos pos t.content_index
-                 in
-                 let word =
-                 Content_index.word_of_pos pos t.content_index
-                 in
+                let word_ci = 
+                  Content_index.word_ci_of_pos pos t.content_index
+                in
+                let word =
+                  Content_index.word_of_pos pos t.content_index
+                in
                 (pos, word_ci, word)
              ) l;
        } : Content_search_result.t)

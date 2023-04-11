@@ -392,7 +392,7 @@ let run
               in
               let doc = documents.(i) in
               let content =
-                Array.to_seq doc.content_lines
+                Content_index.lines doc.content_index
                 |> render_seq
               in
               content
@@ -541,15 +541,11 @@ let run
       let rec loop () =
         file_to_open := None;
         Lwd.set quit false;
-        (try
-           Nottui.Ui_loop.run
-             ~term
-             ~renderer
-             ~quit
-             screen;
-         with
-         | _ -> Printf.printf "Error: TUI crashed\n"; exit 1
-        );
+        Nottui.Ui_loop.run
+          ~term
+          ~renderer
+          ~quit
+          screen;
         match !file_to_open with
         | None -> ()
         | Some doc ->

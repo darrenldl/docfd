@@ -17,14 +17,17 @@ let documents
           I.empty
       in
       let preview_line_images =
-        Array.sub doc.content_lines 0
-          (min Params.preview_line_count (Array.length doc.content_lines))
-        |> Array.to_list
-        |> List.map (fun line ->
+        let line_count =
+          min Params.preview_line_count (Content_index.line_count doc.content_index)
+        in
+        OSeq.(0 --^ line_count)
+        |> Seq.map (fun line_num -> Content_index.line_of_line_num line_num doc.content_index)
+        |> Seq.map (fun line ->
             (I.string A.(bg lightgreen) " ")
             <|>
             (I.strf " %s" (Misc_utils.sanitize_string_for_printing line))
           )
+        |> List.of_seq
       in
       let preview_image =
         I.vcat preview_line_images
@@ -73,20 +76,20 @@ let documents
 let content_search_results
     ~start
     ~end_exc
-    (document : Document.t)
+    (doc : Document.t)
   : Notty.image array =
   let open Notty in
   let open Notty.Infix in
   try
     let results = Array.sub
-        document.content_search_results
+        doc.content_search_results
         start
         (end_exc - start)
     in
     Array.map (fun (search_result : Content_search_result.t) ->
         let (relevant_start_line, relevant_end_inc_line) =
           List.fold_left (fun s_e (pos, _, _) ->
-              let (line_num, _) = Int_map.find pos document.content_index.loc_of_pos in
+              let (line_num, _) = Content_index.loc_of_pos pos doc.content_index in
               match s_e with
               | None -> Some (line_num, line_num)
               | Some (s, e) ->
@@ -97,18 +100,19 @@ let content_search_results
           |> Option.get
         in
         let word_image_grid =
-          Array.sub document.content_lines
-            relevant_start_line
-            (relevant_end_inc_line - relevant_start_line + 1)
-          |> Array.map (fun line ->
-              Tokenize.f ~drop_spaces:false line
+          OSeq.(relevant_start_line
+                --
+                relevant_end_inc_line)
+          |> Seq.map (fun line ->
+              Content_index.words_of_line_num line doc.content_index
               |> Seq.map Misc_utils.sanitize_string_for_printing
               |> Seq.map (fun word -> I.string A.empty word)
               |> Array.of_seq
             )
+          |> Array.of_seq
         in
         List.iter (fun (pos, _word_ci, word) ->
-            let (line_num, pos_in_line) = Int_map.find pos document.content_index.loc_of_pos in
+            let (line_num, pos_in_line) = Content_index.loc_of_pos pos doc.content_index in
             let word = Misc_utils.sanitize_string_for_printing word in
             word_image_grid.(line_num - relevant_start_line).(pos_in_line) <-
               I.string A.(fg black ++ bg lightyellow) word
@@ -139,4 +143,4 @@ let content_search_results
       )
       results
   with
-  | _ -> [| I.strf "Failed to access %s" (Option.get document.path) |]
+  | _ -> [| I.strf "Failed to access %s" (Option.get doc.path) |]
