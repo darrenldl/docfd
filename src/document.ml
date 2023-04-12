@@ -27,15 +27,14 @@ module Parsers = struct
   let words_p ~delim = many (word_p ~delim <* spaces)
 end
 
-type work_stage = [
-  | `Title
-  | `Content
-]
+type work_stage =
+  | Title
+  | Content
 
 let parse (s : (int * string) Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
-    | `Content -> (
+    | Content -> (
         let s = 
           match title with
           | None -> s
@@ -50,15 +49,15 @@ let parse (s : (int * string) Seq.t) : t =
           content_index;
         }
       )
-    | `Title -> (
+    | Title -> (
         match s () with
-        | Seq.Nil -> aux `Content title Seq.empty
+        | Seq.Nil -> aux Content title Seq.empty
         | Seq.Cons ((_line_num, x), xs) -> (
-            aux `Content (Some x) xs
+            aux Content (Some x) xs
           )
       )
   in
-  aux `Title None s
+  aux Title None s
 
 let of_in_channel ~path ic : t =
   let s = CCIO.read_lines_seq ic
