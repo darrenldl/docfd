@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.8
+
+- Fixed debug print of file paths
+
 ## 0.5.7
 
 - Changed word db to do global word recording to further reduce memory footprint

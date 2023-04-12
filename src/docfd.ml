@@ -123,17 +123,17 @@ let run
                    Seq.return f
                )
              |> List.of_seq
+             |> List.sort_uniq String.compare
            )
           )
         )
     )
   in
   Printf.printf "Scanning completed\n";
-  let files = List.sort_uniq String.compare files in
   if !Params.debug then (
     match document_src with
     | Stdin -> Printf.printf "Document source: stdin\n"
-    | Files _ -> (
+    | Files files -> (
         Printf.printf "Document source: file\n";
         List.iter (fun file ->
             Printf.printf "File: %s\n" file;
