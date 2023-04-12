@@ -2,11 +2,11 @@
 
 ## 0.5.7
 
-- Swapped to using word db for global word recording
+- Changed word db to do global word recording to further reduce memory footprint
 
 ## 0.5.6
 
-- Optimized overall memory footage
+- Optimized overall memory footprint
 
   - Content index memory usage
 
