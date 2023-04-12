@@ -4,7 +4,6 @@ type t = {
   start_end_inc_pos_of_line_num : (int * int) Int_map.t;
   word_ci_of_pos : int Int_map.t;
   word_of_pos : int Int_map.t;
-  word_db : Word_db.t;
 }
 
 let empty : t = {
@@ -13,7 +12,6 @@ let empty : t = {
   start_end_inc_pos_of_line_num = Int_map.empty;
   word_ci_of_pos = Int_map.empty;
   word_of_pos = Int_map.empty;
-  word_db = Word_db.empty;
 }
 
 let words_of_lines (s : (int * string) Seq.t) : (int * (int * int) * string) Seq.t =
@@ -35,16 +33,15 @@ let index (s : (int * string) Seq.t) : t =
         start_end_inc_pos_of_line_num;
         word_ci_of_pos;
         word_of_pos;
-        word_db;
       }
       (pos, loc, word) ->
       let (line_num, _) = loc in
       let word_ci = String.lowercase_ascii word in
-      let index_of_word, word_db =
-        Word_db.add word word_db
+      let index_of_word =
+        Word_db.add word
       in
-      let index_of_word_ci, word_db =
-        Word_db.add word_ci word_db
+      let index_of_word_ci =
+        Word_db.add word_ci
       in
       let pos_s = Option.value ~default:Int_set.empty
           (String_map.find_opt word pos_s_of_word_ci)
@@ -61,7 +58,6 @@ let index (s : (int * string) Seq.t) : t =
           Int_map.add line_num start_end_inc_pos start_end_inc_pos_of_line_num;
         word_ci_of_pos = Int_map.add pos index_of_word_ci word_ci_of_pos;
         word_of_pos = Int_map.add pos index_of_word word_of_pos;
-        word_db;
       }
     )
     empty
@@ -69,12 +65,10 @@ let index (s : (int * string) Seq.t) : t =
 let word_ci_of_pos pos t =
   Word_db.word_of_index
     (Int_map.find pos t.word_ci_of_pos)
-    t.word_db
 
 let word_of_pos pos t =
   Word_db.word_of_index
     (Int_map.find pos t.word_of_pos)
-    t.word_db
 
 let word_ci_and_pos_s ?range_inc t : (string * Int_set.t) Seq.t =
   match range_inc with
@@ -93,7 +87,7 @@ let word_ci_and_pos_s ?range_inc t : (string * Int_set.t) Seq.t =
           ) m Int_set.empty
       in
       Int_set.to_seq words_to_consider
-      |> Seq.map (fun index -> Word_db.word_of_index index t.word_db)
+      |> Seq.map Word_db.word_of_index
       |> Seq.map (fun word ->
           (word, String_map.find word t.pos_s_of_word_ci)
         )

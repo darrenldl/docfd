@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.7
+
+- Swapped to using word db for global word recording
+
 ## 0.5.6
 
 - Optimized overall memory footage

@@ -1,9 +1,5 @@
-type t
+val add : string -> int
 
-val empty : t
+val word_of_index : int -> string
 
-val add : string -> t -> int * t
-
-val word_of_index : int -> t -> string
-
-val index_of_word : string -> t -> int
+val index_of_word : string -> int
