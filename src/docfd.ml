@@ -68,7 +68,7 @@ let list_files_recursively (dir : string) : string list =
 
 type input_mode =
   | Navigate
-  | Content
+  | Search
 
 type ui_mode =
   | Ui_single_file
@@ -320,7 +320,7 @@ let run
               `Handled
             | ((`ASCII '/', []), _) ->
               Nottui.Focus.request content_focus_handle;
-              Lwd.set input_mode Content;
+              Lwd.set input_mode Search;
               `Handled
             | ((`ASCII 'x', []), _) ->
               Lwd.set search_field empty_search_field;
@@ -337,7 +337,7 @@ let run
               )
             | _ -> `Handled
           )
-        | _ -> `Unhandled
+        | Search -> `Unhandled
       in
       let full_term_sized_background () =
         let (term_width, term_height) = Notty_unix.Term.size term in
@@ -447,7 +447,7 @@ let run
         let attr = Notty.A.(st bold ++ fg lightyellow) in
         Notty.(I.hcat
                  [ I.string attr  "/"
-                 ; I.string A.empty ": input search phrase, "
+                 ; I.string A.empty ": switch to search mode, "
                  ; I.string attr "Enter"
                  ; I.string A.empty ": confirm, "
                  ; I.string attr "x"
@@ -472,7 +472,7 @@ let run
         make_label_widget
           ~s:content_search_label_str
           ~len:label_widget_len
-          Content
+          Search
           input_mode
       in
       let make_search_field ~edit_field ~focus_handle ~f =
