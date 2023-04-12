@@ -213,16 +213,16 @@ let run
         Lwd.set document_selected n;
         Lwd.set content_search_result_selected 0
       in
-      let empty_content_field = ("", 0) in
-      let content_field =
-        Lwd.var empty_content_field
+      let empty_search_field = ("", 0) in
+      let search_field =
+        Lwd.var empty_search_field
       in
       let content_focus_handle = Nottui.Focus.make () in
       let update_content_search_constraints () =
         let constraints' =
           (Content_search_constraints.make
              ~fuzzy_max_edit_distance
-             ~phrase:(fst @@ Lwd.peek content_field)
+             ~phrase:(fst @@ Lwd.peek search_field)
           )
         in
         set_document_selected 0;
@@ -323,7 +323,7 @@ let run
               Lwd.set input_mode Content;
               `Handled
             | ((`ASCII 'x', []), _) ->
-              Lwd.set content_field empty_content_field;
+              Lwd.set search_field empty_search_field;
               update_content_search_constraints ();
               `Handled
             | ((`Enter, []), _) -> (
@@ -447,11 +447,11 @@ let run
         let attr = Notty.A.(st bold ++ fg lightyellow) in
         Notty.(I.hcat
                  [ I.string attr  "/"
-                 ; I.string A.empty " to input search phrase, "
+                 ; I.string A.empty ": input search phrase, "
                  ; I.string attr "Enter"
-                 ; I.string A.empty " to confirm, "
+                 ; I.string A.empty ": confirm, "
                  ; I.string attr "x"
-                 ; I.string A.empty " to clear"
+                 ; I.string A.empty ": clear"
                  ]
               )
         |> Nottui.Ui.atom
@@ -492,7 +492,7 @@ let run
             [
               content_search_label;
               make_search_field
-                ~edit_field:content_field
+                ~edit_field:search_field
                 ~focus_handle:content_focus_handle
                 ~f:update_content_search_constraints;
             ];
