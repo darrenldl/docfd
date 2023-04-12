@@ -4,6 +4,8 @@
 
 - Fixed debug print of file paths
 
+- Tuned UI text slightly
+
 ## 0.5.7
 
 - Changed word db to do global word recording to further reduce memory footprint
