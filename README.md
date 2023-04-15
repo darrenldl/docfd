@@ -90,10 +90,10 @@ Docfd operates in modes, the initial mode is `Navigation` mode.
 If the specified path to Docfd is not a directory, then single file mode
 is used.
 
-Searching `is left` in repo root:
+Searching `is left` in `README.md`:
 ![](screenshots/single-file0.png)
 
-Searching `[github]` in repo root:
+Searching `[github]` in `README.md`:
 ![](screenshots/single-file1.png)
 
 In this mode, the TUI is divided into only two sections:
