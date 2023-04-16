@@ -73,14 +73,14 @@ Docfd operates in modes, the initial mode is `Navigation` mode.
 - Open document
   - `Enter`
     - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
-- Switch to `Content Search` mode
+- Switch to `Content search` mode
   - `/`
 - Clear search phrase
   - `x`
 - Exit Docfd
   - `q` or `Ctrl+c`
 
-`Content Search` mode
+`Content search` mode
 
 - Content search field is active in this mode
 - `Enter` to confirm search phrase and exit search mode
