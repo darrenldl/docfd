@@ -443,42 +443,89 @@ let run
           (file_view ())
           content_search_results
       in
-      let status_bar =
+      let status_bar0, status_bar1 =
+        let element_spacing = 4 in
+        let element_spacer = Notty.(I.string A.empty) (String.make element_spacing ' ') in
         let key_msg_pair key msg =
-          let bg_color = Notty.A.white in
-          let fg_color = Notty.A.black in
-          let key_attr = Notty.A.(bg bg_color ++ fg fg_color ++ st bold) in
-          let msg_attr = Notty.A.(bg bg_color ++ fg fg_color) in
+          let key_attr = Notty.A.(fg lightyellow ++ st bold) in
+          let msg_attr = Notty.A.empty in
           Notty.(I.hcat
                    [ I.string key_attr key
-                   ; I.string msg_attr "  "
+                   ; I.string A.empty "  "
                    ; I.string msg_attr msg
-                   ; I.string A.empty " "
                    ]
                 )
         in
-        Lwd.map ~f:(fun mode ->
-            match mode with
-            | Navigate -> (
-                Notty.(I.hcat
-                         [ I.string A.(st bold) "NAVIGATE "
-                         ; key_msg_pair "/" "switch to search mode"
-                         ; key_msg_pair "x" "clear search"
-                         ; key_msg_pair "q" "exit"
-                         ]
-                      )
-                |> Nottui.Ui.atom
-              )
-            | Search -> (
-                Notty.(I.hcat
-                         [ I.string A.(st bold) "SEARCH   "
-                         ; key_msg_pair "Enter" "confirm and exit search mode"
-                         ]
-                      )
-                |> Nottui.Ui.atom
-              )
-          )
-          (Lwd.get input_mode)
+        let mode_strings =
+          [ (Navigate, "NAVIGATE")
+          ; (Search, "SEARCH")
+          ]
+        in
+        let max_mode_string_len =
+          List.fold_left (fun acc (_, s) ->
+              max acc (String.length s)
+            )
+            0
+            mode_strings
+        in
+        let mode_string_paddings =
+          List.map (fun (mode, s) ->
+              (mode, String.make (max_mode_string_len - String.length s) ' ')
+            )
+            mode_strings
+        in
+        let spacer_under_mode_string =
+          Notty.(I.string A.empty) (String.make max_mode_string_len ' ')
+        in
+        (Lwd.map ~f:(fun mode ->
+             match mode with
+             | Navigate -> (
+                 Notty.(I.hcat
+                          [ I.string A.(st bold) (List.assoc Navigate mode_strings)
+                          ; I.string A.empty (List.assoc Navigate mode_string_paddings)
+                          ; element_spacer
+                          ; key_msg_pair "Enter" "open document"
+                          ; element_spacer
+                          ; key_msg_pair "/" "switch to search mode"
+                          ; element_spacer
+                          ; key_msg_pair "x" "clear search"
+                          ]
+                       )
+                 |> Nottui.Ui.atom
+               )
+             | Search -> (
+                 Notty.(I.hcat
+                          [ I.string A.(st bold) (List.assoc Search mode_strings)
+                          ; I.string A.empty (List.assoc Search mode_string_paddings)
+                          ; element_spacer
+                          ; key_msg_pair "Enter" "confirm and exit search mode"
+                          ]
+                       )
+                 |> Nottui.Ui.atom
+               )
+           )
+            (Lwd.get input_mode),
+         Lwd.map ~f:(fun mode ->
+             match mode with
+             | Navigate -> (
+                 Notty.(I.hcat
+                          [ spacer_under_mode_string
+                          ; element_spacer
+                          ; key_msg_pair "q" "exit"
+                          ]
+                       )
+                 |> Nottui.Ui.atom
+               )
+             | Search -> (
+                 Notty.(I.hcat
+                          [ spacer_under_mode_string
+                          ]
+                       )
+                 |> Nottui.Ui.atom
+               )
+           )
+           (Lwd.get input_mode)
+        )
       in
       let content_search_label_str = "Search:" in
       let label_strs =
@@ -510,7 +557,8 @@ let run
       in
       let bottom_pane_components =
         [
-          status_bar;
+          status_bar0;
+          status_bar1;
           Nottui_widgets.hbox
             [
               content_search_label;
