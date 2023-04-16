@@ -443,21 +443,44 @@ let run
           (file_view ())
           content_search_results
       in
-      let content_search_control_label =
-        let attr = Notty.A.(st bold ++ fg lightyellow) in
-        Notty.(I.hcat
-                 [ I.string attr  "/"
-                 ; I.string A.empty ": switch to search mode, "
-                 ; I.string attr "Enter"
-                 ; I.string A.empty ": confirm, "
-                 ; I.string attr "x"
-                 ; I.string A.empty ": clear"
-                 ]
+      let status_bar =
+        let key_msg_pair key msg =
+          let bg_color = Notty.A.white in
+          let fg_color = Notty.A.black in
+          let key_attr = Notty.A.(bg bg_color ++ fg fg_color ++ st bold) in
+          let msg_attr = Notty.A.(bg bg_color ++ fg fg_color) in
+          Notty.(I.hcat
+                   [ I.string key_attr key
+                   ; I.string msg_attr "  "
+                   ; I.string msg_attr msg
+                   ; I.string A.empty " "
+                   ]
+                )
+        in
+        Lwd.map ~f:(fun mode ->
+            match mode with
+            | Navigate -> (
+                Notty.(I.hcat
+                         [ I.string A.(st bold) "NAVIGATE "
+                         ; key_msg_pair "/" "switch to search mode"
+                         ; key_msg_pair "x" "clear search"
+                         ; key_msg_pair "q" "exit"
+                         ]
+                      )
+                |> Nottui.Ui.atom
               )
-        |> Nottui.Ui.atom
-        |> Lwd.return
+            | Search -> (
+                Notty.(I.hcat
+                         [ I.string A.(st bold) "SEARCH   "
+                         ; key_msg_pair "Enter" "confirm and exit search mode"
+                         ]
+                      )
+                |> Nottui.Ui.atom
+              )
+          )
+          (Lwd.get input_mode)
       in
-      let content_search_label_str = "Content search:" in
+      let content_search_label_str = "Search:" in
       let label_strs =
         [ content_search_label_str ]
       in
@@ -487,7 +510,7 @@ let run
       in
       let bottom_pane_components =
         [
-          content_search_control_label;
+          status_bar;
           Nottui_widgets.hbox
             [
               content_search_label;

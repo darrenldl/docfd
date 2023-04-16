@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.9
+
+- Changed help text to status bar + help text
+
 ## 0.5.8
 
 - Fixed debug print of file paths
