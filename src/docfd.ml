@@ -98,6 +98,13 @@ let run
   Params.debug := debug;
   Params.max_file_tree_depth := max_depth;
   Params.max_word_search_range := max_word_search_range;
+  List.iter (fun file ->
+      if not (Sys.file_exists file) then (
+        Fmt.pr "Error: file \"%s\" does not exist\n" file;
+        exit 1
+      )
+    )
+    files;
   Printf.printf "Scanning for text files\n";
   let ui_mode, document_src =
     if not (stdin_is_atty ()) then

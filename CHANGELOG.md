@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.1
+
+- Added check of whether provided files exist
+
 ## 0.6.0
 
 - Upgraded status bar and help text/key binding info
