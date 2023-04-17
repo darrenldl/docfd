@@ -154,6 +154,7 @@ let run
   match all_documents with
   | [] -> Printf.printf "No suitable text files found\n"
   | _ -> (
+    let total_document_count = List.length all_documents in
       let term =
         match document_src with
         | Stdin ->
@@ -443,19 +444,9 @@ let run
           (file_view ())
           content_search_results
       in
-      let status_bar0, status_bar1 =
+      let status_bar =
         let element_spacing = 4 in
         let element_spacer = Notty.(I.string A.empty) (String.make element_spacing ' ') in
-        let key_msg_pair key msg =
-          let key_attr = Notty.A.(fg lightyellow ++ st bold) in
-          let msg_attr = Notty.A.empty in
-          Notty.(I.hcat
-                   [ I.string key_attr key
-                   ; I.string A.empty "  "
-                   ; I.string msg_attr msg
-                   ]
-                )
-        in
         let mode_strings =
           [ (Navigate, "NAVIGATE")
           ; (Search, "SEARCH")
@@ -474,21 +465,15 @@ let run
             )
             mode_strings
         in
-        let spacer_under_mode_string =
-          Notty.(I.string A.empty) (String.make max_mode_string_len ' ')
-        in
-        (Lwd.map ~f:(fun mode ->
+        (Lwd.map2 ~f:(fun documents mode ->
+        let file_shown_count = Notty.I.strf "%5d/%d" (Array.length documents) total_document_count in
              match mode with
              | Navigate -> (
                  Notty.(I.hcat
                           [ I.string A.(st bold) (List.assoc Navigate mode_strings)
                           ; I.string A.empty (List.assoc Navigate mode_string_paddings)
                           ; element_spacer
-                          ; key_msg_pair "Enter" "open document"
-                          ; element_spacer
-                          ; key_msg_pair "/" "switch to search mode"
-                          ; element_spacer
-                          ; key_msg_pair "x" "clear search"
+                          ; file_shown_count
                           ]
                        )
                  |> Nottui.Ui.atom
@@ -498,33 +483,59 @@ let run
                           [ I.string A.(st bold) (List.assoc Search mode_strings)
                           ; I.string A.empty (List.assoc Search mode_string_paddings)
                           ; element_spacer
-                          ; key_msg_pair "Enter" "confirm and exit search mode"
+                          ; file_shown_count
                           ]
                        )
                  |> Nottui.Ui.atom
+               )
+           )
+documents
+            (Lwd.get input_mode),
+            1
+        )
+      in
+      let key_bindings =
+        let key_msg_pair key msg : Nottui.ui Lwd.t =
+          let key_attr = Notty.A.(fg lightyellow ++ st bold) in
+          let msg_attr = Notty.A.empty in
+          let msg = String.capitalize_ascii msg in
+          Notty.(I.hcat
+                   [ I.string key_attr key
+                   ; I.string A.empty "  "
+                   ; I.string msg_attr msg
+                   ]
+                )
+             |> Nottui.Ui.atom
+             |> Lwd.return
+        in
+        (Lwd.join @@ Lwd.map ~f:(fun mode ->
+             match mode with
+             | Navigate -> (
+               Nottui_widgets.grid
+               ~pad:(Nottui.Gravity.make ~h:`Negative ~v:`Negative)
+               [
+                 [
+                   key_msg_pair "Enter" "open document";
+                   key_msg_pair "/" "switch to search mode";
+                   key_msg_pair "x" "clear search";
+                 ];
+                 [
+                   key_msg_pair "q" "exit";
+                 ];
+               ]
+               )
+             | Search -> (
+               Nottui_widgets.grid
+               ~pad:(Nottui.Gravity.make ~h:`Negative ~v:`Negative)
+               [
+                 [
+                   key_msg_pair "Enter" "confirm and exit search mode";
+                 ];
+               ]
                )
            )
             (Lwd.get input_mode),
-         Lwd.map ~f:(fun mode ->
-             match mode with
-             | Navigate -> (
-                 Notty.(I.hcat
-                          [ spacer_under_mode_string
-                          ; element_spacer
-                          ; key_msg_pair "q" "exit"
-                          ]
-                       )
-                 |> Nottui.Ui.atom
-               )
-             | Search -> (
-                 Notty.(I.hcat
-                          [ spacer_under_mode_string
-                          ]
-                       )
-                 |> Nottui.Ui.atom
-               )
-           )
-           (Lwd.get input_mode)
+            2
         )
       in
       let content_search_label_str = "Search:" in
@@ -557,16 +568,18 @@ let run
       in
       let bottom_pane_components =
         [
-          status_bar0;
-          status_bar1;
-          Nottui_widgets.hbox
+          status_bar;
+          key_bindings;
+          (Nottui_widgets.hbox
             [
               content_search_label;
               make_search_field
                 ~edit_field:search_field
                 ~focus_handle:content_focus_handle
                 ~f:update_content_search_constraints;
-            ];
+            ],
+            1
+          );
         ]
       in
       let top_pane_no_keyboard_control =
@@ -579,7 +592,9 @@ let run
           Lwd.map ~f:(fun results ->
               let (_term_width, term_height) = Notty_unix.Term.size term in
               let h =
-                term_height - (List.length bottom_pane_components)
+                term_height
+                -
+                (List.fold_left (fun acc (_, x) -> acc + x) 0 bottom_pane_components)
               in
               Nottui.Ui.resize ~h results
             )
@@ -607,7 +622,7 @@ let run
         Nottui_widgets.vbox
           (top_pane
            ::
-           bottom_pane_components)
+           (List.map fst bottom_pane_components))
       in
       let rec loop () =
         file_to_open := None;

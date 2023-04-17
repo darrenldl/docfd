@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.0
+
+- Upgraded status bar and help text/key binding info
+
 ## 0.5.9
 
 - Changed help text to status bar + help text
