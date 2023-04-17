@@ -154,7 +154,7 @@ let run
   match all_documents with
   | [] -> Printf.printf "No suitable text files found\n"
   | _ -> (
-    let total_document_count = List.length all_documents in
+      let total_document_count = List.length all_documents in
       let term =
         match document_src with
         | Stdin ->
@@ -448,9 +448,9 @@ let run
         let fg_color = Notty.A.black in
         let bg_color = Notty.A.white in
         let background_bar () =
-        let (term_width, _term_height) = Notty_unix.Term.size term in
+          let (term_width, _term_height) = Notty_unix.Term.size term in
           Notty.I.char Notty.A.(bg bg_color) ' ' term_width 1
-                  |> Nottui.Ui.atom
+          |> Nottui.Ui.atom
         in
         let element_spacing = 4 in
         let element_spacer = Notty.(I.string A.(bg bg_color ++ fg fg_color)) (String.make element_spacing ' ') in
@@ -471,104 +471,104 @@ let run
         in
         let mode_strings =
           List.map (fun (mode, s) ->
-            let s = Notty.(I.string A.(bg bg_color ++ fg fg_color ++ st bold) s) in
-            (mode, Notty.I.(s </> mode_string_background))
-          )
-          mode_strings
+              let s = Notty.(I.string A.(bg bg_color ++ fg fg_color ++ st bold) s) in
+              (mode, Notty.I.(s </> mode_string_background))
+            )
+            mode_strings
         in
         (Lwd.map2 ~f:(fun documents (mode, document_selected) ->
-        let file_shown_count =
-          Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
-          "%5d/%d documents listed"
-          (Array.length documents) total_document_count
-        in
-        let selected =
-          Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
-          "index of document selected: %d"
-          document_selected
-        in
-        let content =
-             match mode with
-             | Navigate -> (
-                 Notty.(I.hcat
-                          [ List.assoc Navigate mode_strings
-                          ; element_spacer
-                          ; file_shown_count
-                          ; element_spacer
-                          ; selected
-                          ]
-                       )
-                 |> Nottui.Ui.atom
-               )
-             | Search -> (
-                 Notty.(I.hcat
-                          [ List.assoc Search mode_strings
-                          ; element_spacer
-                          ; file_shown_count
-                          ; element_spacer
-                          ; selected
-                          ]
-                       )
-                 |> Nottui.Ui.atom
-               )
-        in
-        Nottui.Ui.join_z (background_bar ()) content
+             let file_shown_count =
+               Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
+                 "%5d/%d documents listed"
+                 (Array.length documents) total_document_count
+             in
+             let selected =
+               Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
+                 "index of document selected: %d"
+                 document_selected
+             in
+             let content =
+               match mode with
+               | Navigate -> (
+                   Notty.(I.hcat
+                            [ List.assoc Navigate mode_strings
+                            ; element_spacer
+                            ; file_shown_count
+                            ; element_spacer
+                            ; selected
+                            ]
+                         )
+                   |> Nottui.Ui.atom
+                 )
+               | Search -> (
+                   Notty.(I.hcat
+                            [ List.assoc Search mode_strings
+                            ; element_spacer
+                            ; file_shown_count
+                            ; element_spacer
+                            ; selected
+                            ]
+                         )
+                   |> Nottui.Ui.atom
+                 )
+             in
+             Nottui.Ui.join_z (background_bar ()) content
            )
-documents
+            documents
             (Lwd.pair (Lwd.get input_mode) (Lwd.get document_selected)),
-            1
+         1
         )
       in
       let key_binding_info =
         let grid_contents =
           [
-          (Navigate,
+            (Navigate,
+             [
                [
-                 [
-                   ("Enter", "open document");
-                   ("/", "switch to search mode");
-                   ("x", "clear search");
-                 ];
-                 [
-                   ("q", "exit");
-                 ];
-               ]
-          );
-          (Search,
+                 ("Enter", "open document");
+                 ("/", "switch to search mode");
+                 ("x", "clear search");
+               ];
                [
-                 [
-                   ("Enter", "confirm and exit search mode");
-                 ];
-                 [
-                   ("", "");
-                 ];
-               ]
-          );
+                 ("q", "exit");
+               ];
+             ]
+            );
+            (Search,
+             [
+               [
+                 ("Enter", "confirm and exit search mode");
+               ];
+               [
+                 ("", "");
+               ];
+             ]
+            );
           ]
         in
         let grid_height =
           grid_contents
-             |> List.hd
-             |> snd
-             |> List.length
+          |> List.hd
+          |> snd
+          |> List.length
         in
         let max_key_msg_len_lookup =
           grid_contents
           |> List.map (fun (mode, grid) ->
-let max_key_len, max_msg_len =
-          List.fold_left (fun (max_key_len, max_msg_len) row ->
-            List.fold_left (fun (max_key_len, max_msg_len) (key, msg) ->
-              (max max_key_len (String.length key),
-               max max_msg_len (String.length msg))
+              let max_key_len, max_msg_len =
+                List.fold_left (fun (max_key_len, max_msg_len) row ->
+                    List.fold_left (fun (max_key_len, max_msg_len) (key, msg) ->
+                        (max max_key_len (String.length key),
+                         max max_msg_len (String.length msg))
+                      )
+                      (max_key_len, max_msg_len)
+                      row
+                  )
+                  (0, 0)
+                  grid
+              in
+              (mode, (max_key_len, max_msg_len))
             )
-            (max_key_len, max_msg_len)
-            row
-          )
-          (0, 0)
-          grid
-in
-          (mode, (max_key_len, max_msg_len))
-          )
         in
         let key_msg_pair mode (key, msg) : Nottui.ui Lwd.t =
           let (max_key_len, max_msg_len) = List.assoc mode max_key_msg_len_lookup in
@@ -577,34 +577,34 @@ in
           let msg = String.capitalize_ascii msg in
           let key_background = Notty.I.void max_key_len 1 in
           let content = Notty.(I.hcat
-                   [ I.(string key_attr key </> key_background)
-                   ; I.string A.empty "  "
-                   ; I.string msg_attr msg
-                   ]
-                )
+                                 [ I.(string key_attr key </> key_background)
+                                 ; I.string A.empty "  "
+                                 ; I.string msg_attr msg
+                                 ]
+                              )
           in
           let full_background = Notty.I.void (max_key_len + 2 + max_msg_len + 2) 1 in
           Notty.I.(content </> full_background)
-             |> Nottui.Ui.atom
-             |> Lwd.return
+          |> Nottui.Ui.atom
+          |> Lwd.return
         in
         let grid =
           List.map (fun (mode, grid_contents) ->
-            (mode,
+              (mode,
+               grid_contents
+               |> List.map (fun l ->
+                   List.map (key_msg_pair mode) l
+                 )
+               |> Nottui_widgets.grid
+                 ~pad:(Nottui.Gravity.make ~h:`Negative ~v:`Negative)
+              )
+            )
             grid_contents
-          |> List.map (fun l ->
-                 List.map (key_msg_pair mode) l
-               )
-          |> Nottui_widgets.grid
-               ~pad:(Nottui.Gravity.make ~h:`Negative ~v:`Negative)
-          )
-          )
-          grid_contents
         in
         (Lwd.join @@
-        Lwd.map ~f:(fun mode -> List.assoc mode grid)
-            (Lwd.get input_mode),
-            grid_height
+         Lwd.map ~f:(fun mode -> List.assoc mode grid)
+           (Lwd.get input_mode),
+         grid_height
         )
       in
       let content_search_label_str = "Search:" in
@@ -640,14 +640,14 @@ in
           status_bar;
           key_binding_info;
           (Nottui_widgets.hbox
-            [
-              content_search_label;
-              make_search_field
-                ~edit_field:search_field
-                ~focus_handle:content_focus_handle
-                ~f:update_content_search_constraints;
-            ],
-            1
+             [
+               content_search_label;
+               make_search_field
+                 ~edit_field:search_field
+                 ~focus_handle:content_focus_handle
+                 ~f:update_content_search_constraints;
+             ],
+           1
           );
         ]
       in
