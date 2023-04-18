@@ -111,7 +111,7 @@ let run
       (Ui_single_file, Stdin)
     else (
       match files with
-      | [] -> Fmt.pr "Error: No files provided"; exit 1
+      | [] -> Fmt.pr "Error: No files provided\n"; exit 1
       | [ f ] -> (
           if Sys.is_directory f then
             (Ui_all_files, Files (list_files_recursively f))
