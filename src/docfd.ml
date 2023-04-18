@@ -100,7 +100,7 @@ let run
   Params.max_word_search_range := max_word_search_range;
   List.iter (fun file ->
       if not (Sys.file_exists file) then (
-        Fmt.pr "Error: file \"%s\" does not exist\n" file;
+        Fmt.pr "Error: File \"%s\" does not exist\n" file;
         exit 1
       )
     )

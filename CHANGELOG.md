@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.2
+
+- Fixed typo in error message
+
 ## 0.6.1
 
 - Added check of whether provided files exist
