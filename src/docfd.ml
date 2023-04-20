@@ -139,7 +139,7 @@ let run
     )
   in
   if !Params.debug then (
-  Printf.printf "Scanning completed\n"
+    Printf.printf "Scanning completed\n"
   );
   if !Params.debug then (
     match document_src with
