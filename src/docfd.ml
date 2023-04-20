@@ -141,7 +141,7 @@ let run
     match document_src with
     | Stdin -> Printf.printf "Document source: stdin\n"
     | Files files -> (
-        Printf.printf "Document source: file\n";
+        Printf.printf "Document source: files\n";
         List.iter (fun file ->
             Printf.printf "File: %s\n" file;
           )
