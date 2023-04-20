@@ -17,6 +17,9 @@ command | docfd
 Docfd operates in **Single file mode**
 when source of document is piped stdin.
 
+Files specified as arguments to docfd are ignored
+in this case.
+
 #### Read from files
 
 ```
