@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.3
+
+- Adjusted status bar to not display index of document selected
+  when in single document mode
+
+- Edited debug message a bit
+
 ## 0.6.2
 
 - Fixed typo in error message

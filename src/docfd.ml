@@ -72,7 +72,7 @@ type input_mode =
 
 type ui_mode =
   | Ui_single_file
-  | Ui_all_files
+  | Ui_multi_files
 
 let make_label_widget ~s ~len (mode : input_mode) (v : input_mode Lwd.var) =
   Lwd.map ~f:(fun mode' ->
@@ -114,12 +114,12 @@ let run
       | [] -> Fmt.pr "Error: No files provided\n"; exit 1
       | [ f ] -> (
           if Sys.is_directory f then
-            (Ui_all_files, Files (list_files_recursively f))
+            (Ui_multi_files, Files (list_files_recursively f))
           else
             (Ui_single_file, Files [ f ])
         )
       | _ -> (
-          (Ui_all_files,
+          (Ui_multi_files,
            Files (
              files
              |> List.to_seq
@@ -294,15 +294,15 @@ let run
             | ((`Escape, []), _)
             | ((`ASCII 'q', []), _)
             | ((`ASCII 'C', [`Ctrl]), _) -> Lwd.set quit true; `Handled
-            | ((`ASCII 'j', []), Ui_all_files)
-            | ((`Arrow `Down, []), Ui_all_files) ->
+            | ((`ASCII 'j', []), Ui_multi_files)
+            | ((`Arrow `Down, []), Ui_multi_files) ->
               set_document_selected
                 (bound_selection
                    ~choice_count:document_choice_count
                    (document_current_choice+1));
               `Handled
-            | ((`ASCII 'k', []), Ui_all_files)
-            | ((`Arrow `Up, []), Ui_all_files) ->
+            | ((`ASCII 'k', []), Ui_multi_files)
+            | ((`Arrow `Up, []), Ui_multi_files) ->
               set_document_selected
                 (bound_selection
                    ~choice_count:document_choice_count
@@ -489,35 +489,24 @@ let run
                  "%5d/%d documents listed"
                  (Array.length documents) total_document_count
              in
-             let selected =
+             let index_of_selected =
                Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
                  "index of document selected: %d"
                  document_selected
              in
              let content =
-               match mode with
-               | Navigate -> (
-                   Notty.(I.hcat
-                            [ List.assoc Navigate mode_strings
-                            ; element_spacer
-                            ; file_shown_count
-                            ; element_spacer
-                            ; selected
-                            ]
-                         )
-                   |> Nottui.Ui.atom
+               [ Some [ List.assoc mode mode_strings ]
+               ; Some [ element_spacer; file_shown_count ]
+               ; (match ui_mode with
+                  | Ui_single_file -> None
+                  | Ui_multi_files ->
+                    Some [ element_spacer; index_of_selected ]
                  )
-               | Search -> (
-                   Notty.(I.hcat
-                            [ List.assoc Search mode_strings
-                            ; element_spacer
-                            ; file_shown_count
-                            ; element_spacer
-                            ; selected
-                            ]
-                         )
-                   |> Nottui.Ui.atom
-                 )
+               ]
+               |> List.filter_map Fun.id
+               |> List.flatten
+               |> Notty.I.hcat
+               |> Nottui.Ui.atom
              in
              Nottui.Ui.join_z (background_bar ()) content
            )
@@ -660,7 +649,7 @@ let run
       in
       let top_pane_no_keyboard_control =
         match ui_mode with
-        | Ui_all_files ->
+        | Ui_multi_files ->
           Nottui_widgets.h_pane
             (left_pane ())
             (right_pane ())
