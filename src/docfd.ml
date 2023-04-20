@@ -105,7 +105,9 @@ let run
       )
     )
     files;
-  Printf.printf "Scanning for text files\n";
+  if !Params.debug then (
+    Printf.printf "Scanning for text files\n"
+  );
   let ui_mode, document_src =
     if not (stdin_is_atty ()) then
       (Ui_single_file, Stdin)
@@ -136,7 +138,9 @@ let run
         )
     )
   in
-  Printf.printf "Scanning completed\n";
+  if !Params.debug then (
+  Printf.printf "Scanning completed\n"
+  );
   if !Params.debug then (
     match document_src with
     | Stdin -> Printf.printf "Document source: stdin\n"
