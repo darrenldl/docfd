@@ -10,6 +10,10 @@
 
 - Added preview window to single file mode
 
+- Added 'r' key to refresh
+
+- Added auto refresh of document after opening through editor
+
 ## 0.6.3
 
 - Adjusted status bar to not display index of document selected
