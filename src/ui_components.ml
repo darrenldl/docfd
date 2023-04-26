@@ -47,9 +47,9 @@ let set_document_selected
     }
 
 let set_content_search_result_selected
-(ctx' : ctx Lwd.var)
-n
-=
+    (ctx' : ctx Lwd.var)
+    n
+  =
   let ctx = Lwd.peek ctx' in
   let doc = ctx.documents.(ctx.document_selected) in
   let choice_count = Array.length doc.content_search_results in
@@ -61,9 +61,9 @@ n
     }
 
 let update_content_search_constraints
-(ctx' : ctx Lwd.var)
-()
-=
+    (ctx' : ctx Lwd.var)
+    ()
+  =
   let ctx = Lwd.peek ctx' in
   let content_search_constraints =
     (Content_search_constraints.make
@@ -155,7 +155,7 @@ let content_view
         content
       )
     )
-  (Lwd.get ctx')
+    (Lwd.get ctx')
 
 module Content_search_results = struct
   let mouse_handler
@@ -168,11 +168,11 @@ module Content_search_results = struct
     match button with
     | `Scroll `Down ->
       set_content_search_result_selected ctx
-           ((Lwd.peek ctx).content_search_result_selected + 1);
+        ((Lwd.peek ctx).content_search_result_selected + 1);
       `Handled
     | `Scroll `Up ->
       set_content_search_result_selected ctx
-           ((Lwd.peek ctx).content_search_result_selected - 1);
+        ((Lwd.peek ctx).content_search_result_selected - 1);
       `Handled
     | _ -> `Unhandled
 
@@ -208,11 +208,11 @@ module Content_search_results = struct
           )
         )
       )
-    (Lwd.get ctx')
+      (Lwd.get ctx')
 end
 
 let top_pane_keyboard_handler
-(ctx' : ctx Lwd.var)
+    (ctx' : ctx Lwd.var)
     (key : Nottui.Ui.key)
   =
   let ctx = Lwd.peek ctx' in
@@ -251,14 +251,14 @@ let top_pane_keyboard_handler
       | ((`ASCII 'j', []), Ui_single_file)
       | ((`Arrow `Down, []), Ui_single_file) ->
         set_content_search_result_selected ctx'
-             (ctx.content_search_result_selected + 1);
+          (ctx.content_search_result_selected + 1);
         `Handled
       | ((`ASCII 'K', []), Ui_multi_file)
       | ((`Arrow `Up, [`Shift]), Ui_multi_file)
       | ((`ASCII 'k', []), Ui_single_file)
       | ((`Arrow `Up, []), Ui_single_file) ->
         set_content_search_result_selected ctx'
-             (ctx.content_search_result_selected - 1);
+          (ctx.content_search_result_selected - 1);
         `Handled
       | ((`ASCII '/', []), _) ->
         Nottui.Focus.request ctx.content_search_focus_handle;
@@ -272,11 +272,11 @@ let top_pane_keyboard_handler
           match ctx.document_src with
           | Stdin -> `Handled
           | Files _ -> (
-            Lwd.set ctx'
-            { ctx with
-              file_to_open = Some ctx.documents.(ctx.document_selected);
-            };
-            Lwd.set ctx.quit true;
+              Lwd.set ctx'
+                { ctx with
+                  file_to_open = Some ctx.documents.(ctx.document_selected);
+                };
+              Lwd.set ctx.quit true;
               `Handled
             )
         )
@@ -285,12 +285,12 @@ let top_pane_keyboard_handler
   | Search -> `Unhandled
 
 module Key_binding_info = struct
-type key_msg = {
-  key : string;
-  msg : string;
-}
+  type key_msg = {
+    key : string;
+    msg : string;
+  }
 
-type key_msg_line = key_msg list
+  type key_msg_line = key_msg list
 
   let grid_contents (ctx : ctx) : ((input_mode * ui_mode) * (key_msg_line list)) list =
     let navigate_line0 : key_msg_line =
@@ -483,7 +483,7 @@ module Bottom_pane = struct
     let element_spacing = 4 in
     let element_spacer =
       Notty.(I.string A.(bg bg_color ++ fg fg_color))
-      (String.make element_spacing ' ')
+        (String.make element_spacing ' ')
     in
     let input_mode_strings =
       [ (Navigate, "NAVIGATE")
@@ -508,42 +508,42 @@ module Bottom_pane = struct
         input_mode_strings
     in
     Lwd.map
-       ~f:(fun ctx ->
-            let file_shown_count =
-              Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
-                "%5d/%d documents listed"
-                (Array.length ctx.documents) (Array.length ctx.all_documents)
-            in
-            let index_of_selected =
-              Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
-                "index of document selected: %d"
-                ctx.document_selected
-            in
-            let path_of_selected =
-              Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
-                "document selected: %s"
-                (match ctx.documents.(ctx.document_selected).path with
-                 | Some s -> s
-                 | None -> "<stdin>")
-            in
-            let content =
-              [ Some [ List.assoc ctx.input_mode input_mode_strings ]
-              ; Some [ element_spacer; file_shown_count ]
-              ; (match ctx.ui_mode with
-                 | Ui_single_file ->
-                   Some [ element_spacer; path_of_selected ]
-                 | Ui_multi_file ->
-                   Some [ element_spacer; index_of_selected ]
-                )
-              ]
-              |> List.filter_map Fun.id
-              |> List.flatten
-              |> Notty.I.hcat
-              |> Nottui.Ui.atom
-            in
-            Nottui.Ui.join_z (background_bar ()) content
-          )
-       (Lwd.get ctx')
+      ~f:(fun ctx ->
+          let file_shown_count =
+            Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
+              "%5d/%d documents listed"
+              (Array.length ctx.documents) (Array.length ctx.all_documents)
+          in
+          let index_of_selected =
+            Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
+              "index of document selected: %d"
+              ctx.document_selected
+          in
+          let path_of_selected =
+            Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
+              "document selected: %s"
+              (match ctx.documents.(ctx.document_selected).path with
+               | Some s -> s
+               | None -> "<stdin>")
+          in
+          let content =
+            [ Some [ List.assoc ctx.input_mode input_mode_strings ]
+            ; Some [ element_spacer; file_shown_count ]
+            ; (match ctx.ui_mode with
+               | Ui_single_file ->
+                 Some [ element_spacer; path_of_selected ]
+               | Ui_multi_file ->
+                 Some [ element_spacer; index_of_selected ]
+              )
+            ]
+            |> List.filter_map Fun.id
+            |> List.flatten
+            |> Notty.I.hcat
+            |> Nottui.Ui.atom
+          in
+          Nottui.Ui.join_z (background_bar ()) content
+        )
+      (Lwd.get ctx')
 
   let f (ctx' : ctx Lwd.var) : Nottui.ui Lwd.t =
     Nottui_widgets.vbox
