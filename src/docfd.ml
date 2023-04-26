@@ -72,7 +72,7 @@ type input_mode =
 
 type ui_mode =
   | Ui_single_file
-  | Ui_multi_files
+  | Ui_multi_file
 
 type key_msg = {
   key : string;
@@ -123,12 +123,12 @@ let run
       | [] -> Fmt.pr "Error: No files provided\n"; exit 1
       | [ f ] -> (
           if Sys.is_directory f then
-            (Ui_multi_files, Files (list_files_recursively f))
+            (Ui_multi_file, Files (list_files_recursively f))
           else
             (Ui_single_file, Files [ f ])
         )
       | _ -> (
-          (Ui_multi_files,
+          (Ui_multi_file,
            Files (
              files
              |> List.to_seq
@@ -311,25 +311,25 @@ let run
               )
             | ((`Tab, []), _) -> (
                 (match init_ui_mode with
-                 | Ui_multi_files -> (
+                 | Ui_multi_file -> (
                      match Lwd.peek ui_mode with
-                     | Ui_multi_files -> Lwd.set ui_mode Ui_single_file
-                     | Ui_single_file -> Lwd.set ui_mode Ui_multi_files
+                     | Ui_multi_file -> Lwd.set ui_mode Ui_single_file
+                     | Ui_single_file -> Lwd.set ui_mode Ui_multi_file
                    )
                  | Ui_single_file -> ()
                 );
                 `Handled
               )
-            | ((`ASCII 'j', []), Ui_multi_files)
-            | ((`Arrow `Down, []), Ui_multi_files) -> (
+            | ((`ASCII 'j', []), Ui_multi_file)
+            | ((`Arrow `Down, []), Ui_multi_file) -> (
                 set_document_selected
                   (bound_selection
                      ~choice_count:document_choice_count
                      (document_current_choice+1));
                 `Handled
               )
-            | ((`ASCII 'k', []), Ui_multi_files)
-            | ((`Arrow `Up, []), Ui_multi_files) -> (
+            | ((`ASCII 'k', []), Ui_multi_file)
+            | ((`Arrow `Up, []), Ui_multi_file) -> (
                 set_document_selected
                   (bound_selection
                      ~choice_count:document_choice_count
@@ -529,7 +529,7 @@ let run
                   ; Some [ element_spacer; file_shown_count ]
                   ; (match ui_mode with
                      | Ui_single_file -> None
-                     | Ui_multi_files ->
+                     | Ui_multi_file ->
                        Some [ element_spacer; index_of_selected ]
                     )
                   ]
@@ -578,26 +578,30 @@ let run
                ];
              ]
             );
-            ((Navigate, Ui_multi_files),
+            ((Navigate, Ui_multi_file),
              (match init_ui_mode with
               | Ui_single_file ->
                 [
                   navigate_line0;
-                  [ { key = "q"; msg = "exit" } ];
+                  [
+                    { key = "Tab";
+                      msg = "switch to multi files UI" };
+                    { key = "q"; msg = "exit" };
+             ];
                 ]
-              | Ui_multi_files ->
+              | Ui_multi_file ->
                 [
                   navigate_line0;
                   [
                     { key = "Tab";
-                      msg = "switch between multi single file UI" };
+                      msg = "switch to single file UI" };
                     { key = "q"; msg = "exit" };
                   ];
                 ]
              )
             );
             ((Search, Ui_single_file), search_lines);
-            ((Search, Ui_multi_files), search_lines);
+            ((Search, Ui_multi_file), search_lines);
           ]
         in
         let grid_height =
@@ -714,7 +718,7 @@ let run
       let top_pane_no_keyboard_control : Nottui.ui Lwd.t =
         Lwd.map ~f:(fun (ui_mode, results) ->
             match ui_mode with
-            | Ui_multi_files ->
+            | Ui_multi_file ->
               Nottui_widgets.h_pane
                 (left_pane ())
                 (right_pane ())
