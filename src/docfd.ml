@@ -524,11 +524,19 @@ let run
                     "index of document selected: %d"
                     document_selected
                 in
+                let path_of_selected =
+                  Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
+                    "document selected: %s"
+                    (match documents.(document_selected).path with
+                     | Some s -> s
+                     | None -> "<stdin>")
+                in
                 let content =
                   [ Some [ List.assoc input_mode input_mode_strings ]
                   ; Some [ element_spacer; file_shown_count ]
                   ; (match ui_mode with
-                     | Ui_single_file -> None
+                     | Ui_single_file ->
+                       Some [ element_spacer; path_of_selected ]
                      | Ui_multi_file ->
                        Some [ element_spacer; index_of_selected ]
                     )
@@ -571,34 +579,36 @@ let run
           in
           [
             ((Navigate, Ui_single_file),
-             [
-               navigate_line0;
-               [
-                 { key = "q"; msg = "exit" };
-               ];
-             ]
-            );
-            ((Navigate, Ui_multi_file),
              (match init_ui_mode with
               | Ui_single_file ->
                 [
                   navigate_line0;
                   [
                     { key = "Tab";
-                      msg = "switch to multi files UI" };
+                      msg = "switch to multi file view" };
                     { key = "q"; msg = "exit" };
-             ];
+                  ];
                 ]
               | Ui_multi_file ->
                 [
                   navigate_line0;
                   [
                     { key = "Tab";
-                      msg = "switch to single file UI" };
+                      msg = "switch to multi file view" };
                     { key = "q"; msg = "exit" };
                   ];
                 ]
              )
+            );
+            ((Navigate, Ui_multi_file),
+             [
+               navigate_line0;
+               [
+                 { key = "Tab";
+                   msg = "switch to single file view" };
+                 { key = "q"; msg = "exit" };
+               ];
+             ]
             );
             ((Search, Ui_single_file), search_lines);
             ((Search, Ui_multi_file), search_lines);
