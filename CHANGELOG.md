@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.4
+
+- Added UI mode switch
+
+- Adjusted status bar to show current file name in single file mode
+
+- Adjusted preview window to track search result
+
+- Added preview window to single file mode
+
 ## 0.6.3
 
 - Adjusted status bar to not display index of document selected
