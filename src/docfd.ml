@@ -88,18 +88,18 @@ let run
   );
   let init_ui_mode, document_src =
     if not (stdin_is_atty ()) then
-      Ui_components.(Ui_single_file, Stdin)
+      Ui_base.(Ui_single_file, Stdin)
     else (
       match files with
       | [] -> Fmt.pr "Error: No files provided\n"; exit 1
       | [ f ] -> (
           if Sys.is_directory f then
-            Ui_components.(Ui_multi_file, Files (list_files_recursively f))
+            Ui_base.(Ui_multi_file, Files (list_files_recursively f))
           else
-            Ui_components.(Ui_single_file, Files [ f ])
+            Ui_base.(Ui_single_file, Files [ f ])
         )
       | _ -> (
-          Ui_components.(Ui_multi_file,
+          Ui_base.(Ui_multi_file,
            Files (
              files
              |> List.to_seq
@@ -155,8 +155,8 @@ let run
           Notty_unix.Term.create ()
       in
       let renderer = Nottui.Renderer.make () in
-      let ctx : Ui_components.ctx Lwd.var = Lwd.var
-      Ui_components.{
+      let ctx : Ui_base.ctx Lwd.var = Lwd.var
+      Ui_base.{
         term;
         fuzzy_max_edit_distance;
         document_src;
@@ -176,18 +176,8 @@ let run
         quit = Lwd.var false;
       }
       in
-      Ui_components.update_content_search_constraints ctx ();
-      let full_term_sized_background () =
-        let (term_width, term_height) = Notty_unix.Term.size term in
-        Notty.I.void term_width term_height
-        |> Nottui.Ui.atom
-      in
-      let right_pane () =
-        Nottui_widgets.v_pane
-          (file_view ())
-          content_search_results
-      in
-      let top_pane_no_keyboard_control : Nottui.ui Lwd.t =
+      Ui_base.update_content_search_constraints ctx ();
+      (* let top_pane_no_keyboard_control : Nottui.ui Lwd.t =
         Lwd.map ~f:(fun (ui_mode, results) ->
             match ui_mode with
             | Ui_multi_file ->
@@ -220,27 +210,43 @@ let run
           (Lwd.pair
              (Lwd.get document_selected)
              (Lwd.get content_search_result_selected))
-      in
+      in *)
+          let top_pane =
+            Lwd.map ~f:(fun ctx' ->
+          match ctx'.ui_mode with
+          | Ui_base.Ui_single_file -> Single_file_view.top_pane ctx
+          | Ui_base.Ui_multi_file -> Multi_file_view.top_pane ctx
+            )
+            (Lwd.get ctx)
+          |> Lwd.join
+          in
+          let top_pane =
+        Lwd.map ~f:(fun top_pane ->
+          top_pane
+                        |> Nottui.Ui.keyboard_area
+                          Ui_base.(top_pane_keyboard_handler ctx)
+        )
+        top_pane
+          in
       let screen =
-        Nottui_widgets.vbox
-          (top_pane
-           ::
-           (List.map fst bottom_pane_components))
+          Nottui_widgets.h_pane
+          top_pane
+          (Ui_base.Bottom_pane.f ctx)
       in
       let rec loop () =
-        file_to_open := None;
+        let quit = (Lwd.peek ctx).Ui_base.quit in
         Lwd.set quit false;
         Nottui.Ui_loop.run
           ~term
           ~renderer
           ~quit
           screen;
-        match !file_to_open with
+        match (Lwd.peek ctx).Ui_base.file_to_open with
         | None -> ()
-        | Some doc ->
+        | Some doc -> (
           match doc.path with
           | None -> ()
-          | Some path ->
+          | Some path -> (
             match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
             | None, None ->
               Printf.printf "Error: Both env variables VISUAL and EDITOR are unset\n"; exit 1
@@ -249,6 +255,8 @@ let run
                 Sys.command (Fmt.str "%s \'%s\'" editor path) |> ignore;
                 loop ()
               )
+          )
+        )
       in
       loop ()
     )

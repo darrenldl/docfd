@@ -168,9 +168,8 @@ module Document_list = struct
       (Lwd.get ctx')
 end
 
-let content_view
-    (ctx' : ctx Lwd.var)
-  =
+module Content_view = struct
+let f (ctx' : ctx Lwd.var) =
   Lwd.map ~f:(fun ctx ->
       if Array.length ctx.documents = 0 then (
         Nottui.Ui.empty
@@ -193,6 +192,7 @@ let content_view
       )
     )
     (Lwd.get ctx')
+end
 
 module Content_search_results = struct
   let mouse_handler
