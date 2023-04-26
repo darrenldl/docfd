@@ -733,13 +733,7 @@ let run
                 (left_pane ())
                 (right_pane ())
             | Ui_single_file -> (
-                let (_term_width, term_height) = Notty_unix.Term.size term in
-                let h =
-                  term_height
-                  -
-                  (List.fold_left (fun acc (_, x) -> acc + x) 0 bottom_pane_components)
-                in
-                Lwd.return (Nottui.Ui.resize ~h results)
+                right_pane ()
               )
           )
           (Lwd.pair (Lwd.get ui_mode) content_search_results)
