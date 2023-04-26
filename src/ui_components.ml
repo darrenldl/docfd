@@ -65,6 +65,9 @@ let update_content_search_constraints
     ()
   =
   let ctx = Lwd.peek ctx' in
+  let old_content_search_constraints =
+  ctx.content_search_constraints 
+  in
   let content_search_constraints =
     (Content_search_constraints.make
        ~fuzzy_max_edit_distance:ctx.fuzzy_max_edit_distance
@@ -72,7 +75,41 @@ let update_content_search_constraints
     )
   in
   set_document_selected ctx' 0;
-  Lwd.set ctx' { ctx with content_search_constraints }
+  if Content_search_constraints.equal
+old_content_search_constraints
+  content_search_constraints
+  then
+    ()
+  else (
+    let documents =
+          ctx.all_documents
+          |> Array.to_seq
+          |> Seq.filter_map (fun doc ->
+              if Content_search_constraints.is_empty content_search_constraints then
+                Some doc
+              else (
+                match Document.content_search_results content_search_constraints doc () with
+                | Seq.Nil -> None
+                | Seq.Cons _ as s ->
+                  let content_search_results = (fun () -> s)
+                                               |> OSeq.take Params.content_search_result_limit
+                                               |> Array.of_seq
+                  in
+                  Array.sort Content_search_result.compare content_search_results;
+                  Some { doc with content_search_results }
+              )
+            )
+          |> Array.of_seq
+    in
+    Array.sort
+    (fun (doc1 : Document.t) (doc2 : Document.t) ->
+                    Content_search_result.compare
+                      (doc1.content_search_results.(0))
+                      (doc2.content_search_results.(0))
+          )
+          documents;
+    Lwd.set ctx' { ctx with documents; content_search_constraints }
+  )
 
 let full_term_sized_background (ctx : ctx Lwd.var) =
   let (term_width, term_height) = Notty_unix.Term.size (Lwd.peek ctx).term in

@@ -88,18 +88,18 @@ let run
   );
   let init_ui_mode, document_src =
     if not (stdin_is_atty ()) then
-      (Ui_components.Ui_single_file, Stdin)
+      Ui_components.(Ui_single_file, Stdin)
     else (
       match files with
       | [] -> Fmt.pr "Error: No files provided\n"; exit 1
       | [ f ] -> (
           if Sys.is_directory f then
-            (Ui_components.Ui_multi_file, Files (list_files_recursively f))
+            Ui_components.(Ui_multi_file, Files (list_files_recursively f))
           else
-            (Ui_components.Ui_single_file, Files [ f ])
+            Ui_components.(Ui_single_file, Files [ f ])
         )
       | _ -> (
-          (Ui_components.Ui_multi_file,
+          Ui_components.(Ui_multi_file,
            Files (
              files
              |> List.to_seq
@@ -143,7 +143,7 @@ let run
   match all_documents with
   | [] -> Printf.printf "No suitable text files found\n"
   | _ -> (
-      let total_document_count = List.length all_documents in
+    let all_documents = Array.of_list all_documents in
       let term =
         match document_src with
         | Stdin ->
@@ -155,52 +155,28 @@ let run
           Notty_unix.Term.create ()
       in
       let renderer = Nottui.Renderer.make () in
-      let content_constraints =
-        Lwd.var (Content_search_constraints.make
+      let ctx : Ui_components.ctx Lwd.var = Lwd.var
+      Ui_components.{
+        term;
+        fuzzy_max_edit_distance;
+        document_src;
+      input_mode = Navigate;
+      init_ui_mode;
+      ui_mode = init_ui_mode;
+      all_documents;
+      documents = [||];
+      document_selected = 0;
+      content_search_result_selected = 0;
+      content_search_focus_handle = Nottui.Focus.make ();
+        content_search_field = Lwd.var empty_search_field;
+        content_search_constraints = (Content_search_constraints.make
                    ~fuzzy_max_edit_distance
-                   ~phrase:"")
+                   ~phrase:"");
+        file_to_open = None;
+        quit = Lwd.var false;
+      }
       in
-      let quit = Lwd.var false in
-      let document_selected = Lwd.var 0 in
-      let content_search_result_selected = Lwd.var 0 in
-      let file_to_open = ref None in
-      let input_mode : input_mode Lwd.var = Lwd.var Navigate in
-      let ui_mode : ui_mode Lwd.var = Lwd.var init_ui_mode in
-      let documents = Lwd.map ~f:(fun content_constraints ->
-          all_documents
-          |> List.filter_map (fun doc ->
-              if Content_search_constraints.is_empty content_constraints then
-                Some doc
-              else (
-                match Document.content_search_results content_constraints doc () with
-                | Seq.Nil -> None
-                | Seq.Cons _ as s ->
-                  let content_search_results = (fun () -> s)
-                                               |> OSeq.take Params.content_search_result_limit
-                                               |> Array.of_seq
-                  in
-                  Array.sort Content_search_result.compare content_search_results;
-                  Some { doc with content_search_results }
-              )
-            )
-          |> (fun l ->
-              if Content_search_constraints.is_empty content_constraints then
-                l
-              else
-                List.sort (fun (doc1 : Document.t) (doc2 : Document.t) ->
-                    Content_search_result.compare
-                      (doc1.content_search_results.(0))
-                      (doc2.content_search_results.(0))
-                  ) l
-            )
-          |> Array.of_list
-        )
-          (Lwd.get content_constraints)
-      in
-      let search_field =
-        Lwd.var empty_search_field
-      in
-      let content_focus_handle = Nottui.Focus.make () in
+      Ui_components.update_content_search_constraints ctx ();
       let full_term_sized_background () =
         let (term_width, term_height) = Notty_unix.Term.size term in
         Notty.I.void term_width term_height

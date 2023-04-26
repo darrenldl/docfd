@@ -1,4 +1,5 @@
 type t = {
+  fuzzy_max_edit_distance : int;
   phrase : string list;
   fuzzy_index : Spelll.automaton list;
 }
@@ -13,6 +14,8 @@ let fuzzy_index t =
   t.fuzzy_index
 
 let equal (t1 : t) (t2 : t) =
+  t1.fuzzy_max_edit_distance = t2.fuzzy_max_edit_distance 
+  &&
   List.equal String.equal t1.phrase t2.phrase
 
 let make
@@ -28,6 +31,7 @@ let make
     |> List.map (fun x -> Spelll.of_string ~limit:fuzzy_max_edit_distance x)
   in
   {
+    fuzzy_max_edit_distance;
     phrase;
     fuzzy_index;
   }
