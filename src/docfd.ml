@@ -66,44 +66,16 @@ let list_files_recursively (dir : string) : string list =
   );
   !l
 
-type input_mode =
-  | Navigate
-  | Search
-
-type ui_mode =
-  | Ui_single_file
-  | Ui_multi_file
-
-type key_msg = {
-  key : string;
-  msg : string;
-}
-
-type key_msg_line = key_msg list
-
-let make_label_widget ~s ~len (mode : input_mode) (v : input_mode Lwd.var) =
-  Lwd.map ~f:(fun mode' ->
-      (if mode = mode' then
-         Notty.(I.string A.(st bold) s)
-       else
-         Notty.(I.string A.empty s))
-      |> Notty.I.hsnap ~align:`Left len
-      |> Nottui.Ui.atom
-    ) (Lwd.get v)
-
-type document_src =
-  | Stdin
-  | Files of string list
-
 let run
     (debug : bool)
     (max_depth : int)
-    (fuzzy_max_edit_distance : int)
+    (max_fuzzy_edit_distance : int)
     (max_word_search_range : int)
     (files : string list)
   =
   Params.debug := debug;
   Params.max_file_tree_depth := max_depth;
+  Params.max_fuzzy_edit_distance := max_fuzzy_edit_distance;
   Params.max_word_search_range := max_word_search_range;
   List.iter (fun file ->
       if not (Sys.file_exists file) then (
@@ -117,31 +89,31 @@ let run
   );
   let init_ui_mode, document_src =
     if not (stdin_is_atty ()) then
-      (Ui_single_file, Stdin)
+      Ui.(Ui_single_file, Stdin)
     else (
       match files with
       | [] -> Fmt.pr "Error: No files provided\n"; exit 1
       | [ f ] -> (
           if Sys.is_directory f then
-            (Ui_multi_file, Files (list_files_recursively f))
+            Ui.(Ui_multi_file, Files (list_files_recursively f))
           else
-            (Ui_single_file, Files [ f ])
+            Ui.(Ui_single_file, Files [ f ])
         )
       | _ -> (
-          (Ui_multi_file,
-           Files (
-             files
-             |> List.to_seq
-             |> Seq.flat_map (fun f ->
-                 if Sys.is_directory f then
-                   List.to_seq (list_files_recursively f)
-                 else
-                   Seq.return f
-               )
-             |> List.of_seq
-             |> List.sort_uniq String.compare
-           )
-          )
+          Ui.(Ui_multi_file,
+              Files (
+                files
+                |> List.to_seq
+                |> Seq.flat_map (fun f ->
+                    if Sys.is_directory f then
+                      List.to_seq (list_files_recursively f)
+                    else
+                      Seq.return f
+                  )
+                |> List.of_seq
+                |> List.sort_uniq String.compare
+              )
+             )
         )
     )
   in
@@ -172,6 +144,7 @@ let run
   match all_documents with
   | [] -> Printf.printf "No suitable text files found\n"
   | _ -> (
+      Lwd.set Ui.Vars.all_documents all_documents;
       let total_document_count = List.length all_documents in
       let term =
         match document_src with
@@ -179,117 +152,11 @@ let run
           let input =
             Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
           in
-          Notty_unix.Term.create ~input ()
-        | Files _ ->
-          Notty_unix.Term.create ()
+          Ui.Vars.term := (Notty_unix.Term.create ~input ())
+        | Files _ -> ()
       in
       let renderer = Nottui.Renderer.make () in
-      let content_constraints =
-        Lwd.var (Content_search_constraints.make
-                   ~fuzzy_max_edit_distance
-                   ~phrase:"")
-      in
-      let quit = Lwd.var false in
-      let document_selected = Lwd.var 0 in
-      let content_search_result_selected = Lwd.var 0 in
-      let file_to_open = ref None in
-      let input_mode : input_mode Lwd.var = Lwd.var Navigate in
-      let ui_mode : ui_mode Lwd.var = Lwd.var init_ui_mode in
-      let documents = Lwd.map ~f:(fun content_constraints ->
-          all_documents
-          |> List.filter_map (fun doc ->
-              if Content_search_constraints.is_empty content_constraints then
-                Some doc
-              else (
-                match Document.content_search_results content_constraints doc () with
-                | Seq.Nil -> None
-                | Seq.Cons _ as s ->
-                  let content_search_results = (fun () -> s)
-                                               |> OSeq.take Params.content_search_result_limit
-                                               |> Array.of_seq
-                  in
-                  Array.sort Content_search_result.compare content_search_results;
-                  Some { doc with content_search_results }
-              )
-            )
-          |> (fun l ->
-              if Content_search_constraints.is_empty content_constraints then
-                l
-              else
-                List.sort (fun (doc1 : Document.t) (doc2 : Document.t) ->
-                    Content_search_result.compare
-                      (doc1.content_search_results.(0))
-                      (doc2.content_search_results.(0))
-                  ) l
-            )
-          |> Array.of_list
-        )
-          (Lwd.get content_constraints)
-      in
-      let bound_selection ~choice_count (x : int) : int =
-        max 0 (min (choice_count - 1) x)
-      in
-      let set_document_selected n =
-        Lwd.set document_selected n;
-        Lwd.set content_search_result_selected 0
-      in
-      let empty_search_field = ("", 0) in
-      let search_field =
-        Lwd.var empty_search_field
-      in
-      let content_focus_handle = Nottui.Focus.make () in
-      let update_content_search_constraints () =
-        let constraints' =
-          (Content_search_constraints.make
-             ~fuzzy_max_edit_distance
-             ~phrase:(fst @@ Lwd.peek search_field)
-          )
-        in
-        set_document_selected 0;
-        Lwd.set content_constraints constraints'
-      in
-      let document_list_mouse_handler
-          ~document_choice_count
-          ~document_current_choice
-          ~x ~y
-          (button : Notty.Unescape.button)
-        =
-        let _ = x in
-        let _ = y in
-        match button with
-        | `Scroll `Down ->
-          set_document_selected
-            (bound_selection ~choice_count:document_choice_count (document_current_choice+1));
-          `Handled
-        | `Scroll `Up ->
-          set_document_selected
-            (bound_selection ~choice_count:document_choice_count (document_current_choice-1));
-          `Handled
-        | _ -> `Unhandled
-      in
-      let content_search_result_list_mouse_handler
-          ~content_search_result_choice_count
-          ~content_search_result_current_choice
-          ~x ~y
-          (button : Notty.Unescape.button)
-        =
-        let _ = x in
-        let _ = y in
-        match button with
-        | `Scroll `Down ->
-          Lwd.set content_search_result_selected
-            (bound_selection
-               ~choice_count:content_search_result_choice_count
-               (content_search_result_current_choice+1));
-          `Handled
-        | `Scroll `Up ->
-          Lwd.set content_search_result_selected
-            (bound_selection
-               ~choice_count:content_search_result_choice_count
-               (content_search_result_current_choice-1));
-          `Handled
-        | _ -> `Unhandled
-      in
+      Lwd.set Ui.Vars.ui_mode init_ui_mode;
       let keyboard_handler
           ~document_choice_count
           ~document_current_choice
@@ -374,105 +241,6 @@ let run
             | _ -> `Handled
           )
         | Search -> `Unhandled
-      in
-      let full_term_sized_background () =
-        let (term_width, term_height) = Notty_unix.Term.size term in
-        Notty.I.void term_width term_height
-        |> Nottui.Ui.atom
-      in
-      let left_pane () =
-        Lwd.map2 ~f:(fun documents i ->
-            let image_count = Array.length documents in
-            let pane =
-              if Array.length documents = 0 then (
-                Nottui.Ui.empty
-              ) else (
-                let (images_selected, images_unselected) =
-                  Render.documents documents
-                in
-                let (_term_width, term_height) = Notty_unix.Term.size term in
-                CCInt.range' i (min (i + term_height / 2) image_count)
-                |> CCList.of_iter
-                |> List.map (fun j ->
-                    if Int.equal i j then
-                      images_selected.(j)
-                    else
-                      images_unselected.(j)
-                  )
-                |> List.map Nottui.Ui.atom
-                |> Nottui.Ui.vcat
-              )
-            in
-            Nottui.Ui.join_z (full_term_sized_background ()) pane
-            |> Nottui.Ui.mouse_area
-              (document_list_mouse_handler
-                 ~document_choice_count:image_count
-                 ~document_current_choice:i)
-          )
-          documents
-          (Lwd.get document_selected)
-      in
-      let file_view () =
-        Lwd.map2 ~f:(fun documents i ->
-            if Array.length documents = 0 then (
-              Nottui.Ui.empty
-            ) else (
-              let (_term_width, term_height) = Notty_unix.Term.size term in
-              let render_seq s =
-                s
-                |> OSeq.take term_height
-                |> Seq.map Misc_utils.sanitize_string_for_printing
-                |> Seq.map (fun s -> Nottui.Ui.atom Notty.(I.string A.empty s))
-                |> List.of_seq
-                |> Nottui.Ui.vcat
-              in
-              let doc = documents.(i) in
-              let content =
-                Content_index.lines doc.content_index
-                |> render_seq
-              in
-              content
-            )
-          )
-          documents
-          (Lwd.get document_selected)
-      in
-      let content_search_results =
-        Lwd.map2 ~f:(fun (documents, i) search_result_i ->
-            if Array.length documents = 0 then (
-              Nottui.Ui.empty
-            ) else (
-              let result_count =
-                Array.length documents.(i).content_search_results
-              in
-              if result_count = 0 then (
-                Nottui.Ui.empty
-              ) else (
-                let (_term_width, term_height) = Notty_unix.Term.size term in
-                let images =
-                  Render.content_search_results
-                    ~start:search_result_i
-                    ~end_exc:(min (search_result_i + term_height / 2) result_count)
-                    documents.(i)
-                in
-                let pane =
-                  images
-                  |> Array.map (fun img ->
-                      Nottui.Ui.atom (Notty.I.(img <-> strf ""))
-                    )
-                  |> Array.to_list
-                  |> Nottui.Ui.vcat
-                in
-                Nottui.Ui.join_z (full_term_sized_background ()) pane
-                |> Nottui.Ui.mouse_area
-                  (content_search_result_list_mouse_handler
-                     ~content_search_result_choice_count:result_count
-                     ~content_search_result_current_choice:search_result_i)
-              )
-            )
-          )
-          Lwd.(pair documents (Lwd.get document_selected))
-          (Lwd.get content_search_result_selected)
       in
       let right_pane () =
         Nottui_widgets.v_pane
