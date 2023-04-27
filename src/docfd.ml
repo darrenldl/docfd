@@ -117,6 +117,7 @@ let run
         )
     )
   in
+  Ui.Vars.init_ui_mode := init_ui_mode;
   if !Params.debug then (
     Printf.printf "Scanning completed\n"
   );
@@ -157,101 +158,16 @@ let run
       in
       let renderer = Nottui.Renderer.make () in
       Lwd.set Ui.Vars.ui_mode init_ui_mode;
-      let keyboard_handler
-          ~document_choice_count
-          ~document_current_choice
-          ~content_search_result_current_choice
-          (documents : Document.t array)
-          (key : Nottui.Ui.key)
-        =
-        let content_search_result_choice_count () =
-          Array.length documents.(document_current_choice).content_search_results
-        in
-        match Lwd.peek input_mode with
-        | Navigate -> (
-            match key, Lwd.peek ui_mode with
-            | ((`Escape, []), _)
-            | ((`ASCII 'q', []), _)
-            | ((`ASCII 'C', [`Ctrl]), _) -> (
-                Lwd.set quit true;
-                `Handled
-              )
-            | ((`Tab, []), _) -> (
-                (match init_ui_mode with
-                 | Ui_multi_file -> (
-                     match Lwd.peek ui_mode with
-                     | Ui_multi_file -> Lwd.set ui_mode Ui_single_file
-                     | Ui_single_file -> Lwd.set ui_mode Ui_multi_file
-                   )
-                 | Ui_single_file -> ()
-                );
-                `Handled
-              )
-            | ((`ASCII 'j', []), Ui_multi_file)
-            | ((`Arrow `Down, []), Ui_multi_file) -> (
-                set_document_selected
-                  (bound_selection
-                     ~choice_count:document_choice_count
-                     (document_current_choice+1));
-                `Handled
-              )
-            | ((`ASCII 'k', []), Ui_multi_file)
-            | ((`Arrow `Up, []), Ui_multi_file) -> (
-                set_document_selected
-                  (bound_selection
-                     ~choice_count:document_choice_count
-                     (document_current_choice-1));
-                `Handled
-              )
-            | ((`ASCII 'J', []), _)
-            | ((`Arrow `Down, [`Shift]), _)
-            | ((`ASCII 'j', []), Ui_single_file)
-            | ((`Arrow `Down, []), Ui_single_file) ->
-              Lwd.set content_search_result_selected
-                (bound_selection
-                   ~choice_count:(content_search_result_choice_count ())
-                   (content_search_result_current_choice+1));
-              `Handled
-            | ((`ASCII 'K', []), _)
-            | ((`Arrow `Up, [`Shift]), _)
-            | ((`ASCII 'k', []), Ui_single_file)
-            | ((`Arrow `Up, []), Ui_single_file) ->
-              Lwd.set content_search_result_selected
-                (bound_selection
-                   ~choice_count:(content_search_result_choice_count ())
-                   (content_search_result_current_choice-1));
-              `Handled
-            | ((`ASCII '/', []), _) ->
-              Nottui.Focus.request content_focus_handle;
-              Lwd.set input_mode Search;
-              `Handled
-            | ((`ASCII 'x', []), _) ->
-              Lwd.set search_field empty_search_field;
-              update_content_search_constraints ();
-              `Handled
-            | ((`Enter, []), _) -> (
-                match document_src with
-                | Stdin -> `Handled
-                | Files _ -> (
-                    Lwd.set quit true;
-                    file_to_open := Some documents.(document_current_choice);
-                    `Handled
-                  )
-              )
-            | _ -> `Handled
-          )
-        | Search -> `Unhandled
-      in
       let right_pane () =
         Nottui_widgets.v_pane
-          (file_view ())
-          content_search_results
+          Ui.Content_view.main
+          Ui.Content_search_result_list.main
       in
       let status_bar =
         let fg_color = Notty.A.black in
         let bg_color = Notty.A.white in
         let background_bar () =
-          let (term_width, _term_height) = Notty_unix.Term.size term in
+          let (term_width, _term_height) = Notty_unix.Term.size !Vars.term in
           Notty.I.char Notty.A.(bg bg_color) ' ' term_width 1
           |> Nottui.Ui.atom
         in
