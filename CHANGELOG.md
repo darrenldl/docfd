@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.4
+## 0.7.0
 
 - Added UI mode switch
 

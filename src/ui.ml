@@ -17,16 +17,6 @@ type key_msg = {
 
 type key_msg_line = key_msg list
 
-let make_label_widget ~s ~len (mode : input_mode) (v : input_mode Lwd.var) =
-  Lwd.map ~f:(fun mode' ->
-      (if mode = mode' then
-         Notty.(I.string A.(st bold) s)
-       else
-         Notty.(I.string A.empty s))
-      |> Notty.I.hsnap ~align:`Left len
-      |> Nottui.Ui.atom
-    ) (Lwd.get v)
-
 let empty_search_field = ("", 0)
 
 module Vars = struct
@@ -43,6 +33,8 @@ module Vars = struct
       Lwd.var (Content_search_constraints.make
                  ~fuzzy_max_edit_distance:0
                  ~phrase:"")
+
+    let content_focus_handle = Nottui.Focus.make ()
   end
 
   module Single_file = struct
@@ -54,19 +46,21 @@ module Vars = struct
       Lwd.var (Content_search_constraints.make
                  ~fuzzy_max_edit_distance:0
                  ~phrase:"")
+
+    let content_focus_handle = Nottui.Focus.make ()
   end
 
   let file_to_open : Document.t option ref = ref None
 
   let input_mode : input_mode Lwd.var = Lwd.var Navigate
 
-  let init_ui_mode : ui_mode Lwd.var = Lwd.var Ui_multi_file
+  let init_ui_mode : ui_mode ref = ref Ui_multi_file
 
   let ui_mode : ui_mode Lwd.var = Lwd.var Ui_multi_file
 
   let all_documents : Document.t list Lwd.var = Lwd.var []
 
-  let document_src : document_src Lwd.var = Lwd.var (Files [])
+  let document_src : document_src ref = ref (Files [])
 
   let term : Notty_unix.Term.t ref = ref (Notty_unix.Term.create ())
 end
@@ -75,6 +69,9 @@ let full_term_sized_background () =
   let (term_width, term_height) = Notty_unix.Term.size !Vars.term in
   Notty.I.void term_width term_height
   |> Nottui.Ui.atom
+
+let total_document_count =
+  Lwd.map ~f:List.length (Lwd.get Vars.all_documents)
 
 let documents =
   Lwd.map2
@@ -153,8 +150,6 @@ module Single_file = struct
       )
 end
 
-let content_focus_handle = Nottui.Focus.make ()
-
 module Document_list = struct
   let mouse_handler
       ~document_choice_count
@@ -209,30 +204,30 @@ module Document_list = struct
 end
 
 module Content_view = struct
-let main =
-  Lwd.map2 ~f:(fun documents i ->
-      if Array.length documents = 0 then (
-        Nottui.Ui.empty
-      ) else (
-        let (_term_width, term_height) = Notty_unix.Term.size !Vars.term in
-        let render_seq s =
-          s
-          |> OSeq.take term_height
-          |> Seq.map Misc_utils.sanitize_string_for_printing
-          |> Seq.map (fun s -> Nottui.Ui.atom Notty.(I.string A.empty s))
-          |> List.of_seq
-          |> Nottui.Ui.vcat
-        in
-        let doc = documents.(i) in
-        let content =
-          Content_index.lines doc.content_index
-          |> render_seq
-        in
-        content
+  let main =
+    Lwd.map2 ~f:(fun documents i ->
+        if Array.length documents = 0 then (
+          Nottui.Ui.empty
+        ) else (
+          let (_term_width, term_height) = Notty_unix.Term.size !Vars.term in
+          let render_seq s =
+            s
+            |> OSeq.take term_height
+            |> Seq.map Misc_utils.sanitize_string_for_printing
+            |> Seq.map (fun s -> Nottui.Ui.atom Notty.(I.string A.empty s))
+            |> List.of_seq
+            |> Nottui.Ui.vcat
+          in
+          let doc = documents.(i) in
+          let content =
+            Content_index.lines doc.content_index
+            |> render_seq
+          in
+          content
+        )
       )
-    )
-    documents
-    (Lwd.get Vars.document_selected)
+      documents
+      (Lwd.get Vars.document_selected)
 end
 
 module Content_search_result_list = struct
@@ -313,223 +308,278 @@ module Content_search_result_list = struct
         )
       )
       Lwd.(pair
-      (Lwd.get Vars.ui_mode)
-      (pair
-             documents
+             (Lwd.get Vars.ui_mode)
              (pair
-                (Lwd.get Vars.document_selected)
+                documents
                 (pair
-                   (Lwd.get Vars.Multi_file.content_search_result_selected)
-                   (Lwd.get Vars.Single_file.content_search_result_selected)))))
+                   (Lwd.get Vars.document_selected)
+                   (pair
+                      (Lwd.get Vars.Multi_file.content_search_result_selected)
+                      (Lwd.get Vars.Single_file.content_search_result_selected)))))
 end
 
 module Status_bar = struct
-      let main =
-        let fg_color = Notty.A.black in
-        let bg_color = Notty.A.white in
-        let background_bar () =
-          let (term_width, _term_height) = Notty_unix.Term.size !Vars.term in
-          Notty.I.char Notty.A.(bg bg_color) ' ' term_width 1
-          |> Nottui.Ui.atom
-        in
-        let element_spacing = 4 in
-        let element_spacer = Notty.(I.string A.(bg bg_color ++ fg fg_color)) (String.make element_spacing ' ') in
-        let input_mode_strings =
-          [ (Navigate, "NAVIGATE")
-          ; (Search, "SEARCH")
-          ]
-        in
-        let max_input_mode_string_len =
-          List.fold_left (fun acc (_, s) ->
-              max acc (String.length s)
-            )
-            0
-            input_mode_strings
-        in
-        let input_mode_string_background =
-          Notty.I.char Notty.A.(bg bg_color) ' ' max_input_mode_string_len 1
-        in
-        let input_mode_strings =
-          List.map (fun (mode, s) ->
-              let s = Notty.(I.string A.(bg bg_color ++ fg fg_color ++ st bold) s) in
-              (mode, Notty.I.(s </> input_mode_string_background))
-            )
-            input_mode_strings
-        in
-        (Lwd.map
-           ~f:(fun (all_documents, (documents,
-                (ui_mode, (input_mode, document_selected)))) ->
-                let file_shown_count =
-                  Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
-                    "%5d/%d documents listed"
-                    (Array.length documents) total_document_count
-                in
-                let index_of_selected =
-                  Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
-                    "index of document selected: %d"
-                    document_selected
-                in
-                let path_of_selected =
-                  Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
-                    "document selected: %s"
-                    (match documents.(document_selected).path with
-                     | Some s -> s
-                     | None -> "<stdin>")
-                in
-                let content =
-                  [ Some [ List.assoc input_mode input_mode_strings ]
-                  ; Some [ element_spacer; file_shown_count ]
-                  ; (match ui_mode with
-                     | Ui_single_file ->
-                       Some [ element_spacer; path_of_selected ]
-                     | Ui_multi_file ->
-                       Some [ element_spacer; index_of_selected ]
-                    )
-                  ]
-                  |> List.filter_map Fun.id
-                  |> List.flatten
-                  |> Notty.I.hcat
-                  |> Nottui.Ui.atom
-                in
-                Nottui.Ui.join_z (background_bar ()) content
-              )
-           Lwd.(pair
-           (Lwd.get Vars.all_documents)
-           (pair
-           Vars.documents
-           (pair
-              (get Vars.ui_mode)
-              (pair
-                 (get Vars.input_mode)
-                 (get Vars.document_selected))))),
-         1
+  let main =
+    let fg_color = Notty.A.black in
+    let bg_color = Notty.A.white in
+    let background_bar () =
+      let (term_width, _term_height) = Notty_unix.Term.size !Vars.term in
+      Notty.I.char Notty.A.(bg bg_color) ' ' term_width 1
+      |> Nottui.Ui.atom
+    in
+    let element_spacing = 4 in
+    let element_spacer = Notty.(I.string A.(bg bg_color ++ fg fg_color)) (String.make element_spacing ' ') in
+    let input_mode_strings =
+      [ (Navigate, "NAVIGATE")
+      ; (Search, "SEARCH")
+      ]
+    in
+    let max_input_mode_string_len =
+      List.fold_left (fun acc (_, s) ->
+          max acc (String.length s)
         )
+        0
+        input_mode_strings
+    in
+    let input_mode_string_background =
+      Notty.I.char Notty.A.(bg bg_color) ' ' max_input_mode_string_len 1
+    in
+    let input_mode_strings =
+      List.map (fun (mode, s) ->
+          let s = Notty.(I.string A.(bg bg_color ++ fg fg_color ++ st bold) s) in
+          (mode, Notty.I.(s </> input_mode_string_background))
+        )
+        input_mode_strings
+    in
+    (Lwd.map
+       ~f:(fun (total_document_count,
+       (documents,
+                                (ui_mode,
+                                (input_mode, document_selected)))) ->
+            let file_shown_count =
+              Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
+                "%5d/%d documents listed"
+                (Array.length documents) total_document_count
+            in
+            let index_of_selected =
+              Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
+                "index of document selected: %d"
+                document_selected
+            in
+            let path_of_selected =
+              Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
+                "document selected: %s"
+                (match documents.(document_selected).path with
+                 | Some s -> s
+                 | None -> "<stdin>")
+            in
+            let content =
+              [ Some [ List.assoc input_mode input_mode_strings ]
+              ; Some [ element_spacer; file_shown_count ]
+              ; (match ui_mode with
+                 | Ui_single_file ->
+                   Some [ element_spacer; path_of_selected ]
+                 | Ui_multi_file ->
+                   Some [ element_spacer; index_of_selected ]
+                )
+              ]
+              |> List.filter_map Fun.id
+              |> List.flatten
+              |> Notty.I.hcat
+              |> Nottui.Ui.atom
+            in
+            Nottui.Ui.join_z (background_bar ()) content
+          )
+       Lwd.(
+       (pair
+       total_document_count
+              (pair
+                 documents
+                 (pair
+                    (get Vars.ui_mode)
+                    (pair
+                       (get Vars.input_mode)
+                       (get Vars.document_selected))))))
+    )
 end
 
 module Key_binding_info = struct
-      let key_binding_info =
-        let grid_contents
-          : ((input_mode * ui_mode) * (key_msg_line list)) list =
-          let navigate_line0 : key_msg_line =
-            [
-              { key = "Enter"; msg = "open document" };
-              { key = "/"; msg = "switch to search mode" };
-              { key = "x"; msg = "clear search" };
-            ]
-          in
-          let search_lines =
-            [
-              [
-                { key = "Enter"; msg = "confirm and exit search mode" };
-              ];
-              [
-                { key = ""; msg = "" };
-              ];
-            ]
-          in
+  let main () =
+    let grid_contents
+      : ((input_mode * ui_mode) * (key_msg_line list)) list =
+      let navigate_line0 : key_msg_line =
+        [
+          { key = "Enter"; msg = "open document" };
+          { key = "/"; msg = "switch to search mode" };
+          { key = "x"; msg = "clear search" };
+        ]
+      in
+      let search_lines =
+        [
           [
-            ((Navigate, Ui_single_file),
-             (match init_ui_mode with
-              | Ui_single_file ->
-                [
-                  navigate_line0;
-                  [
-                    { key = "Tab";
-                      msg = "switch to multi file view" };
-                    { key = "q"; msg = "exit" };
-                  ];
-                ]
-              | Ui_multi_file ->
-                [
-                  navigate_line0;
-                  [
-                    { key = "Tab";
-                      msg = "switch to multi file view" };
-                    { key = "q"; msg = "exit" };
-                  ];
-                ]
-             )
-            );
-            ((Navigate, Ui_multi_file),
-             [
-               navigate_line0;
-               [
-                 { key = "Tab";
-                   msg = "switch to single file view" };
-                 { key = "q"; msg = "exit" };
-               ];
-             ]
-            );
-            ((Search, Ui_single_file), search_lines);
-            ((Search, Ui_multi_file), search_lines);
-          ]
-        in
-        let grid_height =
-          grid_contents
-          |> List.hd
-          |> snd
-          |> List.length
-        in
-        let max_key_msg_len_lookup =
-          grid_contents
-          |> List.map (fun (mode, grid) ->
-              let max_key_len, max_msg_len =
-                List.fold_left (fun (max_key_len, max_msg_len) row ->
-                    List.fold_left (fun (max_key_len, max_msg_len) { key; msg } ->
-                        (max max_key_len (String.length key),
-                         max max_msg_len (String.length msg))
-                      )
-                      (max_key_len, max_msg_len)
-                      row
+            { key = "Enter"; msg = "confirm and exit search mode" };
+          ];
+          [
+            { key = ""; msg = "" };
+          ];
+        ]
+      in
+      [
+        ((Navigate, Ui_single_file),
+         (match !Vars.init_ui_mode with
+          | Ui_single_file ->
+            [
+              navigate_line0;
+              [
+                { key = "Tab";
+                  msg = "switch to multi file view" };
+                { key = "q"; msg = "exit" };
+              ];
+            ]
+          | Ui_multi_file ->
+            [
+              navigate_line0;
+              [
+                { key = "Tab";
+                  msg = "switch to multi file view" };
+                { key = "q"; msg = "exit" };
+              ];
+            ]
+         )
+        );
+        ((Navigate, Ui_multi_file),
+         [
+           navigate_line0;
+           [
+             { key = "Tab";
+               msg = "switch to single file view" };
+             { key = "q"; msg = "exit" };
+           ];
+         ]
+        );
+        ((Search, Ui_single_file), search_lines);
+        ((Search, Ui_multi_file), search_lines);
+      ]
+    in
+    (*let grid_height =
+      grid_contents
+      |> List.hd
+      |> snd
+      |> List.length
+    in*)
+    let max_key_msg_len_lookup =
+      grid_contents
+      |> List.map (fun (mode, grid) ->
+          let max_key_len, max_msg_len =
+            List.fold_left (fun (max_key_len, max_msg_len) row ->
+                List.fold_left (fun (max_key_len, max_msg_len) { key; msg } ->
+                    (max max_key_len (String.length key),
+                     max max_msg_len (String.length msg))
                   )
-                  (0, 0)
-                  grid
-              in
-              (mode, (max_key_len, max_msg_len))
-            )
-        in
-        let key_msg_pair modes { key; msg } : Nottui.ui Lwd.t =
-          let (max_key_len, max_msg_len) =
-            List.assoc modes max_key_msg_len_lookup
-          in
-          let key_attr = Notty.A.(fg lightyellow ++ st bold) in
-          let msg_attr = Notty.A.empty in
-          let msg = String.capitalize_ascii msg in
-          let key_background = Notty.I.void max_key_len 1 in
-          let content = Notty.(I.hcat
-                                 [ I.(string key_attr key </> key_background)
-                                 ; I.string A.empty "  "
-                                 ; I.string msg_attr msg
-                                 ]
-                              )
-          in
-          let full_background =
-            Notty.I.void (max_key_len + 2 + max_msg_len + 2) 1
-          in
-          Notty.I.(content </> full_background)
-          |> Nottui.Ui.atom
-          |> Lwd.return
-        in
-        let grid =
-          List.map (fun (modes, grid_contents) ->
-              (modes,
-               grid_contents
-               |> List.map (fun l ->
-                   List.map (key_msg_pair modes) l
-                 )
-               |> Nottui_widgets.grid
-                 ~pad:(Nottui.Gravity.make ~h:`Negative ~v:`Negative)
+                  (max_key_len, max_msg_len)
+                  row
               )
+              (0, 0)
+              grid
+          in
+          (mode, (max_key_len, max_msg_len))
+        )
+    in
+    let key_msg_pair modes { key; msg } : Nottui.ui Lwd.t =
+      let (max_key_len, max_msg_len) =
+        List.assoc modes max_key_msg_len_lookup
+      in
+      let key_attr = Notty.A.(fg lightyellow ++ st bold) in
+      let msg_attr = Notty.A.empty in
+      let msg = String.capitalize_ascii msg in
+      let key_background = Notty.I.void max_key_len 1 in
+      let content = Notty.(I.hcat
+                             [ I.(string key_attr key </> key_background)
+                             ; I.string A.empty "  "
+                             ; I.string msg_attr msg
+                             ]
+                          )
+      in
+      let full_background =
+        Notty.I.void (max_key_len + 2 + max_msg_len + 2) 1
+      in
+      Notty.I.(content </> full_background)
+      |> Nottui.Ui.atom
+      |> Lwd.return
+    in
+    let grid =
+      List.map (fun (modes, grid_contents) ->
+          (modes,
+           grid_contents
+           |> List.map (fun l ->
+               List.map (key_msg_pair modes) l
+             )
+           |> Nottui_widgets.grid
+             ~pad:(Nottui.Gravity.make ~h:`Negative ~v:`Negative)
+          )
+        )
+        grid_contents
+    in
+    let grid =
+      Lwd.map ~f:(fun (input_mode, ui_mode) ->
+          List.assoc (input_mode, ui_mode) grid)
+      Lwd.(pair
+        (Lwd.get Vars.input_mode)
+        (Lwd.get Vars.ui_mode))
+    in
+    Lwd.join grid
+end
+
+module Search_bar = struct
+      let content_search_label_str = "Search:"
+
+      let label_strs =
+        [ content_search_label_str ]
+
+      let max_label_len =
+        List.fold_left (fun x s ->
+            max x (String.length s))
+          0
+          label_strs
+
+      let label_widget_len = max_label_len + 1
+
+let make_label_widget ~s ~len ~(style_on_mode : input_mode) (v : input_mode Lwd.var) =
+  Lwd.map ~f:(fun mode' ->
+      (if style_on_mode = mode' then
+         Notty.(I.string A.(st bold) s)
+       else
+         Notty.(I.string A.empty s))
+      |> Notty.I.hsnap ~align:`Left len
+      |> Nottui.Ui.atom
+    ) (Lwd.get v)
+
+      let content_search_label =
+        make_label_widget
+          ~s:content_search_label_str
+          ~len:label_widget_len
+          ~style_on_mode:Search
+          Vars.input_mode
+
+      let make_search_field ~edit_field ~focus_handle ~f =
+        Nottui_widgets.edit_field (Lwd.get edit_field)
+          ~focus:focus_handle
+          ~on_change:(fun (text, x) -> Lwd.set edit_field (text, x))
+          ~on_submit:(fun _ ->
+              f ();
+              Nottui.Focus.release focus_handle;
+              Lwd.set Vars.input_mode Navigate
             )
-            grid_contents
-        in
-        let grid =
-          Lwd.map2 ~f:(fun input_mode ui_mode ->
-              List.assoc (input_mode, ui_mode) grid)
-            (Lwd.get input_mode)
-            (Lwd.get ui_mode)
-        in
-        (Lwd.join grid, grid_height)
+
+      let main =
+          Nottui_widgets.hbox
+             [
+               content_search_label;
+               make_search_field
+                 ~edit_field:Vars.Multi_file.content_search_field
+                 ~focus_handle:Vars.Multi_file.content_focus_handle
+                 ~f:Multi_file.update_content_search_constraints;
+             ]
 end
 
 let keyboard_handler
@@ -565,47 +615,47 @@ let keyboard_handler
       | ((`ASCII 'j', []), Ui_multi_file)
       | ((`Arrow `Down, []), Ui_multi_file) -> (
           Multi_file.set_document_selected
-               ~choice_count:document_choice_count
-               (document_current_choice+1);
+            ~choice_count:document_choice_count
+            (document_current_choice+1);
           `Handled
         )
       | ((`ASCII 'k', []), Ui_multi_file)
       | ((`Arrow `Up, []), Ui_multi_file) -> (
           Multi_file.set_document_selected
-               ~choice_count:document_choice_count
-               (document_current_choice-1);
+            ~choice_count:document_choice_count
+            (document_current_choice-1);
           `Handled
         )
       | ((`ASCII 'J', []), _)
       | ((`Arrow `Down, [`Shift]), _) -> (
-        Multi_file.set_content_search_result_selected
-             ~choice_count:content_search_result_choice_count
-             (content_search_result_current_choice+1);
-        `Handled
-      )
+          Multi_file.set_content_search_result_selected
+            ~choice_count:content_search_result_choice_count
+            (content_search_result_current_choice+1);
+          `Handled
+        )
       | ((`ASCII 'j', []), Ui_single_file)
       | ((`Arrow `Down, []), Ui_single_file) -> (
-        Single_file.set_content_search_result_selected
-             ~choice_count:content_search_result_choice_count
-             (content_search_result_current_choice+1);
-        `Handled
-      )
+          Single_file.set_content_search_result_selected
+            ~choice_count:content_search_result_choice_count
+            (content_search_result_current_choice+1);
+          `Handled
+        )
       | ((`ASCII 'K', []), _)
       | ((`Arrow `Up, [`Shift]), _) -> (
-        Multi_file.set_content_search_result_selected
-             ~choice_count:content_search_result_choice_count
-             (content_search_result_current_choice-1);
-        `Handled
-      )
+          Multi_file.set_content_search_result_selected
+            ~choice_count:content_search_result_choice_count
+            (content_search_result_current_choice-1);
+          `Handled
+        )
       | ((`ASCII 'k', []), Ui_single_file)
       | ((`Arrow `Up, []), Ui_single_file) -> (
-        Single_file.set_content_search_result_selected
-             ~choice_count:content_search_result_choice_count
-             (content_search_result_current_choice-1);
-        `Handled
-      )
+          Single_file.set_content_search_result_selected
+            ~choice_count:content_search_result_choice_count
+            (content_search_result_current_choice-1);
+          `Handled
+        )
       | ((`ASCII '/', []), _) ->
-        Nottui.Focus.request content_focus_handle;
+        Nottui.Focus.request Vars.Multi_file.content_focus_handle;
         Lwd.set Vars.input_mode Search;
         `Handled
       | ((`ASCII 'x', []), Ui_single_file) ->

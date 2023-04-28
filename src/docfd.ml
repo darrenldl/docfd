@@ -146,16 +146,14 @@ let run
   | [] -> Printf.printf "No suitable text files found\n"
   | _ -> (
       Lwd.set Ui.Vars.all_documents all_documents;
-      let total_document_count = List.length all_documents in
-      let term =
-        match document_src with
+        (match document_src with
         | Stdin ->
           let input =
             Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
           in
           Ui.Vars.term := (Notty_unix.Term.create ~input ())
         | Files _ -> ()
-      in
+        );
       let renderer = Nottui.Renderer.make () in
       Lwd.set Ui.Vars.ui_mode init_ui_mode;
       let right_pane () =
@@ -163,99 +161,65 @@ let run
           Ui.Content_view.main
           Ui.Content_search_result_list.main
       in
-      let content_search_label_str = "Search:" in
-      let label_strs =
-        [ content_search_label_str ]
-      in
-      let max_label_len =
-        List.fold_left (fun x s ->
-            max x (String.length s))
-          0
-          label_strs
-      in
-      let label_widget_len = max_label_len + 1 in
-      let content_search_label =
-        make_label_widget
-          ~s:content_search_label_str
-          ~len:label_widget_len
-          Search
-          input_mode
-      in
-      let make_search_field ~edit_field ~focus_handle ~f =
-        Nottui_widgets.edit_field (Lwd.get edit_field)
-          ~focus:focus_handle
-          ~on_change:(fun (text, x) -> Lwd.set edit_field (text, x))
-          ~on_submit:(fun _ ->
-              f ();
-              Nottui.Focus.release focus_handle;
-              Lwd.set input_mode Navigate
-            )
-      in
       let bottom_pane_components =
         [
-          status_bar;
-          key_binding_info;
-          (Nottui_widgets.hbox
-             [
-               content_search_label;
-               make_search_field
-                 ~edit_field:search_field
-                 ~focus_handle:content_focus_handle
-                 ~f:update_content_search_constraints;
-             ],
-           1
-          );
+          Ui.Status_bar.main;
+          Ui.Key_binding_info.main ();
+          Ui.Search_bar.main;
         ]
       in
       let top_pane_no_keyboard_control : Nottui.ui Lwd.t =
-        Lwd.map ~f:(fun (ui_mode, results) ->
+        Lwd.map ~f:(fun ui_mode ->
             match ui_mode with
             | Ui_multi_file ->
               Nottui_widgets.h_pane
-                (left_pane ())
+                Ui.Document_list.main
                 (right_pane ())
             | Ui_single_file -> (
                 right_pane ()
               )
           )
-          (Lwd.pair (Lwd.get ui_mode) content_search_results)
+          (Lwd.get Ui.Vars.ui_mode)
         |> Lwd.join
       in
       let top_pane =
-        Lwd.map2 ~f:(fun
-                      (pane, documents)
-                      (document_current_choice,
-                       content_search_result_current_choice)
-                      ->
+        Lwd.map
+        ~f:(fun
+                      (pane,
+                      (documents,
+                      (document_current_choice, content_search_result_current_choice))) ->
                         let image_count = Array.length documents in
                         pane
                         |> Nottui.Ui.keyboard_area
-                          (keyboard_handler
+                          (Ui.keyboard_handler
                              ~document_choice_count:image_count
                              ~document_current_choice
                              ~content_search_result_current_choice
                              documents)
                     )
-          (Lwd.pair top_pane_no_keyboard_control documents)
-          (Lwd.pair
-             (Lwd.get document_selected)
-             (Lwd.get content_search_result_selected))
+          Lwd.(pair
+          top_pane_no_keyboard_control
+          (pair
+          Ui.documents
+          (pair
+             (Lwd.get Ui.Vars.document_selected)
+             (Lwd.get Ui.Vars.Multi_file.content_search_result_selected))))
       in
       let screen =
         Nottui_widgets.vbox
           (top_pane
            ::
-           (List.map fst bottom_pane_components))
+           bottom_pane_components)
       in
       let rec loop () =
-        file_to_open := None;
-        Lwd.set quit false;
+        Ui.Vars.file_to_open := None;
+        Lwd.set Ui.Vars.quit false;
         Nottui.Ui_loop.run
-          ~term
+          ~term:!Ui.Vars.term
           ~renderer
-          ~quit
+          ~quit:Ui.Vars.quit
           screen;
-        match !file_to_open with
+        match !Ui.Vars.file_to_open with
         | None -> ()
         | Some doc ->
           match doc.path with
