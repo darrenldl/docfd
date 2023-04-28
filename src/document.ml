@@ -124,19 +124,23 @@ let search
     in
     aux None word_dfa_pairs
   in
-  find_possible_combinations_within_range
-    (List.combine constraints.phrase constraints.fuzzy_index)
-  |> Seq.map (fun l ->
-      ({ search_phrase = constraints.phrase;
-         found_phrase = List.map
-             (fun pos ->
-                let word_ci = 
-                  Index.word_ci_of_pos pos t.index
-                in
-                let word =
-                  Index.word_of_pos pos t.index
-                in
-                (pos, word_ci, word)
-             ) l;
-       } : Search_result.t)
-    )
+  if Search_constraints.is_empty constraints then
+    Seq.empty
+  else (
+    find_possible_combinations_within_range
+      (List.combine constraints.phrase constraints.fuzzy_index)
+    |> Seq.map (fun l ->
+        ({ search_phrase = constraints.phrase;
+           found_phrase = List.map
+               (fun pos ->
+                  let word_ci =
+                    Index.word_ci_of_pos pos t.index
+                  in
+                  let word =
+                    Index.word_of_pos pos t.index
+                  in
+                  (pos, word_ci, word)
+               ) l;
+         } : Search_result.t)
+      )
+  )

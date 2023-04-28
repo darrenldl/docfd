@@ -36,7 +36,7 @@ module Vars = struct
     let search_field = Lwd.var empty_search_field
 
     (* let search_constraints =
-      Lwd.var (Search_constraints.make
+       Lwd.var (Search_constraints.make
                  ~fuzzy_max_edit_distance:0
                  ~phrase:"") *)
 
@@ -73,19 +73,15 @@ let documents =
     ~f:(fun all_documents search_constraints ->
         all_documents
         |> List.filter_map (fun doc ->
-            if Search_constraints.is_empty search_constraints then
-              Some doc
-            else (
-              match Document.search search_constraints doc () with
-              | Seq.Nil -> None
-              | Seq.Cons _ as s ->
-                let search_results = (fun () -> s)
-                                     |> OSeq.take Params.search_result_limit
-                                     |> Array.of_seq
-                in
-                Array.sort Search_result.compare search_results;
-                Some { doc with search_results }
-            )
+            match Document.search search_constraints doc () with
+            | Seq.Nil -> None
+            | Seq.Cons _ as s ->
+              let search_results = (fun () -> s)
+                                   |> OSeq.take Params.search_result_limit
+                                   |> Array.of_seq
+              in
+              Array.sort Search_result.compare search_results;
+              Some { doc with search_results }
           )
         |> (fun l ->
             if Search_constraints.is_empty search_constraints then
@@ -151,15 +147,15 @@ module Single_file = struct
     reset_search_result_selected ();
     let search_constraints =
       Search_constraints.make
-         ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
-         ~phrase:(fst @@ Lwd.peek Vars.Single_file.search_field)
+        ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
+        ~phrase:(fst @@ Lwd.peek Vars.Single_file.search_field)
     in
     let results = Document.search search_constraints document
-        |> OSeq.take Params.search_result_limit
-                                     |> Array.of_seq
+                  |> OSeq.take Params.search_result_limit
+                  |> Array.of_seq
     in
-                Array.sort Search_result.compare results;
-                Lwd.set Vars.Single_file.search_results results
+    Array.sort Search_result.compare results;
+    Lwd.set Vars.Single_file.search_results results
 end
 
 module Document_list = struct
@@ -291,8 +287,8 @@ module Search_result_list = struct
     Lwd.map
       ~f:(fun (ui_mode,
                (document,
-               (sf_search_results,
-                (mf_result_selected, sf_result_selected)))) ->
+                (sf_search_results,
+                 (mf_result_selected, sf_result_selected)))) ->
            match document with
            | None -> None
            | Some document ->
@@ -319,10 +315,10 @@ module Search_result_list = struct
              (pair
                 document_selected
                 (pair
-                (get Vars.Single_file.search_results)
-                (pair
-                   (get Vars.Multi_file.index_of_search_result_selected)
-                   (get Vars.Single_file.index_of_search_result_selected)))))
+                   (get Vars.Single_file.search_results)
+                   (pair
+                      (get Vars.Multi_file.index_of_search_result_selected)
+                      (get Vars.Single_file.index_of_search_result_selected)))))
 
   let main =
     Lwd.map ~f:(fun params ->
@@ -398,62 +394,62 @@ module Status_bar = struct
         input_mode_strings
     in
     Lwd.map
-       ~f:(fun (total_document_count,
-                (documents,
-                 (ui_mode,
-                  (input_mode, (index_of_document_selected, document_selected))))) ->
-            let file_shown_count =
-              Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
-                "%5d/%d documents listed"
-                (Array.length documents) total_document_count
-            in
-            let index_of_selected =
-              match document_selected with
-              | None -> Notty.I.void 0 0
-              | Some _ ->
-                Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
-                  "index of document selected: %d"
-                  index_of_document_selected
-            in
-            let path_of_selected =
-              match document_selected with
-              | None -> Notty.I.void 0 0
-              | Some document_selected ->
-                Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
-                  "document selected: %s"
-                  (match document_selected.path with
-                   | Some s -> s
-                   | None -> "<stdin>")
-            in
-            let content =
-              [ Some [ List.assoc input_mode input_mode_strings ]
-              ; Some [ element_spacer; file_shown_count ]
-              ; (match ui_mode with
-                 | Ui_single_file ->
-                   Some [ element_spacer; path_of_selected ]
-                 | Ui_multi_file ->
-                   Some [ element_spacer; index_of_selected ]
-                )
-              ]
-              |> List.filter_map Fun.id
-              |> List.flatten
-              |> Notty.I.hcat
-              |> Nottui.Ui.atom
-            in
-            Nottui.Ui.join_z (background_bar ()) content
-          )
-       Lwd.(
-         (pair
-            total_document_count
-            (pair
-               documents
-               (pair
-                  (get Vars.ui_mode)
-                  (pair
-                     (get Vars.input_mode)
-                     (pair
-                        (get Vars.index_of_document_selected)
-                        document_selected))))))
+      ~f:(fun (total_document_count,
+               (documents,
+                (ui_mode,
+                 (input_mode, (index_of_document_selected, document_selected))))) ->
+           let file_shown_count =
+             Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
+               "%5d/%d documents listed"
+               (Array.length documents) total_document_count
+           in
+           let index_of_selected =
+             match document_selected with
+             | None -> Notty.I.void 0 0
+             | Some _ ->
+               Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
+                 "index of document selected: %d"
+                 index_of_document_selected
+           in
+           let path_of_selected =
+             match document_selected with
+             | None -> Notty.I.void 0 0
+             | Some document_selected ->
+               Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
+                 "document selected: %s"
+                 (match document_selected.path with
+                  | Some s -> s
+                  | None -> "<stdin>")
+           in
+           let content =
+             [ Some [ List.assoc input_mode input_mode_strings ]
+             ; Some [ element_spacer; file_shown_count ]
+             ; (match ui_mode with
+                | Ui_single_file ->
+                  Some [ element_spacer; path_of_selected ]
+                | Ui_multi_file ->
+                  Some [ element_spacer; index_of_selected ]
+               )
+             ]
+             |> List.filter_map Fun.id
+             |> List.flatten
+             |> Notty.I.hcat
+             |> Nottui.Ui.atom
+           in
+           Nottui.Ui.join_z (background_bar ()) content
+         )
+      Lwd.(
+        (pair
+           total_document_count
+           (pair
+              documents
+              (pair
+                 (get Vars.ui_mode)
+                 (pair
+                    (get Vars.input_mode)
+                    (pair
+                       (get Vars.index_of_document_selected)
+                       document_selected))))))
 end
 
 module Key_binding_info = struct
@@ -633,29 +629,29 @@ module Search_bar = struct
 
   let main : Nottui.ui Lwd.t =
     Lwd.map ~f:(fun (ui_mode, document) ->
-    Nottui_widgets.hbox
-      [
-        search_label;
-        (match document with
-        | None -> Lwd.return Nottui.Ui.empty
-        | Some document -> (
-          match ui_mode with
-        | Ui_multi_file ->
-            make_search_field
-          ~edit_field:Vars.Multi_file.search_field
-          ~focus_handle:Vars.Multi_file.focus_handle
-          ~f:Multi_file.update_search_constraints
-        | Ui_single_file ->
-            make_search_field
-          ~edit_field:Vars.Single_file.search_field
-          ~focus_handle:Vars.Single_file.focus_handle
-          ~f:(Single_file.update_search_constraints ~document)
-        )
-        );
-      ]
-    )
-    Lwd.(pair (get Vars.ui_mode) document_selected)
-        |> Lwd.join
+        Nottui_widgets.hbox
+          [
+            search_label;
+            (match document with
+             | None -> Lwd.return Nottui.Ui.empty
+             | Some document -> (
+                 match ui_mode with
+                 | Ui_multi_file ->
+                   make_search_field
+                     ~edit_field:Vars.Multi_file.search_field
+                     ~focus_handle:Vars.Multi_file.focus_handle
+                     ~f:Multi_file.update_search_constraints
+                 | Ui_single_file ->
+                   make_search_field
+                     ~edit_field:Vars.Single_file.search_field
+                     ~focus_handle:Vars.Single_file.focus_handle
+                     ~f:(Single_file.update_search_constraints ~document)
+               )
+            );
+          ]
+      )
+      Lwd.(pair (get Vars.ui_mode) document_selected)
+    |> Lwd.join
 end
 
 let keyboard_handler
@@ -693,18 +689,18 @@ let keyboard_handler
            | Ui_multi_file -> (
                match Lwd.peek Vars.ui_mode with
                | Ui_multi_file -> (
-                 Option.iter
-                 (fun document ->
-                   Lwd.set
-                   Vars.Single_file.search_field
-                   (Lwd.peek Vars.Multi_file.search_field);
-                   Lwd.set
-                   Vars.Single_file.search_results
-                   (Array.copy document.Document.search_results);
-                   )
-                 document;
-                 Lwd.set Vars.ui_mode Ui_single_file
-               )
+                   Option.iter
+                     (fun document ->
+                        Lwd.set
+                          Vars.Single_file.search_field
+                          (Lwd.peek Vars.Multi_file.search_field);
+                        Lwd.set
+                          Vars.Single_file.search_results
+                          (Array.copy document.Document.search_results);
+                     )
+                     document;
+                   Lwd.set Vars.ui_mode Ui_single_file
+                 )
                | Ui_single_file -> Lwd.set Vars.ui_mode Ui_multi_file
              )
            | Ui_single_file -> ()
@@ -758,25 +754,25 @@ let keyboard_handler
           `Handled
         )
       | ((`ASCII '/', []), Ui_single_file) -> (
-        Nottui.Focus.request Vars.Single_file.focus_handle;
-        Lwd.set Vars.input_mode Search;
-        `Handled
-      )
+          Nottui.Focus.request Vars.Single_file.focus_handle;
+          Lwd.set Vars.input_mode Search;
+          `Handled
+        )
       | ((`ASCII '/', []), Ui_multi_file) -> (
-        Nottui.Focus.request Vars.Multi_file.focus_handle;
-        Lwd.set Vars.input_mode Search;
-        `Handled
-      )
+          Nottui.Focus.request Vars.Multi_file.focus_handle;
+          Lwd.set Vars.input_mode Search;
+          `Handled
+        )
       | ((`ASCII 'x', []), Ui_single_file) -> (
-        Lwd.set Vars.Single_file.search_field empty_search_field;
-        Single_file.update_search_constraints ~document:(Option.get document) ();
-        `Handled
-      )
+          Lwd.set Vars.Single_file.search_field empty_search_field;
+          Single_file.update_search_constraints ~document:(Option.get document) ();
+          `Handled
+        )
       | ((`ASCII 'x', []), Ui_multi_file) -> (
-        Lwd.set Vars.Multi_file.search_field empty_search_field;
-        Multi_file.update_search_constraints ();
-        `Handled
-      )
+          Lwd.set Vars.Multi_file.search_field empty_search_field;
+          Multi_file.update_search_constraints ();
+          `Handled
+        )
       | ((`Enter, []), _) -> (
           match !Vars.document_src with
           | Stdin -> `Handled
