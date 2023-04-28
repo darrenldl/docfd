@@ -10,13 +10,6 @@ type document_src =
   | Stdin
   | Files of string list
 
-type key_msg = {
-  key : string;
-  msg : string;
-}
-
-type key_msg_line = key_msg list
-
 let empty_search_field = ("", 0)
 
 module Vars = struct
@@ -163,21 +156,24 @@ end
 
 module Document_list = struct
   let mouse_handler
-      ~document_choice_count
-      ~document_current_choice
+      documents
       ~x ~y
       (button : Notty.Unescape.button)
     =
     let _ = x in
     let _ = y in
+    let choice_count = Array.length documents in
+    let current_choice =
+      Lwd.peek Vars.index_of_document_selected
+    in
     match button with
     | `Scroll `Down ->
       Multi_file.set_document_selected
-        ~choice_count:document_choice_count (document_current_choice+1);
+        ~choice_count (current_choice+1);
       `Handled
     | `Scroll `Up ->
       Multi_file.set_document_selected
-        ~choice_count:document_choice_count (document_current_choice-1);
+        ~choice_count (current_choice-1);
       `Handled
     | _ -> `Unhandled
 
@@ -205,10 +201,7 @@ module Document_list = struct
           )
         in
         Nottui.Ui.join_z (full_term_sized_background ()) pane
-        |> Nottui.Ui.mouse_area
-          (mouse_handler
-             ~document_choice_count:image_count
-             ~document_current_choice:i)
+        |> Nottui.Ui.mouse_area (mouse_handler documents)
       )
       documents
       (Lwd.get Vars.index_of_document_selected)
@@ -452,6 +445,13 @@ module Status_bar = struct
 end
 
 module Key_binding_info = struct
+  type key_msg = {
+    key : string;
+    msg : string;
+  }
+
+  type key_msg_line = key_msg list
+
   let main () =
     let grid_contents
       : ((input_mode * ui_mode) * (key_msg_line list)) list =
@@ -634,11 +634,14 @@ let keyboard_handler
     ~document_choice_count
     ~document_current_choice
     ~search_result_current_choice
-    (documents : Document.t array)
+    (document : Document.t option)
     (key : Nottui.Ui.key)
   =
   let search_result_choice_count =
-    Array.length documents.(document_current_choice).search_results
+    match document with
+    | None -> 0
+    | Some document ->
+      Array.length document.search_results
   in
   match Lwd.peek Vars.input_mode with
   | Navigate -> (
@@ -723,7 +726,7 @@ let keyboard_handler
           | Stdin -> `Handled
           | Files _ -> (
               Lwd.set Vars.quit true;
-              Vars.file_to_open := Some documents.(document_current_choice);
+              Vars.file_to_open := document;
               `Handled
             )
         )
