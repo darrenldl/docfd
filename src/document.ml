@@ -82,7 +82,7 @@ let of_path path : (t, string) result =
   with
   | _ -> Error (Printf.sprintf "Failed to read file: %s" path)
 
-let search_results
+let search
     (constraints : Search_constraints.t)
     (t : t)
   : Search_result.t Seq.t =

@@ -187,27 +187,19 @@ let run
         Lwd.map
           ~f:(fun
                (pane,
-                (documents,
-                 (document_selected,
-                  (document_current_choice, search_result_current_choice)))) ->
+                (documents, document_selected)) ->
                let document_count = Array.length documents in
                pane
                |> Nottui.Ui.keyboard_area
                  (Ui.keyboard_handler
                     ~document_choice_count:document_count
-                    ~document_current_choice
-                    ~search_result_current_choice
                     document_selected)
              )
           Lwd.(pair
                  top_pane_no_keyboard_control
                  (pair
                     Ui.documents
-                    (pair
-                       Ui.document_selected
-                       (pair
-                          (get Ui.Vars.index_of_document_selected)
-                          (get Ui.Vars.Multi_file.index_of_search_result_selected)))))
+                    Ui.document_selected))
       in
       let screen =
         Nottui_widgets.vbox [ top_pane; bottom_pane ]
