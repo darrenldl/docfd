@@ -353,9 +353,9 @@ module Status_bar = struct
     in
     (Lwd.map
        ~f:(fun (total_document_count,
-       (documents,
-                                (ui_mode,
-                                (input_mode, document_selected)))) ->
+                (documents,
+                 (ui_mode,
+                  (input_mode, document_selected)))) ->
             let file_shown_count =
               Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
                 "%5d/%d documents listed"
@@ -391,15 +391,15 @@ module Status_bar = struct
             Nottui.Ui.join_z (background_bar ()) content
           )
        Lwd.(
-       (pair
-       total_document_count
-              (pair
-                 documents
-                 (pair
-                    (get Vars.ui_mode)
-                    (pair
-                       (get Vars.input_mode)
-                       (get Vars.document_selected))))))
+         (pair
+            total_document_count
+            (pair
+               documents
+               (pair
+                  (get Vars.ui_mode)
+                  (pair
+                     (get Vars.input_mode)
+                     (get Vars.document_selected))))))
     )
 end
 
@@ -466,7 +466,7 @@ module Key_binding_info = struct
       |> List.hd
       |> snd
       |> List.length
-    in*)
+      in*)
     let max_key_msg_len_lookup =
       grid_contents
       |> List.map (fun (mode, grid) ->
@@ -523,63 +523,63 @@ module Key_binding_info = struct
     let grid =
       Lwd.map ~f:(fun (input_mode, ui_mode) ->
           List.assoc (input_mode, ui_mode) grid)
-      Lwd.(pair
-        (Lwd.get Vars.input_mode)
-        (Lwd.get Vars.ui_mode))
+        Lwd.(pair
+               (Lwd.get Vars.input_mode)
+               (Lwd.get Vars.ui_mode))
     in
     Lwd.join grid
 end
 
 module Search_bar = struct
-      let content_search_label_str = "Search:"
+  let content_search_label_str = "Search:"
 
-      let label_strs =
-        [ content_search_label_str ]
+  let label_strs =
+    [ content_search_label_str ]
 
-      let max_label_len =
-        List.fold_left (fun x s ->
-            max x (String.length s))
-          0
-          label_strs
+  let max_label_len =
+    List.fold_left (fun x s ->
+        max x (String.length s))
+      0
+      label_strs
 
-      let label_widget_len = max_label_len + 1
+  let label_widget_len = max_label_len + 1
 
-let make_label_widget ~s ~len ~(style_on_mode : input_mode) (v : input_mode Lwd.var) =
-  Lwd.map ~f:(fun mode' ->
-      (if style_on_mode = mode' then
-         Notty.(I.string A.(st bold) s)
-       else
-         Notty.(I.string A.empty s))
-      |> Notty.I.hsnap ~align:`Left len
-      |> Nottui.Ui.atom
-    ) (Lwd.get v)
+  let make_label_widget ~s ~len ~(style_on_mode : input_mode) (v : input_mode Lwd.var) =
+    Lwd.map ~f:(fun mode' ->
+        (if style_on_mode = mode' then
+           Notty.(I.string A.(st bold) s)
+         else
+           Notty.(I.string A.empty s))
+        |> Notty.I.hsnap ~align:`Left len
+        |> Nottui.Ui.atom
+      ) (Lwd.get v)
 
-      let content_search_label =
-        make_label_widget
-          ~s:content_search_label_str
-          ~len:label_widget_len
-          ~style_on_mode:Search
-          Vars.input_mode
+  let content_search_label =
+    make_label_widget
+      ~s:content_search_label_str
+      ~len:label_widget_len
+      ~style_on_mode:Search
+      Vars.input_mode
 
-      let make_search_field ~edit_field ~focus_handle ~f =
-        Nottui_widgets.edit_field (Lwd.get edit_field)
-          ~focus:focus_handle
-          ~on_change:(fun (text, x) -> Lwd.set edit_field (text, x))
-          ~on_submit:(fun _ ->
-              f ();
-              Nottui.Focus.release focus_handle;
-              Lwd.set Vars.input_mode Navigate
-            )
+  let make_search_field ~edit_field ~focus_handle ~f =
+    Nottui_widgets.edit_field (Lwd.get edit_field)
+      ~focus:focus_handle
+      ~on_change:(fun (text, x) -> Lwd.set edit_field (text, x))
+      ~on_submit:(fun _ ->
+          f ();
+          Nottui.Focus.release focus_handle;
+          Lwd.set Vars.input_mode Navigate
+        )
 
-      let main =
-          Nottui_widgets.hbox
-             [
-               content_search_label;
-               make_search_field
-                 ~edit_field:Vars.Multi_file.content_search_field
-                 ~focus_handle:Vars.Multi_file.content_focus_handle
-                 ~f:Multi_file.update_content_search_constraints;
-             ]
+  let main =
+    Nottui_widgets.hbox
+      [
+        content_search_label;
+        make_search_field
+          ~edit_field:Vars.Multi_file.content_search_field
+          ~focus_handle:Vars.Multi_file.content_focus_handle
+          ~f:Multi_file.update_content_search_constraints;
+      ]
 end
 
 let keyboard_handler

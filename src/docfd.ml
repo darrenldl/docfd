@@ -146,14 +146,14 @@ let run
   | [] -> Printf.printf "No suitable text files found\n"
   | _ -> (
       Lwd.set Ui.Vars.all_documents all_documents;
-        (match document_src with
-        | Stdin ->
-          let input =
-            Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
-          in
-          Ui.Vars.term := (Notty_unix.Term.create ~input ())
-        | Files _ -> ()
-        );
+      (match document_src with
+       | Stdin ->
+         let input =
+           Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
+         in
+         Ui.Vars.term := (Notty_unix.Term.create ~input ())
+       | Files _ -> ()
+      );
       let renderer = Nottui.Renderer.make () in
       Lwd.set Ui.Vars.ui_mode init_ui_mode;
       let right_pane () =
@@ -184,26 +184,26 @@ let run
       in
       let top_pane =
         Lwd.map
-        ~f:(fun
-                      (pane,
-                      (documents,
-                      (document_current_choice, content_search_result_current_choice))) ->
-                        let image_count = Array.length documents in
-                        pane
-                        |> Nottui.Ui.keyboard_area
-                          (Ui.keyboard_handler
-                             ~document_choice_count:image_count
-                             ~document_current_choice
-                             ~content_search_result_current_choice
-                             documents)
-                    )
+          ~f:(fun
+               (pane,
+                (documents,
+                 (document_current_choice, content_search_result_current_choice))) ->
+               let image_count = Array.length documents in
+               pane
+               |> Nottui.Ui.keyboard_area
+                 (Ui.keyboard_handler
+                    ~document_choice_count:image_count
+                    ~document_current_choice
+                    ~content_search_result_current_choice
+                    documents)
+             )
           Lwd.(pair
-          top_pane_no_keyboard_control
-          (pair
-          Ui.documents
-          (pair
-             (Lwd.get Ui.Vars.document_selected)
-             (Lwd.get Ui.Vars.Multi_file.content_search_result_selected))))
+                 top_pane_no_keyboard_control
+                 (pair
+                    Ui.documents
+                    (pair
+                       (Lwd.get Ui.Vars.document_selected)
+                       (Lwd.get Ui.Vars.Multi_file.content_search_result_selected))))
       in
       let screen =
         Nottui_widgets.vbox
