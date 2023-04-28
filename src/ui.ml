@@ -85,8 +85,8 @@ let documents =
               | Seq.Nil -> None
               | Seq.Cons _ as s ->
                 let search_results = (fun () -> s)
-                                             |> OSeq.take Params.search_result_limit
-                                             |> Array.of_seq
+                                     |> OSeq.take Params.search_result_limit
+                                     |> Array.of_seq
                 in
                 Array.sort Search_result.compare search_results;
                 Some { doc with search_results }
@@ -109,14 +109,14 @@ let documents =
 
 let document_selected : Document.t option Lwd.t =
   Lwd.map ~f:(fun (documents, index) ->
-    if Array.length documents = 0 then
-      None
-    else
-      Some documents.(index)
-  )
-  Lwd.(pair
-  documents
-  (get Vars.index_of_document_selected))
+      if Array.length documents = 0 then
+        None
+      else
+        Some documents.(index)
+    )
+    Lwd.(pair
+           documents
+           (get Vars.index_of_document_selected))
 
 let bound_selection ~choice_count (x : int) : int =
   max 0 (min (choice_count - 1) x)
@@ -217,28 +217,28 @@ end
 module Content_view = struct
   let main =
     Lwd.map ~f:(fun (ui_mode, document) ->
-      match document with
-      | None -> Nottui.Ui.empty
-      | Some document -> (
-          let (_term_width, term_height) = Notty_unix.Term.size !Vars.term in
-          let render_seq s =
-            s
-            |> OSeq.take term_height
-            |> Seq.map Misc_utils.sanitize_string_for_printing
-            |> Seq.map (fun s -> Nottui.Ui.atom Notty.(I.string A.empty s))
-            |> List.of_seq
-            |> Nottui.Ui.vcat
-          in
-          let content =
-            Index.lines document.index
-            |> render_seq
-          in
-          content
-        )
+        match document with
+        | None -> Nottui.Ui.empty
+        | Some document -> (
+            let (_term_width, term_height) = Notty_unix.Term.size !Vars.term in
+            let render_seq s =
+              s
+              |> OSeq.take term_height
+              |> Seq.map Misc_utils.sanitize_string_for_printing
+              |> Seq.map (fun s -> Nottui.Ui.atom Notty.(I.string A.empty s))
+              |> List.of_seq
+              |> Nottui.Ui.vcat
+            in
+            let content =
+              Index.lines document.index
+              |> render_seq
+            in
+            content
+          )
       )
-    Lwd.(pair
-    (get Vars.ui_mode)
-      document_selected)
+      Lwd.(pair
+             (get Vars.ui_mode)
+             document_selected)
 end
 
 module Search_result_list = struct
@@ -287,71 +287,71 @@ module Search_result_list = struct
 
   let params : params option Lwd.t =
     Lwd.map
-    ~f:(fun (ui_mode,
-    (document,
-    (mf_result_selected, sf_result_selected))) ->
-      match document with
-      | None -> None
-      | Some document ->
-      match ui_mode with
-      | Ui_single_file ->
-          Some
-          {
-            ui_mode;
-            document = Document.copy document;
-            result_selected = sf_result_selected;
-          }
-      | Ui_multi_file ->
-          Some
-          {
-            ui_mode;
-            document;
-            result_selected = mf_result_selected;
-          }
-    )
+      ~f:(fun (ui_mode,
+               (document,
+                (mf_result_selected, sf_result_selected))) ->
+           match document with
+           | None -> None
+           | Some document ->
+             match ui_mode with
+             | Ui_single_file ->
+               Some
+                 {
+                   ui_mode;
+                   document = Document.copy document;
+                   result_selected = sf_result_selected;
+                 }
+             | Ui_multi_file ->
+               Some
+                 {
+                   ui_mode;
+                   document;
+                   result_selected = mf_result_selected;
+                 }
+         )
       Lwd.(pair
              (get Vars.ui_mode)
              (pair
                 document_selected
-                   (pair
-                      (get Vars.Multi_file.index_of_search_result_selected)
-                      (get Vars.Single_file.index_of_search_result_selected))))
+                (pair
+                   (get Vars.Multi_file.index_of_search_result_selected)
+                   (get Vars.Single_file.index_of_search_result_selected))))
 
   let main =
     Lwd.map ~f:(fun params ->
-      match params with
-      | None -> Nottui.Ui.empty
-      | Some { ui_mode; document; result_selected } -> (
-        let results = document.search_results in
-          let result_count = Array.length results in
-          if result_count = 0 then (
-            Nottui.Ui.empty
-          ) else (
-            let (_term_width, term_height) = Notty_unix.Term.size !Vars.term in
-            let images =
-              Render.search_results
-                ~start:result_selected
-                ~end_exc:(min (result_selected + term_height / 2) result_count)
-                document.index
-                results
-            in
-            let pane =
-              images
-              |> Array.map (fun img ->
-                  Nottui.Ui.atom (Notty.I.(img <-> strf ""))
-                )
-              |> Array.to_list
-              |> Nottui.Ui.vcat
-            in
-            Nottui.Ui.join_z (full_term_sized_background ()) pane
-            |> Nottui.Ui.mouse_area
-              (mouse_handler
-                 ~choice_count:result_count
-                 ~current_choice:result_selected)
+        match params with
+        | None -> Nottui.Ui.empty
+        | Some { ui_mode; document; result_selected } -> (
+            let results = document.search_results in
+            let result_count = Array.length results in
+            if result_count = 0 then (
+              Nottui.Ui.empty
+            ) else (
+              let (_term_width, term_height) = Notty_unix.Term.size !Vars.term in
+              let images =
+                Render.search_results
+                  ~start:result_selected
+                  ~end_exc:(min (result_selected + term_height / 2) result_count)
+                  document.index
+                  results
+              in
+              let pane =
+                images
+                |> Array.map (fun img ->
+                    Nottui.Ui.atom (Notty.I.(img <-> strf ""))
+                  )
+                |> Array.to_list
+                |> Nottui.Ui.vcat
+              in
+              Nottui.Ui.join_z (full_term_sized_background ()) pane
+              |> Nottui.Ui.mouse_area
+                (mouse_handler
+                   ~choice_count:result_count
+                   ~current_choice:result_selected)
+            )
           )
-        )
       )
-    params
+      params
 end
 
 module Status_bar = struct
@@ -366,8 +366,8 @@ module Status_bar = struct
     let element_spacing = 4 in
     let element_spacer =
       Notty.(I.string
-      A.(bg bg_color ++ fg fg_color))
-      (String.make element_spacing ' ')
+               A.(bg bg_color ++ fg fg_color))
+        (String.make element_spacing ' ')
     in
     let input_mode_strings =
       [ (Navigate, "NAVIGATE")
@@ -405,19 +405,19 @@ module Status_bar = struct
               match document_selected with
               | None -> Notty.I.void 0 0
               | Some _ ->
-              Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
-                "index of document selected: %d"
-                index_of_document_selected
+                Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
+                  "index of document selected: %d"
+                  index_of_document_selected
             in
             let path_of_selected =
               match document_selected with
               | None -> Notty.I.void 0 0
               | Some document_selected ->
-              Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
-                "document selected: %s"
-                (match document_selected.path with
-                 | Some s -> s
-                 | None -> "<stdin>")
+                Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
+                  "document selected: %s"
+                  (match document_selected.path with
+                   | Some s -> s
+                   | None -> "<stdin>")
             in
             let content =
               [ Some [ List.assoc input_mode input_mode_strings ]
@@ -446,8 +446,8 @@ module Status_bar = struct
                   (pair
                      (get Vars.input_mode)
                      (pair
-                       (get Vars.index_of_document_selected)
-                       document_selected))))))
+                        (get Vars.index_of_document_selected)
+                        document_selected))))))
     )
 end
 

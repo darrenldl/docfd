@@ -163,11 +163,11 @@ let run
       in
       let bottom_pane =
         Nottui_widgets.vbox
-        [
-          Ui.Status_bar.main;
-          Ui.Key_binding_info.main ();
-          Ui.Search_bar.main;
-        ]
+          [
+            Ui.Status_bar.main;
+            Ui.Key_binding_info.main ();
+            Ui.Search_bar.main;
+          ]
       in
       let top_pane_no_keyboard_control : Nottui.ui Lwd.t =
         Lwd.map ~f:(fun ui_mode ->
