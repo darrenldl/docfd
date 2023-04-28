@@ -23,7 +23,7 @@ let words_of_lines (s : (int * string) Seq.t) : (int * (int * int) * string) Seq
   |> Seq.mapi (fun i (loc, s) ->
       (i, loc, s))
 
-let index (s : (int * string) Seq.t) : t =
+let of_seq (s : (int * string) Seq.t) : t =
   s
   |> words_of_lines
   |> Seq.fold_left

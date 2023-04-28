@@ -22,32 +22,32 @@ let empty_search_field = ("", 0)
 module Vars = struct
   let quit = Lwd.var false
 
-  let document_selected = Lwd.var 0
+  let index_of_document_selected = Lwd.var 0
 
   module Multi_file = struct
-    let content_search_result_selected = Lwd.var 0
+    let index_of_search_result_selected = Lwd.var 0
 
-    let content_search_field = Lwd.var empty_search_field
+    let search_field = Lwd.var empty_search_field
 
-    let content_search_constraints =
-      Lwd.var (Content_search_constraints.make
+    let search_constraints =
+      Lwd.var (Search_constraints.make
                  ~fuzzy_max_edit_distance:0
                  ~phrase:"")
 
-    let content_focus_handle = Nottui.Focus.make ()
+    let focus_handle = Nottui.Focus.make ()
   end
 
   module Single_file = struct
-    let content_search_result_selected = Lwd.var 0
+    let index_of_search_result_selected = Lwd.var 0
 
-    let content_search_field = Lwd.var empty_search_field
+    let search_field = Lwd.var empty_search_field
 
-    let content_search_constraints =
-      Lwd.var (Content_search_constraints.make
+    let search_constraints =
+      Lwd.var (Search_constraints.make
                  ~fuzzy_max_edit_distance:0
                  ~phrase:"")
 
-    let content_focus_handle = Nottui.Focus.make ()
+    let focus_handle = Nottui.Focus.make ()
   end
 
   let file_to_open : Document.t option ref = ref None
@@ -75,37 +75,48 @@ let total_document_count =
 
 let documents =
   Lwd.map2
-    ~f:(fun all_documents content_constraints ->
+    ~f:(fun all_documents search_constraints ->
         all_documents
         |> List.filter_map (fun doc ->
-            if Content_search_constraints.is_empty content_constraints then
+            if Search_constraints.is_empty search_constraints then
               Some doc
             else (
-              match Document.content_search_results content_constraints doc () with
+              match Document.search_results search_constraints doc () with
               | Seq.Nil -> None
               | Seq.Cons _ as s ->
-                let content_search_results = (fun () -> s)
-                                             |> OSeq.take Params.content_search_result_limit
+                let search_results = (fun () -> s)
+                                             |> OSeq.take Params.search_result_limit
                                              |> Array.of_seq
                 in
-                Array.sort Content_search_result.compare content_search_results;
-                Some { doc with content_search_results }
+                Array.sort Search_result.compare search_results;
+                Some { doc with search_results }
             )
           )
         |> (fun l ->
-            if Content_search_constraints.is_empty content_constraints then
+            if Search_constraints.is_empty search_constraints then
               l
             else
               List.sort (fun (doc1 : Document.t) (doc2 : Document.t) ->
-                  Content_search_result.compare
-                    (doc1.content_search_results.(0))
-                    (doc2.content_search_results.(0))
+                  Search_result.compare
+                    (doc1.search_results.(0))
+                    (doc2.search_results.(0))
                 ) l
           )
         |> Array.of_list
       )
     (Lwd.get Vars.all_documents)
-    (Lwd.get Vars.Multi_file.content_search_constraints)
+    (Lwd.get Vars.Multi_file.search_constraints)
+
+let document_selected : Document.t option Lwd.t =
+  Lwd.map ~f:(fun (documents, index) ->
+    if Array.length documents = 0 then
+      None
+    else
+      Some documents.(index)
+  )
+  Lwd.(pair
+  documents
+  (get Vars.index_of_document_selected))
 
 let bound_selection ~choice_count (x : int) : int =
   max 0 (min (choice_count - 1) x)
@@ -113,40 +124,40 @@ let bound_selection ~choice_count (x : int) : int =
 module Multi_file = struct
   let set_document_selected ~choice_count n =
     let n = bound_selection ~choice_count n in
-    Lwd.set Vars.document_selected n;
-    Lwd.set Vars.Multi_file.content_search_result_selected 0
+    Lwd.set Vars.index_of_document_selected n;
+    Lwd.set Vars.Multi_file.index_of_search_result_selected 0
 
   let reset_document_selected () =
-    Lwd.set Vars.document_selected 0;
-    Lwd.set Vars.Multi_file.content_search_result_selected 0
+    Lwd.set Vars.index_of_document_selected 0;
+    Lwd.set Vars.Multi_file.index_of_search_result_selected 0
 
-  let set_content_search_result_selected ~choice_count n =
+  let set_search_result_selected ~choice_count n =
     let n = bound_selection ~choice_count n in
-    Lwd.set Vars.Multi_file.content_search_result_selected n
+    Lwd.set Vars.Multi_file.index_of_search_result_selected n
 
-  let update_content_search_constraints () =
+  let update_search_constraints () =
     reset_document_selected ();
-    Lwd.set Vars.Multi_file.content_search_constraints
-      (Content_search_constraints.make
+    Lwd.set Vars.Multi_file.search_constraints
+      (Search_constraints.make
          ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
-         ~phrase:(fst @@ Lwd.peek Vars.Multi_file.content_search_field)
+         ~phrase:(fst @@ Lwd.peek Vars.Multi_file.search_field)
       )
 end
 
 module Single_file = struct
-  let set_content_search_result_selected ~choice_count n =
+  let set_search_result_selected ~choice_count n =
     let n = bound_selection ~choice_count n in
-    Lwd.set Vars.Single_file.content_search_result_selected n
+    Lwd.set Vars.Single_file.index_of_search_result_selected n
 
-  let reset_content_search_result_selected () =
-    Lwd.set Vars.Single_file.content_search_result_selected 0
+  let reset_search_result_selected () =
+    Lwd.set Vars.Single_file.index_of_search_result_selected 0
 
-  let update_content_search_constraints () =
-    Lwd.set Vars.Single_file.content_search_result_selected 0;
-    Lwd.set Vars.Single_file.content_search_constraints
-      (Content_search_constraints.make
+  let update_search_constraints () =
+    Lwd.set Vars.Single_file.index_of_search_result_selected 0;
+    Lwd.set Vars.Single_file.search_constraints
+      (Search_constraints.make
          ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
-         ~phrase:(fst @@ Lwd.peek Vars.Single_file.content_search_field)
+         ~phrase:(fst @@ Lwd.peek Vars.Single_file.search_field)
       )
 end
 
@@ -200,15 +211,15 @@ module Document_list = struct
              ~document_current_choice:i)
       )
       documents
-      (Lwd.get Vars.document_selected)
+      (Lwd.get Vars.index_of_document_selected)
 end
 
 module Content_view = struct
   let main =
-    Lwd.map2 ~f:(fun documents i ->
-        if Array.length documents = 0 then (
-          Nottui.Ui.empty
-        ) else (
+    Lwd.map ~f:(fun (ui_mode, document) ->
+      match document with
+      | None -> Nottui.Ui.empty
+      | Some document -> (
           let (_term_width, term_height) = Notty_unix.Term.size !Vars.term in
           let render_seq s =
             s
@@ -218,19 +229,19 @@ module Content_view = struct
             |> List.of_seq
             |> Nottui.Ui.vcat
           in
-          let doc = documents.(i) in
           let content =
-            Content_index.lines doc.content_index
+            Index.lines document.index
             |> render_seq
           in
           content
         )
       )
-      documents
-      (Lwd.get Vars.document_selected)
+    Lwd.(pair
+    (get Vars.ui_mode)
+      document_selected)
 end
 
-module Content_search_result_list = struct
+module Search_result_list = struct
   let mouse_handler
       ~choice_count
       ~current_choice
@@ -243,11 +254,11 @@ module Content_search_result_list = struct
     | `Scroll `Down -> (
         (match Lwd.peek Vars.ui_mode with
          | Ui_single_file ->
-           Single_file.set_content_search_result_selected
+           Single_file.set_search_result_selected
              ~choice_count
              (current_choice + 1)
          | Ui_multi_file ->
-           Multi_file.set_content_search_result_selected
+           Multi_file.set_search_result_selected
              ~choice_count
              (current_choice + 1)
         );
@@ -256,11 +267,11 @@ module Content_search_result_list = struct
     | `Scroll `Up -> (
         (match Lwd.peek Vars.ui_mode with
          | Ui_single_file ->
-           Single_file.set_content_search_result_selected
+           Single_file.set_search_result_selected
              ~choice_count
              (current_choice - 1)
          | Ui_multi_file ->
-           Multi_file.set_content_search_result_selected
+           Multi_file.set_search_result_selected
              ~choice_count
              (current_choice - 1)
         );
@@ -268,28 +279,61 @@ module Content_search_result_list = struct
       )
     | _ -> `Unhandled
 
+  type params = {
+    ui_mode : ui_mode;
+    document : Document.t;
+    result_selected : int;
+  }
+
+  let params : params option Lwd.t =
+    Lwd.map
+    ~f:(fun (ui_mode,
+    (document,
+    (mf_result_selected, sf_result_selected))) ->
+      match document with
+      | None -> None
+      | Some document ->
+      match ui_mode with
+      | Ui_single_file ->
+          Some
+          {
+            ui_mode;
+            document = Document.copy document;
+            result_selected = sf_result_selected;
+          }
+      | Ui_multi_file ->
+          Some
+          {
+            ui_mode;
+            document;
+            result_selected = mf_result_selected;
+          }
+    )
+      Lwd.(pair
+             (get Vars.ui_mode)
+             (pair
+                document_selected
+                   (pair
+                      (get Vars.Multi_file.index_of_search_result_selected)
+                      (get Vars.Single_file.index_of_search_result_selected))))
+
   let main =
-    Lwd.map ~f:(fun (ui_mode, (documents, (i, (mf_search_res_i, sf_search_res_i)))) ->
-        if Array.length documents = 0 then (
-          Nottui.Ui.empty
-        ) else (
-          let result_count =
-            Array.length documents.(i).content_search_results
-          in
+    Lwd.map ~f:(fun params ->
+      match params with
+      | None -> Nottui.Ui.empty
+      | Some { ui_mode; document; result_selected } -> (
+        let results = document.search_results in
+          let result_count = Array.length results in
           if result_count = 0 then (
             Nottui.Ui.empty
           ) else (
-            let search_res_i =
-              match ui_mode with
-              | Ui_multi_file -> mf_search_res_i
-              | Ui_single_file -> sf_search_res_i
-            in
             let (_term_width, term_height) = Notty_unix.Term.size !Vars.term in
             let images =
-              Render.content_search_results
-                ~start:search_res_i
-                ~end_exc:(min (search_res_i + term_height / 2) result_count)
-                documents.(i)
+              Render.search_results
+                ~start:result_selected
+                ~end_exc:(min (result_selected + term_height / 2) result_count)
+                document.index
+                results
             in
             let pane =
               images
@@ -303,19 +347,11 @@ module Content_search_result_list = struct
             |> Nottui.Ui.mouse_area
               (mouse_handler
                  ~choice_count:result_count
-                 ~current_choice:search_res_i)
+                 ~current_choice:result_selected)
           )
         )
       )
-      Lwd.(pair
-             (Lwd.get Vars.ui_mode)
-             (pair
-                documents
-                (pair
-                   (Lwd.get Vars.document_selected)
-                   (pair
-                      (Lwd.get Vars.Multi_file.content_search_result_selected)
-                      (Lwd.get Vars.Single_file.content_search_result_selected)))))
+    params
 end
 
 module Status_bar = struct
@@ -328,7 +364,11 @@ module Status_bar = struct
       |> Nottui.Ui.atom
     in
     let element_spacing = 4 in
-    let element_spacer = Notty.(I.string A.(bg bg_color ++ fg fg_color)) (String.make element_spacing ' ') in
+    let element_spacer =
+      Notty.(I.string
+      A.(bg bg_color ++ fg fg_color))
+      (String.make element_spacing ' ')
+    in
     let input_mode_strings =
       [ (Navigate, "NAVIGATE")
       ; (Search, "SEARCH")
@@ -355,21 +395,27 @@ module Status_bar = struct
        ~f:(fun (total_document_count,
                 (documents,
                  (ui_mode,
-                  (input_mode, document_selected)))) ->
+                  (input_mode, (index_of_document_selected, document_selected))))) ->
             let file_shown_count =
               Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
                 "%5d/%d documents listed"
                 (Array.length documents) total_document_count
             in
             let index_of_selected =
+              match document_selected with
+              | None -> Notty.I.void 0 0
+              | Some _ ->
               Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
                 "index of document selected: %d"
-                document_selected
+                index_of_document_selected
             in
             let path_of_selected =
+              match document_selected with
+              | None -> Notty.I.void 0 0
+              | Some document_selected ->
               Notty.I.strf ~attr:Notty.A.(bg bg_color ++ fg fg_color)
                 "document selected: %s"
-                (match documents.(document_selected).path with
+                (match document_selected.path with
                  | Some s -> s
                  | None -> "<stdin>")
             in
@@ -399,7 +445,9 @@ module Status_bar = struct
                   (get Vars.ui_mode)
                   (pair
                      (get Vars.input_mode)
-                     (get Vars.document_selected))))))
+                     (pair
+                       (get Vars.index_of_document_selected)
+                       document_selected))))))
     )
 end
 
@@ -531,10 +579,10 @@ module Key_binding_info = struct
 end
 
 module Search_bar = struct
-  let content_search_label_str = "Search:"
+  let search_label_str = "Search:"
 
   let label_strs =
-    [ content_search_label_str ]
+    [ search_label_str ]
 
   let max_label_len =
     List.fold_left (fun x s ->
@@ -554,9 +602,9 @@ module Search_bar = struct
         |> Nottui.Ui.atom
       ) (Lwd.get v)
 
-  let content_search_label =
+  let search_label =
     make_label_widget
-      ~s:content_search_label_str
+      ~s:search_label_str
       ~len:label_widget_len
       ~style_on_mode:Search
       Vars.input_mode
@@ -574,23 +622,23 @@ module Search_bar = struct
   let main =
     Nottui_widgets.hbox
       [
-        content_search_label;
+        search_label;
         make_search_field
-          ~edit_field:Vars.Multi_file.content_search_field
-          ~focus_handle:Vars.Multi_file.content_focus_handle
-          ~f:Multi_file.update_content_search_constraints;
+          ~edit_field:Vars.Multi_file.search_field
+          ~focus_handle:Vars.Multi_file.focus_handle
+          ~f:Multi_file.update_search_constraints;
       ]
 end
 
 let keyboard_handler
     ~document_choice_count
     ~document_current_choice
-    ~content_search_result_current_choice
+    ~search_result_current_choice
     (documents : Document.t array)
     (key : Nottui.Ui.key)
   =
-  let content_search_result_choice_count =
-    Array.length documents.(document_current_choice).content_search_results
+  let search_result_choice_count =
+    Array.length documents.(document_current_choice).search_results
   in
   match Lwd.peek Vars.input_mode with
   | Navigate -> (
@@ -628,43 +676,47 @@ let keyboard_handler
         )
       | ((`ASCII 'J', []), _)
       | ((`Arrow `Down, [`Shift]), _) -> (
-          Multi_file.set_content_search_result_selected
-            ~choice_count:content_search_result_choice_count
-            (content_search_result_current_choice+1);
+          Multi_file.set_search_result_selected
+            ~choice_count:search_result_choice_count
+            (search_result_current_choice+1);
           `Handled
         )
       | ((`ASCII 'j', []), Ui_single_file)
       | ((`Arrow `Down, []), Ui_single_file) -> (
-          Single_file.set_content_search_result_selected
-            ~choice_count:content_search_result_choice_count
-            (content_search_result_current_choice+1);
+          Single_file.set_search_result_selected
+            ~choice_count:search_result_choice_count
+            (search_result_current_choice+1);
           `Handled
         )
       | ((`ASCII 'K', []), _)
       | ((`Arrow `Up, [`Shift]), _) -> (
-          Multi_file.set_content_search_result_selected
-            ~choice_count:content_search_result_choice_count
-            (content_search_result_current_choice-1);
+          Multi_file.set_search_result_selected
+            ~choice_count:search_result_choice_count
+            (search_result_current_choice-1);
           `Handled
         )
       | ((`ASCII 'k', []), Ui_single_file)
       | ((`Arrow `Up, []), Ui_single_file) -> (
-          Single_file.set_content_search_result_selected
-            ~choice_count:content_search_result_choice_count
-            (content_search_result_current_choice-1);
+          Single_file.set_search_result_selected
+            ~choice_count:search_result_choice_count
+            (search_result_current_choice-1);
           `Handled
         )
-      | ((`ASCII '/', []), _) ->
-        Nottui.Focus.request Vars.Multi_file.content_focus_handle;
+      | ((`ASCII '/', []), Ui_single_file) ->
+        Nottui.Focus.request Vars.Single_file.focus_handle;
+        Lwd.set Vars.input_mode Search;
+        `Handled
+      | ((`ASCII '/', []), Ui_multi_file) ->
+        Nottui.Focus.request Vars.Multi_file.focus_handle;
         Lwd.set Vars.input_mode Search;
         `Handled
       | ((`ASCII 'x', []), Ui_single_file) ->
-        Lwd.set Vars.Single_file.content_search_field empty_search_field;
-        Single_file.update_content_search_constraints ();
+        Lwd.set Vars.Single_file.search_field empty_search_field;
+        Single_file.update_search_constraints ();
         `Handled
       | ((`ASCII 'x', []), Ui_multi_file) ->
-        Lwd.set Vars.Multi_file.content_search_field empty_search_field;
-        Multi_file.update_content_search_constraints ();
+        Lwd.set Vars.Multi_file.search_field empty_search_field;
+        Multi_file.update_search_constraints ();
         `Handled
       | ((`Enter, []), _) -> (
           match !Vars.document_src with

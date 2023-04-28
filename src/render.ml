@@ -6,22 +6,22 @@ let documents
   Array.iter (fun (doc : Document.t) ->
       let open Notty in
       let open Notty.Infix in
-      let content_search_result_score_image =
+      let search_result_score_image =
         if !Params.debug then
-          if Array.length doc.content_search_results = 0 then
+          if Array.length doc.search_results = 0 then
             I.empty
           else
-            let x = doc.content_search_results.(0) in
-            I.strf "(best content search result score: %f)" (Content_search_result.score x)
+            let x = doc.search_results.(0) in
+            I.strf "(best content search result score: %f)" (Search_result.score x)
         else
           I.empty
       in
       let preview_line_images =
         let line_count =
-          min Params.preview_line_count (Content_index.line_count doc.content_index)
+          min Params.preview_line_count (Index.line_count doc.index)
         in
         OSeq.(0 --^ line_count)
-        |> Seq.map (fun line_num -> Content_index.line_of_line_num line_num doc.content_index)
+        |> Seq.map (fun line_num -> Index.line_of_line_num line_num doc.index)
         |> Seq.map (fun line ->
             (I.string A.(bg lightgreen) " ")
             <|>
@@ -48,7 +48,7 @@ let documents
         (I.string A.empty "  "
          <|>
          I.vcat
-           [ content_search_result_score_image;
+           [ search_result_score_image;
              path_image;
              preview_image;
            ]
@@ -60,7 +60,7 @@ let documents
         (I.string A.empty "  "
          <|>
          I.vcat
-           [ content_search_result_score_image;
+           [ search_result_score_image;
              path_image;
              preview_image;
            ]
@@ -73,23 +73,24 @@ let documents
   let images_unselected = Array.of_list (List.rev !images_unselected) in
   (images_selected, images_unselected)
 
-let content_search_results
+let search_results
     ~start
     ~end_exc
-    (doc : Document.t)
+    (index : Index.t)
+    (results : Search_result.t array)
   : Notty.image array =
   let open Notty in
   let open Notty.Infix in
   try
-    let results = Array.sub
-        doc.content_search_results
+    let results =
+      Array.sub results
         start
         (end_exc - start)
     in
-    Array.map (fun (search_result : Content_search_result.t) ->
+    Array.map (fun (search_result : Search_result.t) ->
         let (relevant_start_line, relevant_end_inc_line) =
           List.fold_left (fun s_e (pos, _, _) ->
-              let (line_num, _) = Content_index.loc_of_pos pos doc.content_index in
+              let (line_num, _) = Index.loc_of_pos pos index in
               match s_e with
               | None -> Some (line_num, line_num)
               | Some (s, e) ->
@@ -104,7 +105,7 @@ let content_search_results
                 --
                 relevant_end_inc_line)
           |> Seq.map (fun line ->
-              Content_index.words_of_line_num line doc.content_index
+              Index.words_of_line_num line index
               |> Seq.map Misc_utils.sanitize_string_for_printing
               |> Seq.map (fun word -> I.string A.empty word)
               |> Array.of_seq
@@ -112,7 +113,7 @@ let content_search_results
           |> Array.of_seq
         in
         List.iter (fun (pos, _word_ci, word) ->
-            let (line_num, pos_in_line) = Content_index.loc_of_pos pos doc.content_index in
+            let (line_num, pos_in_line) = Index.loc_of_pos pos index in
             let word = Misc_utils.sanitize_string_for_printing word in
             word_image_grid.(line_num - relevant_start_line).(pos_in_line) <-
               I.string A.(fg black ++ bg lightyellow) word
@@ -134,7 +135,7 @@ let content_search_results
           |> I.vcat
         in
         if !Params.debug then
-          let score = Content_search_result.score search_result in
+          let score = Search_result.score search_result in
           I.strf "(score: %f)" score
           <->
           img

@@ -1,16 +1,24 @@
 type t = {
   path : string option;
   title : string option;
-  content_index : Content_index.t;
-  content_search_results : Content_search_result.t array;
+  index : Index.t;
+  search_results : Search_result.t array;
 }
 
 let make_empty () : t =
   {
     path = None;
     title = None;
-    content_index = Content_index.empty;
-    content_search_results = [||];
+    index = Index.empty;
+    search_results = [||];
+  }
+
+let copy (t : t) =
+  {
+    path = t.path;
+    title = t.title;
+    index = t.index;
+    search_results = Array.copy t.search_results;
   }
 
 module Parsers = struct
@@ -41,12 +49,12 @@ let parse (s : (int * string) Seq.t) : t =
           | Some title ->
             Seq.cons (0, title) s
         in
-        let content_index = Content_index.index s in
+        let index = Index.of_seq s in
         let empty = make_empty () in
         {
           empty with
           title;
-          content_index;
+          index;
         }
       )
     | Title -> (
@@ -74,10 +82,10 @@ let of_path path : (t, string) result =
   with
   | _ -> Error (Printf.sprintf "Failed to read file: %s" path)
 
-let content_search_results
-    (constraints : Content_search_constraints.t)
+let search_results
+    (constraints : Search_constraints.t)
     (t : t)
-  : Content_search_result.t Seq.t =
+  : Search_result.t Seq.t =
   let find_possible_combinations_within_range
       (word_dfa_pairs : (string * Spelll.automaton) list)
     : int list Seq.t
@@ -88,11 +96,11 @@ let content_search_results
       | (search_word, dfa) :: rest -> (
           let word_ci_and_positions_to_consider =
             match last_pos with
-            | None -> Content_index.word_ci_and_pos_s t.content_index
+            | None -> Index.word_ci_and_pos_s t.index
             | Some last_pos ->
               let start = last_pos - (!Params.max_word_search_range+1) in
               let end_inc = last_pos + (!Params.max_word_search_range+1) in
-              Content_index.word_ci_and_pos_s ~range_inc:(start, end_inc) t.content_index
+              Index.word_ci_and_pos_s ~range_inc:(start, end_inc) t.index
           in
           let search_word_ci =
             String.lowercase_ascii search_word
@@ -123,12 +131,12 @@ let content_search_results
          found_phrase = List.map
              (fun pos ->
                 let word_ci = 
-                  Content_index.word_ci_of_pos pos t.content_index
+                  Index.word_ci_of_pos pos t.index
                 in
                 let word =
-                  Content_index.word_of_pos pos t.content_index
+                  Index.word_of_pos pos t.index
                 in
                 (pos, word_ci, word)
              ) l;
-       } : Content_search_result.t)
+       } : Search_result.t)
     )

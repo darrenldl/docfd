@@ -156,12 +156,13 @@ let run
       );
       let renderer = Nottui.Renderer.make () in
       Lwd.set Ui.Vars.ui_mode init_ui_mode;
-      let right_pane () =
+      let right_pane =
         Nottui_widgets.v_pane
           Ui.Content_view.main
-          Ui.Content_search_result_list.main
+          Ui.Search_result_list.main
       in
-      let bottom_pane_components =
+      let bottom_pane =
+        Nottui_widgets.vbox
         [
           Ui.Status_bar.main;
           Ui.Key_binding_info.main ();
@@ -174,9 +175,9 @@ let run
             | Ui_multi_file ->
               Nottui_widgets.h_pane
                 Ui.Document_list.main
-                (right_pane ())
+                right_pane
             | Ui_single_file -> (
-                right_pane ()
+                right_pane
               )
           )
           (Lwd.get Ui.Vars.ui_mode)
@@ -187,14 +188,14 @@ let run
           ~f:(fun
                (pane,
                 (documents,
-                 (document_current_choice, content_search_result_current_choice))) ->
+                 (document_current_choice, search_result_current_choice))) ->
                let image_count = Array.length documents in
                pane
                |> Nottui.Ui.keyboard_area
                  (Ui.keyboard_handler
                     ~document_choice_count:image_count
                     ~document_current_choice
-                    ~content_search_result_current_choice
+                    ~search_result_current_choice
                     documents)
              )
           Lwd.(pair
@@ -202,14 +203,11 @@ let run
                  (pair
                     Ui.documents
                     (pair
-                       (Lwd.get Ui.Vars.document_selected)
-                       (Lwd.get Ui.Vars.Multi_file.content_search_result_selected))))
+                       (get Ui.Vars.index_of_document_selected)
+                       (get Ui.Vars.Multi_file.index_of_search_result_selected))))
       in
       let screen =
-        Nottui_widgets.vbox
-          (top_pane
-           ::
-           bottom_pane_components)
+        Nottui_widgets.vbox [ top_pane; bottom_pane ]
       in
       let rec loop () =
         Ui.Vars.file_to_open := None;

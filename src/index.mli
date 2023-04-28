@@ -2,7 +2,7 @@ type t
 
 val empty : t
 
-val index : (int * string) Seq.t -> t
+val of_seq : (int * string) Seq.t -> t
 
 val word_ci_of_pos : int -> t -> string
 
