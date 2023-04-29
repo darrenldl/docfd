@@ -1,113 +1,113 @@
 module Vars = struct
-let search_field = Lwd.var empty_search_field
+  let search_field = Lwd.var empty_search_field
 
-let focus_handle = Nottui.Focus.make ()
+  let focus_handle = Nottui.Focus.make ()
 
-let search_results : Search_result.t array Lwd.var = Lwd.var [||]
+  let search_results : Search_result.t array Lwd.var = Lwd.var [||]
 
-let search_result_selected : int Lwd.var = Lwd.var 0
+  let search_result_selected : int Lwd.var = Lwd.var 0
 
-let document : Document.t Lwd.var = Lwd.var (Document.make_empty ())
+  let document : Document.t Lwd.var = Lwd.var (Document.make_empty ())
 end
 
-  let set_search_result_selected ~choice_count n =
-    let n = Misc_utils.bound_selection ~choice_count n in
-    Lwd.set index_of_search_result_selected n
+let set_search_result_selected ~choice_count n =
+  let n = Misc_utils.bound_selection ~choice_count n in
+  Lwd.set index_of_search_result_selected n
 
-  let reset_search_result_selected () =
-    Lwd.set index_of_search_result_selected 0
+let reset_search_result_selected () =
+  Lwd.set index_of_search_result_selected 0
 
-  let update_search_constraints ~document () =
-    reset_search_result_selected ();
-    let search_constraints =
-      Search_constraints.make
-        ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
-        ~phrase:(fst @@ Lwd.peek Vars.Single_file.search_field)
-    in
-    let search_results = Document.search search_constraints document
-                  |> OSeq.take Params.search_result_limit
-                  |> Array.of_seq
-    in
-    Array.sort Search_result.compare search_results;
-    Lwd.set document { document with search_results }
+let update_search_constraints ~document () =
+  reset_search_result_selected ();
+  let search_constraints =
+    Search_constraints.make
+      ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
+      ~phrase:(fst @@ Lwd.peek Vars.Single_file.search_field)
+  in
+  let search_results = Document.search search_constraints document
+                       |> OSeq.take Params.search_result_limit
+                       |> Array.of_seq
+  in
+  Array.sort Search_result.compare search_results;
+  Lwd.set document { document with search_results }
 
 module Top_pane = struct
   let main
-  : Nottui.ui Lwd.t =
+    : Nottui.ui Lwd.t =
     Lwd.map ~f:(fun (document, search_result_selected) ->
-    Nottui_widgets.v_pane
-    [
-      Ui_base.Content_view.main ~document ~search_result_selected;
-      Ui_base.Search_result_list.main ~document ~search_result_selected;
-    ]
-    )
-    Lwd.(pair
-    document
-    search_result_selected)
+        Nottui_widgets.v_pane
+          [
+            Ui_base.Content_view.main ~document ~search_result_selected;
+            Ui_base.Search_result_list.main ~document ~search_result_selected;
+          ]
+      )
+      Lwd.(pair
+             document
+             search_result_selected)
 end
 
 module Bottom_pane = struct
   let status_bar ~(document : Document.t) =
     Lwd.map ~f:(fun input_mode ->
-      let path =
-        match document.path with
-        | None -> "<stdin>"
-        | Some s -> s
-      in
-    let content =
-      [
-        List.assoc input_mode Ui_base.Status_bar.input_mode_images;
-        Ui_base.Status_bar.element_spacer;
-        Notty.I.strf ~attr:Ui_base.Status_bar.attr
-        "document: %s" path;
-      ]
-    in
-    Nottui.Ui.join_z
-    (Ui_base.Status_bar.background_bar ())
-    content
-    )
-    (Lwd.get Ui_base.Vars.input_mode)
+        let path =
+          match document.path with
+          | None -> "<stdin>"
+          | Some s -> s
+        in
+        let content =
+          [
+            List.assoc input_mode Ui_base.Status_bar.input_mode_images;
+            Ui_base.Status_bar.element_spacer;
+            Notty.I.strf ~attr:Ui_base.Status_bar.attr
+              "document: %s" path;
+          ]
+        in
+        Nottui.Ui.join_z
+          (Ui_base.Status_bar.background_bar ())
+          content
+      )
+      (Lwd.get Ui_base.Vars.input_mode)
 
-    module Key_binding_info = struct
+  module Key_binding_info = struct
     let grid_contents : Ui_base.Key_binding_info.grid_contents =
       [
         (Navigate,
-            [
-        [
-          { key = "Enter"; msg = "open document" };
-          { key = "/"; msg = "switch to search mode" };
-          { key = "x"; msg = "clear search" };
-        ];
-              [
-                { key = "Tab";
-                  msg = "switch to multi file view" };
-                { key = "q"; msg = "exit" };
-              ];
-            ]
+         [
+           [
+             { key = "Enter"; msg = "open document" };
+             { key = "/"; msg = "switch to search mode" };
+             { key = "x"; msg = "clear search" };
+           ];
+           [
+             { key = "Tab";
+               msg = "switch to multi file view" };
+             { key = "q"; msg = "exit" };
+           ];
+         ]
         );
         (Search,
-        [
-          [
-            { key = "Enter"; msg = "confirm and exit search mode" };
-          ];
-          [
-            { key = ""; msg = "" };
-          ];
-        ]
+         [
+           [
+             { key = "Enter"; msg = "confirm and exit search mode" };
+           ];
+           [
+             { key = ""; msg = "" };
+           ];
+         ]
         );
       ]
 
     let main =
       Ui_base.Key_binding_info.main ~input_mode ~grid_contents
-    end
+  end
 
   let main
-  ~document
-  : Nottui.ui Lwd.t =
+      ~document
+    : Nottui.ui Lwd.t =
     Nottui_widgets.hbox
-    [
-      status_bar ~document;
-    ]
+      [
+        status_bar ~document;
+      ]
 end
 
 let keyboard_handler
@@ -126,7 +126,7 @@ let keyboard_handler
       | (`Tab, []) -> (
           (match !Vars.init_ui_mode with
            | Ui_multi_file ->
-               Lwd.set Vars.ui_mode Ui_multi_file
+             Lwd.set Vars.ui_mode Ui_multi_file
            | Ui_single_file -> ()
           );
           `Handled
@@ -173,11 +173,11 @@ let keyboard_handler
   | Search -> `Unhandled
 
 let main
-~document
-: Nottui.ui Lwd.t =
+    ~document
+  : Nottui.ui Lwd.t =
   Lwd.set Vars.document document;
   Nottui_widgets.hbox
-  [
-    Top_pane.main;
-    Bottom_pane.main ~document;
-  ]
+    [
+      Top_pane.main;
+      Bottom_pane.main ~document;
+    ]
