@@ -56,18 +56,24 @@ let color_word_image_grid
     )
     search_result.found_phrase
 
-let render_grid (grid : word_image_grid) : Notty.image =
+let render_grid ~display_line_num (grid : word_image_grid) : Notty.image =
   grid.data
   |> Array.to_list
   |> List.mapi (fun i words ->
       let words = Array.to_list words in
-      I.hcat
-        (
+      let content =
+        if display_line_num then (
           let displayed_line_num = grid.start_line + i + 1 in
-          I.strf ~attr:A.(fg lightyellow) "%d" displayed_line_num
-          :: I.strf ": "
-          :: words
+          (I.strf ~attr:A.(fg lightyellow) "%d" displayed_line_num
+           :: I.strf ": "
+           :: words)
+        ) else (
+          match words with
+          | [] -> [ I.void 0 1 ]
+          | _ -> words
         )
+      in
+      I.hcat content
     )
   |> I.vcat
 
@@ -76,22 +82,27 @@ let content_snippet
     ~(height : int)
     (index : Index.t)
   : Notty.image =
+  let max_line_num =
+    match Index.line_count index with
+    | 0 -> 0
+    | n -> n - 1
+  in
   match search_result with
   | None ->
     let grid =
       word_image_grid_of_index
         ~start_line:0
-        ~end_inc_line:height
+        ~end_inc_line:(min max_line_num height)
         index
     in
-    render_grid grid
+    render_grid ~display_line_num:false grid
   | Some search_result ->
     let (relevant_start_line, relevant_end_inc_line) =
       start_and_end_inc_line_of_search_result index search_result
     in
     let avg = (relevant_start_line + relevant_end_inc_line) / 2 in
-    let start_line = avg - height / 2 in
-    let end_inc_line = avg + height / 2 in
+    let start_line = max 0 (avg - height / 2) in
+    let end_inc_line = min max_line_num (avg + height) in
     let grid =
       word_image_grid_of_index
         ~start_line
@@ -99,7 +110,7 @@ let content_snippet
         index
     in
     color_word_image_grid grid index search_result;
-    render_grid grid
+    render_grid ~display_line_num:false grid
 
 let search_results
     ~start
@@ -128,7 +139,7 @@ let search_results
             index
         in
         color_word_image_grid grid index search_result;
-        let img = render_grid grid in
+        let img = render_grid ~display_line_num:true grid in
         if !Params.debug then
           let score = Search_result.score search_result in
           I.strf "(score: %f)" score
