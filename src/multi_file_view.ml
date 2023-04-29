@@ -132,7 +132,7 @@ module Top_pane = struct
           (Right_pane.main ~documents ~document_selected)
       )
       (Lwd.get Vars.index_of_document_selected)
-              |> Lwd.join
+    |> Lwd.join
 end
 
 module Bottom_pane = struct
@@ -142,11 +142,11 @@ end
 
 let main : Nottui.ui Lwd.t =
   Lwd.map ~f:(fun documents ->
-  Nottui_widgets.hbox
-    [
-      Top_pane.main ~documents;
-      Bottom_pane.main ~documents;
-    ]
-  )
-  documents
-              |> Lwd.join
+      Nottui_widgets.hbox
+        [
+          Top_pane.main ~documents;
+          Bottom_pane.main ~documents;
+        ]
+    )
+    documents
+  |> Lwd.join

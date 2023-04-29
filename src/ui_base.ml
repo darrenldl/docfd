@@ -278,17 +278,17 @@ module Key_binding_info = struct
       |> Nottui.Ui.atom
       |> Lwd.return
     in
-      List.map (fun (mode, grid_contents) ->
-          (mode,
-           grid_contents
-           |> List.map (fun l ->
-               List.map (key_msg_pair mode) l
-             )
-           |> Nottui_widgets.grid
-             ~pad:(Nottui.Gravity.make ~h:`Negative ~v:`Negative)
-          )
+    List.map (fun (mode, grid_contents) ->
+        (mode,
+         grid_contents
+         |> List.map (fun l ->
+             List.map (key_msg_pair mode) l
+           )
+         |> Nottui_widgets.grid
+           ~pad:(Nottui.Gravity.make ~h:`Negative ~v:`Negative)
         )
-        grid_contents
+      )
+      grid_contents
 
   let main ~(grid_lookup : grid_lookup) ~(input_mode : input_mode) =
     List.assoc input_mode grid_lookup
@@ -296,14 +296,14 @@ end
 
 module Search_bar = struct
   let search_label ~(input_mode : input_mode) =
-        let attr =
-          match input_mode with
-          | Search -> Notty.A.(st bold)
-          | _ -> Notty.A.empty
-        in
-(Notty.I.string attr "Search: ")
-          |> Nottui.Ui.atom
-          |> Lwd.return
+    let attr =
+      match input_mode with
+      | Search -> Notty.A.(st bold)
+      | _ -> Notty.A.empty
+    in
+    (Notty.I.string attr "Search: ")
+    |> Nottui.Ui.atom
+    |> Lwd.return
 
   let main
       ~input_mode

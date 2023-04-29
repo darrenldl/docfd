@@ -34,36 +34,36 @@ module Top_pane = struct
     : Nottui.ui Lwd.t =
     Lwd.map ~f:(fun (document, search_result_selected) ->
         Nottui_widgets.v_pane
-            (Ui_base.Content_view.main ~document ~search_result_selected)
-            (Ui_base.Search_result_list.main ~document ~search_result_selected)
+          (Ui_base.Content_view.main ~document ~search_result_selected)
+          (Ui_base.Search_result_list.main ~document ~search_result_selected)
       )
       Lwd.(pair
              (get Ui_base.Vars.document_selected)
              (get Vars.index_of_search_result_selected))
-      |> Lwd.join
+    |> Lwd.join
 end
 
 module Bottom_pane = struct
   let status_bar ~(document : Document.t) ~(input_mode : Ui_base.input_mode) =
-        let path =
-          match document.path with
-          | None -> "<stdin>"
-          | Some s -> s
-        in
-        let content =
-          Notty.I.hcat
-          [
-            List.assoc input_mode Ui_base.Status_bar.input_mode_images;
-            Ui_base.Status_bar.element_spacer;
-            Notty.I.strf ~attr:Ui_base.Status_bar.attr
-              "document: %s" path;
-          ]
-          |> Nottui.Ui.atom
-        in
-        Nottui.Ui.join_z
-          (Ui_base.Status_bar.background_bar ())
-          content
-          |> Lwd.return
+    let path =
+      match document.path with
+      | None -> "<stdin>"
+      | Some s -> s
+    in
+    let content =
+      Notty.I.hcat
+        [
+          List.assoc input_mode Ui_base.Status_bar.input_mode_images;
+          Ui_base.Status_bar.element_spacer;
+          Notty.I.strf ~attr:Ui_base.Status_bar.attr
+            "document: %s" path;
+        ]
+      |> Nottui.Ui.atom
+    in
+    Nottui.Ui.join_z
+      (Ui_base.Status_bar.background_bar ())
+      content
+    |> Lwd.return
 
   module Key_binding_info = struct
     let grid_contents : Ui_base.Key_binding_info.grid_contents =
@@ -100,8 +100,8 @@ module Bottom_pane = struct
       Ui_base.Key_binding_info.main ~grid_lookup ~input_mode
   end
 
-    let search_bar ~document ~input_mode =
-      Ui_base.Search_bar.main ~input_mode
+  let search_bar ~document ~input_mode =
+    Ui_base.Search_bar.main ~input_mode
       ~edit_field:Vars.search_field
       ~focus_handle:Vars.search_field_focus_handle
       ~f:(fun () -> update_search_constraints ~document)
@@ -109,16 +109,16 @@ module Bottom_pane = struct
   let main
       ~document
     : Nottui.ui Lwd.t =
-      Lwd.map ~f:(fun input_mode ->
-    Nottui_widgets.vbox
-      [
-        status_bar ~document ~input_mode;
-        Key_binding_info.main ~input_mode;
-        search_bar ~document ~input_mode;
-      ]
+    Lwd.map ~f:(fun input_mode ->
+        Nottui_widgets.vbox
+          [
+            status_bar ~document ~input_mode;
+            Key_binding_info.main ~input_mode;
+            search_bar ~document ~input_mode;
+          ]
       )
       (Lwd.get Ui_base.Vars.input_mode)
-          |> Lwd.join
+    |> Lwd.join
 end
 
 let keyboard_handler
@@ -191,13 +191,13 @@ let keyboard_handler
 
 let main
   : Nottui.ui Lwd.t =
-    Lwd.map ~f:(fun document ->
-  Nottui_widgets.vbox
-    [
-      Lwd.map ~f:(Nottui.Ui.keyboard_area keyboard_handler)
-       Top_pane.main;
-      Bottom_pane.main ~document;
-    ]
+  Lwd.map ~f:(fun document ->
+      Nottui_widgets.vbox
+        [
+          Lwd.map ~f:(Nottui.Ui.keyboard_area keyboard_handler)
+            Top_pane.main;
+          Bottom_pane.main ~document;
+        ]
     )
     (Lwd.get Ui_base.Vars.document_selected)
   |> Lwd.join

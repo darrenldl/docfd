@@ -157,10 +157,10 @@ let run
       let renderer = Nottui.Renderer.make () in
       Lwd.set Ui_base.Vars.ui_mode init_ui_mode;
       (* let right_pane =
-        Nottui_widgets.v_pane
+         Nottui_widgets.v_pane
           Ui_base.Content_view.main
           Ui_base.Search_result_list.main
-      in *)
+         in *)
       Lwd.set Ui_base.Vars.document_selected default_selected_document;
       let root : Nottui.ui Lwd.t =
         Lwd.map ~f:(fun (ui_mode : Ui_base.ui_mode) ->
@@ -169,7 +169,7 @@ let run
             | Ui_single_file -> Single_file_view.main
           )
           (Lwd.get Ui_base.Vars.ui_mode)
-            |> Lwd.join
+        |> Lwd.join
       in
       (* let bottom_pane =
          Nottui_widgets.vbox
