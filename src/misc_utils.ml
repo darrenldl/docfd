@@ -22,3 +22,6 @@ let sanitize_string_for_printing s =
         ' '
     )
     s
+
+let bound_selection ~choice_count (x : int) : int =
+  max 0 (min (choice_count - 1) x)
