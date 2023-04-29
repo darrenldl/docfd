@@ -35,11 +35,6 @@ module Vars = struct
 
     let search_field = Lwd.var empty_search_field
 
-    (* let search_constraints =
-       Lwd.var (Search_constraints.make
-                 ~fuzzy_max_edit_distance:0
-                 ~phrase:"") *)
-
     let focus_handle = Nottui.Focus.make ()
 
     let search_results : Search_result.t array Lwd.var = Lwd.var [||]
@@ -73,15 +68,19 @@ let documents =
     ~f:(fun all_documents search_constraints ->
         all_documents
         |> List.filter_map (fun doc ->
-            match Document.search search_constraints doc () with
-            | Seq.Nil -> None
-            | Seq.Cons _ as s ->
-              let search_results = (fun () -> s)
-                                   |> OSeq.take Params.search_result_limit
-                                   |> Array.of_seq
-              in
-              Array.sort Search_result.compare search_results;
-              Some { doc with search_results }
+            if Search_constraints.is_empty search_constraints then
+              Some doc
+            else (
+              match Document.search search_constraints doc () with
+              | Seq.Nil -> None
+              | Seq.Cons _ as s ->
+                let search_results = (fun () -> s)
+                                     |> OSeq.take Params.search_result_limit
+                                     |> Array.of_seq
+                in
+                Array.sort Search_result.compare search_results;
+                Some { doc with search_results }
+            )
           )
         |> (fun l ->
             if Search_constraints.is_empty search_constraints then
@@ -422,14 +421,19 @@ module Status_bar = struct
                   | None -> "<stdin>")
            in
            let content =
-             [ Some [ List.assoc input_mode input_mode_strings ]
-             ; Some [ element_spacer; file_shown_count ]
-             ; (match ui_mode with
+             [
+               Some [ List.assoc input_mode input_mode_strings ];
+               (match ui_mode with
+                | Ui_single_file -> None
+                | Ui_multi_file ->
+                  Some [ element_spacer; file_shown_count ]
+               );
+               (match ui_mode with
                 | Ui_single_file ->
                   Some [ element_spacer; path_of_selected ]
                 | Ui_multi_file ->
                   Some [ element_spacer; index_of_selected ]
-               )
+               );
              ]
              |> List.filter_map Fun.id
              |> List.flatten
@@ -632,21 +636,24 @@ module Search_bar = struct
         Nottui_widgets.hbox
           [
             search_label;
-            (match document with
-             | None -> Lwd.return Nottui.Ui.empty
-             | Some document -> (
-                 match ui_mode with
-                 | Ui_multi_file ->
-                   make_search_field
-                     ~edit_field:Vars.Multi_file.search_field
-                     ~focus_handle:Vars.Multi_file.focus_handle
-                     ~f:Multi_file.update_search_constraints
-                 | Ui_single_file ->
-                   make_search_field
-                     ~edit_field:Vars.Single_file.search_field
-                     ~focus_handle:Vars.Single_file.focus_handle
-                     ~f:(Single_file.update_search_constraints ~document)
-               )
+            (
+              match ui_mode with
+              | Ui_multi_file ->
+                make_search_field
+                  ~edit_field:Vars.Multi_file.search_field
+                  ~focus_handle:Vars.Multi_file.focus_handle
+                  ~f:Multi_file.update_search_constraints
+              | Ui_single_file -> (
+                  let f =
+                    match document with
+                    | None -> fun () -> ()
+                    | Some document -> Single_file.update_search_constraints ~document
+                  in
+                  make_search_field
+                    ~edit_field:Vars.Single_file.search_field
+                    ~focus_handle:Vars.Single_file.focus_handle
+                    ~f
+                )
             );
           ]
       )
@@ -692,14 +699,14 @@ let keyboard_handler
                    Option.iter
                      (fun document ->
                         Lwd.set
-                          Vars.Single_file.search_field
-                          (Lwd.peek Vars.Multi_file.search_field);
-                        Lwd.set
                           Vars.Single_file.search_results
                           (Array.copy document.Document.search_results);
                      )
                      document;
-                   Lwd.set Vars.ui_mode Ui_single_file
+                   Lwd.set
+                     Vars.Single_file.search_field
+                     (Lwd.peek Vars.Multi_file.search_field);
+                   Lwd.set Vars.ui_mode Ui_single_file;
                  )
                | Ui_single_file -> Lwd.set Vars.ui_mode Ui_multi_file
              )
