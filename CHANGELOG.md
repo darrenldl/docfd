@@ -2,6 +2,8 @@
 
 ## 0.7.0
 
+- Fixed indexing bug
+
 - Added UI mode switch
 
 - Adjusted status bar to show current file name in single file mode

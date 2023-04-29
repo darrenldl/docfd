@@ -44,7 +44,7 @@ let of_seq (s : (int * string) Seq.t) : t =
         Word_db.add word_ci
       in
       let pos_s = Option.value ~default:Int_set.empty
-          (String_map.find_opt word pos_s_of_word_ci)
+          (String_map.find_opt word_ci pos_s_of_word_ci)
                   |> Int_set.add pos
       in
       let start_end_inc_pos =
