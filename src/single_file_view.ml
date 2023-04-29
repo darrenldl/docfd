@@ -110,7 +110,7 @@ module Bottom_pane = struct
       ~document
     : Nottui.ui Lwd.t =
       Lwd.map ~f:(fun input_mode ->
-    Nottui_widgets.hbox
+    Nottui_widgets.vbox
       [
         status_bar ~document ~input_mode;
         Key_binding_info.main ~input_mode;
@@ -194,7 +194,8 @@ let main
     Lwd.map ~f:(fun document ->
   Nottui_widgets.vbox
     [
-      Top_pane.main;
+      Lwd.map ~f:(Nottui.Ui.keyboard_area keyboard_handler)
+       Top_pane.main;
       Bottom_pane.main ~document;
     ]
     )
