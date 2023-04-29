@@ -89,35 +89,34 @@ let run
   );
   let init_ui_mode, document_src =
     if not (stdin_is_atty ()) then
-      Ui.(Ui_single_file, Stdin)
+      Ui_base.(Ui_single_file, Stdin)
     else (
       match files with
       | [] -> Fmt.pr "Error: No files provided\n"; exit 1
       | [ f ] -> (
           if Sys.is_directory f then
-            Ui.(Ui_multi_file, Files (list_files_recursively f))
+            Ui_base.(Ui_multi_file, Files (list_files_recursively f))
           else
-            Ui.(Ui_single_file, Files [ f ])
+            Ui_base.(Ui_single_file, Files [ f ])
         )
       | _ -> (
-          Ui.(Ui_multi_file,
-              Files (
-                files
-                |> List.to_seq
-                |> Seq.flat_map (fun f ->
-                    if Sys.is_directory f then
-                      List.to_seq (list_files_recursively f)
-                    else
-                      Seq.return f
+          Ui_base.(Ui_multi_file,
+                   Files (
+                     files
+                     |> List.to_seq
+                     |> Seq.flat_map (fun f ->
+                         if Sys.is_directory f then
+                           List.to_seq (list_files_recursively f)
+                         else
+                           Seq.return f
+                       )
+                     |> List.of_seq
+                     |> List.sort_uniq String.compare
+                   )
                   )
-                |> List.of_seq
-                |> List.sort_uniq String.compare
-              )
-             )
         )
     )
   in
-  Ui.Vars.init_ui_mode := init_ui_mode;
   if !Params.debug then (
     Printf.printf "Scanning completed\n"
   );
@@ -144,33 +143,44 @@ let run
   in
   match all_documents with
   | [] -> Printf.printf "No suitable text files found\n"
-  | _ -> (
-      Lwd.set Ui.Vars.all_documents all_documents;
+  | default_selected_document :: _ -> (
+      Ui_base.Vars.init_ui_mode := init_ui_mode;
+      Ui_base.Vars.all_documents := all_documents;
       (match document_src with
        | Stdin ->
          let input =
            Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
          in
-         Ui.Vars.term := (Notty_unix.Term.create ~input ())
+         Ui_base.Vars.term := (Notty_unix.Term.create ~input ())
        | Files _ -> ()
       );
       let renderer = Nottui.Renderer.make () in
-      Lwd.set Ui.Vars.ui_mode init_ui_mode;
-      let right_pane =
+      Lwd.set Ui_base.Vars.ui_mode init_ui_mode;
+      (* let right_pane =
         Nottui_widgets.v_pane
-          Ui.Content_view.main
-          Ui.Search_result_list.main
+          Ui_base.Content_view.main
+          Ui_base.Search_result_list.main
+      in *)
+      Lwd.set Ui_base.Vars.document_selected default_selected_document;
+      let root : Nottui.ui Lwd.t =
+        Lwd.map ~f:(fun (ui_mode : Ui_base.ui_mode) ->
+            match ui_mode with
+            | Ui_multi_file -> Multi_file_view.main
+            | Ui_single_file -> Single_file_view.main
+          )
+          (Lwd.get Ui_base.Vars.ui_mode)
+            |> Lwd.join
       in
-      let bottom_pane =
-        Nottui_widgets.vbox
+      (* let bottom_pane =
+         Nottui_widgets.vbox
           [
             Ui.Status_bar.main;
             Ui.Key_binding_info.main ();
             Ui.Search_bar.main;
           ]
-      in
-      let top_pane_no_keyboard_control : Nottui.ui Lwd.t =
-        Lwd.map ~f:(fun ui_mode ->
+         in *)
+      (* let top_pane_no_keyboard_control : Nottui.ui Lwd.t =
+         Lwd.map ~f:(fun ui_mode ->
             match ui_mode with
             | Ui_multi_file ->
               Nottui_widgets.h_pane
@@ -181,10 +191,10 @@ let run
               )
           )
           (Lwd.get Ui.Vars.ui_mode)
-        |> Lwd.join
-      in
-      let top_pane =
-        Lwd.map
+         |> Lwd.join
+         in
+         let top_pane =
+         Lwd.map
           ~f:(fun
                (pane,
                 (documents, document_selected)) ->
@@ -200,19 +210,19 @@ let run
                  (pair
                     Ui.documents
                     Ui.document_selected))
-      in
-      let screen =
-        Nottui_widgets.vbox [ top_pane; bottom_pane ]
-      in
+         in *)
+      (* let screen =
+         Nottui_widgets.vbox [ top_pane; bottom_pane ]
+         in *)
       let rec loop () =
-        Ui.Vars.file_to_open := None;
-        Lwd.set Ui.Vars.quit false;
+        Ui_base.Vars.file_to_open := None;
+        Lwd.set Ui_base.Vars.quit false;
         Nottui.Ui_loop.run
-          ~term:!Ui.Vars.term
+          ~term:!Ui_base.Vars.term
           ~renderer
-          ~quit:Ui.Vars.quit
-          screen;
-        match !Ui.Vars.file_to_open with
+          ~quit:Ui_base.Vars.quit
+          root;
+        match !Ui_base.Vars.file_to_open with
         | None -> ()
         | Some doc ->
           match doc.path with

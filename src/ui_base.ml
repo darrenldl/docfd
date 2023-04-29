@@ -26,6 +26,12 @@ module Vars = struct
   let document_src : document_src ref = ref (Files [])
 
   let term : Notty_unix.Term.t ref = ref (Notty_unix.Term.create ())
+
+  let all_documents : Document.t list ref = ref []
+
+  let total_document_count : int ref = ref 0
+
+  let document_selected : Document.t Lwd.var = Lwd.var (Document.make_empty ())
 end
 
 let full_term_sized_background () =
@@ -51,7 +57,7 @@ module Content_view = struct
       Index.lines document.index
       |> render_seq
     in
-    content
+    Lwd.return content
 end
 
 let mouse_handler
@@ -65,11 +71,11 @@ let mouse_handler
   let n = Lwd.peek current_choice in
   match button with
   | `Scroll `Down -> (
-      Lwd.set current_choice (bound_selection ~choice_count (n + 1));
+      Lwd.set current_choice (Misc_utils.bound_selection ~choice_count (n + 1));
       `Handled
     )
   | `Scroll `Up -> (
-      Lwd.set current_choice (bound_selection ~choice_count (n - 1));
+      Lwd.set current_choice (Misc_utils.bound_selection ~choice_count (n - 1));
       `Handled
     )
   | _ -> `Unhandled
@@ -79,15 +85,16 @@ module Search_result_list = struct
       ~(document : Document.t)
       ~(search_result_selected : int)
     : Nottui.ui Lwd.t =
+    let search_results = document.search_results in
     let result_count = Array.length search_results in
     if result_count = 0 then (
-      Nottui.Ui.empty
+      Lwd.return Nottui.Ui.empty
     ) else (
       let (_term_width, term_height) = Notty_unix.Term.size !Vars.term in
       let images =
         Render.search_results
           ~start:search_result_selected
-          ~end_exc:(min (result_selected + term_height / 2) result_count)
+          ~end_exc:(min (search_result_selected + term_height / 2) result_count)
           document.index
           search_results
       in
@@ -99,11 +106,12 @@ module Search_result_list = struct
         |> Array.to_list
         |> Nottui.Ui.vcat
       in
-      Nottui.Ui.join_z (full_term_sized_background ()) pane
-      |> Nottui.Ui.mouse_area
-        (mouse_handler
-           ~choice_count:result_count
-           ~current_choice:result_selected)
+      Lwd.return
+        (Nottui.Ui.join_z (full_term_sized_background ()) pane)
+        (* |> Nottui.Ui.mouse_area
+           (mouse_handler
+             ~choice_count:result_count
+             ~current_choice:search_result_selected) *)
     )
 end
 
@@ -137,7 +145,7 @@ module Status_bar = struct
           max acc (String.length s)
         )
         0
-        input_mode_strings
+        l
     in
     let input_mode_string_background =
       Notty.I.char Notty.A.(bg bg_color) ' ' max_input_mode_string_len 1
@@ -148,6 +156,7 @@ module Status_bar = struct
       )
       l
 
+      (*
   let main
       ~(input_mode : input_mode Lwd.var)
     : Nottui.ui Lwd.t =
@@ -213,6 +222,7 @@ module Status_bar = struct
                     (pair
                        (get Vars.index_of_document_selected)
                        document_selected))))))
+                       *)
 end
 
 module Key_binding_info = struct
@@ -225,7 +235,9 @@ module Key_binding_info = struct
 
   type grid_contents = (input_mode * (key_msg_line list)) list
 
-  let main ~(grid_contents : grid_contents) ~(input_mode : input_mode Lwd.var) =
+  type grid_lookup = (input_mode * Nottui.ui Lwd.t) list
+
+  let make_grid_lookup grid_contents : grid_lookup =
     let max_key_msg_len_lookup =
       grid_contents
       |> List.map (fun (mode, grid) ->
@@ -266,41 +278,43 @@ module Key_binding_info = struct
       |> Nottui.Ui.atom
       |> Lwd.return
     in
-    let grid =
       List.map (fun (mode, grid_contents) ->
           (mode,
            grid_contents
            |> List.map (fun l ->
-               List.map (key_msg_pair modes) l
+               List.map (key_msg_pair mode) l
              )
            |> Nottui_widgets.grid
              ~pad:(Nottui.Gravity.make ~h:`Negative ~v:`Negative)
           )
         )
         grid_contents
-    in
-    let grid =
-      Lwd.map ~f:(fun input_mode ->
-          List.assoc input_mode grid)
-        (Lwd.get input_mode)
-    in
-    Lwd.join grid
+
+  let main ~(grid_lookup : grid_lookup) ~(input_mode : input_mode) =
+    List.assoc input_mode grid_lookup
 end
 
 module Search_bar = struct
-  let search_label ~(input_mode : input_mode Lwd.var) =
-    let attr =
-      match input_mode with
-      | Search -> A.(st bold)
-      | _ -> A.empty
-    in
-    Nottui.Ui.atom (Notty.I.string attr "Search: ")
+  let search_label ~(input_mode : input_mode) =
+        let attr =
+          match input_mode with
+          | Search -> Notty.A.(st bold)
+          | _ -> Notty.A.empty
+        in
+(Notty.I.string attr "Search: ")
+          |> Nottui.Ui.atom
+          |> Lwd.return
 
-  let main ~input_mode ~edit_field ~focus_handle ~f : Nottui.ui Lwd.t =
+  let main
+      ~input_mode
+      ~(edit_field : (string * int) Lwd.var)
+      ~focus_handle
+      ~f
+    : Nottui.ui Lwd.t =
     Nottui_widgets.hbox
       [
         search_label ~input_mode;
-        Nottui_widgets.edit_field (Lwd.peek edit_field)
+        Nottui_widgets.edit_field (Lwd.get edit_field)
           ~focus:focus_handle
           ~on_change:(fun (text, x) -> Lwd.set edit_field (text, x))
           ~on_submit:(fun _ ->
@@ -311,60 +325,7 @@ module Search_bar = struct
       ]
 end
 
-module Multi_file_view = struct
-  module Document_list = struct
-    let mouse_handler
-        documents
-        ~x ~y
-        (button : Notty.Unescape.button)
-      =
-      let _ = x in
-      let _ = y in
-      let choice_count = Array.length documents in
-      let current_choice =
-        Lwd.peek Vars.index_of_document_selected
-      in
-      match button with
-      | `Scroll `Down ->
-        Multi_file.set_document_selected
-          ~choice_count (current_choice+1);
-        `Handled
-      | `Scroll `Up ->
-        Multi_file.set_document_selected
-          ~choice_count (current_choice-1);
-        `Handled
-      | _ -> `Unhandled
-
-    let main ~documents =
-      Lwd.map ~f:(fun i ->
-          let image_count = Array.length documents in
-          let pane =
-            if Array.length documents = 0 then (
-              Nottui.Ui.empty
-            ) else (
-              let (images_selected, images_unselected) =
-                Render.documents documents
-              in
-              let (_term_width, term_height) = Notty_unix.Term.size !Vars.term in
-              CCInt.range' i (min (i + term_height / 2) image_count)
-              |> CCList.of_iter
-              |> List.map (fun j ->
-                  if Int.equal i j then
-                    images_selected.(j)
-                  else
-                    images_unselected.(j)
-                )
-              |> List.map Nottui.Ui.atom
-              |> Nottui.Ui.vcat
-            )
-          in
-          Nottui.Ui.join_z (full_term_sized_background ()) pane
-          |> Nottui.Ui.mouse_area (mouse_handler documents)
-        )
-        (Lwd.get Vars.index_of_document_selected)
-  end
-end
-
+(*
 let keyboard_handler
     ~document_choice_count
     (document : Document.t option)
@@ -496,4 +457,4 @@ let keyboard_handler
       | _ -> `Handled
     )
   | Search -> `Unhandled
-
+*)

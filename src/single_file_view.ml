@@ -1,72 +1,69 @@
 module Vars = struct
-  let search_field = Lwd.var empty_search_field
+  let search_field = Lwd.var Ui_base.empty_search_field
 
-  let focus_handle = Nottui.Focus.make ()
+  let search_field_focus_handle = Nottui.Focus.make ()
 
   let search_results : Search_result.t array Lwd.var = Lwd.var [||]
 
-  let search_result_selected : int Lwd.var = Lwd.var 0
-
-  let document : Document.t Lwd.var = Lwd.var (Document.make_empty ())
+  let index_of_search_result_selected : int Lwd.var = Lwd.var 0
 end
 
 let set_search_result_selected ~choice_count n =
   let n = Misc_utils.bound_selection ~choice_count n in
-  Lwd.set index_of_search_result_selected n
+  Lwd.set Vars.index_of_search_result_selected n
 
 let reset_search_result_selected () =
-  Lwd.set index_of_search_result_selected 0
+  Lwd.set Vars.index_of_search_result_selected 0
 
-let update_search_constraints ~document () =
+let update_search_constraints ~document =
   reset_search_result_selected ();
   let search_constraints =
     Search_constraints.make
       ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
-      ~phrase:(fst @@ Lwd.peek Vars.Single_file.search_field)
+      ~phrase:(fst @@ Lwd.peek Vars.search_field)
   in
   let search_results = Document.search search_constraints document
                        |> OSeq.take Params.search_result_limit
                        |> Array.of_seq
   in
   Array.sort Search_result.compare search_results;
-  Lwd.set document { document with search_results }
+  Lwd.set Ui_base.Vars.document_selected { document with search_results }
 
 module Top_pane = struct
   let main
     : Nottui.ui Lwd.t =
     Lwd.map ~f:(fun (document, search_result_selected) ->
         Nottui_widgets.v_pane
-          [
-            Ui_base.Content_view.main ~document ~search_result_selected;
-            Ui_base.Search_result_list.main ~document ~search_result_selected;
-          ]
+            (Ui_base.Content_view.main ~document ~search_result_selected)
+            (Ui_base.Search_result_list.main ~document ~search_result_selected)
       )
       Lwd.(pair
-             document
-             search_result_selected)
+             (get Ui_base.Vars.document_selected)
+             (get Vars.index_of_search_result_selected))
+      |> Lwd.join
 end
 
 module Bottom_pane = struct
-  let status_bar ~(document : Document.t) =
-    Lwd.map ~f:(fun input_mode ->
+  let status_bar ~(document : Document.t) ~(input_mode : Ui_base.input_mode) =
         let path =
           match document.path with
           | None -> "<stdin>"
           | Some s -> s
         in
         let content =
+          Notty.I.hcat
           [
             List.assoc input_mode Ui_base.Status_bar.input_mode_images;
             Ui_base.Status_bar.element_spacer;
             Notty.I.strf ~attr:Ui_base.Status_bar.attr
               "document: %s" path;
           ]
+          |> Nottui.Ui.atom
         in
         Nottui.Ui.join_z
           (Ui_base.Status_bar.background_bar ())
           content
-      )
-      (Lwd.get Ui_base.Vars.input_mode)
+          |> Lwd.return
 
   module Key_binding_info = struct
     let grid_contents : Ui_base.Key_binding_info.grid_contents =
@@ -97,36 +94,56 @@ module Bottom_pane = struct
         );
       ]
 
-    let main =
-      Ui_base.Key_binding_info.main ~input_mode ~grid_contents
+    let grid_lookup = Ui_base.Key_binding_info.make_grid_lookup grid_contents
+
+    let main ~input_mode =
+      Ui_base.Key_binding_info.main ~grid_lookup ~input_mode
   end
+
+    let search_bar ~document ~input_mode =
+      Ui_base.Search_bar.main ~input_mode
+      ~edit_field:Vars.search_field
+      ~focus_handle:Vars.search_field_focus_handle
+      ~f:(fun () -> update_search_constraints ~document)
 
   let main
       ~document
     : Nottui.ui Lwd.t =
+      Lwd.map ~f:(fun input_mode ->
     Nottui_widgets.hbox
       [
-        status_bar ~document;
+        status_bar ~document ~input_mode;
+        Key_binding_info.main ~input_mode;
+        search_bar ~document ~input_mode;
       ]
+      )
+      (Lwd.get Ui_base.Vars.input_mode)
+          |> Lwd.join
 end
 
 let keyboard_handler
     (key : Nottui.Ui.key)
   =
-  let document = Lwd.peek document in
+  let document = Lwd.peek Ui_base.Vars.document_selected in
+  let search_result_choice_count =
+    Array.length document.search_results
+  in
+  let search_result_current_choice =
+    Lwd.peek Vars.index_of_search_result_selected
+  in
   match Lwd.peek Ui_base.Vars.input_mode with
   | Navigate -> (
       match key with
       | (`Escape, [])
       | (`ASCII 'q', [])
       | (`ASCII 'C', [`Ctrl]) -> (
-          Lwd.set Vars.quit true;
+          Lwd.set Ui_base.Vars.quit true;
           `Handled
         )
       | (`Tab, []) -> (
-          (match !Vars.init_ui_mode with
+          (match !Ui_base.Vars.init_ui_mode with
            | Ui_multi_file ->
-             Lwd.set Vars.ui_mode Ui_multi_file
+             Lwd.set Ui_base.Vars.ui_mode Ui_multi_file
            | Ui_single_file -> ()
           );
           `Handled
@@ -136,35 +153,35 @@ let keyboard_handler
       | (`ASCII 'j', [])
       | (`Arrow `Down, []) -> (
           set_search_result_selected
-            ~choice_count:sf_search_result_choice_count
-            (sf_search_result_current_choice+1);
+            ~choice_count:search_result_choice_count
+            (search_result_current_choice+1);
           `Handled
         )
       | (`ASCII 'K', [])
       | (`Arrow `Up, [`Shift])
       | (`ASCII 'k', [])
       | (`Arrow `Up, []) -> (
-          Single_file.set_search_result_selected
-            ~choice_count:sf_search_result_choice_count
-            (sf_search_result_current_choice-1);
+          set_search_result_selected
+            ~choice_count:search_result_choice_count
+            (search_result_current_choice-1);
           `Handled
         )
       | (`ASCII '/', []) -> (
-          Nottui.Focus.request Vars.Single_file.focus_handle;
-          Lwd.set Vars.input_mode Search;
+          Nottui.Focus.request Vars.search_field_focus_handle;
+          Lwd.set Ui_base.Vars.input_mode Search;
           `Handled
         )
       | (`ASCII 'x', []) -> (
-          Lwd.set Vars.Single_file.search_field empty_search_field;
-          Single_file.update_search_constraints ~document:(Option.get document) ();
+          Lwd.set Vars.search_field Ui_base.empty_search_field;
+          update_search_constraints ~document;
           `Handled
         )
       | (`Enter, []) -> (
-          match !Vars.document_src with
+          match !Ui_base.Vars.document_src with
           | Stdin -> `Handled
           | Files _ -> (
-              Lwd.set Vars.quit true;
-              Vars.file_to_open := document;
+              Lwd.set Ui_base.Vars.quit true;
+              Ui_base.Vars.file_to_open := Some document;
               `Handled
             )
         )
@@ -173,11 +190,13 @@ let keyboard_handler
   | Search -> `Unhandled
 
 let main
-    ~document
   : Nottui.ui Lwd.t =
-  Lwd.set Vars.document document;
-  Nottui_widgets.hbox
+    Lwd.map ~f:(fun document ->
+  Nottui_widgets.vbox
     [
       Top_pane.main;
       Bottom_pane.main ~document;
     ]
+    )
+    (Lwd.get Ui_base.Vars.document_selected)
+  |> Lwd.join
