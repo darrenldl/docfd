@@ -32,6 +32,10 @@ module Vars = struct
   let total_document_count : int ref = ref 0
 
   let document_selected : Document.t Lwd.var = Lwd.var (Document.make_empty ())
+
+  module Single_file = struct
+    let index_of_search_result_selected = Lwd.var 0
+  end
 end
 
 let full_term_sized_background () =

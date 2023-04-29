@@ -4,16 +4,14 @@ module Vars = struct
   let search_field_focus_handle = Nottui.Focus.make ()
 
   let search_results : Search_result.t array Lwd.var = Lwd.var [||]
-
-  let index_of_search_result_selected : int Lwd.var = Lwd.var 0
 end
 
 let set_search_result_selected ~choice_count n =
   let n = Misc_utils.bound_selection ~choice_count n in
-  Lwd.set Vars.index_of_search_result_selected n
+  Lwd.set Ui_base.Vars.Single_file.index_of_search_result_selected n
 
 let reset_search_result_selected () =
-  Lwd.set Vars.index_of_search_result_selected 0
+  Lwd.set Ui_base.Vars.Single_file.index_of_search_result_selected 0
 
 let update_search_constraints ~document =
   reset_search_result_selected ();
@@ -39,7 +37,7 @@ module Top_pane = struct
       )
       Lwd.(pair
              (get Ui_base.Vars.document_selected)
-             (get Vars.index_of_search_result_selected))
+             (get Ui_base.Vars.Single_file.index_of_search_result_selected))
     |> Lwd.join
 end
 
@@ -129,7 +127,7 @@ let keyboard_handler
     Array.length document.search_results
   in
   let search_result_current_choice =
-    Lwd.peek Vars.index_of_search_result_selected
+    Lwd.peek Ui_base.Vars.Single_file.index_of_search_result_selected
   in
   match Lwd.peek Ui_base.Vars.input_mode with
   | Navigate -> (
