@@ -1,9 +1,5 @@
 module Vars = struct
-  let search_field = Lwd.var Ui_base.empty_search_field
-
   let search_field_focus_handle = Nottui.Focus.make ()
-
-  let search_results : Search_result.t array Lwd.var = Lwd.var [||]
 end
 
 let set_search_result_selected ~choice_count n =
@@ -18,7 +14,7 @@ let update_search_constraints ~document =
   let search_constraints =
     Search_constraints.make
       ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
-      ~phrase:(fst @@ Lwd.peek Vars.search_field)
+      ~phrase:(fst @@ Lwd.peek Ui_base.Vars.Single_file.search_field)
   in
   let search_results = Document.search search_constraints document
                        |> OSeq.take Params.search_result_limit
@@ -100,7 +96,7 @@ module Bottom_pane = struct
 
   let search_bar ~document ~input_mode =
     Ui_base.Search_bar.main ~input_mode
-      ~edit_field:Vars.search_field
+      ~edit_field:Ui_base.Vars.Single_file.search_field
       ~focus_handle:Vars.search_field_focus_handle
       ~f:(fun () -> update_search_constraints ~document)
 
@@ -170,7 +166,7 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'x', []) -> (
-          Lwd.set Vars.search_field Ui_base.empty_search_field;
+          Lwd.set Ui_base.Vars.Single_file.search_field Ui_base.empty_search_field;
           update_search_constraints ~document;
           `Handled
         )

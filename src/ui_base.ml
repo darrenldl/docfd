@@ -34,6 +34,8 @@ module Vars = struct
   let document_selected : Document.t Lwd.var = Lwd.var (Document.make_empty ())
 
   module Single_file = struct
+    let search_field = Lwd.var empty_search_field
+
     let index_of_search_result_selected = Lwd.var 0
   end
 end

@@ -340,6 +340,8 @@ let keyboard_handler
               Lwd.set Ui_base.Vars.document_selected document_selected;
               Lwd.set Ui_base.Vars.Single_file.index_of_search_result_selected
                 (Lwd.peek Vars.index_of_search_result_selected);
+              Lwd.set Ui_base.Vars.Single_file.search_field
+                (Lwd.peek Vars.search_field);
               Lwd.set Ui_base.Vars.ui_mode Ui_single_file;
             )
             document_selected;
