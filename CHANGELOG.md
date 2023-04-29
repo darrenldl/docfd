@@ -8,13 +8,9 @@
 
 - Adjusted status bar to show current file name in single file mode
 
-- Adjusted preview window to track search result
+- Adjusted content view to track search result
 
-- Added preview window to single file mode
-
-- Added 'r' key to refresh
-
-- Added auto refresh of document after opening through editor
+- Added content view to single file mode
 
 ## 0.6.3
 
