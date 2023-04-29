@@ -45,19 +45,20 @@ module Content_view = struct
       ~(search_result_selected : int)
     : Nottui.ui Lwd.t =
     let (_term_width, term_height) = Notty_unix.Term.size !Vars.term in
-    let render_seq s =
-      s
-      |> OSeq.take term_height
-      |> Seq.map Misc_utils.sanitize_string_for_printing
-      |> Seq.map (fun s -> Nottui.Ui.atom Notty.(I.string A.empty s))
-      |> List.of_seq
-      |> Nottui.Ui.vcat
+    let height = term_height / 2 in
+    let search_result =
+      if Array.length document.search_results = 0 then
+        None
+      else
+        Some document.search_results.(search_result_selected)
     in
     let content =
-      Index.lines document.index
-      |> render_seq
+      Content_and_search_result_render.content_snippet
+        ?search_result
+        ~height
+        document.index
     in
-    Lwd.return content
+    Lwd.return (Nottui.Ui.atom content)
 end
 
 let mouse_handler
@@ -92,7 +93,7 @@ module Search_result_list = struct
     ) else (
       let (_term_width, term_height) = Notty_unix.Term.size !Vars.term in
       let images =
-        Render.search_results
+        Content_and_search_result_render.search_results
           ~start:search_result_selected
           ~end_exc:(min (search_result_selected + term_height / 2) result_count)
           document.index
@@ -100,10 +101,9 @@ module Search_result_list = struct
       in
       let pane =
         images
-        |> Array.map (fun img ->
+        |> List.map (fun img ->
             Nottui.Ui.atom (Notty.I.(img <-> strf ""))
           )
-        |> Array.to_list
         |> Nottui.Ui.vcat
       in
       Lwd.return

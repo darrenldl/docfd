@@ -70,6 +70,81 @@ let documents =
 
 module Top_pane = struct
   module Document_list = struct
+    let render_document_previews
+        (documents : Document.t array)
+      : Notty.image array * Notty.image array =
+      let images_selected : Notty.image list ref = ref [] in
+      let images_unselected : Notty.image list ref = ref [] in
+      Array.iter (fun (doc : Document.t) ->
+          let open Notty in
+          let open Notty.Infix in
+          let search_result_score_image =
+            if !Params.debug then
+              if Array.length doc.search_results = 0 then
+                I.empty
+              else
+                let x = doc.search_results.(0) in
+                I.strf "(best content search result score: %f)" (Search_result.score x)
+            else
+              I.empty
+          in
+          let preview_line_images =
+            let line_count =
+              min Params.preview_line_count (Index.line_count doc.index)
+            in
+            OSeq.(0 --^ line_count)
+            |> Seq.map (fun line_num -> Index.line_of_line_num line_num doc.index)
+            |> Seq.map (fun line ->
+                (I.string A.(bg lightgreen) " ")
+                <|>
+                (I.strf " %s" (Misc_utils.sanitize_string_for_printing line))
+              )
+            |> List.of_seq
+          in
+          let preview_image =
+            I.vcat preview_line_images
+          in
+          let path_image =
+            I.string A.(fg lightgreen) "@ "
+            <|>
+            I.string A.empty
+              (Option.value ~default:Params.stdin_doc_path_placeholder doc.path);
+          in
+          let title =
+            Option.value ~default:"" doc.title
+            |> Misc_utils.sanitize_string_for_printing
+          in
+          let img_selected =
+            (I.string A.(fg lightblue ++ st bold) title)
+            <->
+            (I.string A.empty "  "
+             <|>
+             I.vcat
+               [ search_result_score_image;
+                 path_image;
+                 preview_image;
+               ]
+            )
+          in
+          let img_unselected =
+            (I.string A.(fg lightblue) title)
+            <->
+            (I.string A.empty "  "
+             <|>
+             I.vcat
+               [ search_result_score_image;
+                 path_image;
+                 preview_image;
+               ]
+            )
+          in
+          images_selected := img_selected :: !images_selected;
+          images_unselected := img_unselected :: !images_unselected
+        ) documents;
+      let images_selected = Array.of_list (List.rev !images_selected) in
+      let images_unselected = Array.of_list (List.rev !images_unselected) in
+      (images_selected, images_unselected)
+
     let main ~documents =
       let document_count = Array.length documents in
       Lwd.map ~f:(fun document_selected ->
@@ -78,7 +153,7 @@ module Top_pane = struct
               Nottui.Ui.empty
             ) else (
               let (images_selected, images_unselected) =
-                Render.documents documents
+                render_document_previews documents
               in
               let (_term_width, term_height) = Notty_unix.Term.size !Ui_base.Vars.term in
               CCInt.range'
@@ -159,7 +234,9 @@ module Bottom_pane = struct
             Notty.I.hcat
               [
                 List.assoc input_mode Ui_base.Status_bar.input_mode_images;
+                Ui_base.Status_bar.element_spacer;
                 file_shown_count;
+                Ui_base.Status_bar.element_spacer;
                 index_of_selected;
               ]
             |> Nottui.Ui.atom
