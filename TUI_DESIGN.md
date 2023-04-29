@@ -14,8 +14,6 @@ Root (RoCo: UI mode)
     - Status bar
     - Key binding info
     - Search bar
-      - Label
-      - Edit field
 
 - Multi file view (RoCo: documents)
   - Top pane (RoCo: index of document selected)
@@ -23,9 +21,7 @@ Root (RoCo: UI mode)
     - Right pane (RoCo: index of search result selected)
       - Content view
       - Search result list
-  - Bottom pane
-    - Status bar (RoCo: input mode, index of document selected)
-    - Key binding info (RoCo: input mode)
+  - Bottom pane (RoCo: input mode)
+    - Status bar (RoCo: index of document selected)
+    - Key binding info
     - Search bar
-      - Label (RoCo: input mode)
-      - Edit field

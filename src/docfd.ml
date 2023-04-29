@@ -146,6 +146,7 @@ let run
   | default_selected_document :: _ -> (
       Ui_base.Vars.init_ui_mode := init_ui_mode;
       Ui_base.Vars.all_documents := all_documents;
+      Ui_base.Vars.total_document_count := List.length all_documents;
       (match document_src with
        | Stdin ->
          let input =
