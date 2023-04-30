@@ -22,7 +22,7 @@ Statically linked binaries are available via
 command | docfd
 ```
 
-Docfd operates in **Single file mode**
+Docfd uses **Single file view**
 when source of document is piped stdin.
 
 Files specified as arguments to docfd are ignored
@@ -46,13 +46,12 @@ then Docfd defaults to scanning the
 current directory `.`.
 
 If exactly one file is specified
-in the list of paths, then Docfd operates
-in **Single file mode**.
-Otherwise, Docfd operates in **Multi file mode**.
+in the list of paths, then Docfd uses **Single file view**.
+Otherwise, Docfd uses **Multi file view**.
 
-## Multi file mode
+## Multi file view
 
-Searching `single` in repo root:
+Searching `single pipe stdn` in repo root:
 ![](screenshots/main0.png)
 
 Searching `[github]` in repo root:
@@ -70,20 +69,30 @@ Docfd operates in modes, the initial mode is `Navigation` mode.
 
 `Navigation` mode
 - Scroll down the document list
-  - `j` or down arrow
+  - `j`
+  - Down arrow
+  - Page down
   - Scroll down with mouse wheel when hovering above the area
 - Scroll up the document list
-  - `k` or up arrow
+  - `k`
+  - Up arrow
+  - Page up
   - Scroll up with mouse wheel when hovering above the area
 - Scroll down the content search result list
-  - `Shift`+`j` or `Shift`+Down arrow
+  - `Shift`+`j`
+  - `Shift`+Down arrow
+  - `Shift`+Page down
   - Scroll down with mouse wheel when hovering above the area
 - Scroll up the document list
-  - `Shift`+`k` or `Shift`+Up arrow
+  - `Shift`+`k`
+  - `Shift`+Up arrow
+  - `Shift`+Page up
   - Scroll up with mouse wheel when hovering above the area
 - Open document
   - `Enter`
     - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
+- Switch to single file view
+  - `Tab`
 - Switch to `Search` mode
   - `/`
 - Clear search phrase
@@ -92,16 +101,15 @@ Docfd operates in modes, the initial mode is `Navigation` mode.
   - `q` or `Ctrl+c`
 
 `Search` mode
-
 - Search field is active in this mode
 - `Enter` to confirm search phrase and exit search mode
 
-## Single file mode
+## Single file view
 
-If the specified path to Docfd is not a directory, then single file mode
+If the specified path to Docfd is not a directory, then single file view
 is used.
 
-Searching `is left` in `README.md`:
+Searching `single pipe stdn` in `README.md`:
 ![](screenshots/single-file0.png)
 
 Searching `[github]` in `README.md`:
@@ -111,7 +119,39 @@ In this mode, the TUI is divided into only two sections:
 - Top is ranked content search result list
 - Bottom is the search interface
 
-The controls are also simplified:
-- `j`, `k`, Up arrow and Down arrow can now be used to scroll the content search result
-  list without `Shift`.
+The controls are simplified in single file view,
+namely `Shift` is optional for scrolling through search result list.
+
+`Navigation` mode
+- Scroll down the content search result list
+  - `j`
+  - Down arrow
+  - Page down
+  - `Shift`+`j`
+  - `Shift`+Down arrow
+  - `Shift`+Page down
+  - Scroll down with mouse wheel when hovering above the area
+- Scroll up the document list
+  - `k`
+  - Up arrow
+  - Page up
+  - `Shift`+`k`
+  - `Shift`+Up arrow
+  - `Shift`+Page up
+  - Scroll up with mouse wheel when hovering above the area
+- Open document
+  - `Enter`
+    - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
+- Switch to multi file view
+  - `Tab`
+- Switch to `Search` mode
+  - `/`
+- Clear search phrase
+  - `x`
+- Exit Docfd
+  - `q` or `Ctrl+c`
+
+`Search` mode
+- Search field is active in this mode
+- `Enter` to confirm search phrase and exit search mode
 
