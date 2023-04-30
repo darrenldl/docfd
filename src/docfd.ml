@@ -152,8 +152,9 @@ let run
          let input =
            Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
          in
-         Ui_base.Vars.term := (Notty_unix.Term.create ~input ())
-       | Files _ -> ()
+         Ui_base.Vars.term := Some (Notty_unix.Term.create ~input ())
+       | Files _ ->
+         Ui_base.Vars.term := Some (Notty_unix.Term.create ())
       );
       let renderer = Nottui.Renderer.make () in
       Lwd.set Ui_base.Vars.ui_mode init_ui_mode;
@@ -219,7 +220,7 @@ let run
         Ui_base.Vars.file_to_open := None;
         Lwd.set Ui_base.Vars.quit false;
         Nottui.Ui_loop.run
-          ~term:!Ui_base.Vars.term
+          ~term:Ui_base.(get_term ())
           ~renderer
           ~quit:Ui_base.Vars.quit
           root;

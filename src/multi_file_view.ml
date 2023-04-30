@@ -155,7 +155,7 @@ module Top_pane = struct
               let (images_selected, images_unselected) =
                 render_document_previews documents
               in
-              let (_term_width, term_height) = Notty_unix.Term.size !Ui_base.Vars.term in
+              let (_term_width, term_height) = Notty_unix.Term.size (Ui_base.get_term ()) in
               CCInt.range'
                 document_selected
                 (min (document_selected + term_height / 2) document_count)
@@ -360,6 +360,7 @@ let keyboard_handler
             document_selected;
           `Handled
         )
+      | (`Page `Down, [`Shift])
       | (`ASCII 'J', [])
       | (`Arrow `Down, [`Shift]) -> (
           set_search_result_selected
@@ -367,6 +368,7 @@ let keyboard_handler
             (search_result_current_choice+1);
           `Handled
         )
+      | (`Page `Up, [`Shift])
       | (`ASCII 'K', [])
       | (`Arrow `Up, [`Shift]) -> (
           set_search_result_selected
@@ -374,6 +376,7 @@ let keyboard_handler
             (search_result_current_choice-1);
           `Handled
         )
+      | (`Page `Down, [])
       | (`ASCII 'j', [])
       | (`Arrow `Down, []) -> (
           set_document_selected
@@ -381,6 +384,7 @@ let keyboard_handler
             (document_current_choice+1);
           `Handled
         )
+      | (`Page `Up, [])
       | (`ASCII 'k', [])
       | (`Arrow `Up, []) -> (
           set_document_selected

@@ -160,6 +160,8 @@ let keyboard_handler
           );
           `Handled
         )
+      | (`Page `Down, [])
+      | (`Page `Down, [`Shift])
       | (`ASCII 'J', [])
       | (`Arrow `Down, [`Shift])
       | (`ASCII 'j', [])
@@ -169,6 +171,8 @@ let keyboard_handler
             (search_result_current_choice+1);
           `Handled
         )
+      | (`Page `Up, [])
+      | (`Page `Up, [`Shift])
       | (`ASCII 'K', [])
       | (`Arrow `Up, [`Shift])
       | (`ASCII 'k', [])

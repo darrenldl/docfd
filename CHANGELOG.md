@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.1
+
+- Delayed `Nottui_unix` term creation so pre TUI
+  printing like `--version` would work
+
+- Added back mouse handling
+
+- Added Page Up and Page Down keys support
+
 ## 0.7.0
 
 - Fixed indexing bug
