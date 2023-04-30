@@ -40,9 +40,9 @@ current directory `.`.
 If exactly one file is specified
 in the list of paths, then Docfd operates
 in **Single file mode**.
-Otherwise, Docfd operates in **Normal mode**.
+Otherwise, Docfd operates in **Multi file mode**.
 
-## Normal mode
+## Multi file mode
 
 Searching `is left` in repo root:
 ![](screenshots/main0.png)
