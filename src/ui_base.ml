@@ -232,53 +232,58 @@ module Status_bar = struct
 end
 
 module Key_binding_info = struct
-  type key_msg = {
-    key : string;
+  type label_msg = {
+    label : string;
     msg : string;
   }
 
-  type key_msg_line = key_msg list
+  type label_msg_line = label_msg list
 
-  type grid_contents = (input_mode * (key_msg_line list)) list
+  type grid_key = {
+    input_mode : input_mode;
+    init_ui_mode : ui_mode;
+  }
 
-  type grid_lookup = (input_mode * Nottui.ui Lwd.t) list
+  type grid_contents = (grid_key * (label_msg_line list)) list
+
+  type grid_lookup = (grid_key * Nottui.ui Lwd.t) list
 
   let make_grid_lookup grid_contents : grid_lookup =
-    let max_key_msg_len_lookup =
+    let max_label_msg_len_lookup =
       grid_contents
       |> List.map (fun (mode, grid) ->
-          let max_key_len, max_msg_len =
-            List.fold_left (fun (max_key_len, max_msg_len) row ->
-                List.fold_left (fun (max_key_len, max_msg_len) { key; msg } ->
-                    (max max_key_len (String.length key),
+          let max_label_len, max_msg_len =
+            List.fold_left (fun (max_label_len, max_msg_len) row ->
+                List.fold_left (fun (max_label_len, max_msg_len) { label; msg } ->
+                    (max max_label_len (String.length label),
                      max max_msg_len (String.length msg))
                   )
-                  (max_key_len, max_msg_len)
+                  (max_label_len, max_msg_len)
                   row
               )
               (0, 0)
               grid
           in
-          (mode, (max_key_len, max_msg_len))
+          (mode, (max_label_len, max_msg_len))
         )
     in
-    let key_msg_pair modes { key; msg } : Nottui.ui Lwd.t =
-      let (max_key_len, max_msg_len) =
-        List.assoc modes max_key_msg_len_lookup
+    let label_msg_pair modes { label; msg } : Nottui.ui Lwd.t =
+      let (max_label_len, max_msg_len) =
+        List.assoc modes max_label_msg_len_lookup
       in
-      let key_attr = Notty.A.(fg lightyellow ++ st bold) in
+      let label_attr = Notty.A.(fg lightyellow ++ st bold) in
       let msg_attr = Notty.A.empty in
       let msg = String.capitalize_ascii msg in
-      let key_background = Notty.I.void max_key_len 1 in
+      let label_background = Notty.I.void max_label_len 1 in
       let content = Notty.(I.hcat
-                             [ I.(string key_attr key </> key_background)
+                             [ I.(string label_attr label </> label_background)
                              ; I.string A.empty "  "
                              ; I.string msg_attr msg
                              ]
                           )
       in
       let full_background =
-        Notty.I.void (max_key_len + 2 + max_msg_len + 2) 1
+        Notty.I.void (max_label_len + 2 + max_msg_len + 2) 1
       in
       Notty.I.(content </> full_background)
       |> Nottui.Ui.atom
@@ -288,7 +293,7 @@ module Key_binding_info = struct
         (mode,
          grid_contents
          |> List.map (fun l ->
-             List.map (key_msg_pair mode) l
+             List.map (label_msg_pair mode) l
            )
          |> Nottui_widgets.grid
            ~pad:(Nottui.Gravity.make ~h:`Negative ~v:`Negative)
@@ -297,7 +302,7 @@ module Key_binding_info = struct
       grid_contents
 
   let main ~(grid_lookup : grid_lookup) ~(input_mode : input_mode) =
-    List.assoc input_mode grid_lookup
+    List.assoc { input_mode; init_ui_mode = !Vars.init_ui_mode } grid_lookup
 end
 
 module Search_bar = struct

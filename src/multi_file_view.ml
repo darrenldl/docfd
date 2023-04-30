@@ -248,30 +248,43 @@ module Bottom_pane = struct
 
   module Key_binding_info = struct
     let grid_contents : Ui_base.Key_binding_info.grid_contents =
+      let open Ui_base.Key_binding_info in
+      let navigate_grid =
+        [
+          [
+            { label = "Enter"; msg = "open document" };
+            { label = "/"; msg = "switch to search mode" };
+            { label = "x"; msg = "clear search" };
+          ];
+          [
+            { label = "Tab";
+              msg = "switch to single file view" };
+            { label = "q"; msg = "exit" };
+          ];
+        ]
+      in
+      let search_grid =
+        [
+          [
+            { label = "Enter"; msg = "confirm and exit search mode" };
+          ];
+          [
+            { label = ""; msg = "" };
+          ];
+        ]
+      in
       [
-        (Navigate,
-         [
-           [
-             { key = "Enter"; msg = "open document" };
-             { key = "/"; msg = "switch to search mode" };
-             { key = "x"; msg = "clear search" };
-           ];
-           [
-             { key = "Tab";
-               msg = "switch to single file view" };
-             { key = "q"; msg = "exit" };
-           ];
-         ]
+        ({ input_mode = Navigate; init_ui_mode = Ui_multi_file },
+         navigate_grid
         );
-        (Search,
-         [
-           [
-             { key = "Enter"; msg = "confirm and exit search mode" };
-           ];
-           [
-             { key = ""; msg = "" };
-           ];
-         ]
+        ({ input_mode = Navigate; init_ui_mode = Ui_single_file },
+         navigate_grid
+        );
+        ({ input_mode = Search; init_ui_mode = Ui_multi_file },
+         search_grid
+        );
+        ({ input_mode = Search; init_ui_mode = Ui_single_file },
+         search_grid
         );
       ]
 
