@@ -158,11 +158,6 @@ let run
       );
       let renderer = Nottui.Renderer.make () in
       Lwd.set Ui_base.Vars.ui_mode init_ui_mode;
-      (* let right_pane =
-         Nottui_widgets.v_pane
-          Ui_base.Content_view.main
-          Ui_base.Search_result_list.main
-         in *)
       Lwd.set Ui_base.Vars.document_selected default_selected_document;
       let root : Nottui.ui Lwd.t =
         Lwd.map ~f:(fun (ui_mode : Ui_base.ui_mode) ->
@@ -173,49 +168,6 @@ let run
           (Lwd.get Ui_base.Vars.ui_mode)
         |> Lwd.join
       in
-      (* let bottom_pane =
-         Nottui_widgets.vbox
-          [
-            Ui.Status_bar.main;
-            Ui.Key_binding_info.main ();
-            Ui.Search_bar.main;
-          ]
-         in *)
-      (* let top_pane_no_keyboard_control : Nottui.ui Lwd.t =
-         Lwd.map ~f:(fun ui_mode ->
-            match ui_mode with
-            | Ui_multi_file ->
-              Nottui_widgets.h_pane
-                Ui.Document_list.main
-                right_pane
-            | Ui_single_file -> (
-                right_pane
-              )
-          )
-          (Lwd.get Ui.Vars.ui_mode)
-         |> Lwd.join
-         in
-         let top_pane =
-         Lwd.map
-          ~f:(fun
-               (pane,
-                (documents, document_selected)) ->
-               let document_count = Array.length documents in
-               pane
-               |> Nottui.Ui.keyboard_area
-                 (Ui.keyboard_handler
-                    ~document_choice_count:document_count
-                    document_selected)
-             )
-          Lwd.(pair
-                 top_pane_no_keyboard_control
-                 (pair
-                    Ui.documents
-                    Ui.document_selected))
-         in *)
-      (* let screen =
-         Nottui_widgets.vbox [ top_pane; bottom_pane ]
-         in *)
       let rec loop () =
         Ui_base.Vars.file_to_open := None;
         Lwd.set Ui_base.Vars.quit false;

@@ -6,6 +6,14 @@ TUI fuzzy document finder
 Statically linked binaries are available via
 [GitHub releases](https://github.com/darrenldl/docfd/releases)
 
+## Features
+
+- Multiline fuzzy search of multiple files or a single file
+
+- Swap between multi file view and single file view on the fly
+
+- Clean interface with key binding info dynamically generated on screen
+
 ## Usage
 
 #### Read from piped stdin

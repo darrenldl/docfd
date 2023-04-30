@@ -43,7 +43,7 @@ module Bottom_pane = struct
   let status_bar ~(document : Document.t) ~(input_mode : Ui_base.input_mode) =
     let path =
       match document.path with
-      | None -> "<stdin>"
+      | None -> Params.stdin_doc_path_placeholder
       | Some s -> s
     in
     let content =
