@@ -191,7 +191,9 @@ module Top_pane = struct
             let document = documents.(document_selected) in
             Nottui_widgets.v_pane
               (Ui_base.Content_view.main ~document ~search_result_selected)
-              (Ui_base.Search_result_list.main ~document ~search_result_selected)
+              (Ui_base.Search_result_list.main
+                 ~document
+                 ~index_of_search_result_selected:Vars.index_of_search_result_selected)
           )
           (Lwd.get Vars.index_of_search_result_selected)
         |> Lwd.join

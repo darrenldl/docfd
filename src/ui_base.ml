@@ -93,8 +93,9 @@ let mouse_handler
 module Search_result_list = struct
   let main
       ~(document : Document.t)
-      ~(search_result_selected : int)
+      ~(index_of_search_result_selected : int Lwd.var)
     : Nottui.ui Lwd.t =
+    let search_result_selected = Lwd.peek index_of_search_result_selected in
     let search_results = document.search_results in
     let result_count = Array.length search_results in
     if result_count = 0 then (
@@ -115,12 +116,13 @@ module Search_result_list = struct
           )
         |> Nottui.Ui.vcat
       in
-      Lwd.return
-        (Nottui.Ui.join_z (full_term_sized_background ()) pane)
-        (* |> Nottui.Ui.mouse_area
-           (mouse_handler
-             ~choice_count:result_count
-             ~current_choice:search_result_selected) *)
+      Nottui.Ui.join_z (full_term_sized_background ()) pane
+      |> Nottui.Ui.mouse_area
+        (mouse_handler
+           ~choice_count:result_count
+           ~current_choice:index_of_search_result_selected
+        )
+      |> Lwd.return
     )
 end
 

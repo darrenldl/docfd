@@ -5,7 +5,7 @@
 - Delayed `Nottui_unix` term creation so pre TUI
   printing like `--version` would work
 
-- Added back mouse handling
+- Added back mouse scrolling support
 
 - Added Page Up and Page Down keys support
 

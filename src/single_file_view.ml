@@ -29,7 +29,9 @@ module Top_pane = struct
     Lwd.map ~f:(fun (document, search_result_selected) ->
         Nottui_widgets.v_pane
           (Ui_base.Content_view.main ~document ~search_result_selected)
-          (Ui_base.Search_result_list.main ~document ~search_result_selected)
+          (Ui_base.Search_result_list.main
+             ~document
+             ~index_of_search_result_selected:Ui_base.Vars.Single_file.index_of_search_result_selected)
       )
       Lwd.(pair
              (get Ui_base.Vars.document_selected)
