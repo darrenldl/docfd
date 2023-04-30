@@ -14,6 +14,8 @@ Statically linked binaries are available via
 
 - Clean interface with key binding info dynamically generated on screen
 
+- Content view pane that shows the snippet surrounding the search result selected
+
 ## Usage
 
 #### Read from piped stdin
@@ -59,9 +61,9 @@ Searching `[github]` in repo root:
 
 The default TUI is divided into four sections:
 - Left is the list of documents which satisfy the search constraints
-- Top right is the preview of the document
+- Top right is the content view of the document which tracks the search result selected
 - Bottom right is the ranked content search result list
-- Bottom is the search interface
+- Bottom pane consists of the status bar, key binding info, and search field
 
 ### Controls
 
