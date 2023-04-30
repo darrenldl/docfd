@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.3
+
+- Bumped the default word search range from 15 to 40
+
+  - Since spaces are also counted as words in the index,
+    15 doesn't actually give a lot of range
+
+- Added minor optimization to search
+
 ## 0.7.2
 
 - Code refactoring

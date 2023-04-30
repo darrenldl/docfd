@@ -108,6 +108,9 @@ let search
           let usable_positions =
             word_ci_and_positions_to_consider
             |> Seq.filter (fun (indexed_word, _pos_s) ->
+                not (String.for_all Parser_components.is_space indexed_word)
+              )
+            |> Seq.filter (fun (indexed_word, _pos_s) ->
                 String.equal search_word_ci indexed_word
                 || CCString.find ~sub:search_word_ci indexed_word >= 0
                 || (Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word search_word_ci.[0]

@@ -52,7 +52,7 @@ Otherwise, Docfd operates in **Multi file mode**.
 
 ## Multi file mode
 
-Searching `is left` in repo root:
+Searching `single` in repo root:
 ![](screenshots/main0.png)
 
 Searching `[github]` in repo root:
