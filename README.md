@@ -67,6 +67,10 @@ The default TUI is divided into four sections:
 
 ### Controls
 
+<details>
+
+<summary>Controls</summary>
+
 Docfd operates in modes, the initial mode is `Navigation` mode.
 
 `Navigation` mode
@@ -105,6 +109,8 @@ Docfd operates in modes, the initial mode is `Navigation` mode.
 `Search` mode
 - Search field is active in this mode
 - `Enter` to confirm search phrase and exit search mode
+
+</details>
 
 ## Single file view
 
