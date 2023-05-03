@@ -27,7 +27,7 @@ module Vars = struct
 
   let term : Notty_unix.Term.t option ref = ref None
 
-  let all_documents : Document.t list ref = ref []
+  let all_documents : (string option, Document.t) Hashtbl.t = Hashtbl.create 1000
 
   let total_document_count : int ref = ref 0
 

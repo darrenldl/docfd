@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.4
+
+- Added auto refresh on change of file
+
+- Added reload file via `r` key
+
 ## 0.7.3
 
 - Bumped the default word search range from 15 to 40

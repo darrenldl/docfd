@@ -37,34 +37,35 @@ let update_search_constraints () =
 let documents =
   Lwd.map
     ~f:(fun search_constraints ->
-        !Ui_base.Vars.all_documents
-        |> List.filter_map (fun doc ->
-            if Search_constraints.is_empty search_constraints then
-              Some doc
-            else (
-              match Document.search search_constraints doc () with
-              | Seq.Nil -> None
-              | Seq.Cons _ as s ->
-                let search_results =
-                  (fun () -> s)
-                  |> OSeq.take Params.search_result_limit
-                  |> Array.of_seq
-                in
-                Array.sort Search_result.compare search_results;
-                Some { doc with search_results }
+        let arr =
+          Ui_base.Vars.all_documents
+          |> Hashtbl.to_seq
+          |> Seq.filter_map (fun (_path, doc) ->
+              if Search_constraints.is_empty search_constraints then
+                Some doc
+              else (
+                match Document.search search_constraints doc () with
+                | Seq.Nil -> None
+                | Seq.Cons _ as s ->
+                  let search_results =
+                    (fun () -> s)
+                    |> OSeq.take Params.search_result_limit
+                    |> Array.of_seq
+                  in
+                  Array.sort Search_result.compare search_results;
+                  Some { doc with search_results }
+              )
             )
-          )
-        |> (fun l ->
-            if Search_constraints.is_empty search_constraints then
-              l
-            else
-              List.sort (fun (doc1 : Document.t) (doc2 : Document.t) ->
-                  Search_result.compare
-                    (doc1.search_results.(0))
-                    (doc2.search_results.(0))
-                ) l
-          )
-        |> Array.of_list
+          |> Array.of_seq
+        in
+        if not (Search_constraints.is_empty search_constraints) then (
+          Array.sort (fun (doc1 : Document.t) (doc2 : Document.t) ->
+              Search_result.compare
+                (doc1.search_results.(0))
+                (doc2.search_results.(0))
+            ) arr
+        );
+        arr
       )
     (Lwd.get Vars.search_constraints)
 
