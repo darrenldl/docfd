@@ -6,9 +6,11 @@ module Vars = struct
   let search_field = Lwd.var Ui_base.empty_search_field
 
   let search_constraints =
-    Lwd.var (Search_constraints.make
+    ref (Search_constraints.make
                ~fuzzy_max_edit_distance:0
                ~phrase:"")
+
+  let documents : Document.t array Lwd.var = Lwd.var [||]
 
   let search_field_focus_handle = Nottui.Focus.make ()
 end
@@ -26,19 +28,29 @@ let set_search_result_selected ~choice_count n =
   let n = Misc_utils.bound_selection ~choice_count n in
   Lwd.set Vars.index_of_search_result_selected n
 
-let update_search_constraints () =
-  reset_document_selected ();
-  Lwd.set Vars.search_constraints
-    (Search_constraints.make
-       ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
-       ~phrase:(fst @@ Lwd.peek Vars.search_field)
+let reload_document_selected () : unit =
+  let arr = Lwd.peek Vars.documents in
+  if Array.length arr > 0 then (
+    let index = Lwd.peek Vars.index_of_document_selected in
+    let doc = arr.(index) in
+    match doc.path with
+    | None -> ()
+    | Some path -> (
+        match Document.of_path path with
+        | Ok x -> (
+          let tbl = Lwd.peek Ui_base.Vars.all_documents in
+            Hashtbl.replace tbl (Some path) x;
+            Lwd.set Ui_base.Vars.all_documents tbl;
+            arr.(index) <- x;
+        )
+          | Error _ -> ()
+          )
     )
 
-let documents =
-  Lwd.map
-    ~f:(fun search_constraints ->
+let filter_documents () =
+  let search_constraints = !Vars.search_constraints in
         let arr =
-          Ui_base.Vars.all_documents
+          Lwd.peek Ui_base.Vars.all_documents
           |> Hashtbl.to_seq
           |> Seq.filter_map (fun (_path, doc) ->
               if Search_constraints.is_empty search_constraints then
@@ -65,9 +77,16 @@ let documents =
                 (doc2.search_results.(0))
             ) arr
         );
-        arr
-      )
-    (Lwd.get Vars.search_constraints)
+        Lwd.set Vars.documents arr
+
+let update_search_constraints () =
+  reset_document_selected ();
+  Vars.search_constraints :=
+    (Search_constraints.make
+       ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
+       ~phrase:(fst @@ Lwd.peek Vars.search_field)
+    );
+  filter_documents ()
 
 module Top_pane = struct
   module Document_list = struct
@@ -351,6 +370,10 @@ let keyboard_handler
           Lwd.set Ui_base.Vars.quit true;
           `Handled
         )
+      | (`ASCII 'r', []) -> (
+        reload_document_selected ();
+          `Handled
+        )
       | (`Tab, []) -> (
           Option.iter (fun document_selected ->
               Lwd.set Ui_base.Vars.document_selected document_selected;
@@ -422,6 +445,7 @@ let keyboard_handler
   | Search -> `Unhandled
 
 let main : Nottui.ui Lwd.t =
+  filter_documents ();
   Lwd.map ~f:(fun documents ->
       Nottui_widgets.vbox
         [
@@ -431,5 +455,5 @@ let main : Nottui.ui Lwd.t =
           Bottom_pane.main ~documents;
         ]
     )
-    documents
+    (Lwd.get Vars.documents)
   |> Lwd.join

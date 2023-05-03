@@ -27,9 +27,8 @@ module Vars = struct
 
   let term : Notty_unix.Term.t option ref = ref None
 
-  let all_documents : (string option, Document.t) Hashtbl.t = Hashtbl.create 1000
-
-  let total_document_count : int ref = ref 0
+  let all_documents : Document.t String_option_map.t Lwd.var =
+    Lwd.var String_option_map.empty
 
   let document_selected : Document.t Lwd.var = Lwd.var (Document.make_empty ())
 

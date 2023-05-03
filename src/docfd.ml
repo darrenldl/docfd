@@ -145,10 +145,12 @@ let run
   | [] -> Printf.printf "No suitable text files found\n"
   | default_selected_document :: _ -> (
       Ui_base.Vars.init_ui_mode := init_ui_mode;
+      let tbl = Lwd.peek Ui_base.Vars.all_documents in
       all_documents
       |> List.to_seq
       |> Seq.map (fun (doc : Document.t) -> (doc.path, doc))
-      |> Hashtbl.add_seq Ui_base.Vars.all_documents;
+      |> Hashtbl.add_seq tbl;
+      Lwd.set Ui_base.Vars.all_documents tbl;
       Ui_base.Vars.total_document_count := List.length all_documents;
       (match document_src with
        | Stdin ->

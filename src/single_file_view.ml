@@ -23,6 +23,19 @@ let update_search_constraints ~document =
   Array.sort Search_result.compare search_results;
   Lwd.set Ui_base.Vars.document_selected { document with search_results }
 
+let reload_document (doc : Document.t) : unit =
+  match doc.path with
+  | None -> ()
+  | Some path -> (
+      match Document.of_path path with
+      | Ok x -> (
+          let tbl = Lwd.peek Ui_base.Vars.all_documents in
+          Hashtbl.replace tbl (Some path) x;
+          Lwd.set Ui_base.Vars.document_selected x;
+        )
+      | Error _ -> ()
+    )
+
 module Top_pane = struct
   let main
     : Nottui.ui Lwd.t =
@@ -152,6 +165,10 @@ let keyboard_handler
       | (`ASCII 'q', [])
       | (`ASCII 'C', [`Ctrl]) -> (
           Lwd.set Ui_base.Vars.quit true;
+          `Handled
+        )
+      | (`ASCII 'r', []) -> (
+          reload_document document;
           `Handled
         )
       | (`Tab, []) -> (
