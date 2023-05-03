@@ -30,6 +30,8 @@ module Vars = struct
   let all_documents : Document.t String_option_map.t Lwd.var =
     Lwd.var String_option_map.empty
 
+  let total_document_count : int ref = ref 0
+
   let document_selected : Document.t Lwd.var = Lwd.var (Document.make_empty ())
 
   module Single_file = struct

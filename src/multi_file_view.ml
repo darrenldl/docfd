@@ -7,8 +7,8 @@ module Vars = struct
 
   let search_constraints =
     ref (Search_constraints.make
-               ~fuzzy_max_edit_distance:0
-               ~phrase:"")
+           ~fuzzy_max_edit_distance:0
+           ~phrase:"")
 
   let documents : Document.t array Lwd.var = Lwd.var [||]
 
@@ -38,46 +38,47 @@ let reload_document_selected () : unit =
     | Some path -> (
         match Document.of_path path with
         | Ok x -> (
-          let tbl = Lwd.peek Ui_base.Vars.all_documents in
-            Hashtbl.replace tbl (Some path) x;
-            Lwd.set Ui_base.Vars.all_documents tbl;
+            let m = Lwd.peek Ui_base.Vars.all_documents
+                    |> String_option_map.add (Some path) x
+            in
+            Lwd.set Ui_base.Vars.all_documents m;
             arr.(index) <- x;
-        )
-          | Error _ -> ()
           )
-    )
+        | Error _ -> ()
+      )
+  )
 
-let filter_documents () =
+let filter_documents ~all_documents =
   let search_constraints = !Vars.search_constraints in
-        let arr =
-          Lwd.peek Ui_base.Vars.all_documents
-          |> Hashtbl.to_seq
-          |> Seq.filter_map (fun (_path, doc) ->
-              if Search_constraints.is_empty search_constraints then
-                Some doc
-              else (
-                match Document.search search_constraints doc () with
-                | Seq.Nil -> None
-                | Seq.Cons _ as s ->
-                  let search_results =
-                    (fun () -> s)
-                    |> OSeq.take Params.search_result_limit
-                    |> Array.of_seq
-                  in
-                  Array.sort Search_result.compare search_results;
-                  Some { doc with search_results }
-              )
-            )
-          |> Array.of_seq
-        in
-        if not (Search_constraints.is_empty search_constraints) then (
-          Array.sort (fun (doc1 : Document.t) (doc2 : Document.t) ->
-              Search_result.compare
-                (doc1.search_results.(0))
-                (doc2.search_results.(0))
-            ) arr
-        );
-        Lwd.set Vars.documents arr
+  let arr =
+    all_documents
+    |> String_option_map.to_seq
+    |> Seq.filter_map (fun (_path, doc) ->
+        if Search_constraints.is_empty search_constraints then
+          Some doc
+        else (
+          match Document.search search_constraints doc () with
+          | Seq.Nil -> None
+          | Seq.Cons _ as s ->
+            let search_results =
+              (fun () -> s)
+              |> OSeq.take Params.search_result_limit
+              |> Array.of_seq
+            in
+            Array.sort Search_result.compare search_results;
+            Some { doc with search_results }
+        )
+      )
+    |> Array.of_seq
+  in
+  if not (Search_constraints.is_empty search_constraints) then (
+    Array.sort (fun (doc1 : Document.t) (doc2 : Document.t) ->
+        Search_result.compare
+          (doc1.search_results.(0))
+          (doc2.search_results.(0))
+      ) arr
+  );
+  Lwd.set Vars.documents arr
 
 let update_search_constraints () =
   reset_document_selected ();
@@ -86,7 +87,7 @@ let update_search_constraints () =
        ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
        ~phrase:(fst @@ Lwd.peek Vars.search_field)
     );
-  filter_documents ()
+  filter_documents ~all_documents:(Lwd.peek Ui_base.Vars.all_documents)
 
 module Top_pane = struct
   module Document_list = struct
@@ -371,7 +372,7 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'r', []) -> (
-        reload_document_selected ();
+          reload_document_selected ();
           `Handled
         )
       | (`Tab, []) -> (
@@ -445,15 +446,19 @@ let keyboard_handler
   | Search -> `Unhandled
 
 let main : Nottui.ui Lwd.t =
-  filter_documents ();
-  Lwd.map ~f:(fun documents ->
-      Nottui_widgets.vbox
-        [
-          Lwd.map
-            ~f:(Nottui.Ui.keyboard_area (keyboard_handler ~documents))
-            (Top_pane.main ~documents);
-          Bottom_pane.main ~documents;
-        ]
+  Lwd.map ~f:(fun all_documents ->
+      filter_documents ~all_documents;
+      Lwd.map ~f:(fun documents ->
+          Nottui_widgets.vbox
+            [
+              Lwd.map
+                ~f:(Nottui.Ui.keyboard_area (keyboard_handler ~documents))
+                (Top_pane.main ~documents);
+              Bottom_pane.main ~documents;
+            ]
+        )
+        (Lwd.get Vars.documents)
+      |> Lwd.join
     )
-    (Lwd.get Vars.documents)
+    (Lwd.get Ui_base.Vars.all_documents)
   |> Lwd.join

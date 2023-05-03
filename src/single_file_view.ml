@@ -29,8 +29,10 @@ let reload_document (doc : Document.t) : unit =
   | Some path -> (
       match Document.of_path path with
       | Ok x -> (
-          let tbl = Lwd.peek Ui_base.Vars.all_documents in
-          Hashtbl.replace tbl (Some path) x;
+          let m = Lwd.peek Ui_base.Vars.all_documents
+                  |> String_option_map.add (Some path) x
+          in
+          Lwd.set Ui_base.Vars.all_documents m;
           Lwd.set Ui_base.Vars.document_selected x;
         )
       | Error _ -> ()
