@@ -65,11 +65,9 @@ The default TUI is divided into four sections:
 - Bottom right is the ranked content search result list
 - Bottom pane consists of the status bar, key binding info, and search field
 
-### Controls
+#### Controls
 
 <details>
-
-<summary>Controls</summary>
 
 Docfd operates in modes, the initial mode is `Navigation` mode.
 
@@ -127,6 +125,10 @@ In this mode, the TUI is divided into only two sections:
 - Top is ranked content search result list
 - Bottom is the search interface
 
+#### Controls
+
+<details>
+
 The controls are simplified in single file view,
 namely `Shift` is optional for scrolling through search result list.
 
@@ -163,3 +165,4 @@ namely `Shift` is optional for scrolling through search result list.
 - Search field is active in this mode
 - `Enter` to confirm search phrase and exit search mode
 
+</details>
