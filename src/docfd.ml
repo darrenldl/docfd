@@ -198,7 +198,7 @@ let run
                 if Float.abs (new_stats.st_mtime -. old_stats.st_mtime) >= 0.000_001 then (
                   (match Lwd.peek Ui_base.Vars.ui_mode with
                    | Ui_single_file -> Single_file_view.reload_document doc
-                   | Ui_multi_file -> Multi_file_view.reload_document_selected ()
+                   | Ui_multi_file -> Multi_file_view.reload_document_selected ~skip_filter:true ()
                   );
                 );
                 loop ()

@@ -28,26 +28,6 @@ let set_search_result_selected ~choice_count n =
   let n = Misc_utils.bound_selection ~choice_count n in
   Lwd.set Vars.index_of_search_result_selected n
 
-let reload_document_selected () : unit =
-  let arr = Lwd.peek Vars.documents in
-  if Array.length arr > 0 then (
-    let index = Lwd.peek Vars.index_of_document_selected in
-    let doc = arr.(index) in
-    match doc.path with
-    | None -> ()
-    | Some path -> (
-        match Document.of_path path with
-        | Ok x -> (
-            let m = Lwd.peek Ui_base.Vars.all_documents
-                    |> String_option_map.add (Some path) x
-            in
-            Lwd.set Ui_base.Vars.all_documents m;
-            arr.(index) <- x;
-          )
-        | Error _ -> ()
-      )
-  )
-
 let filter_documents ~all_documents =
   let search_constraints = !Vars.search_constraints in
   let arr =
@@ -79,6 +59,28 @@ let filter_documents ~all_documents =
       ) arr
   );
   Lwd.set Vars.documents arr
+
+let reload_document_selected ~skip_filter () : unit =
+  let arr = Lwd.peek Vars.documents in
+  if Array.length arr > 0 then (
+    let index = Lwd.peek Vars.index_of_document_selected in
+    let doc = arr.(index) in
+    match doc.path with
+    | None -> ()
+    | Some path -> (
+        match Document.of_path path with
+        | Ok x -> (
+            let m = Lwd.peek Ui_base.Vars.all_documents
+                    |> String_option_map.add (Some path) x
+            in
+            Lwd.set Ui_base.Vars.all_documents m;
+            if not skip_filter then (
+              filter_documents ~all_documents:m
+            );
+          )
+        | Error _ -> ()
+      )
+  )
 
 let update_search_constraints () =
   reset_document_selected ();
@@ -373,7 +375,7 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'r', []) -> (
-          reload_document_selected ();
+          reload_document_selected ~skip_filter:false ();
           `Handled
         )
       | (`Tab, []) -> (
