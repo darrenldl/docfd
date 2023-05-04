@@ -192,7 +192,15 @@ let run
               Printf.printf "Error: Both env variables VISUAL and EDITOR are unset\n"; exit 1
             | Some editor, _
             | None, Some editor -> (
+                let old_stats = Unix.stat path in
                 Sys.command (Fmt.str "%s \'%s\'" editor path) |> ignore;
+                let new_stats = Unix.stat path in
+                if Float.abs (new_stats.st_mtime -. old_stats.st_mtime) >= 0.000_001 then (
+                  (match Lwd.peek Ui_base.Vars.ui_mode with
+                   | Ui_single_file -> Single_file_view.reload_document doc
+                   | Ui_multi_file -> Multi_file_view.reload_document_selected ()
+                  );
+                );
                 loop ()
               )
       in
