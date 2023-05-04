@@ -2,11 +2,13 @@
 
 ## 0.7.4
 
+- Fixed crashing and incorrect rendering in some cases of files with blank lines
+
+  - This is due to `Index.line_count` being incorrectly calculated
+
 - Added auto refresh on change of file
 
 - Added reload file via `r` key
-
-- Fixed crashing in some cases of files with blank lines
 
 ## 0.7.3
 
