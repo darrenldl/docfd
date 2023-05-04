@@ -8,6 +8,8 @@
 
 - Added auto refresh on change of file
 
+  - Change detection is based on file modification time
+
 - Added reload file via `r` key
 
 ## 0.7.3
