@@ -6,6 +6,8 @@
 
 - Added reload file via `r` key
 
+- Fixed crashing in some cases of files with blank lines
+
 ## 0.7.3
 
 - Bumped the default word search range from 15 to 40

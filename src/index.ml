@@ -4,6 +4,7 @@ type t = {
   start_end_inc_pos_of_line_num : (int * int) Int_map.t;
   word_ci_of_pos : int Int_map.t;
   word_of_pos : int Int_map.t;
+  line_count : int;
 }
 
 let empty : t = {
@@ -12,6 +13,7 @@ let empty : t = {
   start_end_inc_pos_of_line_num = Int_map.empty;
   word_ci_of_pos = Int_map.empty;
   word_of_pos = Int_map.empty;
+  line_count = 0;
 }
 
 let words_of_lines (s : (int * string) Seq.t) : (int * (int * int) * string) Seq.t =
@@ -24,6 +26,8 @@ let words_of_lines (s : (int * string) Seq.t) : (int * (int * int) * string) Seq
       (i, loc, s))
 
 let of_seq (s : (int * string) Seq.t) : t =
+  let line_count = Seq.length s in
+  let t = { empty with line_count } in
   s
   |> words_of_lines
   |> Seq.fold_left
@@ -33,6 +37,7 @@ let of_seq (s : (int * string) Seq.t) : t =
         start_end_inc_pos_of_line_num;
         word_ci_of_pos;
         word_of_pos;
+        line_count;
       }
       (pos, loc, word) ->
       let (line_num, _) = loc in
@@ -58,9 +63,10 @@ let of_seq (s : (int * string) Seq.t) : t =
           Int_map.add line_num start_end_inc_pos start_end_inc_pos_of_line_num;
         word_ci_of_pos = Int_map.add pos index_of_word_ci word_ci_of_pos;
         word_of_pos = Int_map.add pos index_of_word word_of_pos;
+        line_count;
       }
     )
-    empty
+    t
 
 let word_ci_of_pos pos t =
   Word_db.word_of_index
@@ -118,9 +124,7 @@ let loc_of_pos pos t : (int * int) =
   Int_map.find pos t.loc_of_pos
 
 let line_count t : int =
-  match Int_map.max_binding_opt t.start_end_inc_pos_of_line_num with
-  | None -> 0
-  | Some (x, _) -> x
+  t.line_count
 
 let lines t =
   OSeq.(0 --^ line_count t)
