@@ -282,6 +282,7 @@ module Bottom_pane = struct
           [
             { label = "Tab";
               msg = "switch to single file view" };
+            { label = "r"; msg = "reload document selected" };
             { label = "q"; msg = "exit" };
           ];
         ]

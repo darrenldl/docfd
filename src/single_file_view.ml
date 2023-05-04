@@ -103,6 +103,7 @@ module Bottom_pane = struct
            [
              { label = "Tab";
                msg = "switch to multi file view" };
+             { label = "r"; msg = "reload" };
              { label = "q"; msg = "exit" };
            ];
          ]
@@ -111,6 +112,7 @@ module Bottom_pane = struct
          [
            navigate_line0;
            [
+             { label = "r"; msg = "reload" };
              { label = "q"; msg = "exit" };
            ];
          ]
