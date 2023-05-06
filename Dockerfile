@@ -1,4 +1,4 @@
-FROM docker.io/ocaml/opam:alpine-ocaml-4.14
+FROM docker.io/ocaml/opam:alpine-ocaml-5.1
 USER root
 RUN opam init --disable-sandboxing
 RUN opam install dune containers fmt
@@ -9,3 +9,4 @@ RUN opam install spelll
 RUN opam install notty
 RUN opam install oseq
 RUN opam install nottui
+RUN opam install eio
