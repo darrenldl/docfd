@@ -71,9 +71,9 @@ let of_in_channel ic : t =
   parse (CCIO.read_lines_seq ic)
 
 let of_path ~(env : Eio.Stdenv.t) path : (t, string) result =
-  let cwd = Eio.Stdenv.cwd env in
+  let fs = Eio.Stdenv.fs env in
   try
-    Eio.Path.(with_lines (cwd / path))
+    Eio.Path.(with_lines (fs / path))
       (fun lines ->
          let document = parse lines in
          Ok { document with path = Some path }
