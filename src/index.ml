@@ -7,6 +7,10 @@ type t = {
   line_count : int;
 }
 
+type double_indexed_word = int * (int * int) * string
+
+type chunk = double_indexed_word array
+
 let empty : t = {
   pos_s_of_word_ci = String_map.empty;
   loc_of_pos = Int_map.empty;
@@ -16,7 +20,32 @@ let empty : t = {
   line_count = 0;
 }
 
-let words_of_lines (s : (int * string) Seq.t) : (int * (int * int) * string) Seq.t =
+let union (x : t) (y : t) =
+  {
+    pos_s_of_word_ci =
+      String_map.union (fun _k s0 s1 -> Some (Int_set.union s0 s1))
+        x.pos_s_of_word_ci
+        y.pos_s_of_word_ci;
+    loc_of_pos =
+      Int_map.union (fun _k x _ -> Some x)
+        x.loc_of_pos
+        y.loc_of_pos;
+    start_end_inc_pos_of_line_num =
+      Int_map.union (fun _k x _ -> Some x)
+        x.start_end_inc_pos_of_line_num
+        y.start_end_inc_pos_of_line_num;
+    word_ci_of_pos =
+      Int_map.union (fun _k x _ -> Some x)
+        x.word_ci_of_pos
+        y.word_ci_of_pos;
+    word_of_pos =
+      Int_map.union (fun _k x _ -> Some x)
+        x.word_of_pos
+        y.word_of_pos;
+    line_count = max x.line_count y.line_count;
+  }
+
+let words_of_lines (s : (int * string) Seq.t) : double_indexed_word Seq.t =
   s
   |> Seq.flat_map (fun (line_num, s) ->
       Tokenize.f_with_pos ~drop_spaces:false s
@@ -25,12 +54,8 @@ let words_of_lines (s : (int * string) Seq.t) : (int * (int * int) * string) Seq
   |> Seq.mapi (fun i (loc, s) ->
       (i, loc, s))
 
-let of_seq (s : (int * string) Seq.t) : t =
-  let line_count = Seq.length s in
-  let t = { empty with line_count } in
-  s
-  |> words_of_lines
-  |> Seq.fold_left
+let of_chunk (arr : chunk) : t =
+  Array.fold_left
     (fun
       { pos_s_of_word_ci;
         loc_of_pos;
@@ -66,7 +91,29 @@ let of_seq (s : (int * string) Seq.t) : t =
         line_count;
       }
     )
-    t
+    empty
+    arr
+
+let chunks_of_words (s : double_indexed_word Seq.t) : chunk Seq.t =
+  OSeq.chunks 5000 s
+
+let of_seq (s : (int * string) Seq.t) : t =
+  let lines = Array.of_seq s in
+  let line_count = Array.length lines in
+  let indices =
+    lines
+    |> Array.to_seq
+    |> words_of_lines
+    |> chunks_of_words
+    |> List.of_seq
+    |> Eio.Fiber.List.map (fun chunk ->
+        Worker_pool.run (fun () -> of_chunk chunk))
+  in
+  List.fold_left (fun acc index ->
+      union acc index
+    )
+    { empty with line_count }
+    indices
 
 let word_ci_of_pos pos t =
   Word_db.word_of_index

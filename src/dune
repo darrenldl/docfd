@@ -11,5 +11,8 @@
             notty.unix
             nottui
             oseq
+            eio
+            eio_main
+            domainslib
  )
 )

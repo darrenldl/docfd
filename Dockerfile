@@ -10,3 +10,6 @@ RUN opam install notty
 RUN opam install oseq
 RUN opam install nottui
 RUN opam install eio
+RUN apk add linux-headers
+RUN opam install eio_main
+RUN opam install domainslib

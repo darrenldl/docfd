@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.0
+
+- Added multicore support for indexing and searching
+
 ## 0.7.4
 
 - Fixed crashing and incorrect rendering in some cases of files with blank lines

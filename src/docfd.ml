@@ -67,6 +67,8 @@ let list_files_recursively (dir : string) : string list =
   !l
 
 let run
+    (env : Eio.Stdenv.t)
+    (sw : Eio.Switch.t)
     (debug : bool)
     (max_depth : int)
     (max_fuzzy_edit_distance : int)
@@ -209,15 +211,19 @@ let run
 
 let files_arg = Arg.(value & pos_all string [ "." ] & info [])
 
-let cmd =
+let cmd env sw =
   let doc = "TUI fuzzy document finder" in
   let version = Version_string.s in
   Cmd.v (Cmd.info "docfd" ~version ~doc)
-    Term.(const run
+    Term.(const (run env sw)
           $ debug_arg
           $ max_depth_arg
           $ max_fuzzy_edit_distance_arg
           $ max_word_search_range_arg
           $ files_arg)
 
-let () = exit (Cmd.eval cmd)
+let () = Eio_main.run (fun env ->
+    Eio.Switch.run (fun sw ->
+        exit (Cmd.eval (cmd env sw))
+      )
+  )
