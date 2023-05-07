@@ -17,6 +17,8 @@ module Vars = struct
 
   let file_to_open : Document.t option ref = ref None
 
+  let eio_env : Eio.Stdenv.t option ref = ref None
+
   let input_mode : input_mode Lwd.var = Lwd.var Navigate
 
   let init_ui_mode : ui_mode ref = ref Ui_multi_file
@@ -41,11 +43,14 @@ module Vars = struct
   end
 end
 
-let get_term () =
+let eio_env () =
+  Option.get !Vars.eio_env
+
+let term () =
   Option.get !Vars.term
 
 let full_term_sized_background () =
-  let (term_width, term_height) = Notty_unix.Term.size (get_term ()) in
+  let (term_width, term_height) = Notty_unix.Term.size (term ()) in
   Notty.I.void term_width term_height
   |> Nottui.Ui.atom
 
@@ -54,7 +59,7 @@ module Content_view = struct
       ~(document : Document.t)
       ~(search_result_selected : int)
     : Nottui.ui Lwd.t =
-    let (_term_width, term_height) = Notty_unix.Term.size (get_term ()) in
+    let (_term_width, term_height) = Notty_unix.Term.size (term ()) in
     let height = term_height / 2 in
     let search_result =
       if Array.length document.search_results = 0 then
@@ -102,7 +107,7 @@ module Search_result_list = struct
     if result_count = 0 then (
       Lwd.return Nottui.Ui.empty
     ) else (
-      let (_term_width, term_height) = Notty_unix.Term.size (get_term ()) in
+      let (_term_width, term_height) = Notty_unix.Term.size (term ()) in
       let images =
         Content_and_search_result_render.search_results
           ~start:search_result_selected
@@ -135,7 +140,7 @@ module Status_bar = struct
   let attr = Notty.A.(bg bg_color ++ fg fg_color)
 
   let background_bar () =
-    let (term_width, _term_height) = Notty_unix.Term.size (get_term ()) in
+    let (term_width, _term_height) = Notty_unix.Term.size (term ()) in
     Notty.I.char Notty.A.(bg bg_color) ' ' term_width 1
     |> Nottui.Ui.atom
 

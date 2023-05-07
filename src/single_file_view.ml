@@ -27,7 +27,7 @@ let reload_document (doc : Document.t) : unit =
   match doc.path with
   | None -> ()
   | Some path -> (
-      match Document.of_path path with
+      match Document.of_path ~env:(Ui_base.eio_env ()) path with
       | Ok x -> (
           let m = Lwd.peek Ui_base.Vars.all_documents
                   |> String_option_map.add (Some path) x

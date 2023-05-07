@@ -39,7 +39,7 @@ type work_stage =
   | Title
   | Content
 
-let parse (s : (int * string) Seq.t) : t =
+let parse (s : string Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
     | Content -> (
@@ -65,19 +65,18 @@ let parse (s : (int * string) Seq.t) : t =
           )
       )
   in
-  aux Title None s
+  aux Title None (Seq.mapi (fun i str -> (i, str)) s)
 
-let of_in_channel ~path ic : t =
-  let s = CCIO.read_lines_seq ic
-          |> Seq.mapi (fun i line -> (i, line))
-  in
-  let document = parse s in
-  { document with path }
+let of_in_channel ic : t =
+  parse (CCIO.read_lines_seq ic)
 
-let of_path path : (t, string) result =
+let of_path ~(env : Eio.Stdenv.t) path : (t, string) result =
+  let cwd = Eio.Stdenv.cwd env in
   try
-    CCIO.with_in path (fun ic ->
-        Ok (of_in_channel ~path:(Some path) ic)
+    Eio.Path.(with_lines (cwd / path))
+      (fun lines ->
+         let document = parse lines in
+         Ok { document with path = Some path }
       )
   with
   | _ -> Error (Printf.sprintf "Failed to read file: %s" path)

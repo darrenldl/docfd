@@ -67,8 +67,8 @@ let list_files_recursively (dir : string) : string list =
   !l
 
 let run
-    (env : Eio.Stdenv.t)
-    (sw : Eio.Switch.t)
+    ~(env : Eio.Stdenv.t)
+    ~(sw : Eio.Switch.t)
     (debug : bool)
     (max_depth : int)
     (max_fuzzy_edit_distance : int)
@@ -136,10 +136,10 @@ let run
   let all_documents =
     match document_src with
     | Stdin ->
-      [ Document.of_in_channel ~path:None stdin ]
+      [ Document.of_in_channel stdin ]
     | Files files ->
-      List.filter_map (fun path ->
-          match Document.of_path path with
+      Eio.Fiber.List.filter_map (fun path ->
+          match Document.of_path ~env path with
           | Ok x -> Some x
           | Error _ -> None) files
   in
@@ -163,6 +163,7 @@ let run
        | Files _ ->
          Ui_base.Vars.term := Some (Notty_unix.Term.create ())
       );
+      Ui_base.Vars.eio_env := Some env;
       let renderer = Nottui.Renderer.make () in
       Lwd.set Ui_base.Vars.ui_mode init_ui_mode;
       Lwd.set Ui_base.Vars.document_selected default_selected_document;
@@ -179,7 +180,7 @@ let run
         Ui_base.Vars.file_to_open := None;
         Lwd.set Ui_base.Vars.quit false;
         Nottui.Ui_loop.run
-          ~term:Ui_base.(get_term ())
+          ~term:Ui_base.(term ())
           ~renderer
           ~quit:Ui_base.Vars.quit
           root;
@@ -211,11 +212,11 @@ let run
 
 let files_arg = Arg.(value & pos_all string [ "." ] & info [])
 
-let cmd env sw =
+let cmd ~env ~sw =
   let doc = "TUI fuzzy document finder" in
   let version = Version_string.s in
   Cmd.v (Cmd.info "docfd" ~version ~doc)
-    Term.(const (run env sw)
+    Term.(const (run ~env ~sw)
           $ debug_arg
           $ max_depth_arg
           $ max_fuzzy_edit_distance_arg
@@ -224,6 +225,6 @@ let cmd env sw =
 
 let () = Eio_main.run (fun env ->
     Eio.Switch.run (fun sw ->
-        exit (Cmd.eval (cmd env sw))
+        exit (Cmd.eval (cmd ~env ~sw))
       )
   )

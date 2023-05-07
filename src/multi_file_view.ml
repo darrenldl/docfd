@@ -68,7 +68,7 @@ let reload_document_selected ~skip_filter () : unit =
     match doc.path with
     | None -> ()
     | Some path -> (
-        match Document.of_path path with
+        match Document.of_path ~env:(Ui_base.eio_env ()) path with
         | Ok x -> (
             let m = Lwd.peek Ui_base.Vars.all_documents
                     |> String_option_map.add (Some path) x
@@ -178,7 +178,7 @@ module Top_pane = struct
               let (images_selected, images_unselected) =
                 render_document_previews documents
               in
-              let (_term_width, term_height) = Notty_unix.Term.size (Ui_base.get_term ()) in
+              let (_term_width, term_height) = Notty_unix.Term.size (Ui_base.term ()) in
               CCInt.range'
                 document_selected
                 (min (document_selected + term_height / 2) document_count)
