@@ -234,12 +234,9 @@ module Search = struct
       match List.combine constraints.phrase constraints.fuzzy_index with
       | [] -> failwith "Unexpected case"
       | first_word :: rest -> (
-          let possible_starts =
+          let possible_start_count, possible_starts =
             usable_positions first_word t
-            |> List.of_seq
-          in
-          let possible_start_count =
-            List.length possible_starts
+            |> Misc_utils.list_and_length_of_seq
           in
           if possible_start_count = 0 then
             Seq.empty

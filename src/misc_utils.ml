@@ -25,3 +25,13 @@ let sanitize_string_for_printing s =
 
 let bound_selection ~choice_count (x : int) : int =
   max 0 (min (choice_count - 1) x)
+
+let list_and_length_of_seq (s : 'a Seq.t) : int * 'a list =
+  let len, acc =
+    Seq.fold_left (fun (len, acc) x ->
+        (len + 1, x :: acc)
+      )
+      (0, [])
+      s
+  in
+  (len, List.rev acc)
