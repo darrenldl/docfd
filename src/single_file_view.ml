@@ -16,7 +16,7 @@ let update_search_constraints ~document =
       ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
       ~phrase:(fst @@ Lwd.peek Ui_base.Vars.Single_file.search_field)
   in
-  let search_results = Document.search search_constraints document
+  let search_results = Index.search search_constraints document.Document.index
                        |> OSeq.take Params.search_result_limit
                        |> Array.of_seq
   in

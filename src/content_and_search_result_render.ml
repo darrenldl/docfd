@@ -11,7 +11,7 @@ let start_and_end_inc_line_of_search_result
     (index : Index.t)
     (search_result : Search_result.t)
   : (int * int) =
-  match search_result.found_phrase with
+  match Search_result.found_phrase search_result with
   | [] -> failwith "Unexpected case"
   | l -> (
       List.fold_left (fun s_e (pos, _, _) ->
@@ -54,7 +54,7 @@ let color_word_image_grid
       grid.data.(line_num - grid.start_line).(pos_in_line) <-
         I.string A.(fg black ++ bg lightyellow) word
     )
-    search_result.found_phrase
+    (Search_result.found_phrase search_result)
 
 let render_grid ~display_line_num (grid : word_image_grid) : Notty.image =
   grid.data

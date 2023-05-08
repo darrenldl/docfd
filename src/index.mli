@@ -19,3 +19,5 @@ val loc_of_pos : int -> t -> int * int
 val lines : t -> string Seq.t
 
 val line_count : t -> int
+
+val search : Search_constraints.t -> t -> Search_result.t Seq.t

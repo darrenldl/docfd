@@ -176,3 +176,109 @@ let line_count t : int =
 let lines t =
   OSeq.(0 --^ line_count t)
   |> Seq.map (fun line_num -> line_of_line_num line_num t)
+
+module Search = struct
+  let usable_positions
+      ?around_pos
+      ((search_word, dfa) : (string * Spelll.automaton))
+      (t : t)
+    : int Seq.t =
+    let word_ci_and_positions_to_consider =
+      match around_pos with
+      | None -> word_ci_and_pos_s t
+      | Some around_pos ->
+        let start = around_pos - (!Params.max_word_search_range+1) in
+        let end_inc = around_pos + (!Params.max_word_search_range+1) in
+        word_ci_and_pos_s ~range_inc:(start, end_inc) t
+    in
+    let search_word_ci =
+      String.lowercase_ascii search_word
+    in
+    word_ci_and_positions_to_consider
+    |> Seq.filter (fun (indexed_word, _pos_s) ->
+        not (String.for_all Parser_components.is_space indexed_word)
+      )
+    |> Seq.filter (fun (indexed_word, _pos_s) ->
+        String.equal search_word_ci indexed_word
+        || CCString.find ~sub:search_word_ci indexed_word >= 0
+        || (Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word search_word_ci.[0]
+            && Spelll.match_with dfa indexed_word)
+      )
+    |> Seq.flat_map (fun (_indexed_word, pos_s) -> Int_set.to_seq pos_s)
+
+  let search_around_pos
+      (around_pos : int)
+      (l : (string * Spelll.automaton) list)
+      (t : t)
+    : int list Seq.t =
+    let rec aux around_pos l =
+      match l with
+      | [] -> Seq.return []
+      | (search_word, dfa) :: rest -> (
+          usable_positions ~around_pos (search_word, dfa) t
+          |> Seq.flat_map (fun pos ->
+              aux pos rest
+              |> Seq.map (fun l -> pos :: l)
+            )
+        )
+    in
+    aux around_pos l
+
+  let search
+      (constraints : Search_constraints.t)
+      (t : t)
+    : int list Seq.t =
+    if Search_constraints.is_empty constraints then
+      Seq.empty
+    else (
+      match List.combine constraints.phrase constraints.fuzzy_index with
+      | [] -> failwith "Unexpected case"
+      | first_word :: rest -> (
+          let possible_starts =
+            usable_positions first_word t
+            |> List.of_seq
+          in
+          let possible_start_count =
+            List.length possible_starts
+          in
+          if possible_start_count = 0 then
+            Seq.empty
+          else (
+            let search_limit_per_start =
+              (Params.search_result_limit + possible_start_count - 1) / possible_start_count
+            in
+            possible_starts
+            |> Eio.Fiber.List.map (fun pos ->
+                Worker_pool.run
+                  (fun () ->
+                     search_around_pos pos rest t
+                     |> Seq.map (fun l -> pos :: l)
+                     |> Seq.take search_limit_per_start
+                     |> List.of_seq
+                  )
+              )
+            |> List.fold_left (fun s (l : int list list) ->
+                Seq.append s (List.to_seq l)
+              )
+              Seq.empty
+          )
+        )
+    )
+end
+
+let search
+    (constraints : Search_constraints.t)
+    (t : t)
+  : Search_result.t Seq.t =
+  Search.search constraints t
+  |> Seq.map (fun l ->
+      Search_result.make
+        ~search_phrase:constraints.phrase
+        ~found_phrase:(List.map
+                         (fun pos ->
+                            (pos,
+                             word_ci_of_pos pos t,
+                             word_of_pos pos t
+                            )
+                         ) l)
+    )

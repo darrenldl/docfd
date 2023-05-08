@@ -29,7 +29,25 @@ let empty_stats = {
   fuzzy_match_found_char_count = 0.0;
 }
 
+let make ~search_phrase ~found_phrase =
+  let len = List.length search_phrase in
+  if len = 0 then
+    invalid_arg "search_phrase is empty"
+  else
+  if len <> List.length found_phrase then
+    invalid_arg "length of found_phrase does not match length of search_phrase"
+  else
+    { search_phrase; found_phrase }
+
+let search_phrase (t : t) =
+  t.search_phrase
+
+let found_phrase (t : t) =
+  t.found_phrase
+
 let score (t : t) : float =
+  assert (match t.search_phrase with [] -> false | _ -> true);
+  assert (List.length t.search_phrase = List.length t.found_phrase);
   let quite_close_to_zero x =
     -0.01 < x && x < 0.01
   in
@@ -129,30 +147,33 @@ let score (t : t) : float =
   let sub_match_score =
     if quite_close_to_zero stats.sub_match_found_char_count then
       0.0
-    else
+    else (
       stats.sub_match_search_char_count
       /.
       stats.sub_match_found_char_count
+    )
   in
   let ci_sub_match_score =
     if quite_close_to_zero stats.ci_sub_match_found_char_count then
       0.0
-    else
+    else (
       0.9
       *.
       (stats.ci_sub_match_search_char_count
        /.
        stats.ci_sub_match_found_char_count)
+    )
   in
   let fuzzy_match_score =
     if quite_close_to_zero stats.fuzzy_match_search_char_count then
       0.0
-    else
+    else (
       1.0
       -.
       (stats.fuzzy_match_edit_distance
        /.
        stats.fuzzy_match_search_char_count)
+    )
   in
   (unique_match_count /. search_phrase_length)
   *.

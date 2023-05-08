@@ -37,7 +37,7 @@ let filter_documents ~all_documents =
         if Search_constraints.is_empty search_constraints then
           Some doc
         else (
-          match Document.search search_constraints doc () with
+          match Index.search search_constraints doc.Document.index () with
           | Seq.Nil -> None
           | Seq.Cons _ as s ->
             let search_results =
