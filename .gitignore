@@ -11,4 +11,4 @@ fuzz-logs/
 test*.md
 test*.txt
 *.tar.gz
-static-build/
+statically-linked/
