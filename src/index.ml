@@ -31,7 +31,8 @@ let union (x : t) (y : t) =
         x.loc_of_pos
         y.loc_of_pos;
     start_end_inc_pos_of_line_num =
-      Int_map.union (fun _k x _ -> Some x)
+      Int_map.union (fun _k (start_x, end_inc_x) (start_y, end_inc_y) ->
+          Some (min start_x start_y, max end_inc_x end_inc_y))
         x.start_end_inc_pos_of_line_num
         y.start_end_inc_pos_of_line_num;
     word_ci_of_pos =
@@ -80,7 +81,7 @@ let of_chunk (arr : chunk) : t =
       let start_end_inc_pos =
         match Int_map.find_opt line_num start_end_inc_pos_of_line_num with
         | None -> (pos, pos)
-        | Some (x, _) -> (x, pos)
+        | Some (x, y) -> (min x pos, max y pos)
       in
       { pos_s_of_word_ci = String_map.add word_ci pos_s pos_s_of_word_ci;
         loc_of_pos = Int_map.add pos loc loc_of_pos;
@@ -95,7 +96,7 @@ let of_chunk (arr : chunk) : t =
     arr
 
 let chunks_of_words (s : double_indexed_word Seq.t) : chunk Seq.t =
-  OSeq.chunks 5000 s
+  OSeq.chunks Params.index_chunk_word_count s
 
 let of_seq (s : (int * string) Seq.t) : t =
   let lines = Array.of_seq s in

@@ -19,3 +19,5 @@ let max_word_search_range = ref default_max_word_search_range
 let search_result_limit = 10_000
 
 let stdin_doc_path_placeholder = "<stdin>"
+
+let index_chunk_word_count = 5000

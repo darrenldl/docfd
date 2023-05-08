@@ -120,33 +120,30 @@ let search_results
   : Notty.image list =
   let open Notty in
   let open Notty.Infix in
-  try
-    let results =
-      Array.sub results
-        start
-        (end_exc - start)
-    in
-    results
-    |> Array.to_list
-    |> List.map (fun (search_result : Search_result.t) ->
-        let (start_line, end_inc_line) =
-          start_and_end_inc_line_of_search_result index search_result
-        in
-        let grid =
-          word_image_grid_of_index
-            ~start_line
-            ~end_inc_line
-            index
-        in
-        color_word_image_grid grid index search_result;
-        let img = render_grid ~display_line_num:true grid in
-        if !Params.debug then
-          let score = Search_result.score search_result in
-          I.strf "(score: %f)" score
-          <->
-          img
-        else
-          img
-      )
-  with
-  | _ -> [ I.strf "Failed to render content search results" ]
+  let results =
+    Array.sub results
+      start
+      (end_exc - start)
+  in
+  results
+  |> Array.to_list
+  |> List.map (fun (search_result : Search_result.t) ->
+      let (start_line, end_inc_line) =
+        start_and_end_inc_line_of_search_result index search_result
+      in
+      let grid =
+        word_image_grid_of_index
+          ~start_line
+          ~end_inc_line
+          index
+      in
+      color_word_image_grid grid index search_result;
+      let img = render_grid ~display_line_num:true grid in
+      if !Params.debug then
+        let score = Search_result.score search_result in
+        I.strf "(score: %f)" score
+        <->
+        img
+      else
+        img
+    )

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.1
+
+- Replaced shared data structures with multicore safe versions
+
+- Fixed work partitioning for parallel indexing
+
 ## 0.8.0
 
 - Added multicore support for indexing and searching

@@ -13,3 +13,4 @@ RUN opam install eio
 RUN apk add linux-headers
 RUN opam install eio_main
 RUN opam install domainslib
+RUN opam install kcas_data
