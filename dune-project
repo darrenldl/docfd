@@ -32,6 +32,7 @@
    (cmdliner (>= "1.1.0"))
    (eio (>= "0.9"))
    (domainslib (>= "0.5.0"))
+   kcas_data
    )
  (tags
   ("fuzzy" "document" "finder"
