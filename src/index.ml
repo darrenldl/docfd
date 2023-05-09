@@ -243,7 +243,11 @@ module Search = struct
             Seq.empty
           else (
             let search_limit_per_start =
-              (Params.search_result_limit + possible_start_count - 1) / possible_start_count
+              max
+                1
+                (
+                  (Params.search_result_limit + possible_start_count - 1) / possible_start_count
+                )
             in
             possible_starts
             |> Eio.Fiber.List.map (fun pos ->
