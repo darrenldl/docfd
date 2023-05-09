@@ -8,11 +8,11 @@ Statically linked binaries are available via
 
 ## Features
 
+- Multithreaded indexing and searching
+
 - Multiline fuzzy search of multiple files or a single file
 
 - Swap between multi file view and single file view on the fly
-
-- Clean interface with key binding info dynamically generated on screen
 
 - Content view pane that shows the snippet surrounding the search result selected
 
