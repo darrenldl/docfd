@@ -27,7 +27,7 @@ let max_word_search_range_arg =
 
 let index_chunk_word_count_arg =
   let doc =
-    "Number of words to send to indexing worker/thread pool at a time."
+    "Number of words to send to the indexing worker/thread pool at a time."
   in
   Arg.(value & opt int Params.default_index_chunk_word_count & info [ "index-chunk-word-count" ] ~doc ~docv:"N")
 
