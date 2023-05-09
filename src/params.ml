@@ -20,4 +20,6 @@ let search_result_limit = 10_000
 
 let stdin_doc_path_placeholder = "<stdin>"
 
-let index_chunk_word_count = 5000
+let default_index_chunk_word_count = 5000
+
+let index_chunk_word_count = ref default_index_chunk_word_count

@@ -96,7 +96,7 @@ let of_chunk (arr : chunk) : t =
     arr
 
 let chunks_of_words (s : double_indexed_word Seq.t) : chunk Seq.t =
-  OSeq.chunks Params.index_chunk_word_count s
+  OSeq.chunks !Params.index_chunk_word_count s
 
 let of_seq (s : (int * string) Seq.t) : t =
   let lines = Array.of_seq s in

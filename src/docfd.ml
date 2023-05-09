@@ -20,10 +20,16 @@ let max_fuzzy_edit_distance_arg =
 
 let max_word_search_range_arg =
   let doc =
-    "Maximum range to look for the next matching word/symbol in content search."
+    "Maximum range to look for the next matching word/symbol in content search. Note that contiguous spaces count as one word/symbol as well."
   in
   Arg.(value & opt int Params.default_max_word_search_range
        & info [ "max-word-search-range" ] ~doc ~docv:"N")
+
+let index_chunk_word_count_arg =
+  let doc =
+    "Number of words to send to indexing worker/thread pool at a time."
+  in
+  Arg.(value & opt int Params.default_index_chunk_word_count & info [ "index-chunk-word-count" ] ~doc ~docv:"N")
 
 let debug_arg =
   let doc =
@@ -72,12 +78,14 @@ let run
     (max_depth : int)
     (max_fuzzy_edit_distance : int)
     (max_word_search_range : int)
+    (index_chunk_word_count : int)
     (files : string list)
   =
   Params.debug := debug;
   Params.max_file_tree_depth := max_depth;
   Params.max_fuzzy_edit_distance := max_fuzzy_edit_distance;
   Params.max_word_search_range := max_word_search_range;
+  Params.index_chunk_word_count := index_chunk_word_count;
   List.iter (fun file ->
       if not (Sys.file_exists file) then (
         Fmt.pr "Error: File \"%s\" does not exist\n" file;
@@ -220,6 +228,7 @@ let cmd ~env =
           $ max_depth_arg
           $ max_fuzzy_edit_distance_arg
           $ max_word_search_range_arg
+          $ index_chunk_word_count_arg
           $ files_arg)
 
 let () = Eio_main.run (fun env ->
