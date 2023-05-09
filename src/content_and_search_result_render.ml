@@ -139,11 +139,12 @@ let search_results
       in
       color_word_image_grid grid index search_result;
       let img = render_grid ~display_line_num:true grid in
-      if !Params.debug then
+      if !Params.debug then (
         let score = Search_result.score search_result in
         I.strf "(score: %f)" score
         <->
         img
-      else
+      ) else (
         img
+      )
     )
