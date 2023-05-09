@@ -14,5 +14,6 @@
             eio
             eio_main
             domainslib
+            kcas_data
  )
 )
