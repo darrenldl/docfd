@@ -9,7 +9,7 @@ let set_search_result_selected ~choice_count n =
 let reset_search_result_selected () =
   Lwd.set Ui_base.Vars.Single_file.index_of_search_result_selected 0
 
-let update_search_constraints ~document =
+let update_search_results ~document =
   reset_search_result_selected ();
   let search_constraints =
     Search_constraints.make
@@ -17,7 +17,6 @@ let update_search_constraints ~document =
       ~phrase:(fst @@ Lwd.peek Ui_base.Vars.Single_file.search_field)
   in
   let search_results = Index.search search_constraints document.Document.index
-                       |> OSeq.take Params.search_result_limit
                        |> Array.of_seq
   in
   Array.sort Search_result.compare search_results;
@@ -33,7 +32,7 @@ let reload_document (doc : Document.t) : unit =
                   |> String_option_map.add (Some path) x
           in
           Lwd.set Ui_base.Vars.all_documents m;
-          Lwd.set Ui_base.Vars.document_selected x;
+          update_search_results ~document:x;
         )
       | Error _ -> ()
     )
@@ -135,7 +134,7 @@ module Bottom_pane = struct
     Ui_base.Search_bar.main ~input_mode
       ~edit_field:Ui_base.Vars.Single_file.search_field
       ~focus_handle:Vars.search_field_focus_handle
-      ~f:(fun () -> update_search_constraints ~document)
+      ~f:(fun () -> update_search_results ~document)
 
   let main
       ~document
@@ -212,7 +211,7 @@ let keyboard_handler
         )
       | (`ASCII 'x', []) -> (
           Lwd.set Ui_base.Vars.Single_file.search_field Ui_base.empty_search_field;
-          update_search_constraints ~document;
+          update_search_results ~document;
           `Handled
         )
       | (`Enter, []) -> (

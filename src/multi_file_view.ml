@@ -42,7 +42,6 @@ let filter_documents ~all_documents =
           | Seq.Cons _ as s ->
             let search_results =
               (fun () -> s)
-              |> OSeq.take Params.search_result_limit
               |> Array.of_seq
             in
             Array.sort Search_result.compare search_results;

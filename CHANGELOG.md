@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.2
+
+- Fixed single file view document reloading not refreshing search results
+
 ## 0.8.1
 
 - Replaced shared data structures with multicore safe versions
