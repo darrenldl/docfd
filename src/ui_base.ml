@@ -29,17 +29,17 @@ module Vars = struct
 
   let term : Notty_unix.Term.t option ref = ref None
 
-  let all_documents : Document.t String_option_map.t Lwd.var =
-    Lwd.var String_option_map.empty
+  let document_store : Document_store.t Lwd.var =
+    Lwd.var Document_store.empty
 
   let total_document_count : int ref = ref 0
-
-  let document_selected : Document.t Lwd.var = Lwd.var (Document.make_empty ())
 
   module Single_file = struct
     let search_field = Lwd.var empty_search_field
 
     let index_of_search_result_selected = Lwd.var 0
+
+  let document_store : Document_store.t Lwd.var = Lwd.var Document_store.empty
   end
 end
 
@@ -57,15 +57,16 @@ let full_term_sized_background () =
 module Content_view = struct
   let main
       ~(document : Document.t)
+      ~(search_results : Search_result.t array)
       ~(search_result_selected : int)
     : Nottui.ui Lwd.t =
     let (_term_width, term_height) = Notty_unix.Term.size (term ()) in
     let height = term_height / 2 in
     let search_result =
-      if Array.length document.search_results = 0 then
+      if Array.length search_results = 0 then
         None
       else
-        Some document.search_results.(search_result_selected)
+        Some search_results.(search_result_selected)
     in
     let content =
       Content_and_search_result_render.content_snippet
@@ -98,11 +99,11 @@ let mouse_handler
 
 module Search_result_list = struct
   let main
-      ~(document : Document.t)
+      ~(info : (Document.t * Search_result.t array))
       ~(index_of_search_result_selected : int Lwd.var)
     : Nottui.ui Lwd.t =
+      let (document, search_results) = info in
     let search_result_selected = Lwd.peek index_of_search_result_selected in
-    let search_results = document.search_results in
     let result_count = Array.length search_results in
     if result_count = 0 then (
       Lwd.return Nottui.Ui.empty

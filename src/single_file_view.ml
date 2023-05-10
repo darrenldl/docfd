@@ -9,18 +9,18 @@ let set_search_result_selected ~choice_count n =
 let reset_search_result_selected () =
   Lwd.set Ui_base.Vars.Single_file.index_of_search_result_selected 0
 
-let update_search_results ~document =
+let update_search_constraints ~document =
   reset_search_result_selected ();
   let search_constraints =
     Search_constraints.make
       ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
       ~phrase:(fst @@ Lwd.peek Ui_base.Vars.Single_file.search_field)
   in
-  let search_results = Index.search search_constraints document.Document.index
-                       |> Array.of_seq
+  let document_store =
+    Lwd.peek Ui_base.Vars.Single_file.document_store
+    |> Document_store.update_search_constraints search_constraints
   in
-  Array.sort Search_result.compare search_results;
-  Lwd.set Ui_base.Vars.document_selected { document with search_results }
+  Lwd.set Ui_base.Vars.Single_file.document_store document_store
 
 let reload_document (doc : Document.t) : unit =
   match doc.path with
@@ -28,11 +28,16 @@ let reload_document (doc : Document.t) : unit =
   | Some path -> (
       match Document.of_path ~env:(Ui_base.eio_env ()) path with
       | Ok x -> (
-          let m = Lwd.peek Ui_base.Vars.all_documents
-                  |> String_option_map.add (Some path) x
+          let global_document_store =
+            Lwd.peek Ui_base.Vars.document_store
+      |> Document_store.add_document x
           in
-          Lwd.set Ui_base.Vars.all_documents m;
-          update_search_results ~document:x;
+          Lwd.set Ui_base.Vars.document_store global_document_store;
+          let document_store =
+            Lwd.peek Ui_base.Vars.Single_file.document_store
+      |> Document_store.add_document x
+          in
+          Lwd.set Ui_base.Vars.Single_file.document_store document_store;
         )
       | Error _ -> ()
     )

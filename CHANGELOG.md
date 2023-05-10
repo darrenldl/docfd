@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.3
+
+- Optimized multi file view reload so it does not redo the search over all documents
+
 ## 0.8.2
 
 - Fixed single file view document reloading not refreshing search results

@@ -271,7 +271,8 @@ end
 let search
     (constraints : Search_constraints.t)
     (t : t)
-  : Search_result.t Seq.t =
+  : Search_result.t array =
+    let arr =
   Search.search constraints t
   |> Seq.map (fun l ->
       Search_result.make
@@ -284,3 +285,7 @@ let search
                             )
                          ) l)
     )
+  |> Array.of_seq
+    in
+    Array.sort Search_result.compare arr;
+    arr

@@ -20,4 +20,4 @@ val lines : t -> string Seq.t
 
 val line_count : t -> int
 
-val search : Search_constraints.t -> t -> Search_result.t Seq.t
+val search : Search_constraints.t -> t -> Search_result.t array

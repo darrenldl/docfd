@@ -15,6 +15,12 @@ let fuzzy_index t =
 let equal (t1 : t) (t2 : t) =
   List.equal String.equal t1.phrase t2.phrase
 
+let empty : t =
+  {
+    phrase = [];
+    fuzzy_index = [];
+  }
+
 let make
     ~fuzzy_max_edit_distance
     ~phrase

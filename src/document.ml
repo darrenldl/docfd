@@ -2,7 +2,6 @@ type t = {
   path : string option;
   title : string option;
   index : Index.t;
-  search_results : Search_result.t array;
 }
 
 let make_empty () : t =
@@ -10,7 +9,6 @@ let make_empty () : t =
     path = None;
     title = None;
     index = Index.empty;
-    search_results = [||];
   }
 
 let copy (t : t) =
@@ -18,7 +16,6 @@ let copy (t : t) =
     path = t.path;
     title = t.title;
     index = t.index;
-    search_results = Array.copy t.search_results;
   }
 
 module Parsers = struct
