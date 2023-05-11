@@ -28,7 +28,7 @@ let set_search_result_selected ~choice_count n =
   let n = Misc_utils.bound_selection ~choice_count n in
   Lwd.set Vars.index_of_search_result_selected n
 
-let filter_documents ~all_documents =
+(* let filter_documents ~all_documents =
   let search_constraints = !Vars.search_constraints in
   let arr =
     all_documents
@@ -57,7 +57,7 @@ let filter_documents ~all_documents =
           (doc2.search_results.(0))
       ) arr
   );
-  Lwd.set Vars.documents arr
+  Lwd.set Vars.documents arr *)
 
 let reload_document_selected ~skip_filter () : unit =
   let arr = Lwd.peek Vars.documents in

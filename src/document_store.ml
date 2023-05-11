@@ -1,3 +1,7 @@
+type key = string option
+
+type value = Document.t * Search_result.t array
+
 type t = {
   documents : Document.t String_option_map.t;
   search_constraints : Search_constraints.t;
@@ -10,6 +14,16 @@ let empty : t =
     search_constraints = Search_constraints.empty;
     search_results = String_option_map.empty;
 }
+
+let min_binding (t : t) =
+  match String_option_map.min_binding_opt t.documents with
+  | None -> None
+  | Some (path, doc) -> (
+      let search_results =
+        String_option_map.find path t.search_results
+      in
+    Some (path, (doc, search_results))
+    )
 
 let update_search_constraints search_constraints (t : t) : t =
   { t with search_constraints }

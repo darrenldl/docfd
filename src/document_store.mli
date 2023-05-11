@@ -1,9 +1,15 @@
 type t
 
+type key = string option
+
+type value = Document.t * Search_result.t array
+
 val empty : t
 
 val update_search_constraints : Search_constraints.t -> t -> t
 
 val add_document : Document.t -> t -> t
 
-val usable_documents : t -> (Document.t * Search_result.t array) array
+val usable_documents : t -> value array
+
+val min_binding : t -> (key * value) option

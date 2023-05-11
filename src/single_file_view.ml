@@ -45,7 +45,7 @@ let reload_document (doc : Document.t) : unit =
 module Top_pane = struct
   let main
     : Nottui.ui Lwd.t =
-    Lwd.map ~f:(fun (document, search_result_selected) ->
+    Lwd.map ~f:(fun (document_store, search_result_selected) ->
         Nottui_widgets.v_pane
           (Ui_base.Content_view.main ~document ~search_result_selected)
           (Ui_base.Search_result_list.main
@@ -53,7 +53,7 @@ module Top_pane = struct
              ~index_of_search_result_selected:Ui_base.Vars.Single_file.index_of_search_result_selected)
       )
       Lwd.(pair
-             (get Ui_base.Vars.document_selected)
+             (get Ui_base.Vars.Single_file.document_store)
              (get Ui_base.Vars.Single_file.index_of_search_result_selected))
     |> Lwd.join
 end
