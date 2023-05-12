@@ -4,14 +4,14 @@ type value = Document.t * Search_result.t array
 
 type t = {
   documents : Document.t String_option_map.t;
-  search_constraints : Search_constraints.t;
+  search_phrase : Search_phrase.t;
   search_results : Search_result.t array String_option_map.t;
 }
 
 let empty : t =
   {
     documents = String_option_map.empty;
-    search_constraints = Search_constraints.empty;
+    search_phrase = Search_phrase.empty;
     search_results = String_option_map.empty;
   }
 
@@ -25,13 +25,13 @@ let min_binding (t : t) =
       Some (path, (doc, search_results))
     )
 
-let update_search_constraints search_constraints (t : t) : t =
+let update_search_phrase search_phrase (t : t) : t =
   { t with
-    search_constraints;
+    search_phrase;
     search_results =
       String_option_map.mapi (fun path _ ->
           let doc = String_option_map.find path t.documents in
-          (Index.search search_constraints doc.index)
+          (Index.search search_phrase doc.index)
         )
         t.search_results;
   }
@@ -46,7 +46,7 @@ let add_document (doc : Document.t) (t : t) : t =
     search_results =
       String_option_map.add
         doc.path
-        (Index.search t.search_constraints doc.index)
+        (Index.search t.search_phrase doc.index)
         t.search_results;
   }
 
@@ -58,7 +58,7 @@ let of_seq (s : Document.t Seq.t) =
     s
 
 let usable_documents (t : t) : (Document.t * Search_result.t array) array =
-  if Search_constraints.is_empty t.search_constraints then (
+  if Search_phrase.is_empty t.search_phrase then (
     t.documents
     |> String_option_map.to_seq
     |> Seq.map (fun (_path, doc) -> (doc, [||]))

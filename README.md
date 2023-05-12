@@ -60,7 +60,7 @@ Searching `[github]` in repo root:
 ![](screenshots/main1.png)
 
 The default TUI is divided into four sections:
-- Left is the list of documents which satisfy the search constraints
+- Left is the list of documents which satisfy the search phrase
 - Top right is the content view of the document which tracks the search result selected
 - Bottom right is the ranked content search result list
 - Bottom pane consists of the status bar, key binding info, and search field

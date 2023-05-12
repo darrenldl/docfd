@@ -226,13 +226,13 @@ module Search = struct
     aux around_pos l
 
   let search
-      (constraints : Search_constraints.t)
+      (phrase : Search_phrase.t)
       (t : t)
     : int list Seq.t =
-    if Search_constraints.is_empty constraints then
+    if Search_phrase.is_empty phrase then
       Seq.empty
     else (
-      match List.combine constraints.phrase constraints.fuzzy_index with
+      match List.combine phrase.phrase phrase.fuzzy_index with
       | [] -> failwith "Unexpected case"
       | first_word :: rest -> (
           let possible_start_count, possible_starts =
@@ -269,14 +269,14 @@ module Search = struct
 end
 
 let search
-    (constraints : Search_constraints.t)
+    (phrase : Search_phrase.t)
     (t : t)
   : Search_result.t array =
   let arr =
-    Search.search constraints t
+    Search.search phrase t
     |> Seq.map (fun l ->
         Search_result.make
-          ~search_phrase:constraints.phrase
+          ~search_phrase:phrase.phrase
           ~found_phrase:(List.map
                            (fun pos ->
                               (pos,

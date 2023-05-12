@@ -6,7 +6,7 @@ type value = Document.t * Search_result.t array
 
 val empty : t
 
-val update_search_constraints : Search_constraints.t -> t -> t
+val update_search_phrase : Search_phrase.t -> t -> t
 
 val add_document : Document.t -> t -> t
 

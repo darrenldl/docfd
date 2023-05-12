@@ -46,16 +46,16 @@ let reload_document_selected
     reload_document doc;
   )
 
-let update_search_constraints () =
+let update_search_phrase () =
   reset_document_selected ();
-  let search_constraints =
-    Search_constraints.make
+  let search_phrase =
+    Search_phrase.make
       ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
       ~phrase:(fst @@ Lwd.peek Vars.search_field)
   in
   let document_store =
     Lwd.peek Ui_base.Vars.document_store
-    |> Document_store.update_search_constraints search_constraints
+    |> Document_store.update_search_phrase search_phrase
   in
   Lwd.set Ui_base.Vars.document_store document_store
 
@@ -285,7 +285,7 @@ module Bottom_pane = struct
     Ui_base.Search_bar.main ~input_mode
       ~edit_field:Vars.search_field
       ~focus_handle:Vars.search_field_focus_handle
-      ~f:update_search_constraints
+      ~f:update_search_phrase
 
   let main ~document_info_s =
     Lwd.map ~f:(fun input_mode ->
@@ -390,7 +390,7 @@ let keyboard_handler
         )
       | (`ASCII 'x', []) -> (
           Lwd.set Vars.search_field Ui_base.empty_search_field;
-          update_search_constraints ();
+          update_search_phrase ();
           `Handled
         )
       | (`Enter, []) -> (

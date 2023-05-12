@@ -9,16 +9,16 @@ let set_search_result_selected ~choice_count n =
 let reset_search_result_selected () =
   Lwd.set Ui_base.Vars.Single_file.index_of_search_result_selected 0
 
-let update_search_constraints () =
+let update_search_phrase () =
   reset_search_result_selected ();
-  let search_constraints =
-    Search_constraints.make
+  let search_phrase =
+    Search_phrase.make
       ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
       ~phrase:(fst @@ Lwd.peek Ui_base.Vars.Single_file.search_field)
   in
   let document_store =
     Lwd.peek Ui_base.Vars.Single_file.document_store
-    |> Document_store.update_search_constraints search_constraints
+    |> Document_store.update_search_phrase search_phrase
   in
   Lwd.set Ui_base.Vars.Single_file.document_store document_store
 
@@ -148,7 +148,7 @@ module Bottom_pane = struct
     Ui_base.Search_bar.main ~input_mode
       ~edit_field:Ui_base.Vars.Single_file.search_field
       ~focus_handle:Vars.search_field_focus_handle
-      ~f:(fun () -> update_search_constraints ())
+      ~f:(fun () -> update_search_phrase ())
 
   let main
       ~document_info
@@ -227,7 +227,7 @@ let keyboard_handler
         )
       | (`ASCII 'x', []) -> (
           Lwd.set Ui_base.Vars.Single_file.search_field Ui_base.empty_search_field;
-          update_search_constraints ();
+          update_search_phrase ();
           `Handled
         )
       | (`Enter, []) -> (
