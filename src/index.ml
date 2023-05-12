@@ -272,20 +272,20 @@ let search
     (constraints : Search_constraints.t)
     (t : t)
   : Search_result.t array =
-    let arr =
-  Search.search constraints t
-  |> Seq.map (fun l ->
-      Search_result.make
-        ~search_phrase:constraints.phrase
-        ~found_phrase:(List.map
-                         (fun pos ->
-                            (pos,
-                             word_ci_of_pos pos t,
-                             word_of_pos pos t
-                            )
-                         ) l)
-    )
-  |> Array.of_seq
-    in
-    Array.sort Search_result.compare arr;
-    arr
+  let arr =
+    Search.search constraints t
+    |> Seq.map (fun l ->
+        Search_result.make
+          ~search_phrase:constraints.phrase
+          ~found_phrase:(List.map
+                           (fun pos ->
+                              (pos,
+                               word_ci_of_pos pos t,
+                               word_of_pos pos t
+                              )
+                           ) l)
+      )
+    |> Array.of_seq
+  in
+  Array.sort Search_result.compare arr;
+  arr

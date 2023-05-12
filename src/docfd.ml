@@ -152,14 +152,13 @@ let run
   in
   match all_documents with
   | [] -> Printf.printf "No suitable text files found\n"
-  | default_selected_document :: _ -> (
+  | _ -> (
       Ui_base.Vars.init_ui_mode := init_ui_mode;
-      let m = all_documents
-              |> List.to_seq
-              |> Seq.map (fun (doc : Document.t) -> (doc.path, doc))
-              |> String_option_map.of_seq
+      let document_store = all_documents
+                           |> List.to_seq
+                           |> Document_store.of_seq
       in
-      Lwd.set Ui_base.Vars.all_documents m;
+      Lwd.set Ui_base.Vars.document_store document_store;
       Ui_base.Vars.total_document_count := List.length all_documents;
       (match document_src with
        | Stdin ->
@@ -173,7 +172,6 @@ let run
       Ui_base.Vars.eio_env := Some env;
       let renderer = Nottui.Renderer.make () in
       Lwd.set Ui_base.Vars.ui_mode init_ui_mode;
-      Lwd.set Ui_base.Vars.document_selected default_selected_document;
       let root : Nottui.ui Lwd.t =
         Lwd.map ~f:(fun (ui_mode : Ui_base.ui_mode) ->
             match ui_mode with
@@ -208,7 +206,7 @@ let run
                 if Float.abs (new_stats.st_mtime -. old_stats.st_mtime) >= 0.000_001 then (
                   (match Lwd.peek Ui_base.Vars.ui_mode with
                    | Ui_single_file -> Single_file_view.reload_document doc
-                   | Ui_multi_file -> Multi_file_view.reload_document_selected ~skip_filter:true ()
+                   | Ui_multi_file -> Multi_file_view.reload_document doc
                   );
                 );
                 loop ()

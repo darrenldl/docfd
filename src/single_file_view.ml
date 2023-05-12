@@ -9,7 +9,7 @@ let set_search_result_selected ~choice_count n =
 let reset_search_result_selected () =
   Lwd.set Ui_base.Vars.Single_file.index_of_search_result_selected 0
 
-let update_search_constraints ~document =
+let update_search_constraints () =
   reset_search_result_selected ();
   let search_constraints =
     Search_constraints.make
@@ -28,14 +28,15 @@ let reload_document (doc : Document.t) : unit =
   | Some path -> (
       match Document.of_path ~env:(Ui_base.eio_env ()) path with
       | Ok x -> (
+          reset_search_result_selected ();
           let global_document_store =
             Lwd.peek Ui_base.Vars.document_store
-      |> Document_store.add_document x
+            |> Document_store.add_document x
           in
           Lwd.set Ui_base.Vars.document_store global_document_store;
           let document_store =
             Lwd.peek Ui_base.Vars.Single_file.document_store
-      |> Document_store.add_document x
+            |> Document_store.add_document x
           in
           Lwd.set Ui_base.Vars.Single_file.document_store document_store;
         )
@@ -46,10 +47,15 @@ module Top_pane = struct
   let main
     : Nottui.ui Lwd.t =
     Lwd.map ~f:(fun (document_store, search_result_selected) ->
+        let _, document_info =
+          Option.get (Document_store.min_binding document_store)
+        in
         Nottui_widgets.v_pane
-          (Ui_base.Content_view.main ~document ~search_result_selected)
+          (Ui_base.Content_view.main
+             ~document_info
+             ~search_result_selected)
           (Ui_base.Search_result_list.main
-             ~document
+             ~document_info
              ~index_of_search_result_selected:Ui_base.Vars.Single_file.index_of_search_result_selected)
       )
       Lwd.(pair
@@ -59,7 +65,10 @@ module Top_pane = struct
 end
 
 module Bottom_pane = struct
-  let status_bar ~(document : Document.t) ~(input_mode : Ui_base.input_mode) =
+  let status_bar
+      ~(document : Document.t)
+      ~(input_mode : Ui_base.input_mode)
+    =
     let path =
       match document.path with
       | None -> Params.stdin_doc_path_placeholder
@@ -135,21 +144,22 @@ module Bottom_pane = struct
       Ui_base.Key_binding_info.main ~grid_lookup ~input_mode
   end
 
-  let search_bar ~document ~input_mode =
+  let search_bar ~input_mode =
     Ui_base.Search_bar.main ~input_mode
       ~edit_field:Ui_base.Vars.Single_file.search_field
       ~focus_handle:Vars.search_field_focus_handle
-      ~f:(fun () -> update_search_results ~document)
+      ~f:(fun () -> update_search_constraints ())
 
   let main
-      ~document
+      ~document_info
     : Nottui.ui Lwd.t =
+    let document, _search_results = document_info in
     Lwd.map ~f:(fun input_mode ->
         Nottui_widgets.vbox
           [
             status_bar ~document ~input_mode;
             Key_binding_info.main ~input_mode;
-            search_bar ~document ~input_mode;
+            search_bar ~input_mode;
           ]
       )
       (Lwd.get Ui_base.Vars.input_mode)
@@ -157,11 +167,12 @@ module Bottom_pane = struct
 end
 
 let keyboard_handler
+    ~(document_info : Document_store.value)
     (key : Nottui.Ui.key)
   =
-  let document = Lwd.peek Ui_base.Vars.document_selected in
+  let document, search_results = document_info in
   let search_result_choice_count =
-    Array.length document.search_results
+    Array.length search_results
   in
   let search_result_current_choice =
     Lwd.peek Ui_base.Vars.Single_file.index_of_search_result_selected
@@ -216,7 +227,7 @@ let keyboard_handler
         )
       | (`ASCII 'x', []) -> (
           Lwd.set Ui_base.Vars.Single_file.search_field Ui_base.empty_search_field;
-          update_search_results ~document;
+          update_search_constraints ();
           `Handled
         )
       | (`Enter, []) -> (
@@ -234,13 +245,17 @@ let keyboard_handler
 
 let main
   : Nottui.ui Lwd.t =
-  Lwd.map ~f:(fun document ->
+  Lwd.map ~f:(fun document_store ->
+      let _, document_info =
+        Option.get (Document_store.min_binding document_store)
+      in
       Nottui_widgets.vbox
         [
-          Lwd.map ~f:(Nottui.Ui.keyboard_area keyboard_handler)
+          Lwd.map ~f:(Nottui.Ui.keyboard_area
+                        (keyboard_handler ~document_info))
             Top_pane.main;
-          Bottom_pane.main ~document;
+          Bottom_pane.main ~document_info;
         ]
     )
-    (Lwd.get Ui_base.Vars.document_selected)
+    (Lwd.get Ui_base.Vars.Single_file.document_store)
   |> Lwd.join

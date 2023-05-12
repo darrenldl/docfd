@@ -39,7 +39,7 @@ module Vars = struct
 
     let index_of_search_result_selected = Lwd.var 0
 
-  let document_store : Document_store.t Lwd.var = Lwd.var Document_store.empty
+    let document_store : Document_store.t Lwd.var = Lwd.var Document_store.empty
   end
 end
 
@@ -56,10 +56,10 @@ let full_term_sized_background () =
 
 module Content_view = struct
   let main
-      ~(document : Document.t)
-      ~(search_results : Search_result.t array)
+      ~(document_info : Document.t * Search_result.t array)
       ~(search_result_selected : int)
     : Nottui.ui Lwd.t =
+    let (document, search_results) = document_info in
     let (_term_width, term_height) = Notty_unix.Term.size (term ()) in
     let height = term_height / 2 in
     let search_result =
@@ -99,10 +99,10 @@ let mouse_handler
 
 module Search_result_list = struct
   let main
-      ~(info : (Document.t * Search_result.t array))
+      ~(document_info : (Document.t * Search_result.t array))
       ~(index_of_search_result_selected : int Lwd.var)
     : Nottui.ui Lwd.t =
-      let (document, search_results) = info in
+    let (document, search_results) = document_info in
     let search_result_selected = Lwd.peek index_of_search_result_selected in
     let result_count = Array.length search_results in
     if result_count = 0 then (

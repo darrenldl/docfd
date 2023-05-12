@@ -5,13 +5,6 @@ module Vars = struct
 
   let search_field = Lwd.var Ui_base.empty_search_field
 
-  let search_constraints =
-    ref (Search_constraints.make
-           ~fuzzy_max_edit_distance:0
-           ~phrase:"")
-
-  let documents : Document.t array Lwd.var = Lwd.var [||]
-
   let search_field_focus_handle = Nottui.Focus.make ()
 end
 
@@ -28,193 +21,157 @@ let set_search_result_selected ~choice_count n =
   let n = Misc_utils.bound_selection ~choice_count n in
   Lwd.set Vars.index_of_search_result_selected n
 
-(* let filter_documents ~all_documents =
-  let search_constraints = !Vars.search_constraints in
-  let arr =
-    all_documents
-    |> String_option_map.to_seq
-    |> Seq.filter_map (fun (_path, doc) ->
-        if Search_constraints.is_empty search_constraints then
-          Some doc
-        else (
-          match Index.search search_constraints doc.Document.index () with
-          | Seq.Nil -> None
-          | Seq.Cons _ as s ->
-            let search_results =
-              (fun () -> s)
-              |> Array.of_seq
-            in
-            Array.sort Search_result.compare search_results;
-            Some { doc with search_results }
+let reload_document (doc : Document.t) =
+  match doc.path with
+  | None -> ()
+  | Some path -> (
+      match Document.of_path ~env:(Ui_base.eio_env ()) path with
+      | Ok doc -> (
+          reset_document_selected ();
+          let document_store =
+            Lwd.peek Ui_base.Vars.document_store
+            |> Document_store.add_document doc
+          in
+          Lwd.set Ui_base.Vars.document_store document_store;
         )
-      )
-    |> Array.of_seq
-  in
-  if not (Search_constraints.is_empty search_constraints) then (
-    Array.sort (fun (doc1 : Document.t) (doc2 : Document.t) ->
-        Search_result.compare
-          (doc1.search_results.(0))
-          (doc2.search_results.(0))
-      ) arr
-  );
-  Lwd.set Vars.documents arr *)
+      | Error _ -> ()
+    )
 
-let reload_document_selected ~skip_filter () : unit =
-  let arr = Lwd.peek Vars.documents in
-  if Array.length arr > 0 then (
+let reload_document_selected
+    ~(document_info_s : Document_store.value array)
+  : unit =
+  if Array.length document_info_s > 0 then (
     let index = Lwd.peek Vars.index_of_document_selected in
-    let doc = arr.(index) in
-    match doc.path with
-    | None -> ()
-    | Some path -> (
-        match Document.of_path ~env:(Ui_base.eio_env ()) path with
-        | Ok x -> (
-            let m = Lwd.peek Ui_base.Vars.all_documents
-                    |> String_option_map.add (Some path) x
-            in
-            Lwd.set Ui_base.Vars.all_documents m;
-            if not skip_filter then (
-              filter_documents ~all_documents:m
-            );
-          )
-        | Error _ -> ()
-      )
+    let doc, _search_results = document_info_s.(index) in
+    reload_document doc;
   )
 
 let update_search_constraints () =
   reset_document_selected ();
-  Vars.search_constraints :=
-    (Search_constraints.make
-       ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
-       ~phrase:(fst @@ Lwd.peek Vars.search_field)
-    );
-  filter_documents ~all_documents:(Lwd.peek Ui_base.Vars.all_documents)
+  let search_constraints =
+    Search_constraints.make
+      ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
+      ~phrase:(fst @@ Lwd.peek Vars.search_field)
+  in
+  let document_store =
+    Lwd.peek Ui_base.Vars.document_store
+    |> Document_store.update_search_constraints search_constraints
+  in
+  Lwd.set Ui_base.Vars.document_store document_store
 
 module Top_pane = struct
   module Document_list = struct
-    let render_document_previews
-        (documents : Document.t array)
-      : Notty.image array * Notty.image array =
-      let images_selected : Notty.image list ref = ref [] in
-      let images_unselected : Notty.image list ref = ref [] in
-      Array.iter (fun (doc : Document.t) ->
-          let open Notty in
-          let open Notty.Infix in
-          let search_result_score_image =
-            if !Params.debug then
-              if Array.length doc.search_results = 0 then
-                I.empty
-              else
-                let x = doc.search_results.(0) in
-                I.strf "(best content search result score: %f)" (Search_result.score x)
-            else
-              I.empty
-          in
-          let preview_line_images =
-            let line_count =
-              min Params.preview_line_count (Index.line_count doc.index)
-            in
-            OSeq.(0 --^ line_count)
-            |> Seq.map (fun line_num -> Index.line_of_line_num line_num doc.index)
-            |> Seq.map (fun line ->
-                (I.string A.(bg lightgreen) " ")
-                <|>
-                (I.strf " %s" (Misc_utils.sanitize_string_for_printing line))
-              )
-            |> List.of_seq
-          in
-          let preview_image =
-            I.vcat preview_line_images
-          in
-          let path_image =
-            I.string A.(fg lightgreen) "@ "
+    let render_document_preview
+        ~(document_info : Document_store.value)
+        ~selected
+      : Notty.image =
+      let open Notty in
+      let open Notty.Infix in
+      let (doc, search_results) = document_info in
+      let search_result_score_image =
+        if !Params.debug then
+          if Array.length search_results = 0 then
+            I.empty
+          else
+            let x = search_results.(0) in
+            I.strf "(best content search result score: %f)" (Search_result.score x)
+        else
+          I.empty
+      in
+      let preview_line_images =
+        let line_count =
+          min Params.preview_line_count (Index.line_count doc.index)
+        in
+        OSeq.(0 --^ line_count)
+        |> Seq.map (fun line_num -> Index.line_of_line_num line_num doc.index)
+        |> Seq.map (fun line ->
+            (I.string A.(bg lightgreen) " ")
             <|>
-            I.string A.empty
-              (Option.value ~default:Params.stdin_doc_path_placeholder doc.path);
-          in
-          let title =
-            Option.value ~default:"" doc.title
-            |> Misc_utils.sanitize_string_for_printing
-          in
-          let img_selected =
-            (I.string A.(fg lightblue ++ st bold) title)
-            <->
-            (I.string A.empty "  "
-             <|>
-             I.vcat
-               [ search_result_score_image;
-                 path_image;
-                 preview_image;
-               ]
-            )
-          in
-          let img_unselected =
-            (I.string A.(fg lightblue) title)
-            <->
-            (I.string A.empty "  "
-             <|>
-             I.vcat
-               [ search_result_score_image;
-                 path_image;
-                 preview_image;
-               ]
-            )
-          in
-          images_selected := img_selected :: !images_selected;
-          images_unselected := img_unselected :: !images_unselected
-        ) documents;
-      let images_selected = Array.of_list (List.rev !images_selected) in
-      let images_unselected = Array.of_list (List.rev !images_unselected) in
-      (images_selected, images_unselected)
-
-    let main ~documents =
-      let document_count = Array.length documents in
-      Lwd.map ~f:(fun document_selected ->
-          let pane =
-            if document_count = 0 then (
-              Nottui.Ui.empty
-            ) else (
-              let (images_selected, images_unselected) =
-                render_document_previews documents
-              in
-              let (_term_width, term_height) = Notty_unix.Term.size (Ui_base.term ()) in
-              CCInt.range'
-                document_selected
-                (min (document_selected + term_height / 2) document_count)
-              |> CCList.of_iter
-              |> List.map (fun j ->
-                  if Int.equal document_selected j then
-                    images_selected.(j)
-                  else
-                    images_unselected.(j)
-                )
-              |> List.map Nottui.Ui.atom
-              |> Nottui.Ui.vcat
-            )
-          in
-          Nottui.Ui.join_z (Ui_base.full_term_sized_background ()) pane
-          |> Nottui.Ui.mouse_area
-            (Ui_base.mouse_handler
-               ~choice_count:document_count
-               ~current_choice:Vars.index_of_document_selected)
+            (I.strf " %s" (Misc_utils.sanitize_string_for_printing line))
+          )
+        |> List.of_seq
+      in
+      let preview_image =
+        I.vcat preview_line_images
+      in
+      let path_image =
+        I.string A.(fg lightgreen) "@ "
+        <|>
+        I.string A.empty
+          (Option.value ~default:Params.stdin_doc_path_placeholder doc.path);
+      in
+      let title =
+        Option.value ~default:"" doc.title
+        |> Misc_utils.sanitize_string_for_printing
+      in
+      if selected then (
+        (I.string A.(fg lightblue ++ st bold) title)
+        <->
+        (I.string A.empty "  "
+         <|>
+         I.vcat
+           [ search_result_score_image;
+             path_image;
+             preview_image;
+           ]
         )
-        (Lwd.get Vars.index_of_document_selected)
+      ) else (
+        (I.string A.(fg lightblue) title)
+        <->
+        (I.string A.empty "  "
+         <|>
+         I.vcat
+           [ search_result_score_image;
+             path_image;
+             preview_image;
+           ]
+        )
+      )
+
+    let main
+        ~(document_info_s : Document_store.value array)
+        ~(document_selected : int)
+      : Nottui.ui Lwd.t =
+      let document_count = Array.length document_info_s in
+      let pane =
+        if document_count = 0 then (
+          Nottui.Ui.empty
+        ) else (
+          let (_term_width, term_height) = Notty_unix.Term.size (Ui_base.term ()) in
+          CCInt.range'
+            document_selected
+            (min (document_selected + term_height / 2) document_count)
+          |> CCList.of_iter
+          |> List.map (fun j ->
+              let selected = Int.equal document_selected j in
+              render_document_preview ~document_info:document_info_s.(j) ~selected
+            )
+          |> List.map Nottui.Ui.atom
+          |> Nottui.Ui.vcat
+        )
+      in
+      Nottui.Ui.join_z (Ui_base.full_term_sized_background ()) pane
+      |> Nottui.Ui.mouse_area
+        (Ui_base.mouse_handler
+           ~choice_count:document_count
+           ~current_choice:Vars.index_of_document_selected)
+      |> Lwd.return
   end
 
   module Right_pane = struct
     let main
-        ~(documents : Document.t array)
+        ~(document_info_s : Document_store.value array)
         ~(document_selected : int)
       : Nottui.ui Lwd.t =
-      if Array.length documents = 0 then
+      if Array.length document_info_s = 0 then
         Nottui_widgets.(v_pane empty_lwd empty_lwd)
       else (
         Lwd.map ~f:(fun search_result_selected ->
-            let document = documents.(document_selected) in
+            let document_info = document_info_s.(document_selected) in
             Nottui_widgets.v_pane
-              (Ui_base.Content_view.main ~document ~search_result_selected)
+              (Ui_base.Content_view.main ~document_info ~search_result_selected)
               (Ui_base.Search_result_list.main
-                 ~document
+                 ~document_info
                  ~index_of_search_result_selected:Vars.index_of_search_result_selected)
           )
           (Lwd.get Vars.index_of_search_result_selected)
@@ -223,21 +180,24 @@ module Top_pane = struct
   end
 
   let main
-      ~(documents : Document.t array)
+      ~(document_info_s : Document_store.value array)
     : Nottui.ui Lwd.t =
     Lwd.map ~f:(fun document_selected ->
         Nottui_widgets.h_pane
-          (Document_list.main ~documents)
-          (Right_pane.main ~documents ~document_selected)
+          (Document_list.main ~document_info_s ~document_selected)
+          (Right_pane.main ~document_info_s ~document_selected)
       )
       (Lwd.get Vars.index_of_document_selected)
     |> Lwd.join
 end
 
 module Bottom_pane = struct
-  let status_bar ~documents ~(input_mode : Ui_base.input_mode) =
+  let status_bar
+      ~(document_info_s : Document_store.value array)
+      ~(input_mode : Ui_base.input_mode)
+    =
     Lwd.map ~f:(fun index_of_document_selected ->
-        let document_count = Array.length documents in
+        let document_count = Array.length document_info_s in
         let input_mode_image =
           List.assoc input_mode Ui_base.Status_bar.input_mode_images
         in
@@ -325,11 +285,11 @@ module Bottom_pane = struct
       ~focus_handle:Vars.search_field_focus_handle
       ~f:update_search_constraints
 
-  let main ~documents =
+  let main ~document_info_s =
     Lwd.map ~f:(fun input_mode ->
         Nottui_widgets.vbox
           [
-            status_bar ~documents ~input_mode;
+            status_bar ~document_info_s ~input_mode;
             Key_binding_info.main ~input_mode;
             search_bar ~input_mode;
           ]
@@ -339,26 +299,25 @@ module Bottom_pane = struct
 end
 
 let keyboard_handler
-    ~(documents : Document.t array)
+    ~(document_info_s : Document_store.value array)
     (key : Nottui.Ui.key)
   =
   let document_choice_count =
-    Array.length documents
+    Array.length document_info_s
   in
   let document_current_choice =
     Lwd.peek Vars.index_of_document_selected
   in
-  let document_selected =
+  let document_info =
     if document_choice_count = 0 then
       None
     else
-      Some documents.(document_current_choice)
+      Some document_info_s.(document_current_choice)
   in
   let search_result_choice_count =
-    if document_choice_count = 0 then
-      0
-    else
-      Array.length documents.(document_current_choice).search_results
+    match document_info with
+    | None -> 0
+    | Some (_doc, search_results) -> Array.length search_results
   in
   let search_result_current_choice =
     Lwd.peek Vars.index_of_search_result_selected
@@ -374,19 +333,20 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'r', []) -> (
-          reload_document_selected ~skip_filter:false ();
+          reload_document_selected ~document_info_s;
           `Handled
         )
       | (`Tab, []) -> (
-          Option.iter (fun document_selected ->
-              Lwd.set Ui_base.Vars.document_selected document_selected;
+          Option.iter (fun (doc, _search_results) ->
+              Lwd.set Ui_base.Vars.Single_file.document_store
+                Document_store.(add_document doc empty);
               Lwd.set Ui_base.Vars.Single_file.index_of_search_result_selected
                 (Lwd.peek Vars.index_of_search_result_selected);
               Lwd.set Ui_base.Vars.Single_file.search_field
                 (Lwd.peek Vars.search_field);
               Lwd.set Ui_base.Vars.ui_mode Ui_single_file;
             )
-            document_selected;
+            document_info;
           `Handled
         )
       | (`Page `Down, [`Shift])
@@ -432,15 +392,15 @@ let keyboard_handler
           `Handled
         )
       | (`Enter, []) -> (
-          Option.iter (fun document_selected ->
-              match document_selected.Document.path with
+          Option.iter (fun (doc, _search_results) ->
+              match doc.Document.path with
               | None -> ()
               | Some _ -> (
-                  Ui_base.Vars.file_to_open := Some document_selected;
+                  Ui_base.Vars.file_to_open := Some doc;
                   Lwd.set Ui_base.Vars.quit true;
                 )
             )
-            document_selected;
+            document_info;
           `Handled
         )
       | _ -> `Handled
@@ -448,19 +408,17 @@ let keyboard_handler
   | Search -> `Unhandled
 
 let main : Nottui.ui Lwd.t =
-  Lwd.map ~f:(fun all_documents ->
-      filter_documents ~all_documents;
-      Lwd.map ~f:(fun documents ->
-          Nottui_widgets.vbox
-            [
-              Lwd.map
-                ~f:(Nottui.Ui.keyboard_area (keyboard_handler ~documents))
-                (Top_pane.main ~documents);
-              Bottom_pane.main ~documents;
-            ]
-        )
-        (Lwd.get Vars.documents)
-      |> Lwd.join
+  Lwd.map ~f:(fun document_store ->
+      let document_info_s =
+        Document_store.usable_documents document_store
+      in
+      Nottui_widgets.vbox
+        [
+          Lwd.map
+            ~f:(Nottui.Ui.keyboard_area (keyboard_handler ~document_info_s))
+            (Top_pane.main ~document_info_s);
+          Bottom_pane.main ~document_info_s;
+        ]
     )
-    (Lwd.get Ui_base.Vars.all_documents)
+    (Lwd.get Ui_base.Vars.document_store)
   |> Lwd.join
