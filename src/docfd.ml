@@ -159,6 +159,10 @@ let run
                            |> Document_store.of_seq
       in
       Lwd.set Ui_base.Vars.document_store document_store;
+      (match init_ui_mode with
+       | Ui_base.Ui_single_file -> Lwd.set Ui_base.Vars.Single_file.document_store document_store
+       | _ -> ()
+      );
       Ui_base.Vars.total_document_count := List.length all_documents;
       (match document_src with
        | Stdin ->

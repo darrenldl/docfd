@@ -69,14 +69,16 @@ module Top_pane = struct
       let open Notty.Infix in
       let (doc, search_results) = document_info in
       let search_result_score_image =
-        if !Params.debug then
+        if !Params.debug then (
           if Array.length search_results = 0 then
             I.empty
-          else
+          else (
             let x = search_results.(0) in
             I.strf "(best content search result score: %f)" (Search_result.score x)
-        else
+          )
+        ) else (
           I.empty
+        )
       in
       let preview_line_images =
         let line_count =
