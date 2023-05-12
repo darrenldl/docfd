@@ -15,6 +15,20 @@ let empty : t =
     search_results = String_option_map.empty;
   }
 
+let search_phrase (t : t) = t.search_phrase
+
+let single_out ~path (t : t) =
+  match String_option_map.find_opt path t.documents with
+  | None -> None
+  | Some doc ->
+    let search_results = String_option_map.find path t.search_results in
+    Some
+      {
+        documents = String_option_map.(add path doc empty);
+        search_phrase = t.search_phrase;
+        search_results = String_option_map.(add path search_results empty);
+      }
+
 let min_binding (t : t) =
   match String_option_map.min_binding_opt t.documents with
   | None -> None

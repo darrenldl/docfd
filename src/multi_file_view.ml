@@ -340,8 +340,11 @@ let keyboard_handler
         )
       | (`Tab, []) -> (
           Option.iter (fun (doc, _search_results) ->
-              Lwd.set Ui_base.Vars.Single_file.document_store
-                Document_store.(add_document doc empty);
+              let document_store = Lwd.peek Ui_base.Vars.document_store in
+              let single_file_document_store =
+                Option.get (Document_store.single_out ~path:doc.Document.path document_store)
+              in
+              Lwd.set Ui_base.Vars.Single_file.document_store single_file_document_store;
               Lwd.set Ui_base.Vars.Single_file.index_of_search_result_selected
                 (Lwd.peek Vars.index_of_search_result_selected);
               Lwd.set Ui_base.Vars.Single_file.search_field
