@@ -9,7 +9,7 @@ Root (RoCo: UI mode)
 - Single file view (RoCo: document store)
   - Top pane (RoCo: index of search result selected)
     - Content view
-    - Search result list (index of search result var is passed for mouse handler)
+    - Search result list
   - Bottom pane (RoCo: input mode)
     - Status bar
     - Key binding info
@@ -20,7 +20,7 @@ Root (RoCo: UI mode)
     - Document list
     - Right pane (RoCo: index of search result selected)
       - Content view
-      - Search result list (index of search result var is passed for mouse handler)
+      - Search result list
   - Bottom pane (RoCo: input mode)
     - Status bar (RoCo: index of document selected)
     - Key binding info
