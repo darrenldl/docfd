@@ -101,7 +101,7 @@ let content_snippet
       start_and_end_inc_line_of_search_result index search_result
     in
     let avg = (relevant_start_line + relevant_end_inc_line) / 2 in
-    let start_line = max 0 (avg - height / 2) in
+    let start_line = max 0 (avg - height / 2 + 1) in
     let end_inc_line = min max_line_num (avg + height) in
     let grid =
       word_image_grid_of_index
