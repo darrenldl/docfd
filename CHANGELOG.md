@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.4
+
+- Index data structure optimization
+
+- Code cleanup
+
 ## 0.8.3
 
 - Optimized multi file view reload so it does not redo the search over all documents

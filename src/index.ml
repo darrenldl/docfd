@@ -108,7 +108,7 @@ let of_seq (s : (int * string) Seq.t) : t =
     |> chunks_of_words
     |> List.of_seq
     |> Eio.Fiber.List.map (fun chunk ->
-        Worker_pool.run (fun () -> of_chunk chunk))
+        Task_pool.run (fun () -> of_chunk chunk))
   in
   List.fold_left (fun acc index ->
       union acc index
@@ -251,7 +251,7 @@ module Search = struct
             in
             possible_starts
             |> Eio.Fiber.List.map (fun pos ->
-                Worker_pool.run
+                Task_pool.run
                   (fun () ->
                      search_around_pos pos rest t
                      |> Seq.map (fun l -> pos :: l)
