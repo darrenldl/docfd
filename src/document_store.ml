@@ -40,15 +40,19 @@ let min_binding (t : t) =
     )
 
 let update_search_phrase search_phrase (t : t) : t =
-  { t with
-    search_phrase;
-    search_results =
-      String_option_map.mapi (fun path _ ->
-          let doc = String_option_map.find path t.documents in
-          (Index.search search_phrase doc.index)
-        )
-        t.search_results;
-  }
+  if Search_phrase.equal search_phrase t.search_phrase then (
+    t
+  ) else (
+    { t with
+      search_phrase;
+      search_results =
+        String_option_map.mapi (fun path _ ->
+            let doc = String_option_map.find path t.documents in
+            (Index.search search_phrase doc.index)
+          )
+          t.search_results;
+    }
+  )
 
 let add_document (doc : Document.t) (t : t) : t =
   { t with

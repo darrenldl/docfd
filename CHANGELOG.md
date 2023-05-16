@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.5
+
+- Added check to skip re-searching if search phrase is equivalent to the previous one
+
 ## 0.8.4
 
 - Index data structure optimization
