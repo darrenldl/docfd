@@ -1,5 +1,5 @@
 type t = {
-  pos_s_of_word_ci : Int_set.t String_map.t;
+  pos_s_of_word_ci : Int_set.t Int_map.t;
   loc_of_pos : (int * int) Int_map.t;
   start_end_inc_pos_of_line_num : (int * int) Int_map.t;
   word_ci_of_pos : int Int_map.t;
@@ -12,7 +12,7 @@ type double_indexed_word = int * (int * int) * string
 type chunk = double_indexed_word array
 
 let empty : t = {
-  pos_s_of_word_ci = String_map.empty;
+  pos_s_of_word_ci = Int_map.empty;
   loc_of_pos = Int_map.empty;
   start_end_inc_pos_of_line_num = Int_map.empty;
   word_ci_of_pos = Int_map.empty;
@@ -23,7 +23,7 @@ let empty : t = {
 let union (x : t) (y : t) =
   {
     pos_s_of_word_ci =
-      String_map.union (fun _k s0 s1 -> Some (Int_set.union s0 s1))
+      Int_map.union (fun _k s0 s1 -> Some (Int_set.union s0 s1))
         x.pos_s_of_word_ci
         y.pos_s_of_word_ci;
     loc_of_pos =
@@ -75,7 +75,7 @@ let of_chunk (arr : chunk) : t =
         Word_db.add word_ci
       in
       let pos_s = Option.value ~default:Int_set.empty
-          (String_map.find_opt word_ci pos_s_of_word_ci)
+          (Int_map.find_opt index_of_word_ci pos_s_of_word_ci)
                   |> Int_set.add pos
       in
       let start_end_inc_pos =
@@ -83,7 +83,7 @@ let of_chunk (arr : chunk) : t =
         | None -> (pos, pos)
         | Some (x, y) -> (min x pos, max y pos)
       in
-      { pos_s_of_word_ci = String_map.add word_ci pos_s pos_s_of_word_ci;
+      { pos_s_of_word_ci = Int_map.add index_of_word_ci pos_s pos_s_of_word_ci;
         loc_of_pos = Int_map.add pos loc loc_of_pos;
         start_end_inc_pos_of_line_num =
           Int_map.add line_num start_end_inc_pos start_end_inc_pos_of_line_num;
@@ -126,7 +126,10 @@ let word_of_pos pos t =
 
 let word_ci_and_pos_s ?range_inc t : (string * Int_set.t) Seq.t =
   match range_inc with
-  | None -> String_map.to_seq t.pos_s_of_word_ci
+  | None -> (
+      Int_map.to_seq t.pos_s_of_word_ci
+      |> Seq.map (fun (i, s) -> (Word_db.word_of_index i, s))
+    )
   | Some (start, end_inc) -> (
       assert (start <= end_inc);
       let _, _, m =
@@ -141,9 +144,8 @@ let word_ci_and_pos_s ?range_inc t : (string * Int_set.t) Seq.t =
           ) m Int_set.empty
       in
       Int_set.to_seq words_to_consider
-      |> Seq.map Word_db.word_of_index
-      |> Seq.map (fun word ->
-          (word, String_map.find word t.pos_s_of_word_ci)
+      |> Seq.map (fun index ->
+          (Word_db.word_of_index index, Int_map.find index t.pos_s_of_word_ci)
         )
       |> Seq.map (fun (word, pos_s) ->
           let _, _, m =
