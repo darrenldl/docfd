@@ -53,10 +53,8 @@ Otherwise, Docfd uses **Multi file view**.
 
 ## Multi file view
 
-Searching `single pipe stdn` in repo root:
 ![](screenshots/main0.png)
 
-Searching `[github]` in repo root:
 ![](screenshots/main1.png)
 
 The default TUI is divided into four sections:
@@ -115,10 +113,8 @@ Docfd operates in modes, the initial mode is `Navigation` mode.
 If the specified path to Docfd is not a directory, then single file view
 is used.
 
-Searching `single pipe stdn` in `README.md`:
 ![](screenshots/single-file0.png)
 
-Searching `[github]` in `README.md`:
 ![](screenshots/single-file1.png)
 
 In this mode, the TUI is divided into only two sections:
