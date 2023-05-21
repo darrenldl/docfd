@@ -15,7 +15,7 @@ Root (RoCo: UI mode)
     - Key binding info
     - Search bar
 
-- Multi file view (RoCo: document store)
+- Multi-file view (RoCo: document store)
   - Top pane (RoCo: index of document selected)
     - Document list
     - Right pane (RoCo: index of search result selected)

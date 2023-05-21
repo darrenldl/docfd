@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.6
+
+- Minor wording fix
+
 ## 0.8.5
 
 - Added check to skip re-searching if search phrase is equivalent to the previous one
@@ -12,7 +16,7 @@
 
 ## 0.8.3
 
-- Optimized multi file view reload so it does not redo the search over all documents
+- Optimized multi-file view reload so it does not redo the search over all documents
 
 - Implemented a proper document store
 

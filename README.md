@@ -12,7 +12,7 @@ Statically linked binaries are available via
 
 - Multiline fuzzy search of multiple files or a single file
 
-- Swap between multi file view and single file view on the fly
+- Swap between multi-file view and single file view on the fly
 
 - Content view pane that shows the snippet surrounding the search result selected
 
@@ -49,9 +49,9 @@ current directory `.`.
 
 If exactly one file is specified
 in the list of paths, then Docfd uses **Single file view**.
-Otherwise, Docfd uses **Multi file view**.
+Otherwise, Docfd uses **Multi-file view**.
 
-## Multi file view
+## Multi-file view
 
 ![](screenshots/main0.png)
 
@@ -148,7 +148,7 @@ namely `Shift` is optional for scrolling through search result list.
 - Open document
   - `Enter`
     - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
-- Switch to multi file view
+- Switch to multi-file view
   - `Tab`
 - Switch to `Search` mode
   - `/`

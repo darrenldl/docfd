@@ -115,7 +115,7 @@ module Bottom_pane = struct
            navigate_line0;
            [
              { label = "Tab";
-               msg = "switch to multi file view" };
+               msg = "switch to multi-file view" };
              { label = "r"; msg = "reload" };
              { label = "q"; msg = "exit" };
            ];
