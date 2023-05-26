@@ -10,5 +10,6 @@ fuzz-*-output
 fuzz-logs/
 test*.md
 test*.txt
+test*.pdf
 *.tar.gz
 /statically-linked/
