@@ -2,19 +2,26 @@ type t = {
   pos_s_of_word_ci : Int_set.t Int_map.t;
   loc_of_pos : (int * int) Int_map.t;
   start_end_inc_pos_of_line_num : (int * int) Int_map.t;
+  page_of_pos : int Int_map.t;
   word_ci_of_pos : int Int_map.t;
   word_of_pos : int Int_map.t;
   line_count : int;
 }
 
-type double_indexed_word = int * (int * int) * string
+type multi_indexed_word = {
+  pos : int;
+  loc : int * int;
+  page : int option;
+  word : string;
+}
 
-type chunk = double_indexed_word array
+type chunk = multi_indexed_word array
 
 let empty : t = {
   pos_s_of_word_ci = Int_map.empty;
   loc_of_pos = Int_map.empty;
   start_end_inc_pos_of_line_num = Int_map.empty;
+  page_of_pos = Int_map.empty;
   word_ci_of_pos = Int_map.empty;
   word_of_pos = Int_map.empty;
   line_count = 0;
@@ -35,6 +42,10 @@ let union (x : t) (y : t) =
           Some (min start_x start_y, max end_inc_x end_inc_y))
         x.start_end_inc_pos_of_line_num
         y.start_end_inc_pos_of_line_num;
+    page_of_pos =
+      Int_map.union (fun _k x _ -> Some x)
+      x.page_of_pos
+      y.page_of_pos;
     word_ci_of_pos =
       Int_map.union (fun _k x _ -> Some x)
         x.word_ci_of_pos
@@ -65,7 +76,7 @@ let of_chunk (arr : chunk) : t =
         word_of_pos;
         line_count;
       }
-      (pos, loc, word) ->
+      { pos; loc; page; word } ->
       let (line_num, _) = loc in
       let word_ci = String.lowercase_ascii word in
       let index_of_word =
@@ -87,6 +98,9 @@ let of_chunk (arr : chunk) : t =
         loc_of_pos = Int_map.add pos loc loc_of_pos;
         start_end_inc_pos_of_line_num =
           Int_map.add line_num start_end_inc_pos start_end_inc_pos_of_line_num;
+        page_of_pos = match page with
+        | None -> page_of_pos
+        | Some page -> Int_map.add pos page page_of_pos;
         word_ci_of_pos = Int_map.add pos index_of_word_ci word_ci_of_pos;
         word_of_pos = Int_map.add pos index_of_word word_of_pos;
         line_count;

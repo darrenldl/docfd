@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.0
+
+- Added PDF search support via `pdftotext`
+
 ## 0.8.6
 
 - Minor wording fix
