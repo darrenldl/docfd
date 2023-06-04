@@ -222,7 +222,9 @@ module Search = struct
     in
     word_ci_and_positions_to_consider
     |> Seq.filter (fun (indexed_word, _pos_s) ->
-        not (String.for_all Parser_components.is_space indexed_word)
+        (not (String.equal indexed_word ""))
+        &&
+        (not (String.for_all Parser_components.is_space indexed_word))
       )
     |> Seq.filter (fun (indexed_word, _pos_s) ->
         String.equal search_word_ci indexed_word
