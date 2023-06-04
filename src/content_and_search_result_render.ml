@@ -2,25 +2,22 @@ module I = Notty.I
 
 module A = Notty.A
 
-type word_image_grid = {
-  start_line : int;
-  data : Notty.image array array;
-}
+type word_image_grid = (Index.Line_loc.t * Notty.image array) array
 
-let start_and_end_inc_line_of_search_result
+let start_and_end_inc_line_loc_of_search_result
     (index : Index.t)
     (search_result : Search_result.t)
-  : (int * int) =
+  : (Index.Line_loc.t * Index.Line_loc.t) =
   match Search_result.found_phrase search_result with
   | [] -> failwith "Unexpected case"
   | l -> (
       List.fold_left (fun s_e (pos, _, _) ->
           let loc = Index.loc_of_pos pos index in
-          let line_num = loc.Index.line_num in
+          let line_loc = Index.Line_loc.of_loc loc in
           match s_e with
-          | None -> Some (line_num, line_num)
+          | None -> Some (line_loc, line_loc)
           | Some (s, e) ->
-            Some (min s line_num, max line_num e)
+            Some (Index.Line_loc.min s line_loc, Index.Line_loc.max line_loc e)
         )
         None
         l
@@ -28,21 +25,21 @@ let start_and_end_inc_line_of_search_result
     )
 
 let word_image_grid_of_index
-    ~start_line
-    ~end_inc_line
+    ~start_line_loc
+    ~end_inc_line_loc
     (index : Index.t)
   : word_image_grid =
-  let data =
-    OSeq.(start_line -- end_inc_line)
-    |> Seq.map (fun line_num ->
-        Index.words_of_line_num line_num index
+    Index.line_loc_seq ~start:start_line_loc ~end_inc:end_inc_line_loc index
+    |> Seq.map (fun line_loc ->
+        let data =
+        Index.words_of_line_loc line_loc index
         |> Seq.map Misc_utils.sanitize_string_for_printing
         |> Seq.map (fun word -> I.string A.empty word)
         |> Array.of_seq
+        in
+        (line_loc, data)
       )
     |> Array.of_seq
-  in
-  { start_line; data }
 
 let color_word_image_grid
     (grid : word_image_grid)
@@ -51,7 +48,7 @@ let color_word_image_grid
   : unit =
   List.iter (fun (pos, _word_ci, word) ->
       let loc = Index.loc_of_pos pos index in
-      let line_num = loc.Index.line_num in
+      let line_num = loc.Index.Line_loc.line_num in
       let pos_in_line = loc.Index.pos_in_line in
       let word = Misc_utils.sanitize_string_for_printing word in
       grid.data.(line_num - grid.start_line).(pos_in_line) <-

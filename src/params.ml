@@ -10,7 +10,7 @@ let default_max_file_tree_depth = 5
 
 let max_file_tree_depth = ref default_max_file_tree_depth
 
-let recognized_exts = [ ".txt"; ".md" ]
+let recognized_exts = [ ".txt"; ".md"; ".pdf" ]
 
 let default_max_word_search_range = 40
 
