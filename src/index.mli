@@ -1,8 +1,19 @@
+type line_loc = {
+  page_num : int;
+  line_num : int;
+}
+
+type loc = {
+  page_num : int;
+  line_num : int;
+  pos_in_line : int;
+}
+
 type t
 
 val empty : t
 
-val of_seq : (int * string) Seq.t -> t
+val of_seq : (line_loc * string) Seq.t -> t
 
 val word_ci_of_pos : int -> t -> string
 
@@ -14,7 +25,7 @@ val words_of_line_num : int -> t -> string Seq.t
 
 val line_of_line_num : int -> t -> string
 
-val loc_of_pos : int -> t -> int * int
+val loc_of_pos : int -> t -> loc
 
 val lines : t -> string Seq.t
 

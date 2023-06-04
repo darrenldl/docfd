@@ -1,17 +1,27 @@
+type line_loc = {
+  page_num : int;
+  line_num : int;
+}
+
+type loc = {
+  page_num : int;
+  line_num : int;
+  pos_in_line : int;
+}
+
 type t = {
   pos_s_of_word_ci : Int_set.t Int_map.t;
-  loc_of_pos : (int * int) Int_map.t;
+  loc_of_pos : loc Int_map.t;
   start_end_inc_pos_of_line_num : (int * int) Int_map.t;
-  page_of_pos : int Int_map.t;
   word_ci_of_pos : int Int_map.t;
   word_of_pos : int Int_map.t;
   line_count : int;
+  page_count : int;
 }
 
 type multi_indexed_word = {
   pos : int;
-  loc : int * int;
-  page : int option;
+  loc : loc;
   word : string;
 }
 
@@ -21,10 +31,10 @@ let empty : t = {
   pos_s_of_word_ci = Int_map.empty;
   loc_of_pos = Int_map.empty;
   start_end_inc_pos_of_line_num = Int_map.empty;
-  page_of_pos = Int_map.empty;
   word_ci_of_pos = Int_map.empty;
   word_of_pos = Int_map.empty;
   line_count = 0;
+  page_count = 0;
 }
 
 let union (x : t) (y : t) =
@@ -42,10 +52,6 @@ let union (x : t) (y : t) =
           Some (min start_x start_y, max end_inc_x end_inc_y))
         x.start_end_inc_pos_of_line_num
         y.start_end_inc_pos_of_line_num;
-    page_of_pos =
-      Int_map.union (fun _k x _ -> Some x)
-      x.page_of_pos
-      y.page_of_pos;
     word_ci_of_pos =
       Int_map.union (fun _k x _ -> Some x)
         x.word_ci_of_pos
@@ -55,16 +61,26 @@ let union (x : t) (y : t) =
         x.word_of_pos
         y.word_of_pos;
     line_count = max x.line_count y.line_count;
+    page_count = max x.page_count y.page_count;
   }
 
-let words_of_lines (s : (int * string) Seq.t) : double_indexed_word Seq.t =
+let words_of_lines
+    (s : (line_loc * string) Seq.t)
+  : multi_indexed_word Seq.t =
   s
-  |> Seq.flat_map (fun (line_num, s) ->
-      Tokenize.f_with_pos ~drop_spaces:false s
-      |> Seq.map (fun (i, s) -> ((line_num, i), s))
+  |> Seq.flat_map (fun (({ page_num; line_num } : line_loc), s) ->
+      let seq = Tokenize.f_with_pos ~drop_spaces:false s in
+      if Seq.is_empty seq then (
+        let empty_line = ({ page_num; line_num; pos_in_line = 0 }, "") in
+        Seq.return empty_line
+      ) else (
+        Seq.map (fun (pos_in_line, word) ->
+            ({ page_num; line_num; pos_in_line }, word))
+          seq
+      )
     )
-  |> Seq.mapi (fun i (loc, s) ->
-      (i, loc, s))
+  |> Seq.mapi (fun pos (loc, word) ->
+      { pos; loc; word })
 
 let of_chunk (arr : chunk) : t =
   Array.fold_left
@@ -75,49 +91,42 @@ let of_chunk (arr : chunk) : t =
         word_ci_of_pos;
         word_of_pos;
         line_count;
+        page_count;
       }
-      { pos; loc; page; word } ->
-      let (line_num, _) = loc in
+      { pos; loc; word } ->
       let word_ci = String.lowercase_ascii word in
-      let index_of_word =
-        Word_db.add word
-      in
-      let index_of_word_ci =
-        Word_db.add word_ci
-      in
+      let index_of_word = Word_db.add word in
+      let index_of_word_ci = Word_db.add word_ci in
       let pos_s = Option.value ~default:Int_set.empty
           (Int_map.find_opt index_of_word_ci pos_s_of_word_ci)
                   |> Int_set.add pos
       in
       let start_end_inc_pos =
-        match Int_map.find_opt line_num start_end_inc_pos_of_line_num with
+        match Int_map.find_opt loc.line_num start_end_inc_pos_of_line_num with
         | None -> (pos, pos)
         | Some (x, y) -> (min x pos, max y pos)
       in
+      let line_count = max line_count (loc.line_num + 1) in
+      let page_count = max page_count (loc.page_num + 1) in
       { pos_s_of_word_ci = Int_map.add index_of_word_ci pos_s pos_s_of_word_ci;
         loc_of_pos = Int_map.add pos loc loc_of_pos;
         start_end_inc_pos_of_line_num =
-          Int_map.add line_num start_end_inc_pos start_end_inc_pos_of_line_num;
-        page_of_pos = match page with
-        | None -> page_of_pos
-        | Some page -> Int_map.add pos page page_of_pos;
+          Int_map.add loc.line_num start_end_inc_pos start_end_inc_pos_of_line_num;
         word_ci_of_pos = Int_map.add pos index_of_word_ci word_ci_of_pos;
         word_of_pos = Int_map.add pos index_of_word word_of_pos;
         line_count;
+        page_count;
       }
     )
     empty
     arr
 
-let chunks_of_words (s : double_indexed_word Seq.t) : chunk Seq.t =
+let chunks_of_words (s : multi_indexed_word Seq.t) : chunk Seq.t =
   OSeq.chunks !Params.index_chunk_word_count s
 
-let of_seq (s : (int * string) Seq.t) : t =
-  let lines = Array.of_seq s in
-  let line_count = Array.length lines in
+let of_seq (s : (line_loc * string) Seq.t) : t =
   let indices =
-    lines
-    |> Array.to_seq
+    s
     |> words_of_lines
     |> chunks_of_words
     |> List.of_seq
@@ -127,7 +136,7 @@ let of_seq (s : (int * string) Seq.t) : t =
   List.fold_left (fun acc index ->
       union acc index
     )
-    { empty with line_count }
+    empty
     indices
 
 let word_ci_of_pos pos t =
@@ -173,18 +182,18 @@ let word_ci_and_pos_s ?range_inc t : (string * Int_set.t) Seq.t =
     )
 
 let words_of_line_num line_num t : string Seq.t =
-  match Int_map.find_opt line_num t.start_end_inc_pos_of_line_num with
-  | None -> Seq.empty
-  | Some (start, end_inc) ->
-    OSeq.(start -- end_inc)
-    |> Seq.map (fun pos -> word_of_pos pos t)
+  let (start, end_inc) =
+    Int_map.find line_num t.start_end_inc_pos_of_line_num
+  in
+  OSeq.(start -- end_inc)
+  |> Seq.map (fun pos -> word_of_pos pos t)
 
 let line_of_line_num line_num t =
   words_of_line_num line_num t
   |> List.of_seq
   |> String.concat ""
 
-let loc_of_pos pos t : (int * int) =
+let loc_of_pos pos t : loc =
   Int_map.find pos t.loc_of_pos
 
 let line_count t : int =

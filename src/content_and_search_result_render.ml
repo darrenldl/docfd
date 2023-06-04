@@ -15,7 +15,8 @@ let start_and_end_inc_line_of_search_result
   | [] -> failwith "Unexpected case"
   | l -> (
       List.fold_left (fun s_e (pos, _, _) ->
-          let (line_num, _) = Index.loc_of_pos pos index in
+          let loc = Index.loc_of_pos pos index in
+          let line_num = loc.Index.line_num in
           match s_e with
           | None -> Some (line_num, line_num)
           | Some (s, e) ->
@@ -49,7 +50,9 @@ let color_word_image_grid
     (search_result : Search_result.t)
   : unit =
   List.iter (fun (pos, _word_ci, word) ->
-      let (line_num, pos_in_line) = Index.loc_of_pos pos index in
+      let loc = Index.loc_of_pos pos index in
+      let line_num = loc.Index.line_num in
+      let pos_in_line = loc.Index.pos_in_line in
       let word = Misc_utils.sanitize_string_for_printing word in
       grid.data.(line_num - grid.start_line).(pos_in_line) <-
         I.string A.(fg black ++ bg lightyellow) word
