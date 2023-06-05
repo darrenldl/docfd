@@ -82,10 +82,10 @@ module Top_pane = struct
       in
       let preview_line_images =
         let line_count =
-          min Params.preview_line_count (Index.line_count doc.index)
+          min Params.preview_line_count (Index.global_line_count doc.index)
         in
         OSeq.(0 --^ line_count)
-        |> Seq.map (fun line_num -> Index.line_of_line_num line_num doc.index)
+        |> Seq.map (fun global_line_num -> Index.line_of_global_line_num global_line_num doc.index)
         |> Seq.map (fun line ->
             (I.string A.(bg lightgreen) " ")
             <|>
