@@ -231,13 +231,14 @@ let keyboard_handler
           `Handled
         )
       | (`Enter, []) -> (
-          match !Ui_base.Vars.document_src with
-          | Stdin -> `Handled
-          | Files _ -> (
-              Lwd.set Ui_base.Vars.quit true;
-              Ui_base.Vars.file_to_open := Some document;
-              `Handled
-            )
+          (match document.Document.path with
+           | Some path when Filename.extension path <> ".pdf" -> (
+               Lwd.set Ui_base.Vars.quit true;
+               Ui_base.Vars.file_to_open := Some document;
+             )
+           | _ -> ()
+          );
+          `Handled
         )
       | _ -> `Handled
     )

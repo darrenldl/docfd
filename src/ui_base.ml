@@ -17,7 +17,7 @@ module Vars = struct
 
   let file_to_open : Document.t option ref = ref None
 
-  let eio_env : Eio.Stdenv.t option ref = ref None
+  let eio_env : Eio_unix.Stdenv.base option ref = ref None
 
   let input_mode : input_mode Lwd.var = Lwd.var Navigate
 

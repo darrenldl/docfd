@@ -73,7 +73,7 @@ let list_files_recursively (dir : string) : string list =
   !l
 
 let run
-    ~(env : Eio.Stdenv.t)
+    ~(env : Eio_unix.Stdenv.base)
     (debug : bool)
     (max_depth : int)
     (max_fuzzy_edit_distance : int)
@@ -140,6 +140,17 @@ let run
           files
       )
   );
+  (match document_src with
+   | Stdin -> ()
+   | Files files -> (
+       if List.exists (fun path -> Filename.extension path = ".pdf") files then (
+         if not (Proc_utils.command_exists "pdftotext") then (
+           Fmt.pr "Error: Command pdftotext not found\n";
+           exit 1
+         )
+       )
+     )
+  );
   let all_documents =
     match document_src with
     | Stdin ->
@@ -151,7 +162,7 @@ let run
           | Error _ -> None) files
   in
   match all_documents with
-  | [] -> Printf.printf "No suitable text files found\n"
+  | [] -> Printf.printf "No suitable documents found\n"
   | _ -> (
       Ui_base.Vars.init_ui_mode := init_ui_mode;
       let document_store = all_documents
@@ -165,13 +176,15 @@ let run
       );
       Ui_base.Vars.total_document_count := List.length all_documents;
       (match document_src with
-       | Stdin ->
-         let input =
-           Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
-         in
-         Ui_base.Vars.term := Some (Notty_unix.Term.create ~input ())
-       | Files _ ->
-         Ui_base.Vars.term := Some (Notty_unix.Term.create ())
+       | Stdin -> (
+           let input =
+             Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
+           in
+           Ui_base.Vars.term := Some (Notty_unix.Term.create ~input ())
+         )
+       | Files _ -> (
+           Ui_base.Vars.term := Some (Notty_unix.Term.create ());
+         )
       );
       Ui_base.Vars.eio_env := Some env;
       let renderer = Nottui.Renderer.make () in

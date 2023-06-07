@@ -8,10 +8,6 @@ module Line_loc : sig
   val global_line_num : t -> int
 
   val compare : t -> t -> int
-
-  val min : t -> t -> t
-
-  val max : t -> t -> t
 end
 
 module Line_loc_map : Map.S with type key = Line_loc.t

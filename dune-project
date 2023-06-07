@@ -30,7 +30,7 @@
    nottui
    (lwd (>= "0.2"))
    (cmdliner (>= "1.1.0"))
-   (eio (>= "0.9"))
+   (eio (>= "0.10"))
    (domainslib (>= "0.5.0"))
    kcas_data
    )

@@ -89,7 +89,7 @@ module Top_pane = struct
         |> Seq.map (fun line ->
             (I.string A.(bg lightgreen) " ")
             <|>
-            (I.strf " %s" (Misc_utils.sanitize_string_for_printing line))
+            (I.strf " %s" line)
           )
         |> List.of_seq
       in
@@ -104,7 +104,6 @@ module Top_pane = struct
       in
       let title =
         Option.value ~default:"" doc.title
-        |> Misc_utils.sanitize_string_for_printing
       in
       if selected then (
         (I.string A.(fg lightblue ++ st bold) title)
@@ -399,11 +398,11 @@ let keyboard_handler
       | (`Enter, []) -> (
           Option.iter (fun (doc, _search_results) ->
               match doc.Document.path with
-              | None -> ()
-              | Some _ -> (
+              | Some path when Filename.extension path <> ".pdf" -> (
                   Ui_base.Vars.file_to_open := Some doc;
                   Lwd.set Ui_base.Vars.quit true;
                 )
+              | _ -> ()
             )
             document_info;
           `Handled

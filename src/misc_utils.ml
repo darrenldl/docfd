@@ -13,7 +13,7 @@ let first_n_chars_of_string_contains ~n s c =
   in
   String.contains s c
 
-let sanitize_string_for_printing s =
+let sanitize_string s =
   String.map (fun c ->
       let code = Char.code c in
       if 32 <= code && code <= 126 then

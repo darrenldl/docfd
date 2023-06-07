@@ -13,14 +13,6 @@ module Line_loc = struct
 
   let compare (x : t) (y : t) =
     Int.compare x.global_line_num y.global_line_num
-
-  let min x y =
-    if compare x y < 0 then x
-    else y
-
-  let max x y =
-    if compare x y < 0 then y
-    else x
 end
 
 module Line_loc_map = Map.Make (Line_loc)
@@ -187,6 +179,7 @@ let chunks_of_words (s : multi_indexed_word Seq.t) : chunk Seq.t =
 let of_seq (s : (Line_loc.t * string) Seq.t) : t =
   let indices =
     s
+    |> Seq.map (fun (line_loc, s) -> (line_loc, Misc_utils.sanitize_string s))
     |> words_of_lines
     |> chunks_of_words
     |> List.of_seq
@@ -228,12 +221,14 @@ let of_pages (s : string array Seq.t) : t =
   |> of_seq
 
 let word_ci_of_pos pos t =
-  Word_db.word_of_index
-    (Int_map.find pos t.word_ci_of_pos)
+  match Int_map.find_opt pos t.word_ci_of_pos with
+  | None -> invalid_arg "Index.word_ci_of_pos: Cannot find pos"
+  | Some x -> Word_db.word_of_index x
 
 let word_of_pos pos t =
-  Word_db.word_of_index
-    (Int_map.find pos t.word_of_pos)
+  match Int_map.find_opt pos t.word_of_pos with
+  | None -> invalid_arg "Index.word_of_pos: Cannot find pos"
+  | Some x -> Word_db.word_of_index x
 
 let word_ci_and_pos_s ?range_inc t : (string * Int_set.t) Seq.t =
   match range_inc with
@@ -270,25 +265,41 @@ let word_ci_and_pos_s ?range_inc t : (string * Int_set.t) Seq.t =
     )
 
 let words_of_global_line_num x t : string Seq.t =
-  let (start, end_inc) =
-    Int_map.find x t.start_end_inc_pos_of_global_line_num
-  in
-  OSeq.(start -- end_inc)
-  |> Seq.map (fun pos -> word_of_pos pos t)
+  if x >= global_line_count t then
+    invalid_arg "Index.words_of_global_line_num: global_line_num out of range"
+  else (
+    let (start, end_inc) =
+      Int_map.find x t.start_end_inc_pos_of_global_line_num
+    in
+    OSeq.(start -- end_inc)
+    |> Seq.map (fun pos -> word_of_pos pos t)
+  )
 
 let line_of_global_line_num x t =
-  words_of_global_line_num x t
-  |> List.of_seq
-  |> String.concat ""
+  if x >= global_line_count t then
+    invalid_arg "Index.line_of_global_line_num: global_line_num out of range"
+  else (
+    words_of_global_line_num x t
+    |> List.of_seq
+    |> String.concat ""
+  )
 
 let line_loc_of_global_line_num x t =
-  Int_map.find x t.line_loc_of_global_line_num
+  if x >= global_line_count t then
+    invalid_arg "Index.line_loc_of_global_line_num: global_line_num out of range"
+  else (
+    Int_map.find x t.line_loc_of_global_line_num
+  )
 
 let loc_of_pos pos t : Loc.t =
-  Int_map.find pos t.loc_of_pos
+  match Int_map.find_opt pos t.loc_of_pos with
+  | None -> invalid_arg "Index.loc_of_pos: Cannot find pos"
+  | Some x -> x
 
 let line_count_of_page page t : int =
-  Int_map.find page t.line_count_of_page
+  match Int_map.find_opt page t.line_count_of_page with
+  | None -> invalid_arg "Index.line_count_of_page: Cannot find page"
+  | Some x -> x
 
 module Search = struct
   let usable_positions

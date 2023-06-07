@@ -40,19 +40,11 @@ let parse_lines (s : string Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
     | Content -> (
-        let s = 
-          match title with
-          | None -> s
-          | Some title ->
-            Seq.cons title s
-        in
         let index = Index.of_lines s in
         let empty = make_empty () in
         {
           empty with
-          title = (match title with
-              | None -> None
-              | Some title -> Some title);
+          title;
           index;
         }
       )
@@ -60,7 +52,7 @@ let parse_lines (s : string Seq.t) : t =
         match s () with
         | Seq.Nil -> aux Content title Seq.empty
         | Seq.Cons (x, xs) -> (
-            aux Content (Some x) xs
+            aux Content (Some (Misc_utils.sanitize_string x)) (Seq.cons x xs)
           )
       )
   in
@@ -74,9 +66,7 @@ let parse_pages (s : string array Seq.t) : t =
         let empty = make_empty () in
         {
           empty with
-          title = (match title with
-              | None -> None
-              | Some title -> Some title);
+          title;
           index;
         }
       )
@@ -88,7 +78,7 @@ let parse_pages (s : string array Seq.t) : t =
               if Array.length x = 0 then
                 None
               else
-                Some x.(0)
+                Some (Misc_utils.sanitize_string x.(0))
             in
             aux Content title (Seq.cons x xs)
           )
@@ -99,7 +89,7 @@ let parse_pages (s : string array Seq.t) : t =
 let of_in_channel ic : t =
   parse_lines (CCIO.read_lines_seq ic)
 
-let of_text_path ~(env : Eio.Stdenv.t) path : (t, string) result =
+let of_text_path ~env path : (t, string) result =
   let fs = Eio.Stdenv.fs env in
   try
     Eio.Path.(with_lines (fs / path))
@@ -110,22 +100,30 @@ let of_text_path ~(env : Eio.Stdenv.t) path : (t, string) result =
   with
   | _ -> Error (Printf.sprintf "Failed to read file: %s" path)
 
-(* let of_pdf_path path : (t, string) result =
-   let rec aux title acc page_num =
-    let cmd = Fmt.str "pdftotext -f %d -l %d" in
-    match Proc_utils.run_return_stdout cmd with
-    | None -> acc
-    | Some lines -> (
-      if page_num = 0 then (
-        if Array.length lines = 0 then
-      ) else (
+let of_pdf_path ~sw ~env path : (t, string) result =
+  let proc_mgr = Eio.Stdenv.process_mgr env in
+  let rec aux acc page_num =
+    let cmd = Fmt.str "pdftotext -f %d -l %d %s -" page_num page_num (Filename.quote path) in
+    match Proc_utils.run_return_stdout ~sw ~proc_mgr cmd with
+    | None -> (
+        Printf.printf "test: cmd: %s\n" cmd;
+        Printf.printf "test: page count: %d\n" (List.length acc);
+        flush stdout;
+        Unix.sleepf 1.0;
+        let document = parse_pages (acc |> List.rev |> List.to_seq) in
+        { document with path = Some path }
       )
-    )
-   in
-   aux None [] 0 *)
+    | Some page -> (
+        aux (page :: acc) (page_num + 1)
+      )
+  in
+  Ok (aux [] 1)
+(* try
+   Ok (aux [] 1)
+   with
+   | _ -> Error (Printf.sprintf "Failed to read file: %s" path) *)
 
-let of_path ~(env : Eio.Stdenv.t) path : (t, string) result =
+let of_path ~sw ~(env : Eio_unix.Stdenv.base) path : (t, string) result =
   match Filename.extension path with
-  (* | ".pdf" -> (
-     ) *)
+  | ".pdf" -> of_pdf_path path
   | _ -> of_text_path ~env path

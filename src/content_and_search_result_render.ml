@@ -33,20 +33,25 @@ let word_image_grid_of_index
     ~end_inc_global_line_num
     (index : Index.t)
   : word_image_grid =
-  let data =
-    OSeq.(start_global_line_num -- end_inc_global_line_num)
-    |> Seq.map (fun global_line_num ->
-        let data =
-          Index.words_of_global_line_num global_line_num index
-          |> Seq.map Misc_utils.sanitize_string_for_printing
-          |> Seq.map (fun word -> I.string A.empty word)
-          |> Array.of_seq
-        in
-        data
-      )
-    |> Array.of_seq
-  in
-  { start_global_line_num; data }
+  let global_line_count = Index.global_line_count index in
+  if global_line_count = 0 then
+    { start_global_line_num = 0; data = [||] }
+  else (
+    let end_inc_global_line_num = min (global_line_count - 1) end_inc_global_line_num in
+    let data =
+      OSeq.(start_global_line_num -- end_inc_global_line_num)
+      |> Seq.map (fun global_line_num ->
+          let data =
+            Index.words_of_global_line_num global_line_num index
+            |> Seq.map (fun word -> I.string A.empty word)
+            |> Array.of_seq
+          in
+          data
+        )
+      |> Array.of_seq
+    in
+    { start_global_line_num; data }
+  )
 
 let color_word_image_grid
     (grid : word_image_grid)
@@ -58,7 +63,6 @@ let color_word_image_grid
       let line_loc = Index.Loc.line_loc loc in
       let global_line_num = Index.Line_loc.global_line_num line_loc in
       let pos_in_line = Index.Loc.pos_in_line loc in
-      let word = Misc_utils.sanitize_string_for_printing word in
       grid.data.(global_line_num - grid.start_global_line_num).(pos_in_line) <-
         I.string A.(fg black ++ bg lightyellow) word
     )
