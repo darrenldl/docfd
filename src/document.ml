@@ -120,7 +120,7 @@ let of_pdf_path ~env path : (t, string) result =
   | _ -> Error (Printf.sprintf "Failed to read file: %s" path)
 
 let of_path ~(env : Eio_unix.Stdenv.base) path : (t, string) result =
-  if Misc_utils.path_is_pdf then
+  if Misc_utils.path_is_pdf path then
     of_pdf_path ~env path
   else
     of_text_path ~env path
