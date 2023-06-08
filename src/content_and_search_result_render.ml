@@ -86,24 +86,26 @@ let render_grid ~(render_mode : render_mode) (grid : word_image_grid) (index : I
       in
       let global_line_num = grid.start_global_line_num + i in
       let line_loc = Index.line_loc_of_global_line_num global_line_num index in
+      let display_line_num = Index.Line_loc.line_num_in_page line_loc + 1 in
+      let display_page_num = Index.Line_loc.page_num line_loc + 1 in
       let content =
         match render_mode with
         | `Page_num_only ->
-          I.strf ~attr:A.(fg lightyellow) "Page %d" (Index.Line_loc.page_num line_loc)
+          I.strf ~attr:A.(fg lightyellow) "Page %d" display_page_num
           ::
           I.strf ": "
           ::
           words
         | `Line_num_only ->
-          I.strf ~attr:A.(fg lightyellow) "%d" (Index.Line_loc.line_num_in_page line_loc)
+          I.strf ~attr:A.(fg lightyellow) "%d" display_line_num
           ::
           I.strf ": "
           ::
           words
         | `Page_and_line_num ->
           I.strf ~attr:A.(fg lightyellow) "Page %d, %d"
-            (Index.Line_loc.page_num line_loc)
-            (Index.Line_loc.line_num_in_page line_loc)
+            display_page_num
+            display_line_num
           ::
           I.strf ": "
           ::
