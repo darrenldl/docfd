@@ -1,3 +1,5 @@
+open Docfd_lib
+
 type key = string option
 
 type value = Document.t * Search_result.t array

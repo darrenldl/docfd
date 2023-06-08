@@ -1,6 +1,6 @@
 #!/bin/bash
 
-path="src/version_string.ml"
+path="bin/version_string.ml"
 
 ver=$(cat CHANGELOG.md \
   | grep '## ' \

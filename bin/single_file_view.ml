@@ -1,3 +1,5 @@
+open Docfd_lib
+
 module Vars = struct
   let search_field_focus_handle = Nottui.Focus.make ()
 end

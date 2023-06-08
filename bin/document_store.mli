@@ -1,3 +1,5 @@
+open Docfd_lib
+
 type t
 
 type key = string option

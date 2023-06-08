@@ -1,3 +1,5 @@
+open Docfd_lib
+
 module I = Notty.I
 
 module A = Notty.A

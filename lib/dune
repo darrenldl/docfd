@@ -1,7 +1,6 @@
-(executable
+(library
  (flags     (-w "+a-4-9-29-37-40-42-44-48-50-32-30-70@8"))
- (name docfd)
- (public_name docfd)
+ (name docfd_lib)
  (libraries containers
             angstrom
             cmdliner

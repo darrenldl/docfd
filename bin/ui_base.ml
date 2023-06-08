@@ -1,3 +1,5 @@
+open Docfd_lib
+
 type input_mode =
   | Navigate
   | Search

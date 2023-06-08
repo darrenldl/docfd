@@ -1,14 +1,14 @@
 type t = {
   path : string option;
   title : string option;
-  index : Index.t;
+  index : Docfd_lib.Index.t;
 }
 
 let make_empty () : t =
   {
     path = None;
     title = None;
-    index = Index.empty;
+    index = Docfd_lib.Index.empty;
   }
 
 let copy (t : t) =
@@ -18,20 +18,6 @@ let copy (t : t) =
     index = t.index;
   }
 
-module Parsers = struct
-  open Angstrom
-  open Parser_components
-
-  let word_p ~delim =
-    take_while1 (fun c ->
-        (not (is_space c))
-        &&
-        (not (String.contains delim c))
-      )
-
-  let words_p ~delim = many (word_p ~delim <* spaces)
-end
-
 type work_stage =
   | Title
   | Content
@@ -40,7 +26,7 @@ let parse_lines (s : string Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
     | Content -> (
-        let index = Index.of_lines s in
+        let index = Docfd_lib.Index.of_lines s in
         let empty = make_empty () in
         {
           empty with
@@ -62,7 +48,7 @@ let parse_pages (s : string list Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
     | Content -> (
-        let index = Index.of_pages s in
+        let index = Docfd_lib.Index.of_pages s in
         let empty = make_empty () in
         {
           empty with

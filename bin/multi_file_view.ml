@@ -1,3 +1,5 @@
+open Docfd_lib
+
 module Vars = struct
   let index_of_document_selected = Lwd.var 0
 
