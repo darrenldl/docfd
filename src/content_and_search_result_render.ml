@@ -89,7 +89,7 @@ let render_grid ~(render_mode : render_mode) (grid : word_image_grid) (index : I
       let content =
         match render_mode with
         | `Page_num_only ->
-          I.strf ~attr:A.(fg lightyellow) "%d" (Index.Line_loc.page_num line_loc)
+          I.strf ~attr:A.(fg lightyellow) "Pg %d" (Index.Line_loc.page_num line_loc)
           ::
           I.strf ": "
           ::
