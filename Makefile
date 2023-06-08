@@ -14,7 +14,7 @@ release-static :
 	./update-version-string.sh
 	OCAMLPARAM='_,ccopt=-static' dune build --release bin/docfd.exe
 	mkdir -p statically-linked
-	cp _build/default/src/docfd.exe statically-linked/docfd
+	cp _build/default/bin/docfd.exe statically-linked/docfd
 
 .PHONY: format
 format :
