@@ -199,21 +199,23 @@ let of_lines (s : string Seq.t) : t =
     )
   |> of_seq
 
-let of_pages (s : string array Seq.t) : t =
+let of_pages (s : string list Seq.t) : t =
   s
   |> Seq.mapi (fun page_num page ->
       (page_num, page)
     )
   |> Seq.flat_map (fun (page_num, page) ->
-      if Array.length page = 0 then (
-        let empty_line = ({ Line_loc.page_num; line_num_in_page = 0; global_line_num = 0 }, "") in
-        Seq.return empty_line
-      ) else (
-        Array.to_seq page
-        |> Seq.mapi (fun line_num_in_page line ->
-            ({ Line_loc.page_num; line_num_in_page; global_line_num = 0 }, line)
-          )
-      )
+      match page with
+      | [] -> (
+          let empty_line = ({ Line_loc.page_num; line_num_in_page = 0; global_line_num = 0 }, "") in
+          Seq.return empty_line
+        )
+      | _ -> (
+          List.to_seq page
+          |> Seq.mapi (fun line_num_in_page line ->
+              ({ Line_loc.page_num; line_num_in_page; global_line_num = 0 }, line)
+            )
+        )
     )
   |> Seq.mapi (fun global_line_num ((line_loc : Line_loc.t), line) ->
       ({ line_loc with global_line_num }, line)

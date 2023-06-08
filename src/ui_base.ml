@@ -109,8 +109,14 @@ module Search_result_list = struct
       Lwd.return Nottui.Ui.empty
     ) else (
       let (_term_width, term_height) = Notty_unix.Term.size (term ()) in
+      let render_mode =
+        match document.path with
+        | Some path when Misc_utils.path_is_pdf path -> `Page_num_only
+        | _ -> `Line_num_only
+      in
       let images =
         Content_and_search_result_render.search_results
+          ~render_mode
           ~start:search_result_selected
           ~end_exc:(min (search_result_selected + term_height / 2) result_count)
           document.index

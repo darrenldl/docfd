@@ -26,7 +26,7 @@ val empty : t
 
 val of_lines : string Seq.t -> t
 
-val of_pages : string array Seq.t -> t
+val of_pages : string list Seq.t -> t
 
 val word_ci_of_pos : int -> t -> string
 

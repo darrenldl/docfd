@@ -58,7 +58,7 @@ let parse_lines (s : string Seq.t) : t =
   in
   aux Title None s
 
-let parse_pages (s : string array Seq.t) : t =
+let parse_pages (s : string list Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
     | Content -> (
@@ -75,10 +75,10 @@ let parse_pages (s : string array Seq.t) : t =
         | Seq.Nil -> aux Content title Seq.empty
         | Seq.Cons (x, xs) -> (
             let title =
-              if Array.length x = 0 then
-                None
-              else
-                Some (Misc_utils.sanitize_string x.(0))
+              match x with
+              | [] -> None
+              | x :: _ ->
+                Some (Misc_utils.sanitize_string x)
             in
             aux Content title (Seq.cons x xs)
           )
@@ -100,16 +100,13 @@ let of_text_path ~env path : (t, string) result =
   with
   | _ -> Error (Printf.sprintf "Failed to read file: %s" path)
 
-let of_pdf_path ~sw ~env path : (t, string) result =
+let of_pdf_path ~env path : (t, string) result =
   let proc_mgr = Eio.Stdenv.process_mgr env in
   let rec aux acc page_num =
-    let cmd = Fmt.str "pdftotext -f %d -l %d %s -" page_num page_num (Filename.quote path) in
-    match Proc_utils.run_return_stdout ~sw ~proc_mgr cmd with
+    let page_num_string = Int.to_string page_num in
+    let cmd = [ "pdftotext"; "-f"; page_num_string; "-l"; page_num_string; path; "-" ] in
+    match Proc_utils.run_return_stdout ~proc_mgr cmd with
     | None -> (
-        Printf.printf "test: cmd: %s\n" cmd;
-        Printf.printf "test: page count: %d\n" (List.length acc);
-        flush stdout;
-        Unix.sleepf 1.0;
         let document = parse_pages (acc |> List.rev |> List.to_seq) in
         { document with path = Some path }
       )
@@ -117,13 +114,13 @@ let of_pdf_path ~sw ~env path : (t, string) result =
         aux (page :: acc) (page_num + 1)
       )
   in
-  Ok (aux [] 1)
-(* try
-   Ok (aux [] 1)
-   with
-   | _ -> Error (Printf.sprintf "Failed to read file: %s" path) *)
+  try
+    Ok (aux [] 1)
+  with
+  | _ -> Error (Printf.sprintf "Failed to read file: %s" path)
 
-let of_path ~sw ~(env : Eio_unix.Stdenv.base) path : (t, string) result =
-  match Filename.extension path with
-  | ".pdf" -> of_pdf_path path
-  | _ -> of_text_path ~env path
+let of_path ~(env : Eio_unix.Stdenv.base) path : (t, string) result =
+  if Misc_utils.path_is_pdf then
+    of_pdf_path ~env path
+  else
+    of_text_path ~env path

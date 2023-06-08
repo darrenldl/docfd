@@ -35,3 +35,6 @@ let list_and_length_of_seq (s : 'a Seq.t) : int * 'a list =
       s
   in
   (len, List.rev acc)
+
+let path_is_pdf (s : string) =
+  Filename.extension s = ".pdf"

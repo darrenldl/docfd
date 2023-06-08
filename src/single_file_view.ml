@@ -232,11 +232,11 @@ let keyboard_handler
         )
       | (`Enter, []) -> (
           (match document.Document.path with
-           | Some path when Filename.extension path <> ".pdf" -> (
+           | Some path when Misc_utils.path_is_pdf path -> ()
+           | _ -> (
                Lwd.set Ui_base.Vars.quit true;
                Ui_base.Vars.file_to_open := Some document;
              )
-           | _ -> ()
           );
           `Handled
         )

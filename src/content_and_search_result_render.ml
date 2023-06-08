@@ -75,7 +75,7 @@ type render_mode = [
   | `None
 ]
 
-let render_grid ~(mode : render_mode) (grid : word_image_grid) (index : Index.t) : Notty.image =
+let render_grid ~(render_mode : render_mode) (grid : word_image_grid) (index : Index.t) : Notty.image =
   grid.data
   |> Array.to_list
   |> List.mapi (fun i words ->
@@ -87,7 +87,7 @@ let render_grid ~(mode : render_mode) (grid : word_image_grid) (index : Index.t)
       let global_line_num = grid.start_global_line_num + i in
       let line_loc = Index.line_loc_of_global_line_num global_line_num index in
       let content =
-        match mode with
+        match render_mode with
         | `Page_num_only ->
           I.strf ~attr:A.(fg lightyellow) "%d" (Index.Line_loc.page_num line_loc)
           ::
@@ -133,7 +133,7 @@ let content_snippet
         ~end_inc_global_line_num:(min max_line_num height)
         index
     in
-    render_grid ~mode:`None grid index
+    render_grid ~render_mode:`None grid index
   | Some search_result ->
     let (relevant_start_line, relevant_end_inc_line) =
       start_and_end_inc_global_line_num_of_search_result index search_result
@@ -148,9 +148,10 @@ let content_snippet
         index
     in
     color_word_image_grid grid index search_result;
-    render_grid ~mode:`None grid index
+    render_grid ~render_mode:`None grid index
 
 let search_results
+    ~render_mode
     ~start
     ~end_exc
     (index : Index.t)
@@ -176,7 +177,7 @@ let search_results
           index
       in
       color_word_image_grid grid index search_result;
-      let img = render_grid ~mode:`Line_num_only grid index in
+      let img = render_grid ~render_mode grid index in
       if !Params.debug then (
         let score = Search_result.score search_result in
         I.strf "(score: %f)" score

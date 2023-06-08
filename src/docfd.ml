@@ -143,7 +143,7 @@ let run
   (match document_src with
    | Stdin -> ()
    | Files files -> (
-       if List.exists (fun path -> Filename.extension path = ".pdf") files then (
+       if List.exists Misc_utils.path_is_pdf files then (
          if not (Proc_utils.command_exists "pdftotext") then (
            Fmt.pr "Error: Command pdftotext not found\n";
            exit 1
