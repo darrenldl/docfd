@@ -1,1 +1,1 @@
-./_build/default/src/docfd.exe "$@"
+./_build/default/bin/docfd.exe "$@"

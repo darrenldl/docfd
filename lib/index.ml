@@ -29,6 +29,7 @@ module Loc = struct
 end
 
 type t = {
+  word_db : Word_db.t;
   pos_s_of_word_ci : Int_set.t Int_map.t;
   loc_of_pos : Loc.t Int_map.t;
   line_loc_of_global_line_num : Line_loc.t Int_map.t;
@@ -50,6 +51,7 @@ type multi_indexed_word = {
 type chunk = multi_indexed_word array
 
 let empty : t = {
+  word_db = Word_db.empty;
   pos_s_of_word_ci = Int_map.empty;
   loc_of_pos = Int_map.empty;
   line_loc_of_global_line_num = Int_map.empty;
@@ -64,6 +66,7 @@ let empty : t = {
 
 let union (x : t) (y : t) =
   {
+    word_db = Word_db.empty;
     pos_s_of_word_ci =
       Int_map.union (fun _k s0 s1 -> Some (Int_set.union s0 s1))
         x.pos_s_of_word_ci
@@ -121,10 +124,16 @@ let words_of_lines
   |> Seq.mapi (fun pos (loc, word) ->
       { pos; loc; word })
 
-let of_chunk (arr : chunk) : t =
+type shared_word_db = {
+  lock : Mutex.t;
+  mutable word_db : Word_db.t;
+}
+
+let of_chunk (shared_word_db : shared_word_db) (arr : chunk) : t =
   Array.fold_left
     (fun
-      { pos_s_of_word_ci;
+      { word_db = _;
+        pos_s_of_word_ci;
         loc_of_pos;
         line_loc_of_global_line_num;
         global_line_num_of_line_loc;
@@ -136,11 +145,17 @@ let of_chunk (arr : chunk) : t =
         global_line_count;
       }
       { pos; loc; word } ->
+      let word_ci = String.lowercase_ascii word in
+
+      Mutex.lock shared_word_db.lock;
+      let word_db = shared_word_db.word_db in
+      let word_db, index_of_word = Word_db.add word word_db in
+      let word_db, index_of_word_ci = Word_db.add word_ci word_db in
+      shared_word_db.word_db <- word_db;
+      Mutex.unlock shared_word_db.lock;
+
       let line_loc = loc.Loc.line_loc in
       let global_line_num = line_loc.global_line_num in
-      let word_ci = String.lowercase_ascii word in
-      let index_of_word = Word_db.add word in
-      let index_of_word_ci = Word_db.add word_ci in
       let pos_s = Option.value ~default:Int_set.empty
           (Int_map.find_opt index_of_word_ci pos_s_of_word_ci)
                   |> Int_set.add pos
@@ -154,7 +169,8 @@ let of_chunk (arr : chunk) : t =
         Option.value ~default:0
           (Int_map.find_opt line_loc.page_num line_count_of_page)
       in
-      { pos_s_of_word_ci = Int_map.add index_of_word_ci pos_s pos_s_of_word_ci;
+      { word_db = Word_db.empty;
+        pos_s_of_word_ci = Int_map.add index_of_word_ci pos_s pos_s_of_word_ci;
         loc_of_pos = Int_map.add pos loc loc_of_pos;
         line_loc_of_global_line_num =
           Int_map.add global_line_num line_loc line_loc_of_global_line_num;
@@ -177,6 +193,11 @@ let chunks_of_words (s : multi_indexed_word Seq.t) : chunk Seq.t =
   OSeq.chunks !Params.index_chunk_word_count s
 
 let of_seq (s : (Line_loc.t * string) Seq.t) : t =
+  let shared_word_db : shared_word_db =
+    { lock = Mutex.create ();
+    word_db = Word_db.empty;
+  }
+  in
   let indices =
     s
     |> Seq.map (fun (line_loc, s) -> (line_loc, Misc_utils.sanitize_string s))
@@ -184,13 +205,16 @@ let of_seq (s : (Line_loc.t * string) Seq.t) : t =
     |> chunks_of_words
     |> List.of_seq
     |> Eio.Fiber.List.map (fun chunk ->
-        Task_pool.run (fun () -> of_chunk chunk))
+        Task_pool.run (fun () -> of_chunk shared_word_db chunk))
   in
+  let res =
   List.fold_left (fun acc index ->
       union acc index
     )
     empty
     indices
+  in
+  { res with word_db = shared_word_db.word_db }
 
 let of_lines (s : string Seq.t) : t =
   s
@@ -222,21 +246,21 @@ let of_pages (s : string list Seq.t) : t =
     )
   |> of_seq
 
-let word_ci_of_pos pos t =
+let word_ci_of_pos pos (t : t) : string =
   match Int_map.find_opt pos t.word_ci_of_pos with
   | None -> invalid_arg "Index.word_ci_of_pos: Cannot find pos"
-  | Some x -> Word_db.word_of_index x
+  | Some x -> Word_db.word_of_index x t.word_db
 
-let word_of_pos pos t =
+let word_of_pos pos (t : t) : string =
   match Int_map.find_opt pos t.word_of_pos with
   | None -> invalid_arg "Index.word_of_pos: Cannot find pos"
-  | Some x -> Word_db.word_of_index x
+  | Some x -> Word_db.word_of_index x t.word_db
 
-let word_ci_and_pos_s ?range_inc t : (string * Int_set.t) Seq.t =
+let word_ci_and_pos_s ?range_inc (t : t) : (string * Int_set.t) Seq.t =
   match range_inc with
   | None -> (
       Int_map.to_seq t.pos_s_of_word_ci
-      |> Seq.map (fun (i, s) -> (Word_db.word_of_index i, s))
+      |> Seq.map (fun (i, s) -> (Word_db.word_of_index i t.word_db, s))
     )
   | Some (start, end_inc) -> (
       assert (start <= end_inc);
@@ -253,7 +277,7 @@ let word_ci_and_pos_s ?range_inc t : (string * Int_set.t) Seq.t =
       in
       Int_set.to_seq words_to_consider
       |> Seq.map (fun index ->
-          (Word_db.word_of_index index, Int_map.find index t.pos_s_of_word_ci)
+          (Word_db.word_of_index index t.word_db, Int_map.find index t.pos_s_of_word_ci)
         )
       |> Seq.map (fun (word, pos_s) ->
           let _, _, m =
