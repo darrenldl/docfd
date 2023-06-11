@@ -16,10 +16,8 @@
  (public_name docfd)
  (libraries docfd_lib
             containers
-            angstrom
             cmdliner
             fmt
-            spelll
             notty
             notty.unix
             nottui
@@ -27,6 +25,5 @@
             eio
             eio_main
             domainslib
-            kcas_data
  )
 )

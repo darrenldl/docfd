@@ -3,12 +3,8 @@
  (name docfd_lib)
  (libraries containers
             angstrom
-            cmdliner
             fmt
             spelll
-            notty
-            notty.unix
-            nottui
             oseq
             eio
             eio_main
