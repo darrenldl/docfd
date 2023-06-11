@@ -195,8 +195,8 @@ let chunks_of_words (s : multi_indexed_word Seq.t) : chunk Seq.t =
 let of_seq (s : (Line_loc.t * string) Seq.t) : t =
   let shared_word_db : shared_word_db =
     { lock = Mutex.create ();
-    word_db = Word_db.empty;
-  }
+      word_db = Word_db.empty;
+    }
   in
   let indices =
     s
@@ -208,11 +208,11 @@ let of_seq (s : (Line_loc.t * string) Seq.t) : t =
         Task_pool.run (fun () -> of_chunk shared_word_db chunk))
   in
   let res =
-  List.fold_left (fun acc index ->
-      union acc index
-    )
-    empty
-    indices
+    List.fold_left (fun acc index ->
+        union acc index
+      )
+      empty
+      indices
   in
   { res with word_db = shared_word_db.word_db }
 

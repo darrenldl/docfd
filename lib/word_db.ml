@@ -11,18 +11,18 @@ let empty : t = {
 }
 
 let add (word : string) (t : t) : t * int =
-    match String_map.find_opt word t.index_of_word with
-    | Some index -> (t, index)
-    | None -> (
-        let index = t.unique_count in
-        ({
-          unique_count = t.unique_count + 1;
-          word_of_index = Int_map.add index word t.word_of_index;
-          index_of_word = String_map.add word index t.index_of_word;
-        },
-index
-        )
+  match String_map.find_opt word t.index_of_word with
+  | Some index -> (t, index)
+  | None -> (
+      let index = t.unique_count in
+      ({
+        unique_count = t.unique_count + 1;
+        word_of_index = Int_map.add index word t.word_of_index;
+        index_of_word = String_map.add word index t.index_of_word;
+      },
+        index
       )
+    )
 
 let word_of_index i t : string =
   Int_map.find i t.word_of_index
