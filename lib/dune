@@ -7,7 +7,6 @@
             spelll
             oseq
             eio
-            eio_main
             domainslib
  )
 )
