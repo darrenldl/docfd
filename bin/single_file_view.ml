@@ -1,5 +1,5 @@
 open Docfd_lib
-open Lwd_syntax
+open Lwd_infix
 
 module Vars = struct
   let search_field_focus_handle = Nottui.Focus.make ()
@@ -49,7 +49,7 @@ let reload_document (doc : Document.t) : unit =
 module Top_pane = struct
   let main
     : Nottui.ui Lwd.t =
-    let* (document_store, search_result_selected) =
+    let$* (document_store, search_result_selected) =
       Lwd.(pair
              (get Ui_base.Vars.Single_file.document_store)
              (get Ui_base.Vars.Single_file.index_of_search_result_selected))
@@ -156,7 +156,7 @@ module Bottom_pane = struct
       ~document_info
     : Nottui.ui Lwd.t =
     let document, _search_results = document_info in
-    let* input_mode = Lwd.get Ui_base.Vars.input_mode in
+    let$* input_mode = Lwd.get Ui_base.Vars.input_mode in
     Nottui_widgets.vbox
       [
         status_bar ~document ~input_mode;
@@ -244,13 +244,13 @@ let keyboard_handler
   | Search -> `Unhandled
 
 let main : Nottui.ui Lwd.t =
-  let* document_store = Lwd.get Ui_base.Vars.Single_file.document_store in
+  let$* document_store = Lwd.get Ui_base.Vars.Single_file.document_store in
   let _, document_info =
     Option.get (Document_store.min_binding document_store)
   in
   Nottui_widgets.vbox
     [
-      (let+ top_pane = Top_pane.main in
+      (let$ top_pane = Top_pane.main in
        Nottui.Ui.keyboard_area
          (keyboard_handler ~document_info)
          top_pane);

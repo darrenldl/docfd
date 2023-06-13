@@ -1,5 +1,5 @@
 open Docfd_lib
-open Lwd_syntax
+open Lwd_infix
 
 module Vars = struct
   let index_of_document_selected = Lwd.var 0
@@ -170,7 +170,7 @@ module Top_pane = struct
       if Array.length document_info_s = 0 then
         Nottui_widgets.(v_pane empty_lwd empty_lwd)
       else (
-        let* search_result_selected = Lwd.get Vars.index_of_search_result_selected in
+        let$* search_result_selected = Lwd.get Vars.index_of_search_result_selected in
         let document_info = document_info_s.(document_selected) in
         Nottui_widgets.v_pane
           (Ui_base.Content_view.main ~document_info ~search_result_selected)
@@ -183,7 +183,7 @@ module Top_pane = struct
   let main
       ~(document_info_s : Document_store.value array)
     : Nottui.ui Lwd.t =
-    let* document_selected = Lwd.get Vars.index_of_document_selected in
+    let$* document_selected = Lwd.get Vars.index_of_document_selected in
     Nottui_widgets.h_pane
       (Document_list.main ~document_info_s ~document_selected)
       (Right_pane.main ~document_info_s ~document_selected)
@@ -194,7 +194,7 @@ module Bottom_pane = struct
       ~(document_info_s : Document_store.value array)
       ~(input_mode : Ui_base.input_mode)
     =
-    let+ index_of_document_selected = Lwd.get Vars.index_of_document_selected in
+    let$ index_of_document_selected = Lwd.get Vars.index_of_document_selected in
     let document_count = Array.length document_info_s in
     let input_mode_image =
       List.assoc input_mode Ui_base.Status_bar.input_mode_images
@@ -282,7 +282,7 @@ module Bottom_pane = struct
       ~f:update_search_phrase
 
   let main ~document_info_s =
-    let* input_mode = Lwd.get Ui_base.Vars.input_mode in
+    let$* input_mode = Lwd.get Ui_base.Vars.input_mode in
     Nottui_widgets.vbox
       [
         status_bar ~document_info_s ~input_mode;
@@ -404,13 +404,13 @@ let keyboard_handler
   | Search -> `Unhandled
 
 let main : Nottui.ui Lwd.t =
-  let* document_store = Lwd.get Ui_base.Vars.document_store in
+  let$* document_store = Lwd.get Ui_base.Vars.document_store in
   let document_info_s =
     Document_store.usable_documents document_store
   in
   Nottui_widgets.vbox
     [
-      (let+ top_pane = Top_pane.main ~document_info_s in
+      (let$ top_pane = Top_pane.main ~document_info_s in
        Nottui.Ui.keyboard_area
          (keyboard_handler ~document_info_s)
          top_pane);

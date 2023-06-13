@@ -21,6 +21,7 @@
             notty
             notty.unix
             nottui
+            lwd
             oseq
             eio
             eio_main
