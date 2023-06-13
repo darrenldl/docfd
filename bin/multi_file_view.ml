@@ -1,4 +1,5 @@
 open Docfd_lib
+open Lwd_syntax
 
 module Vars = struct
   let index_of_document_selected = Lwd.var 0
@@ -169,29 +170,23 @@ module Top_pane = struct
       if Array.length document_info_s = 0 then
         Nottui_widgets.(v_pane empty_lwd empty_lwd)
       else (
-        Lwd.map ~f:(fun search_result_selected ->
-            let document_info = document_info_s.(document_selected) in
-            Nottui_widgets.v_pane
-              (Ui_base.Content_view.main ~document_info ~search_result_selected)
-              (Ui_base.Search_result_list.main
-                 ~document_info
-                 ~index_of_search_result_selected:Vars.index_of_search_result_selected)
-          )
-          (Lwd.get Vars.index_of_search_result_selected)
-        |> Lwd.join
+        let* search_result_selected = Lwd.get Vars.index_of_search_result_selected in
+        let document_info = document_info_s.(document_selected) in
+        Nottui_widgets.v_pane
+          (Ui_base.Content_view.main ~document_info ~search_result_selected)
+          (Ui_base.Search_result_list.main
+             ~document_info
+             ~index_of_search_result_selected:Vars.index_of_search_result_selected)
       )
   end
 
   let main
       ~(document_info_s : Document_store.value array)
     : Nottui.ui Lwd.t =
-    Lwd.map ~f:(fun document_selected ->
-        Nottui_widgets.h_pane
-          (Document_list.main ~document_info_s ~document_selected)
-          (Right_pane.main ~document_info_s ~document_selected)
-      )
-      (Lwd.get Vars.index_of_document_selected)
-    |> Lwd.join
+    let* document_selected = Lwd.get Vars.index_of_document_selected in
+    Nottui_widgets.h_pane
+      (Document_list.main ~document_info_s ~document_selected)
+      (Right_pane.main ~document_info_s ~document_selected)
 end
 
 module Bottom_pane = struct
@@ -199,39 +194,37 @@ module Bottom_pane = struct
       ~(document_info_s : Document_store.value array)
       ~(input_mode : Ui_base.input_mode)
     =
-    Lwd.map ~f:(fun index_of_document_selected ->
-        let document_count = Array.length document_info_s in
-        let input_mode_image =
-          List.assoc input_mode Ui_base.Status_bar.input_mode_images
+    let+ index_of_document_selected = Lwd.get Vars.index_of_document_selected in
+    let document_count = Array.length document_info_s in
+    let input_mode_image =
+      List.assoc input_mode Ui_base.Status_bar.input_mode_images
+    in
+    let content =
+      if document_count = 0 then
+        Nottui.Ui.atom input_mode_image
+      else (
+        let file_shown_count =
+          Notty.I.strf ~attr:Ui_base.Status_bar.attr
+            "%5d/%d documents listed"
+            document_count !Ui_base.Vars.total_document_count
         in
-        let content =
-          if document_count = 0 then
-            Nottui.Ui.atom input_mode_image
-          else (
-            let file_shown_count =
-              Notty.I.strf ~attr:Ui_base.Status_bar.attr
-                "%5d/%d documents listed"
-                document_count !Ui_base.Vars.total_document_count
-            in
-            let index_of_selected =
-              Notty.I.strf ~attr:Ui_base.Status_bar.attr
-                "index of document selected: %d"
-                index_of_document_selected
-            in
-            Notty.I.hcat
-              [
-                List.assoc input_mode Ui_base.Status_bar.input_mode_images;
-                Ui_base.Status_bar.element_spacer;
-                file_shown_count;
-                Ui_base.Status_bar.element_spacer;
-                index_of_selected;
-              ]
-            |> Nottui.Ui.atom
-          )
+        let index_of_selected =
+          Notty.I.strf ~attr:Ui_base.Status_bar.attr
+            "index of document selected: %d"
+            index_of_document_selected
         in
-        Nottui.Ui.join_z (Ui_base.Status_bar.background_bar ()) content
+        Notty.I.hcat
+          [
+            List.assoc input_mode Ui_base.Status_bar.input_mode_images;
+            Ui_base.Status_bar.element_spacer;
+            file_shown_count;
+            Ui_base.Status_bar.element_spacer;
+            index_of_selected;
+          ]
+        |> Nottui.Ui.atom
       )
-      (Lwd.get Vars.index_of_document_selected)
+    in
+    Nottui.Ui.join_z (Ui_base.Status_bar.background_bar ()) content
 
   module Key_binding_info = struct
     let grid_contents : Ui_base.Key_binding_info.grid_contents =
@@ -289,16 +282,13 @@ module Bottom_pane = struct
       ~f:update_search_phrase
 
   let main ~document_info_s =
-    Lwd.map ~f:(fun input_mode ->
-        Nottui_widgets.vbox
-          [
-            status_bar ~document_info_s ~input_mode;
-            Key_binding_info.main ~input_mode;
-            search_bar ~input_mode;
-          ]
-      )
-      (Lwd.get Ui_base.Vars.input_mode)
-    |> Lwd.join
+    let* input_mode = Lwd.get Ui_base.Vars.input_mode in
+    Nottui_widgets.vbox
+      [
+        status_bar ~document_info_s ~input_mode;
+        Key_binding_info.main ~input_mode;
+        search_bar ~input_mode;
+      ]
 end
 
 let keyboard_handler
@@ -414,17 +404,15 @@ let keyboard_handler
   | Search -> `Unhandled
 
 let main : Nottui.ui Lwd.t =
-  Lwd.map ~f:(fun document_store ->
-      let document_info_s =
-        Document_store.usable_documents document_store
-      in
-      Nottui_widgets.vbox
-        [
-          Lwd.map
-            ~f:(Nottui.Ui.keyboard_area (keyboard_handler ~document_info_s))
-            (Top_pane.main ~document_info_s);
-          Bottom_pane.main ~document_info_s;
-        ]
-    )
-    (Lwd.get Ui_base.Vars.document_store)
-  |> Lwd.join
+  let* document_store = Lwd.get Ui_base.Vars.document_store in
+  let document_info_s =
+    Document_store.usable_documents document_store
+  in
+  Nottui_widgets.vbox
+    [
+      (let+ top_pane = Top_pane.main ~document_info_s in
+       Nottui.Ui.keyboard_area
+         (keyboard_handler ~document_info_s)
+         top_pane);
+      Bottom_pane.main ~document_info_s;
+    ]

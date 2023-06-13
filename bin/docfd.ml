@@ -1,4 +1,5 @@
 open Cmdliner
+open Lwd_syntax
 
 let stdin_is_atty () =
   Unix.isatty Unix.stdin
@@ -190,13 +191,10 @@ let run
       let renderer = Nottui.Renderer.make () in
       Lwd.set Ui_base.Vars.ui_mode init_ui_mode;
       let root : Nottui.ui Lwd.t =
-        Lwd.map ~f:(fun (ui_mode : Ui_base.ui_mode) ->
-            match ui_mode with
-            | Ui_multi_file -> Multi_file_view.main
-            | Ui_single_file -> Single_file_view.main
-          )
-          (Lwd.get Ui_base.Vars.ui_mode)
-        |> Lwd.join
+        let* ui_mode : Ui_base.ui_mode = Lwd.get Ui_base.Vars.ui_mode in
+        match ui_mode with
+        | Ui_multi_file -> Multi_file_view.main
+        | Ui_single_file -> Single_file_view.main
       in
       let rec loop () =
         Ui_base.Vars.file_to_open := None;

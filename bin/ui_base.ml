@@ -127,7 +127,7 @@ module Search_result_list = struct
       let pane =
         images
         |> List.map (fun img ->
-            Nottui.Ui.atom (Notty.I.(img <-> strf ""))
+            Nottui.Ui.atom Notty.I.(img <-> strf "")
           )
         |> Nottui.Ui.vcat
       in
