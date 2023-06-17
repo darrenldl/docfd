@@ -13,10 +13,15 @@ let first_n_chars_of_string_contains ~n s c =
   in
   String.contains s c
 
+let char_is_usable c =
+  let code = Char.code c in
+  (0x20 <= code && code <= 0x7E)
+  ||
+  (0x7F < code)
+
 let sanitize_string s =
   String.map (fun c ->
-      let code = Char.code c in
-      if 32 <= code && code <= 126 then
+      if char_is_usable c then
         c
       else
         ' '
