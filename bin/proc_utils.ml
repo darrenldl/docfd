@@ -1,5 +1,5 @@
 let command_exists (cmd : string) : bool =
-  Sys.command (Fmt.str "command -v %s 2>/dev/null 1>/dev/null" cmd) = 0
+  Sys.command (Fmt.str "command -v %s 2>/dev/null 1>/dev/null" (Filename.quote cmd)) = 0
 
 let run_return_stdout ~proc_mgr (cmd : string list) : string list option =
   Eio.Switch.run (fun sw ->

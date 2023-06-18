@@ -208,26 +208,32 @@ let run
           root;
         match !Ui_base.Vars.file_to_open with
         | None -> ()
-        | Some doc ->
-          match doc.path with
-          | None -> ()
-          | Some path ->
-            match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
-            | None, None ->
-              Printf.printf "Error: Both env variables VISUAL and EDITOR are unset\n"; exit 1
-            | Some editor, _
-            | None, Some editor -> (
-                let old_stats = Unix.stat path in
-                Sys.command (Fmt.str "%s \'%s\'" editor path) |> ignore;
-                let new_stats = Unix.stat path in
-                if Float.abs (new_stats.st_mtime -. old_stats.st_mtime) >= 0.000_001 then (
-                  (match Lwd.peek Ui_base.Vars.ui_mode with
-                   | Ui_single_file -> Single_file_view.reload_document doc
-                   | Ui_multi_file -> Multi_file_view.reload_document doc
-                  );
-                );
-                loop ()
-              )
+        | Some doc -> (
+            (match doc.path with
+             | None -> ()
+             | Some path ->
+               if Misc_utils.path_is_pdf path then (
+                 Sys.command (Fmt.str "xdg-open %s &" (Filename.quote path)) |> ignore;
+               ) else (
+                 match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
+                 | None, None ->
+                   Printf.printf "Error: Both env variables VISUAL and EDITOR are unset\n"; exit 1
+                 | Some editor, _
+                 | None, Some editor -> (
+                     let old_stats = Unix.stat path in
+                     Sys.command (Fmt.str "%s %s" editor (Filename.quote path)) |> ignore;
+                     let new_stats = Unix.stat path in
+                     if Float.abs (new_stats.st_mtime -. old_stats.st_mtime) >= 0.000_001 then (
+                       (match Lwd.peek Ui_base.Vars.ui_mode with
+                        | Ui_single_file -> Single_file_view.reload_document doc
+                        | Ui_multi_file -> Multi_file_view.reload_document doc
+                       );
+                     );
+                   )
+               )
+            );
+            loop ()
+          )
       in
       loop ()
     )

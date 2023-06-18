@@ -226,13 +226,8 @@ let keyboard_handler
           `Handled
         )
       | (`Enter, []) -> (
-          (match document.Document.path with
-           | Some path when Misc_utils.path_is_pdf path -> ()
-           | _ -> (
-               Lwd.set Ui_base.Vars.quit true;
-               Ui_base.Vars.file_to_open := Some document;
-             )
-          );
+          Lwd.set Ui_base.Vars.quit true;
+          Ui_base.Vars.file_to_open := Some document;
           `Handled
         )
       | _ -> `Handled

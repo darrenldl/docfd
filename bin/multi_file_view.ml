@@ -389,12 +389,8 @@ let keyboard_handler
         )
       | (`Enter, []) -> (
           Option.iter (fun (doc, _search_results) ->
-              match doc.Document.path with
-              | Some path when Misc_utils.path_is_pdf path -> ()
-              | _ -> (
-                  Ui_base.Vars.file_to_open := Some doc;
-                  Lwd.set Ui_base.Vars.quit true;
-                )
+              Ui_base.Vars.file_to_open := Some doc;
+              Lwd.set Ui_base.Vars.quit true;
             )
             document_info;
           `Handled
