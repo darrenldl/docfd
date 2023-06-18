@@ -48,14 +48,10 @@ let reload_document (doc : Document.t) : unit =
 
 module Top_pane = struct
   let main
+      ~document_info
     : Nottui.ui Lwd.t =
-    let$* (document_store, search_result_selected) =
-      Lwd.(pair
-             (get Ui_base.Vars.Single_file.document_store)
-             (get Ui_base.Vars.Single_file.index_of_search_result_selected))
-    in
-    let _, document_info =
-      Option.get (Document_store.min_binding document_store)
+    let$* search_result_selected =
+      Lwd.get Ui_base.Vars.Single_file.index_of_search_result_selected
     in
     Nottui_widgets.v_pane
       (Ui_base.Content_view.main
@@ -250,7 +246,7 @@ let main : Nottui.ui Lwd.t =
   in
   Nottui_widgets.vbox
     [
-      (let$ top_pane = Top_pane.main in
+      (let$ top_pane = Top_pane.main ~document_info in
        Nottui.Ui.keyboard_area
          (keyboard_handler ~document_info)
          top_pane);
