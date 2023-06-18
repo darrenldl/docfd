@@ -1,6 +1,9 @@
 let command_exists (cmd : string) : bool =
   Sys.command (Fmt.str "command -v %s 2>/dev/null 1>/dev/null" (Filename.quote cmd)) = 0
 
+let run_in_background (cmd : string) =
+  Sys.command (Fmt.str "%s 2>/dev/null 1>/dev/null &" cmd)
+
 let run_return_stdout ~proc_mgr (cmd : string list) : string list option =
   Eio.Switch.run (fun sw ->
       let _, stderr = Eio.Process.pipe ~sw proc_mgr in

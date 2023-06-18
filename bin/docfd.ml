@@ -213,7 +213,7 @@ let run
              | None -> ()
              | Some path ->
                if Misc_utils.path_is_pdf path then (
-                 Sys.command (Fmt.str "xdg-open %s &" (Filename.quote path)) |> ignore;
+                 Proc_utils.run_in_background (Fmt.str "xdg-open %s" (Filename.quote path)) |> ignore;
                ) else (
                  match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
                  | None, None ->
