@@ -203,6 +203,8 @@ let run
           ~term:Ui_base.(term ())
           ~renderer
           ~quit:Ui_base.Vars.quit
+          ~quit_on_escape:false
+          ~quit_on_ctrl_q:false
           root;
         match !Ui_base.Vars.file_to_open with
         | None -> ()
