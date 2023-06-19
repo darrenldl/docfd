@@ -27,3 +27,7 @@ let is_digit c =
 
 let is_alphanum c =
   is_letter c || is_digit c
+
+let is_possibly_utf8 c =
+  let c = Char.code c in
+  c land 0b1000_0000 <> 0b0000_0000

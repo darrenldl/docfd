@@ -348,6 +348,8 @@ module Search = struct
     |> Seq.filter (fun (indexed_word, _pos_s) ->
         (not (String.equal indexed_word ""))
         &&
+        (not (String.exists Parser_components.is_possibly_utf8 indexed_word))
+        &&
         (not (String.for_all Parser_components.is_space indexed_word))
       )
     |> Seq.filter (fun (indexed_word, _pos_s) ->
