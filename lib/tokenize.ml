@@ -8,10 +8,9 @@ module Parsers = struct
 
   let token_p =
     choice [
-      take_while1 is_possibly_utf8 >>| (fun s -> Text s);
       take_while1 is_alphanum >>| (fun s -> Text s);
       take_while1 is_space >>| (fun s -> Space s);
-      any_char >>| (fun c -> Text (Printf.sprintf "%c" c));
+      utf_8_char >>| (fun s -> Text s);
     ]
 
   let tokens_p =

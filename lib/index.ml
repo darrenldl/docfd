@@ -348,15 +348,17 @@ module Search = struct
     |> Seq.filter (fun (indexed_word, _pos_s) ->
         (not (String.equal indexed_word ""))
         &&
-        (not (String.exists Parser_components.is_possibly_utf8 indexed_word))
-        &&
         (not (String.for_all Parser_components.is_space indexed_word))
       )
     |> Seq.filter (fun (indexed_word, _pos_s) ->
-        String.equal search_word_ci indexed_word
-        || CCString.find ~sub:search_word_ci indexed_word >= 0
-        || (Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word search_word_ci.[0]
-            && Spelll.match_with dfa indexed_word)
+        if Parser_components.is_possibly_utf_8 (String.get indexed_word 0) then
+          String.equal search_word_ci indexed_word
+        else (
+          String.equal search_word_ci indexed_word
+          || CCString.find ~sub:search_word_ci indexed_word >= 0
+          || (Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word search_word_ci.[0]
+              && Spelll.match_with dfa indexed_word)
+        )
       )
     |> Seq.flat_map (fun (_indexed_word, pos_s) -> Int_set.to_seq pos_s)
 

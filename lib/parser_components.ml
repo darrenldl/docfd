@@ -28,6 +28,25 @@ let is_digit c =
 let is_alphanum c =
   is_letter c || is_digit c
 
-let is_possibly_utf8 c =
+let is_possibly_utf_8 c =
   let c = Char.code c in
   c land 0b1000_0000 <> 0b0000_0000
+
+let utf_8_char =
+  peek_char >>= fun c ->
+  match c with
+  | None -> fail "Eof"
+  | Some c -> (
+      let c = Char.code c in
+      if c land 0b1000_0000 = 0b0000_0000 then (
+        take 1
+      ) else if c land 0b1110_0000 = 0b1100_0000 then (
+        take 2
+      ) else if c land 0b1111_0000 = 0b1110_0000 then (
+        take 3
+      ) else if c land 0b1111_1000 = 0b1111_0000 then (
+        take 4
+      ) else (
+        fail "Invalid UTF-8"
+      )
+    )
