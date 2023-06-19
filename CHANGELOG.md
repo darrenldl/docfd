@@ -4,6 +4,8 @@
 
 - Added PDF search support via `pdftotext`
 
+- Added UTF-8 display support
+
 ## 0.8.6
 
 - Minor wording fix
