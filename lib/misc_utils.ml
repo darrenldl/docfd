@@ -20,43 +20,23 @@ let char_is_usable c =
 let sanitize_string s =
   let s_len = String.length s in
   let bytes = Bytes.make s_len ' ' in
-  let rec check_n_bytes_start_with_0b10 ~n pos =
-    if pos >= s_len || n = 0 then
-      n = 0
-    else (
-      let c = String.get_uint8 s pos in
-      (c land 0b1100_0000 = 0b1000_0000)
-      &&
-      (check_n_bytes_start_with_0b10 ~n:(n - 1) (pos + 1))
-    )
-  in
-  let check_and_blit ~n pos =
-    if check_n_bytes_start_with_0b10 ~n:(n-1) (pos+1) then (
-      BytesLabels.blit_string ~src:s ~src_pos:pos ~dst:bytes ~dst_pos:pos ~len:n
-    )
-  in
   let rec aux pos =
     if pos >= s_len then
       String.of_bytes bytes
     else (
-      let c = String.get_uint8 s pos in
-      if c land 0b1000_0000 = 0b0000_0000 then (
-        if 0x20 <= c && c <= 0x7E then (
-          BytesLabels.blit_string ~src:s ~src_pos:pos ~dst:bytes ~dst_pos:pos ~len:1
-        );
-        aux (pos+1)
-      ) else if c land 0b1110_0000 = 0b1100_0000 then (
-        let n = 2 in
-        check_and_blit ~n pos;
-        aux (pos+n)
-      ) else if c land 0b1111_0000 = 0b1110_0000 then (
-        let n = 3 in
-        check_and_blit ~n pos;
-        aux (pos+n)
-      ) else if c land 0b1111_1000 = 0b1111_0000 then (
-        let n = 4 in
-        check_and_blit ~n pos;
-        aux (pos+n)
+      let decode = String.get_utf_8_uchar s pos in
+      if Uchar.utf_decode_is_valid decode then (
+        let c = String.get_uint8 s pos in
+        if c land 0b1000_0000 = 0b0000_0000 then (
+          if 0x20 <= c && c <= 0x7E then (
+            BytesLabels.blit_string ~src:s ~src_pos:pos ~dst:bytes ~dst_pos:pos ~len:1
+          );
+          aux (pos+1)
+        ) else (
+          let len = Uchar.utf_decode_length decode in
+          BytesLabels.blit_string ~src:s ~src_pos:pos ~dst:bytes ~dst_pos:pos ~len;
+          aux (pos+len)
+        )
       ) else (
         aux (pos+1)
       )
