@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0
+
+- Added expression language for filtering
+
 ## 0.9.0
 
 - Added PDF search support via `pdftotext`
