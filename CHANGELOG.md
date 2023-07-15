@@ -2,7 +2,7 @@
 
 ## 1.0.0
 
-- Added expression language for filtering
+- Added expression language for file filtering in multi-file view
 
 ## 0.9.0
 
