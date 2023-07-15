@@ -32,10 +32,10 @@ let empty_stats = {
 let make ~search_phrase ~found_phrase =
   let len = List.length search_phrase in
   if len = 0 then
-    invalid_arg "search_phrase is empty"
+    invalid_arg "Search_phrase is empty"
   else
   if len <> List.length found_phrase then
-    invalid_arg "length of found_phrase does not match length of search_phrase"
+    invalid_arg "Length of found_phrase does not match length of search_phrase"
   else
     { search_phrase; found_phrase }
 
