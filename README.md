@@ -61,7 +61,11 @@ The default TUI is divided into four sections:
 - Left is the list of documents which satisfy the search phrase
 - Top right is the content view of the document which tracks the search result selected
 - Bottom right is the ranked content search result list
-- Bottom pane consists of the status bar, key binding info, and search field
+- Bottom pane consists of:
+    - Status bar
+    - Key binding info
+    - File content requirement field
+    - Search field
 
 #### Controls
 
@@ -114,9 +118,35 @@ Docfd operates in modes, the initial mode is `Navigation` mode.
 
 </details>
 
-#### Content requirement expression
+#### Search phrase and search procedure
 
 <details>
+
+Document content and user input in the search field are tokenized/segmented
+in the same way, based on:
+- Contiguous alphanumeric characters
+- Individual symbols
+- Individual UTF-8 characters
+- Spaces
+
+Search procedure is a DFS through the document index,
+where the search range for a word is fixed
+to a configured range surrounding the previous word (when applicable).
+
+A token in the index matches a token in the search phrase if they are:
+- A case-insensitive exact match
+- Or a case-insensitive substring match (token in search phrase being the substring)
+- Or within the configured case-insensitive edit distance threshold
+
+Search results are then ranked using heuristics.
+
+</details>
+
+#### File content requirements
+
+<details>
+
+The required content field accepts a content requirement expression.
 
 A content requirement expression is one of:
 - Search phrase
@@ -124,13 +154,13 @@ A content requirement expression is one of:
 - `expression & expression`
 - `expression | expression`
 
-Note that edit distance threshold is not used here.
+Note that the edit distance is not considered here.
 Only case-insensitive exact matches or substring matches against
 the search phrases are considered.
 
 In other words, given the same phrase,
 it is treated less fuzzily as a content requirement expression
-compared to being used as a search phrase.
+compared to being used as a search phrase in the search field.
 
 </details>
 
