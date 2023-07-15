@@ -7,7 +7,7 @@ type value = Document.t * Search_result.t array
 type t = {
   all_documents : Document.t String_option_map.t;
   filtered_documents : Document.t String_option_map.t;
-  filter_exp : Filter_exp.t;
+  content_reqs : Content_req_exp.t;
   search_phrase : Search_phrase.t;
   search_results : Search_result.t array String_option_map.t;
 }
@@ -16,7 +16,7 @@ let empty : t =
   {
     all_documents = String_option_map.empty;
     filtered_documents = String_option_map.empty;
-    filter_exp = Filter_exp.empty;
+    content_reqs = Content_req_exp.empty;
     search_phrase = Search_phrase.empty;
     search_results = String_option_map.empty;
   }
@@ -33,7 +33,7 @@ let single_out ~path (t : t) =
       {
         all_documents;
         filtered_documents = all_documents;
-        filter_exp = t.filter_exp;
+        content_reqs = t.content_reqs;
         search_phrase = t.search_phrase;
         search_results = String_option_map.(add path search_results empty);
       }
@@ -48,16 +48,16 @@ let min_binding (t : t) =
       Some (path, (doc, search_results))
     )
 
-let update_filter_exp (filter_exp : Filter_exp.t) (t : t) : t =
-  if Filter_exp.equal filter_exp t.filter_exp then (
+let update_content_reqs (content_reqs : Content_req_exp.t) (t : t) : t =
+  if Content_req_exp.equal content_reqs t.content_reqs then (
     t
   ) else (
     let filtered_documents =
-      if Filter_exp.is_empty filter_exp then (
+      if Content_req_exp.is_empty content_reqs then (
         t.all_documents
       ) else (
         String_option_map.filter_map (fun _path doc ->
-            if Index.passes_filter filter_exp doc.Document.index then
+            if Index.fulfills_content_reqs content_reqs doc.Document.index then
               Some doc
             else
               None
@@ -66,7 +66,7 @@ let update_filter_exp (filter_exp : Filter_exp.t) (t : t) : t =
       )
     in
     { t with
-      filter_exp;
+      content_reqs;
       filtered_documents;
       search_results =
         String_option_map.mapi (fun _path doc ->
@@ -98,7 +98,7 @@ let add_document (doc : Document.t) (t : t) : t =
         doc
         t.all_documents;
     filtered_documents =
-      (if Index.passes_filter t.filter_exp doc.index then
+      (if Index.fulfills_content_reqs t.content_reqs doc.index then
          String_option_map.add doc.path doc t.filtered_documents
        else
          t.filtered_documents

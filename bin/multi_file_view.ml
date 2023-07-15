@@ -66,14 +66,14 @@ let update_search_phrase () =
   in
   Lwd.set Ui_base.Vars.document_store document_store
 
-let update_filter_exp () =
+let update_content_reqs () =
   reset_document_selected ();
-  let filter_exp =
-    Filter_exp.parse (fst @@ Lwd.peek Vars.require_field)
+  let content_reqs =
+    Content_req_exp.parse (fst @@ Lwd.peek Vars.require_field)
   in
   let document_store =
     Lwd.peek Ui_base.Vars.document_store
-    |> Document_store.update_filter_exp filter_exp
+    |> Document_store.update_content_reqs content_reqs
   in
   Lwd.set Ui_base.Vars.document_store document_store
 
@@ -310,7 +310,7 @@ module Bottom_pane = struct
     Ui_base.Require_bar.main ~input_mode
       ~edit_field:Vars.require_field
       ~focus_handle:Vars.require_field_focus_handle
-      ~f:update_filter_exp
+      ~f:update_content_reqs
 
   let search_bar ~input_mode =
     Ui_base.Search_bar.main ~input_mode

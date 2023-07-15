@@ -427,12 +427,12 @@ module Search = struct
     )
 end
 
-let passes_filter
-    (e : Filter_exp.t)
+let fulfills_content_reqs
+    (e : Content_req_exp.t)
     (t : t)
   : bool =
-  let rec aux (e : Filter_exp.t) =
-    let open Filter_exp in
+  let rec aux (e : Content_req_exp.t) =
+    let open Content_req_exp in
     match e with
     | Phrase phrase -> not (Seq.is_empty (Search.search ~fuzzy:false phrase t))
     | Binary_op (op, e1, e2) -> (
@@ -441,7 +441,7 @@ let passes_filter
         | Or -> aux e1 || aux e2
       )
   in
-  Filter_exp.is_empty e || aux e
+  Content_req_exp.is_empty e || aux e
 
 let search
     (phrase : Search_phrase.t)
