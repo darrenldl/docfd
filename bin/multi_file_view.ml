@@ -310,7 +310,7 @@ module Bottom_pane = struct
   end
 
   let require_bar ~input_mode =
-    Ui_base.Require_bar.main ~input_mode
+    Ui_base.Required_content_bar.main ~input_mode
       ~edit_field:Vars.require_field
       ~focus_handle:Vars.require_field_focus_handle
       ~f:update_content_reqs

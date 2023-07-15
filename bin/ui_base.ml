@@ -259,7 +259,7 @@ module Key_binding_info = struct
     List.assoc { input_mode; init_ui_mode = !Vars.init_ui_mode } grid_lookup
 end
 
-module Require_bar = struct
+module Required_content_bar = struct
   let search_label ~(input_mode : input_mode) =
     let attr =
       match input_mode with
