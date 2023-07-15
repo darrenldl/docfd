@@ -6,6 +6,13 @@ and binary_op =
   | And
   | Or
 
+let empty = Phrase Search_phrase.empty
+
+let is_empty (e : t) =
+  match e with
+  | Phrase p -> Search_phrase.is_empty p
+  | _ -> false
+
 module Parsers = struct
   type exp = t
 

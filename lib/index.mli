@@ -46,4 +46,6 @@ val line_count_of_page : int -> t -> int
 
 val search : Search_phrase.t -> t -> Search_result.t array
 
+val passes_filter : Filter_exp.t -> t -> bool
+
 val global_line_count : t -> int

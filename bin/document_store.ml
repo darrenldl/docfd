@@ -5,14 +5,18 @@ type key = string option
 type value = Document.t * Search_result.t array
 
 type t = {
-  documents : Document.t String_option_map.t;
+  all_documents : Document.t String_option_map.t;
+  filtered_documents : Document.t String_option_map.t;
+  filter_exp : Filter_exp.t;
   search_phrase : Search_phrase.t;
   search_results : Search_result.t array String_option_map.t;
 }
 
 let empty : t =
   {
-    documents = String_option_map.empty;
+    all_documents = String_option_map.empty;
+    filtered_documents = String_option_map.empty;
+    filter_exp = Filter_exp.empty;
     search_phrase = Search_phrase.empty;
     search_results = String_option_map.empty;
   }
@@ -20,19 +24,22 @@ let empty : t =
 let search_phrase (t : t) = t.search_phrase
 
 let single_out ~path (t : t) =
-  match String_option_map.find_opt path t.documents with
+  match String_option_map.find_opt path t.filtered_documents with
   | None -> None
   | Some doc ->
     let search_results = String_option_map.find path t.search_results in
+    let all_documents = String_option_map.(add path doc empty) in
     Some
       {
-        documents = String_option_map.(add path doc empty);
+        all_documents;
+        filtered_documents = all_documents;
+        filter_exp = t.filter_exp;
         search_phrase = t.search_phrase;
         search_results = String_option_map.(add path search_results empty);
       }
 
 let min_binding (t : t) =
-  match String_option_map.min_binding_opt t.documents with
+  match String_option_map.min_binding_opt t.all_documents with
   | None -> None
   | Some (path, doc) -> (
       let search_results =
@@ -41,6 +48,24 @@ let min_binding (t : t) =
       Some (path, (doc, search_results))
     )
 
+let update_filter_exp (filter_exp : Filter_exp.t) (t : t) : t =
+  if Filter_exp.is_empty t.filter_exp then (
+    t
+  ) else (
+    { t with
+      filter_exp;
+      filtered_documents =
+        String_option_map.filter_map (fun _path doc ->
+            if Index.passes_filter filter_exp doc.Document.index then
+              Some doc
+            else
+              None
+          )
+          t.all_documents;
+      search_results = String_option_map.empty;
+    }
+  )
+
 let update_search_phrase search_phrase (t : t) : t =
   if Search_phrase.equal search_phrase t.search_phrase then (
     t
@@ -48,21 +73,26 @@ let update_search_phrase search_phrase (t : t) : t =
     { t with
       search_phrase;
       search_results =
-        String_option_map.mapi (fun path _ ->
-            let doc = String_option_map.find path t.documents in
-            (Index.search search_phrase doc.index)
+        String_option_map.mapi (fun _path doc ->
+            Index.search search_phrase doc.Document.index
           )
-          t.search_results;
+          t.filtered_documents;
     }
   )
 
 let add_document (doc : Document.t) (t : t) : t =
   { t with
-    documents =
+    all_documents =
       String_option_map.add
         doc.path
         doc
-        t.documents;
+        t.all_documents;
+    filtered_documents =
+      (if Index.passes_filter t.filter_exp doc.index then
+         String_option_map.add doc.path doc t.filtered_documents
+       else
+         t.filtered_documents
+      );
     search_results =
       String_option_map.add
         doc.path
@@ -79,13 +109,13 @@ let of_seq (s : Document.t Seq.t) =
 
 let usable_documents (t : t) : (Document.t * Search_result.t array) array =
   if Search_phrase.is_empty t.search_phrase then (
-    t.documents
+    t.filtered_documents
     |> String_option_map.to_seq
     |> Seq.map (fun (_path, doc) -> (doc, [||]))
     |> Array.of_seq
   ) else (
     let arr =
-      t.documents
+      t.filtered_documents
       |> String_option_map.to_seq
       |> Seq.filter_map (fun (path, doc) ->
           let search_results = String_option_map.find path t.search_results in

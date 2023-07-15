@@ -2,6 +2,7 @@ open Docfd_lib
 
 type input_mode =
   | Navigate
+  | Filter
   | Search
 
 type ui_mode =
@@ -255,6 +256,37 @@ module Key_binding_info = struct
 
   let main ~(grid_lookup : grid_lookup) ~(input_mode : input_mode) =
     List.assoc { input_mode; init_ui_mode = !Vars.init_ui_mode } grid_lookup
+end
+
+module Filter_bar = struct
+  let search_label ~(input_mode : input_mode) =
+    let attr =
+      match input_mode with
+      | Filter -> Notty.A.(st bold)
+      | _ -> Notty.A.empty
+    in
+    (Notty.I.string attr "Filter: ")
+    |> Nottui.Ui.atom
+    |> Lwd.return
+
+  let main
+      ~input_mode
+      ~(edit_field : (string * int) Lwd.var)
+      ~focus_handle
+      ~f
+    : Nottui.ui Lwd.t =
+    Nottui_widgets.hbox
+      [
+        search_label ~input_mode;
+        Nottui_widgets.edit_field (Lwd.get edit_field)
+          ~focus:focus_handle
+          ~on_change:(fun (text, x) -> Lwd.set edit_field (text, x))
+          ~on_submit:(fun _ ->
+              f ();
+              Nottui.Focus.release focus_handle;
+              Lwd.set Vars.input_mode Navigate
+            );
+      ]
 end
 
 module Search_bar = struct
