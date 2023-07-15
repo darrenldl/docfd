@@ -71,40 +71,66 @@ Docfd operates in modes, the initial mode is `Navigation` mode.
 
 `Navigation` mode
 - Scroll down the document list
-  - `j`
-  - Down arrow
-  - Page down
-  - Scroll down with mouse wheel when hovering above the area
+    - `j`
+    - Down arrow
+    - Page down
+    - Scroll down with mouse wheel when hovering above the area
 - Scroll up the document list
-  - `k`
-  - Up arrow
-  - Page up
-  - Scroll up with mouse wheel when hovering above the area
+    - `k`
+    - Up arrow
+    - Page up
+    - Scroll up with mouse wheel when hovering above the area
 - Scroll down the content search result list
-  - `Shift`+`j`
-  - `Shift`+Down arrow
-  - `Shift`+Page down
-  - Scroll down with mouse wheel when hovering above the area
+    - `Shift`+`j`
+    - `Shift`+Down arrow
+    - `Shift`+Page down
+    - Scroll down with mouse wheel when hovering above the area
 - Scroll up the document list
-  - `Shift`+`k`
-  - `Shift`+Up arrow
-  - `Shift`+Page up
-  - Scroll up with mouse wheel when hovering above the area
+    - `Shift`+`k`
+    - `Shift`+Up arrow
+    - `Shift`+Page up
+    - Scroll up with mouse wheel when hovering above the area
 - Open document
-  - `Enter`
-    - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
+    - `Enter`
+        - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
 - Switch to single file view
-  - `Tab`
+    - `Tab`
+- Switch to `Require content` mode
+    - `?`
 - Switch to `Search` mode
-  - `/`
+    - `/`
 - Clear search phrase
-  - `x`
+    - `x`
 - Exit Docfd
-  - `q` or `Ctrl+c`
+    - `q` or `Ctrl+c`
 
 `Search` mode
 - Search field is active in this mode
-- `Enter` to confirm search phrase and exit search mode
+- `Enter` to confirm search phrase and exit the mode
+
+`Require content` mode
+- Required content field is active in this mode
+- `Enter` to confirm file content requirements and exit the mode
+
+</details>
+
+#### Content requirement expression
+
+<details>
+
+A content requirement expression is one of:
+- Search phrase
+- `(expression)`
+- `expression & expression`
+- `expression | expression`
+
+Note that edit distance threshold is not used here.
+Only case-insensitive exact matches or substring matches against
+the search phrases are considered.
+
+In other words, given the same phrase,
+it is treated less fuzzily as a content requirement expression
+compared to being used as a search phrase.
 
 </details>
 
@@ -117,7 +143,7 @@ is used.
 
 ![](screenshots/single-file1.png)
 
-In this mode, the TUI is divided into only two sections:
+In this view, the TUI is divided into only two sections:
 - Top is ranked content search result list
 - Bottom is the search interface
 
@@ -130,32 +156,32 @@ namely `Shift` is optional for scrolling through search result list.
 
 `Navigation` mode
 - Scroll down the content search result list
-  - `j`
-  - Down arrow
-  - Page down
-  - `Shift`+`j`
-  - `Shift`+Down arrow
-  - `Shift`+Page down
-  - Scroll down with mouse wheel when hovering above the area
+    - `j`
+    - Down arrow
+    - Page down
+    - `Shift`+`j`
+    - `Shift`+Down arrow
+    - `Shift`+Page down
+    - Scroll down with mouse wheel when hovering above the area
 - Scroll up the document list
-  - `k`
-  - Up arrow
-  - Page up
-  - `Shift`+`k`
-  - `Shift`+Up arrow
-  - `Shift`+Page up
-  - Scroll up with mouse wheel when hovering above the area
+    - `k`
+    - Up arrow
+    - Page up
+    - `Shift`+`k`
+    - `Shift`+Up arrow
+    - `Shift`+Page up
+    - Scroll up with mouse wheel when hovering above the area
 - Open document
-  - `Enter`
-    - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
+    - `Enter`
+        - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
 - Switch to multi-file view
-  - `Tab`
+    - `Tab`
 - Switch to `Search` mode
-  - `/`
+    - `/`
 - Clear search phrase
-  - `x`
+    - `x`
 - Exit Docfd
-  - `q` or `Ctrl+c`
+    - `q` or `Ctrl+c`
 
 `Search` mode
 - Search field is active in this mode
