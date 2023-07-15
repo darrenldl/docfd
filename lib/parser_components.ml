@@ -50,3 +50,9 @@ let utf_8_char =
         fail "Invalid UTF-8"
       )
     )
+
+(* Copied from Angstrom README *)
+let chainl1 e op =
+  let rec go acc =
+    (lift2 (fun f x -> f acc x) op e >>= go) <|> return acc in
+  e >>= fun init -> go init

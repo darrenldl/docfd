@@ -441,7 +441,7 @@ let passes_filter
         | Or -> aux e1 || aux e2
       )
   in
-  aux e
+  Filter_exp.is_empty e || aux e
 
 let search
     (phrase : Search_phrase.t)

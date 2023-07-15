@@ -13,6 +13,16 @@ let is_empty (e : t) =
   | Phrase p -> Search_phrase.is_empty p
   | _ -> false
 
+let equal (e1 : t) (e2 : t) =
+  let rec aux e1 e2 =
+    match e1, e2 with
+    | Phrase p1, Phrase p2 -> Search_phrase.equal p1 p2
+    | Binary_op (op1, x1, y1), Binary_op (op2, x2, y2) ->
+      op1 = op2 && aux x1 x2 && aux y1 y2
+    | _, _ -> false
+  in
+  aux e1 e2
+
 module Parsers = struct
   type exp = t
 
@@ -33,23 +43,24 @@ module Parsers = struct
     let phrase = String.concat "" l in
     Search_phrase.make ~fuzzy_max_edit_distance:0 ~phrase
 
-  let binary_op =
-    choice [
-      char '&' *> return And;
-      char '|' *> return Or;
-    ]
+  let and_op =
+    char '&' *> spaces *> return (fun x y -> Binary_op (And, x, y))
+
+  let or_op =
+    char '|' *> spaces *> return (fun x y -> Binary_op (Or, x, y))
 
   let p =
     spaces *>
     fix (fun (exp : exp Angstrom.t) ->
-        choice [
-          (phrase >>| fun p -> Phrase p);
-          (char '(' *> spaces *> exp <* spaces <* char ')' <* spaces);
-          (exp <* spaces >>= fun e1 ->
-           binary_op <* spaces >>= fun op ->
-           exp <* spaces >>| fun e2 ->
-           Binary_op (op, e1, e2));
-        ]
+        let base =
+          choice [
+            (end_of_input *> return empty);
+            (phrase >>| fun p -> Phrase p);
+            (char '(' *> spaces *> exp <* spaces <* char ')' <* spaces);
+          ]
+        in
+        let conj = chainl1 base and_op in
+        chainl1 conj or_op
       )
     <* spaces
 end
