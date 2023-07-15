@@ -330,7 +330,7 @@ let line_count_of_page page t : int =
 module Search = struct
   let usable_positions
       ?around_pos
-      ~(fuzzy : bool)
+      ~(consider_edit_dist : bool)
       ((search_word, dfa) : (string * Spelll.automaton))
       (t : t)
     : int Seq.t =
@@ -357,7 +357,7 @@ module Search = struct
         else (
           String.equal search_word_ci indexed_word
           || CCString.find ~sub:search_word_ci indexed_word >= 0
-          || (fuzzy
+          || (consider_edit_dist
               && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word search_word_ci.[0]
               && Spelll.match_with dfa indexed_word)
         )
@@ -365,7 +365,7 @@ module Search = struct
     |> Seq.flat_map (fun (_indexed_word, pos_s) -> Int_set.to_seq pos_s)
 
   let search_around_pos
-      ~fuzzy
+      ~consider_edit_dist
       (around_pos : int)
       (l : (string * Spelll.automaton) list)
       (t : t)
@@ -374,7 +374,7 @@ module Search = struct
       match l with
       | [] -> Seq.return []
       | (search_word, dfa) :: rest -> (
-          usable_positions ~around_pos ~fuzzy (search_word, dfa) t
+          usable_positions ~around_pos ~consider_edit_dist (search_word, dfa) t
           |> Seq.flat_map (fun pos ->
               aux pos rest
               |> Seq.map (fun l -> pos :: l)
@@ -384,7 +384,7 @@ module Search = struct
     aux around_pos l
 
   let search
-      ~fuzzy
+      ~consider_edit_dist
       (phrase : Search_phrase.t)
       (t : t)
     : int list Seq.t =
@@ -395,7 +395,7 @@ module Search = struct
       | [] -> failwith "Unexpected case"
       | first_word :: rest -> (
           let possible_start_count, possible_starts =
-            usable_positions ~fuzzy first_word t
+            usable_positions ~consider_edit_dist first_word t
             |> Misc_utils.list_and_length_of_seq
           in
           if possible_start_count = 0 then
@@ -412,7 +412,7 @@ module Search = struct
             |> Eio.Fiber.List.map (fun pos ->
                 Task_pool.run
                   (fun () ->
-                     search_around_pos ~fuzzy pos rest t
+                     search_around_pos ~consider_edit_dist pos rest t
                      |> Seq.map (fun l -> pos :: l)
                      |> Seq.take search_limit_per_start
                      |> List.of_seq
@@ -434,7 +434,8 @@ let fulfills_content_reqs
   let rec aux (e : Content_req_exp.t) =
     let open Content_req_exp in
     match e with
-    | Phrase phrase -> not (Seq.is_empty (Search.search ~fuzzy:false phrase t))
+    | Phrase phrase ->
+      not (Seq.is_empty (Search.search ~consider_edit_dist:false phrase t))
     | Binary_op (op, e1, e2) -> (
         match op with
         | And -> aux e1 && aux e2
@@ -448,7 +449,7 @@ let search
     (t : t)
   : Search_result.t array =
   let arr =
-    Search.search ~fuzzy:true phrase t
+    Search.search ~consider_edit_dist:true phrase t
     |> Seq.map (fun l ->
         Search_result.make
           ~search_phrase:phrase.phrase
