@@ -244,6 +244,11 @@ module Bottom_pane = struct
   module Key_binding_info = struct
     let grid_contents : Ui_base.Key_binding_info.grid_contents =
       let open Ui_base.Key_binding_info in
+      let empty_row =
+        [
+          { label = ""; msg = "" };
+        ]
+      in
       let navigate_grid =
         [
           [
@@ -262,14 +267,13 @@ module Bottom_pane = struct
           ];
         ]
       in
-      let require_grid =
+      let require_content_grid =
         [
           [
             { label = "Enter"; msg = "confirm file content requirements and exit" };
           ];
-          [
-            { label = ""; msg = "" };
-          ];
+          empty_row;
+          empty_row;
         ]
       in
       let search_grid =
@@ -277,9 +281,8 @@ module Bottom_pane = struct
           [
             { label = "Enter"; msg = "confirm and exit search mode" };
           ];
-          [
-            { label = ""; msg = "" };
-          ];
+          empty_row;
+          empty_row;
         ]
       in
       [
@@ -295,8 +298,8 @@ module Bottom_pane = struct
         ({ input_mode = Search; init_ui_mode = Ui_single_file },
          search_grid
         );
-        ({ input_mode = Require; init_ui_mode = Ui_multi_file },
-         require_grid
+        ({ input_mode = Require_content; init_ui_mode = Ui_multi_file },
+         require_content_grid
         );
       ]
 
@@ -325,7 +328,7 @@ module Bottom_pane = struct
         status_bar ~document_info_s ~input_mode;
         Key_binding_info.main ~input_mode;
         require_bar ~input_mode;
-        search_bar ~input_mode;
+        search_bar ~padding:10 ~input_mode;
       ]
 end
 
@@ -417,7 +420,7 @@ let keyboard_handler
         )
       | (`ASCII '?', []) -> (
           Nottui.Focus.request Vars.require_field_focus_handle;
-          Lwd.set Ui_base.Vars.input_mode Require;
+          Lwd.set Ui_base.Vars.input_mode Require_content;
           `Handled
         )
       | (`ASCII '/', []) -> (
@@ -440,7 +443,7 @@ let keyboard_handler
         )
       | _ -> `Handled
     )
-  | Require | Search -> `Unhandled
+  | _ -> `Unhandled
 
 let main : Nottui.ui Lwd.t =
   let$* document_store = Lwd.get Ui_base.Vars.document_store in

@@ -157,7 +157,7 @@ module Bottom_pane = struct
       [
         status_bar ~document ~input_mode;
         Key_binding_info.main ~input_mode;
-        search_bar ~input_mode;
+        search_bar ~padding:0 ~input_mode;
       ]
 end
 
@@ -232,7 +232,7 @@ let keyboard_handler
         )
       | _ -> `Handled
     )
-  | Require | Search -> `Unhandled
+  | _ -> `Unhandled
 
 let main : Nottui.ui Lwd.t =
   let$* document_store = Lwd.get Ui_base.Vars.Single_file.document_store in

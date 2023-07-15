@@ -2,7 +2,7 @@ open Docfd_lib
 
 type input_mode =
   | Navigate
-  | Require
+  | Require_content
   | Search
 
 type ui_mode =
@@ -164,7 +164,7 @@ module Status_bar = struct
   let input_mode_images =
     let l =
       [ (Navigate, "NAVIGATE")
-      ; (Require, "REQUIRE")
+      ; (Require_content, "REQUIRE CONTENT")
       ; (Search, "SEARCH")
       ]
     in
@@ -263,10 +263,10 @@ module Require_bar = struct
   let search_label ~(input_mode : input_mode) =
     let attr =
       match input_mode with
-      | Require -> Notty.A.(st bold)
+      | Require_content -> Notty.A.(st bold)
       | _ -> Notty.A.empty
     in
-    (Notty.I.string attr "Require: ")
+    (Notty.I.string attr "Required content: ")
     |> Nottui.Ui.atom
     |> Lwd.return
 
@@ -291,17 +291,19 @@ module Require_bar = struct
 end
 
 module Search_bar = struct
-  let search_label ~(input_mode : input_mode) =
+  let search_label ~padding ~(input_mode : input_mode) =
     let attr =
       match input_mode with
       | Search -> Notty.A.(st bold)
       | _ -> Notty.A.empty
     in
-    (Notty.I.string attr "Search:  ")
+    let padding = String.make padding ' ' in
+    (Notty.I.string attr (Fmt.str "Search: %s" padding))
     |> Nottui.Ui.atom
     |> Lwd.return
 
   let main
+      ~padding
       ~input_mode
       ~(edit_field : (string * int) Lwd.var)
       ~focus_handle
@@ -309,7 +311,7 @@ module Search_bar = struct
     : Nottui.ui Lwd.t =
     Nottui_widgets.hbox
       [
-        search_label ~input_mode;
+        search_label ~padding ~input_mode;
         Nottui_widgets.edit_field (Lwd.get edit_field)
           ~focus:focus_handle
           ~on_change:(fun (text, x) -> Lwd.set edit_field (text, x))
