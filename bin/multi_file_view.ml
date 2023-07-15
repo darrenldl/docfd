@@ -10,9 +10,9 @@ module Vars = struct
 
   let search_field_focus_handle = Nottui.Focus.make ()
 
-  let filter_field = Lwd.var Ui_base.empty_text_field
+  let require_field = Lwd.var Ui_base.empty_text_field
 
-  let filter_field_focus_handle = Nottui.Focus.make ()
+  let require_field_focus_handle = Nottui.Focus.make ()
 end
 
 let set_document_selected ~choice_count n =
@@ -69,7 +69,7 @@ let update_search_phrase () =
 let update_filter_exp () =
   reset_document_selected ();
   let filter_exp =
-    Filter_exp.parse (fst @@ Lwd.peek Vars.filter_field)
+    Filter_exp.parse (fst @@ Lwd.peek Vars.require_field)
   in
   let document_store =
     Lwd.peek Ui_base.Vars.document_store
@@ -248,7 +248,7 @@ module Bottom_pane = struct
         [
           [
             { label = "Enter"; msg = "open document" };
-            { label = "?"; msg = "switch to filter mode" };
+            { label = "?"; msg = "set file content requirements" };
           ];
           [
             { label = "/"; msg = "switch to search mode" };
@@ -262,10 +262,10 @@ module Bottom_pane = struct
           ];
         ]
       in
-      let filter_grid =
+      let require_grid =
         [
           [
-            { label = "Enter"; msg = "confirm and exit filter mode" };
+            { label = "Enter"; msg = "confirm file content requirements and exit" };
           ];
           [
             { label = ""; msg = "" };
@@ -295,8 +295,8 @@ module Bottom_pane = struct
         ({ input_mode = Search; init_ui_mode = Ui_single_file },
          search_grid
         );
-        ({ input_mode = Filter; init_ui_mode = Ui_multi_file },
-         filter_grid
+        ({ input_mode = Require; init_ui_mode = Ui_multi_file },
+         require_grid
         );
       ]
 
@@ -306,10 +306,10 @@ module Bottom_pane = struct
       Ui_base.Key_binding_info.main ~grid_lookup ~input_mode
   end
 
-  let filter_bar ~input_mode =
-    Ui_base.Filter_bar.main ~input_mode
-      ~edit_field:Vars.filter_field
-      ~focus_handle:Vars.filter_field_focus_handle
+  let require_bar ~input_mode =
+    Ui_base.Require_bar.main ~input_mode
+      ~edit_field:Vars.require_field
+      ~focus_handle:Vars.require_field_focus_handle
       ~f:update_filter_exp
 
   let search_bar ~input_mode =
@@ -324,7 +324,7 @@ module Bottom_pane = struct
       [
         status_bar ~document_info_s ~input_mode;
         Key_binding_info.main ~input_mode;
-        filter_bar ~input_mode;
+        require_bar ~input_mode;
         search_bar ~input_mode;
       ]
 end
@@ -416,8 +416,8 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII '?', []) -> (
-          Nottui.Focus.request Vars.filter_field_focus_handle;
-          Lwd.set Ui_base.Vars.input_mode Filter;
+          Nottui.Focus.request Vars.require_field_focus_handle;
+          Lwd.set Ui_base.Vars.input_mode Require;
           `Handled
         )
       | (`ASCII '/', []) -> (
@@ -440,7 +440,7 @@ let keyboard_handler
         )
       | _ -> `Handled
     )
-  | Filter | Search -> `Unhandled
+  | Require | Search -> `Unhandled
 
 let main : Nottui.ui Lwd.t =
   let$* document_store = Lwd.get Ui_base.Vars.document_store in

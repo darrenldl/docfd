@@ -2,7 +2,7 @@ open Docfd_lib
 
 type input_mode =
   | Navigate
-  | Filter
+  | Require
   | Search
 
 type ui_mode =
@@ -164,7 +164,7 @@ module Status_bar = struct
   let input_mode_images =
     let l =
       [ (Navigate, "NAVIGATE")
-      ; (Filter, "FILTER")
+      ; (Require, "REQUIRE")
       ; (Search, "SEARCH")
       ]
     in
@@ -259,14 +259,14 @@ module Key_binding_info = struct
     List.assoc { input_mode; init_ui_mode = !Vars.init_ui_mode } grid_lookup
 end
 
-module Filter_bar = struct
+module Require_bar = struct
   let search_label ~(input_mode : input_mode) =
     let attr =
       match input_mode with
-      | Filter -> Notty.A.(st bold)
+      | Require -> Notty.A.(st bold)
       | _ -> Notty.A.empty
     in
-    (Notty.I.string attr "Filter: ")
+    (Notty.I.string attr "Require: ")
     |> Nottui.Ui.atom
     |> Lwd.return
 
@@ -297,7 +297,7 @@ module Search_bar = struct
       | Search -> Notty.A.(st bold)
       | _ -> Notty.A.empty
     in
-    (Notty.I.string attr "Search: ")
+    (Notty.I.string attr "Search:  ")
     |> Nottui.Ui.atom
     |> Lwd.return
 

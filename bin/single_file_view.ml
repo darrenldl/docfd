@@ -232,7 +232,7 @@ let keyboard_handler
         )
       | _ -> `Handled
     )
-  | Filter | Search -> `Unhandled
+  | Require | Search -> `Unhandled
 
 let main : Nottui.ui Lwd.t =
   let$* document_store = Lwd.get Ui_base.Vars.Single_file.document_store in
