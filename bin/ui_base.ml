@@ -13,7 +13,7 @@ type document_src =
   | Stdin
   | Files of string list
 
-let empty_search_field = ("", 0)
+let empty_text_field = ("", 0)
 
 module Vars = struct
   let quit = Lwd.var false
@@ -38,7 +38,7 @@ module Vars = struct
   let total_document_count : int ref = ref 0
 
   module Single_file = struct
-    let search_field = Lwd.var empty_search_field
+    let search_field = Lwd.var empty_text_field
 
     let index_of_search_result_selected = Lwd.var 0
 
@@ -164,6 +164,7 @@ module Status_bar = struct
   let input_mode_images =
     let l =
       [ (Navigate, "NAVIGATE")
+      ; (Filter, "FILTER")
       ; (Search, "SEARCH")
       ]
     in

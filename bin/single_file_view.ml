@@ -221,7 +221,7 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'x', []) -> (
-          Lwd.set Ui_base.Vars.Single_file.search_field Ui_base.empty_search_field;
+          Lwd.set Ui_base.Vars.Single_file.search_field Ui_base.empty_text_field;
           update_search_phrase ();
           `Handled
         )
@@ -232,7 +232,7 @@ let keyboard_handler
         )
       | _ -> `Handled
     )
-  | Search -> `Unhandled
+  | Filter | Search -> `Unhandled
 
 let main : Nottui.ui Lwd.t =
   let$* document_store = Lwd.get Ui_base.Vars.Single_file.document_store in

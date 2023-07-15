@@ -49,20 +49,30 @@ let min_binding (t : t) =
     )
 
 let update_filter_exp (filter_exp : Filter_exp.t) (t : t) : t =
-  if Filter_exp.is_empty t.filter_exp then (
+  if Filter_exp.equal filter_exp t.filter_exp then (
     t
   ) else (
-    { t with
-      filter_exp;
-      filtered_documents =
+    let filtered_documents =
+      if Filter_exp.is_empty filter_exp then (
+        t.all_documents
+      ) else (
         String_option_map.filter_map (fun _path doc ->
             if Index.passes_filter filter_exp doc.Document.index then
               Some doc
             else
               None
           )
-          t.all_documents;
-      search_results = String_option_map.empty;
+          t.all_documents
+      )
+    in
+    { t with
+      filter_exp;
+      filtered_documents;
+      search_results =
+        String_option_map.mapi (fun _path doc ->
+            Index.search t.search_phrase doc.Document.index
+          )
+          filtered_documents;
     }
   )
 

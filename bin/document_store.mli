@@ -8,6 +8,8 @@ type value = Document.t * Search_result.t array
 
 val empty : t
 
+val update_filter_exp : Filter_exp.t -> t -> t
+
 val update_search_phrase : Search_phrase.t -> t -> t
 
 val search_phrase : t -> Search_phrase.t

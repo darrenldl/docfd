@@ -6,9 +6,13 @@ module Vars = struct
 
   let index_of_search_result_selected = Lwd.var 0
 
-  let search_field = Lwd.var Ui_base.empty_search_field
+  let search_field = Lwd.var Ui_base.empty_text_field
 
   let search_field_focus_handle = Nottui.Focus.make ()
+
+  let filter_field = Lwd.var Ui_base.empty_text_field
+
+  let filter_field_focus_handle = Nottui.Focus.make ()
 end
 
 let set_document_selected ~choice_count n =
@@ -59,6 +63,17 @@ let update_search_phrase () =
   let document_store =
     Lwd.peek Ui_base.Vars.document_store
     |> Document_store.update_search_phrase search_phrase
+  in
+  Lwd.set Ui_base.Vars.document_store document_store
+
+let update_filter_exp () =
+  reset_document_selected ();
+  let filter_exp =
+    Filter_exp.parse (fst @@ Lwd.peek Vars.filter_field)
+  in
+  let document_store =
+    Lwd.peek Ui_base.Vars.document_store
+    |> Document_store.update_filter_exp filter_exp
   in
   Lwd.set Ui_base.Vars.document_store document_store
 
@@ -233,6 +248,9 @@ module Bottom_pane = struct
         [
           [
             { label = "Enter"; msg = "open document" };
+            { label = "?"; msg = "switch to filter mode" };
+          ];
+          [
             { label = "/"; msg = "switch to search mode" };
             { label = "x"; msg = "clear search" };
           ];
@@ -241,6 +259,16 @@ module Bottom_pane = struct
               msg = "switch to single file view" };
             { label = "r"; msg = "reload document selected" };
             { label = "q"; msg = "exit" };
+          ];
+        ]
+      in
+      let filter_grid =
+        [
+          [
+            { label = "Enter"; msg = "confirm and exit filter mode" };
+          ];
+          [
+            { label = ""; msg = "" };
           ];
         ]
       in
@@ -267,6 +295,9 @@ module Bottom_pane = struct
         ({ input_mode = Search; init_ui_mode = Ui_single_file },
          search_grid
         );
+        ({ input_mode = Filter; init_ui_mode = Ui_multi_file },
+         filter_grid
+        );
       ]
 
     let grid_lookup = Ui_base.Key_binding_info.make_grid_lookup grid_contents
@@ -274,6 +305,12 @@ module Bottom_pane = struct
     let main ~input_mode =
       Ui_base.Key_binding_info.main ~grid_lookup ~input_mode
   end
+
+  let filter_bar ~input_mode =
+    Ui_base.Filter_bar.main ~input_mode
+      ~edit_field:Vars.filter_field
+      ~focus_handle:Vars.filter_field_focus_handle
+      ~f:update_filter_exp
 
   let search_bar ~input_mode =
     Ui_base.Search_bar.main ~input_mode
@@ -287,6 +324,7 @@ module Bottom_pane = struct
       [
         status_bar ~document_info_s ~input_mode;
         Key_binding_info.main ~input_mode;
+        filter_bar ~input_mode;
         search_bar ~input_mode;
       ]
 end
@@ -377,13 +415,18 @@ let keyboard_handler
             (document_current_choice-1);
           `Handled
         )
+      | (`ASCII '?', []) -> (
+          Nottui.Focus.request Vars.filter_field_focus_handle;
+          Lwd.set Ui_base.Vars.input_mode Filter;
+          `Handled
+        )
       | (`ASCII '/', []) -> (
           Nottui.Focus.request Vars.search_field_focus_handle;
           Lwd.set Ui_base.Vars.input_mode Search;
           `Handled
         )
       | (`ASCII 'x', []) -> (
-          Lwd.set Vars.search_field Ui_base.empty_search_field;
+          Lwd.set Vars.search_field Ui_base.empty_text_field;
           update_search_phrase ();
           `Handled
         )
@@ -397,7 +440,7 @@ let keyboard_handler
         )
       | _ -> `Handled
     )
-  | Search -> `Unhandled
+  | Filter | Search -> `Unhandled
 
 let main : Nottui.ui Lwd.t =
   let$* document_store = Lwd.get Ui_base.Vars.document_store in
