@@ -15,7 +15,7 @@ let max_depth_arg =
 
 let exts_arg =
   let doc =
-    "File extensions recognized, comma separated."
+    "File extensions to use, comma separated."
   in
   Arg.(value & opt string Params.default_recognized_exts & info [ "exts" ] ~doc ~docv:"EXTS")
 
