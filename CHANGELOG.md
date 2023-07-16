@@ -54,11 +54,11 @@
 
 - Fixed crashing and incorrect rendering in some cases of files with blank lines
 
-  - This is due to `Index.line_count` being incorrectly calculated
+    - This is due to `Index.line_count` being incorrectly calculated
 
 - Added auto refresh on change of file
 
-  - Change detection is based on file modification time
+    - Change detection is based on file modification time
 
 - Added reload file via `r` key
 
@@ -66,8 +66,8 @@
 
 - Bumped the default word search range from 15 to 40
 
-  - Since spaces are also counted as words in the index,
-    15 doesn't actually give a lot of range
+    - Since spaces are also counted as words in the index,
+      15 doesn't actually give a lot of range
 
 - Added minor optimization to search
 
@@ -133,10 +133,10 @@
 
 - Optimized overall memory footprint
 
-  - Content index memory usage
+    - Content index memory usage
 
-  - Switched to using content index to render content
-    lines instead of storing file lines again after indexing
+    - Switched to using content index to render content
+      lines instead of storing file lines again after indexing
 
 ## 0.5.5
 
@@ -223,8 +223,8 @@
 
 - Added limit to word search range of each step in content search
 
-  - This speeds up usual search while giving good enough results,
-    and prevents search from becoming very slow in large documents
+    - This speeds up usual search while giving good enough results,
+      and prevents search from becoming very slow in large documents
 
 ## 0.2.4
 
@@ -277,8 +277,8 @@
 - Upgraded `--tags` and `--ltags` output to be more human readable
   when output is terminal
 
-  - Changed behavior to output each tag in individual line when output
-    is not terminal
+    - Changed behavior to output each tag in individual line when output
+      is not terminal
 
 ## 0.1.2
 
@@ -308,8 +308,8 @@
 
 - Added support for alternative tag section syntax
 
-  - `| ... |`
-  - `@ ... @`
+    - `| ... |`
+    - `@ ... @`
 
 ## 0.0.6
 
