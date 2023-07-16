@@ -59,3 +59,22 @@ let list_and_length_of_seq (s : 'a Seq.t) : int * 'a list =
 
 let path_is_pdf (s : string) =
   Filename.extension s = ".pdf"
+
+let remove_leading_dots (s : string) =
+  let str_len = String.length s in
+  if str_len = 0 then (
+    ""
+  ) else (
+    let rec aux pos =
+      if pos < str_len then (
+        if String.get s pos = '.' then
+          aux (pos + 1)
+        else (
+          StringLabels.sub s ~pos ~len:(str_len - pos)
+        )
+      ) else (
+        ""
+      )
+    in
+    aux 0
+  )

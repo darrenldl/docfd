@@ -13,6 +13,12 @@ let max_depth_arg =
   in
   Arg.(value & opt int Params.default_max_file_tree_depth & info [ "max-depth" ] ~doc ~docv:"N")
 
+let exts_arg =
+  let doc =
+    "File extensions recognized, comma separated."
+  in
+  Arg.(value & opt string Params.default_recognized_exts & info [ "exts" ] ~doc)
+
 let max_fuzzy_edit_distance_arg =
   let doc =
     "Maximum edit distance for fuzzy matches."
@@ -59,7 +65,7 @@ let list_files_recursively (dir : string) : string list =
           next_choices
       ) else (
         let ext = Filename.extension path in
-        if List.mem ext Params.recognized_exts then (
+        if List.mem ext !Params.recognized_exts then (
           add path
         )
       )
@@ -80,6 +86,7 @@ let run
     (max_fuzzy_edit_distance : int)
     (max_word_search_range : int)
     (index_chunk_word_count : int)
+    (exts : string)
     (files : string list)
   =
   Params.debug := debug;
@@ -87,6 +94,24 @@ let run
   Params.max_fuzzy_edit_distance := max_fuzzy_edit_distance;
   Params.max_word_search_range := max_word_search_range;
   Params.index_chunk_word_count := index_chunk_word_count;
+  let recognized_exts =
+    String.split_on_char ',' exts
+    |> List.map (fun s ->
+        s
+        |> Misc_utils.remove_leading_dots s
+        |> CCString.trim
+      )
+    |> List.filter (fun s -> s <> "")
+    |> List.map (fun s -> Printf.sprintf ".%s" s)
+  in
+  (match recognized_exts with
+   | [] -> (
+       Fmt.pr "Error: No usable file extensions\n";
+       exit 1
+     )
+   | _ -> ()
+  );
+  Params.recognized_exts := recognized_exts;
   List.iter (fun file ->
       if not (Sys.file_exists file) then (
         Fmt.pr "Error: File \"%s\" does not exist\n" file;
@@ -250,6 +275,7 @@ let cmd ~env =
           $ max_fuzzy_edit_distance_arg
           $ max_word_search_range_arg
           $ index_chunk_word_count_arg
+          $ exts_arg
           $ files_arg)
 
 let () = Eio_main.run (fun env ->

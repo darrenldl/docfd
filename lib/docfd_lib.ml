@@ -9,3 +9,5 @@ module Content_req_exp = Content_req_exp
 module Word_db = Word_db
 
 module Tokenize = Tokenize
+
+module Params' = Params

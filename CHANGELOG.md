@@ -4,6 +4,12 @@
 
 - Added expression language for file filtering in multi-file view
 
+- Adjusted default file tree depth
+
+- Added `--exts` argument for configuring file extensions recognized
+
+- Fixed parameters passing from binary to library
+
 ## 0.9.0
 
 - Added PDF search support via `pdftotext`
