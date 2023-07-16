@@ -119,7 +119,7 @@ let run
     )
     files;
   if !Params.debug then (
-    Printf.printf "Scanning for text files\n"
+    Printf.printf "Scanning for documents\n"
   );
   let init_ui_mode, document_src =
     if not (stdin_is_atty ()) then
