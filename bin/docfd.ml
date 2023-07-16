@@ -17,7 +17,7 @@ let exts_arg =
   let doc =
     "File extensions recognized, comma separated."
   in
-  Arg.(value & opt string Params.default_recognized_exts & info [ "exts" ] ~doc)
+  Arg.(value & opt string Params.default_recognized_exts & info [ "exts" ] ~doc ~docv:"EXTS")
 
 let max_fuzzy_edit_distance_arg =
   let doc =
