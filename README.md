@@ -129,6 +129,8 @@ in the same way, based on:
 - Individual UTF-8 characters
 - Spaces
 
+A search phrase is a list of said tokens.
+
 Search procedure is a DFS through the document index,
 where the search range for a word is fixed
 to a configured range surrounding the previous word (when applicable).
