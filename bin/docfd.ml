@@ -52,31 +52,30 @@ let list_files_recursively (dir : string) : string list =
   let rec aux depth path =
     if depth >= !Params.max_file_tree_depth then ()
     else (
-      if Sys.is_directory path then (
-        let next_choices =
-          try
-            Sys.readdir path
-          with
-          | _ -> [||]
-        in
-        Array.iter (fun f ->
-            aux (depth + 1) (Filename.concat path f)
+      match Sys.is_directory path with
+      | is_dir -> (
+          if is_dir then (
+            let next_choices =
+              try
+                Sys.readdir path
+              with
+              | _ -> [||]
+            in
+            Array.iter (fun f ->
+                aux (depth + 1) (Filename.concat path f)
+              )
+              next_choices
+          ) else (
+            let ext = Filename.extension path in
+            if List.mem ext !Params.recognized_exts then (
+              add path
+            )
           )
-          next_choices
-      ) else (
-        let ext = Filename.extension path in
-        if List.mem ext !Params.recognized_exts then (
-          add path
         )
-      )
+      | exception _ -> ()
     )
   in
-  (
-    try
-      aux 0 dir
-    with
-    | _ -> ()
-  );
+  aux 0 dir;
   !l
 
 let run

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2
+
+- Fixed file tree scan
+
 ## 1.0.1
 
 - Minor UI tweaks
