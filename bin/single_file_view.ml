@@ -78,7 +78,7 @@ module Bottom_pane = struct
           List.assoc input_mode Ui_base.Status_bar.input_mode_images;
           Ui_base.Status_bar.element_spacer;
           Notty.I.strf ~attr:Ui_base.Status_bar.attr
-            "document: %s" path;
+            "Document: %s" path;
         ]
       |> Nottui.Ui.atom
     in

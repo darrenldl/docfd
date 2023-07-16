@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+
+- Minor UI tweaks
+
 ## 1.0.0
 
 - Added expression language for file filtering in multi-file view

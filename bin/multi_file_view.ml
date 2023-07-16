@@ -225,7 +225,7 @@ module Bottom_pane = struct
         in
         let index_of_selected =
           Notty.I.strf ~attr:Ui_base.Status_bar.attr
-            "index of document selected: %d"
+            "Index of document selected: %d"
             index_of_document_selected
         in
         Notty.I.hcat
