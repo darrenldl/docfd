@@ -38,14 +38,20 @@ docfd [PATH...]
 
 The list of paths can contain directories.
 Each directory in the list is scanned recursively for
-files with one of the following extensions:
+files with one of the following extensions by default:
 
-- `.md`
 - `.txt`
+- `.md`
+- `.pdf`
+
+You can change the file extensions to use via `--exts`.
 
 If the list of paths is empty,
 then Docfd defaults to scanning the
 current directory `.`.
+
+If any of the file ends with `.pdf`, then `pdftotext`
+is required to continue.
 
 If exactly one file is specified
 in the list of paths, then Docfd uses **Single file view**.
