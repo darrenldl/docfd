@@ -98,7 +98,7 @@ let run
     String.split_on_char ',' exts
     |> List.map (fun s ->
         s
-        |> Misc_utils.remove_leading_dots s
+        |> Misc_utils.remove_leading_dots
         |> CCString.trim
       )
     |> List.filter (fun s -> s <> "")
