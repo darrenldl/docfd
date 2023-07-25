@@ -16,3 +16,4 @@ RUN opam install domainslib
 RUN opam install kcas_data
 RUN apk add poppler-utils
 RUN opam install yojson
+RUN opam install digestif

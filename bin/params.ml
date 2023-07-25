@@ -17,3 +17,9 @@ let default_recognized_exts = "txt,md,pdf"
 let recognized_exts : string list ref = ref []
 
 let stdin_doc_path_placeholder = "<stdin>"
+
+let index_dir_name = ".docfd"
+
+let index_dir = ref ""
+
+let hash_chunk_size = 4096

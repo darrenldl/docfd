@@ -121,6 +121,15 @@ let run
   if !Params.debug then (
     Printf.printf "Scanning for documents\n"
   );
+  (match Sys.getenv_opt "HOME" with
+   | None -> (
+       Fmt.pr "Env variable HOME is not set\n";
+       exit 1
+     )
+   | Some home -> (
+       Params.index_dir := Filename.concat home Params.index_dir_name;
+     )
+  );
   let init_ui_mode, document_src =
     if not (stdin_is_atty ()) then
       Ui_base.(Ui_single_file, Stdin)

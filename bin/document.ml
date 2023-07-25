@@ -1,3 +1,5 @@
+open Result_syntax
+
 type t = {
   path : string option;
   title : string option;
@@ -75,6 +77,29 @@ let parse_pages (s : string list Seq.t) : t =
 let of_in_channel ic : t =
   parse_lines (CCIO.read_lines_seq ic)
 
+let save_index ~env ~hash index =
+  let fs = Eio.Stdenv.fs env in
+  (try
+     Eio.Path.(mkdir ~perm:0644 (fs / !Params.index_dir));
+   with _ -> ()
+  );
+  let path =
+    Eio.Path.(fs / Filename.concat !Params.index_dir (Fmt.str "%s.index" hash))
+  in
+  let json = Docfd_lib.Index.to_json index in
+  Eio.Path.save ~create:(`Or_truncate 0644) path (Yojson.Safe.to_string json)
+
+let find_index ~env ~hash : Docfd_lib.Index.t option =
+  let fs = Eio.Stdenv.fs env in
+  try
+    let path =
+      Eio.Path.(fs / Filename.concat !Params.index_dir (Fmt.str "%s.index" hash))
+    in
+    let json = Yojson.Safe.from_string (Eio.Path.load path) in
+    Docfd_lib.Index.of_json json
+  with
+  | _ -> None
+
 let of_text_path ~env path : (t, string) result =
   let fs = Eio.Stdenv.fs env in
   try
@@ -106,7 +131,24 @@ let of_pdf_path ~env path : (t, string) result =
   | _ -> Error (Printf.sprintf "Failed to read file: %s" path)
 
 let of_path ~(env : Eio_unix.Stdenv.base) path : (t, string) result =
-  if Misc_utils.path_is_pdf path then
-    of_pdf_path ~env path
-  else
-    of_text_path ~env path
+  let* hash = BLAKE2B.hash_of_file ~env ~path in
+  match find_index ~env ~hash with
+  | Some index -> (
+      let title =
+        if Docfd_lib.Index.global_line_count index = 0 then
+          None
+        else
+          Some (Docfd_lib.Index.line_of_global_line_num 0 index)
+      in
+      Ok { path = Some path; title; index }
+    )
+  | None -> (
+      let+ t =
+        if Misc_utils.path_is_pdf path then
+          of_pdf_path ~env path
+        else
+          of_text_path ~env path
+      in
+      save_index ~env ~hash t.index;
+      t
+    )
