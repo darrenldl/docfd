@@ -79,12 +79,14 @@ let of_in_channel ic : t =
 
 let save_index ~env ~hash index =
   let fs = Eio.Stdenv.fs env in
-  Eio.Path.(mkdir ~perm:0644 (fs / !Params.index_dir));
+  (try
+     Eio.Path.(mkdir ~perm:0o755 (fs / !Params.index_dir));
+   with _ -> ());
   let path =
     Eio.Path.(fs / Filename.concat !Params.index_dir (Fmt.str "%s.index" hash))
   in
   let json = Docfd_lib.Index.to_json index in
-  Eio.Path.save ~create:(`Or_truncate 0644) path (Yojson.Safe.to_string json)
+  Eio.Path.save ~create:(`Or_truncate 0o644) path (Yojson.Safe.to_string json)
 
 let find_index ~env ~hash : Docfd_lib.Index.t option =
   let fs = Eio.Stdenv.fs env in
