@@ -490,9 +490,19 @@ let search
 let to_json (t : t) : Yojson.Safe.t =
   let json_of_int (x : int) = `Int x in
   let json_of_int_int ((x, y) : int * int) = `List [ `Int x; `Int y ] in
-  let json_of_int_map : 'a. ('a -> Yojson.Safe.t) -> 'a Int_map.t -> Yojson.Safe.t =
+  let json_of_int_map
+    : 'a. ('a -> Yojson.Safe.t) -> 'a Int_map.t -> Yojson.Safe.t =
     fun f m ->
-      (* We assume int keys are contiguous *)
+      let l =
+        Int_map.to_seq m
+        |> Seq.map (fun (k, v) -> `List [ `Int k; f v ])
+        |> List.of_seq
+      in
+      `List l
+  in
+  let json_of_int_map_contiguous_keys
+    : 'a. ('a -> Yojson.Safe.t) -> 'a Int_map.t -> Yojson.Safe.t =
+    fun f m ->
       let l =
         Int_map.to_seq m
         |> Seq.map (fun (_k, v) -> f v)
@@ -523,19 +533,19 @@ let to_json (t : t) : Yojson.Safe.t =
     ("pos_s_of_word_ci",
      json_of_int_map json_of_int_set t.pos_s_of_word_ci);
     ("loc_of_pos",
-     json_of_int_map Loc.to_json t.loc_of_pos);
+     json_of_int_map_contiguous_keys Loc.to_json t.loc_of_pos);
     ("line_loc_of_global_line_num",
-     json_of_int_map Line_loc.to_json t.line_loc_of_global_line_num);
+     json_of_int_map_contiguous_keys Line_loc.to_json t.line_loc_of_global_line_num);
     ("global_line_num_of_line_loc",
      json_of_line_loc_map json_of_int t.global_line_num_of_line_loc);
     ("start_end_inc_pos_of_global_line_num",
-     json_of_int_map json_of_int_int t.start_end_inc_pos_of_global_line_num);
+     json_of_int_map_contiguous_keys json_of_int_int t.start_end_inc_pos_of_global_line_num);
     ("word_ci_of_pos",
-     json_of_int_map json_of_int t.word_ci_of_pos);
+     json_of_int_map_contiguous_keys json_of_int t.word_ci_of_pos);
     ("word_of_pos",
-     json_of_int_map json_of_int t.word_of_pos);
+     json_of_int_map_contiguous_keys json_of_int t.word_of_pos);
     ("line_count_of_page",
-     json_of_int_map json_of_int t.line_count_of_page);
+     json_of_int_map_contiguous_keys json_of_int t.line_count_of_page);
     ("page_count",
      `Int t.page_count);
     ("global_line_count",
@@ -571,7 +581,8 @@ let of_json (json : Yojson.Safe.t) : t option =
       )
     | _ -> None
   in
-  let int_map_of_json : 'a. (Yojson.Safe.t -> 'a option) -> Yojson.Safe.t -> 'a Int_map.t option =
+  let int_map_of_json_contiguous_keys
+    : 'a. (Yojson.Safe.t -> 'a option) -> Yojson.Safe.t -> 'a Int_map.t option =
     fun f json ->
       match json with
       | `List l -> (
@@ -593,7 +604,33 @@ let of_json (json : Yojson.Safe.t) : t option =
         )
       | _ -> None
   in
-  let line_loc_map_of_json : 'a. (Yojson.Safe.t -> 'a option) -> Yojson.Safe.t -> 'a Line_loc_map.t option =
+  let int_map_of_json
+    : 'a. (Yojson.Safe.t -> 'a option) -> Yojson.Safe.t -> 'a Int_map.t option =
+    fun f json ->
+      match json with
+      | `List l -> (
+          let exception Invalid in
+          let m : 'a Int_map.t ref = ref Int_map.empty in
+          try
+            List.iter (fun v ->
+                match v with
+                | `List [ `Int k; v ] -> (
+                    match f v with
+                    | None -> raise Invalid
+                    | Some (v : 'a) -> (
+                        m := Int_map.add k v !m;
+                      )
+                  )
+                | _ -> raise Invalid
+              ) l;
+            Some !m
+          with
+          | Invalid -> None
+        )
+      | _ -> None
+  in
+  let line_loc_map_of_json
+    : 'a. (Yojson.Safe.t -> 'a option) -> Yojson.Safe.t -> 'a Line_loc_map.t option =
     fun f json ->
       match json with
       | `List l -> (
@@ -633,11 +670,11 @@ let of_json (json : Yojson.Safe.t) : t option =
       in
       let* loc_of_pos =
         let* x = List.assoc_opt "loc_of_pos" l in
-        int_map_of_json Loc.of_json x
+        int_map_of_json_contiguous_keys Loc.of_json x
       in
       let* line_loc_of_global_line_num =
         let* x = List.assoc_opt "line_loc_of_global_line_num" l in
-        int_map_of_json Line_loc.of_json x
+        int_map_of_json_contiguous_keys Line_loc.of_json x
       in
       let* global_line_num_of_line_loc =
         let* x = List.assoc_opt "global_line_num_of_line_loc" l in
@@ -645,19 +682,19 @@ let of_json (json : Yojson.Safe.t) : t option =
       in
       let* start_end_inc_pos_of_global_line_num =
         let* x = List.assoc_opt "start_end_inc_pos_of_global_line_num" l in
-        int_map_of_json int_int_of_json x
+        int_map_of_json_contiguous_keys int_int_of_json x
       in
       let* word_ci_of_pos =
         let* x = List.assoc_opt "word_ci_of_pos" l in
-        int_map_of_json int_of_json x
+        int_map_of_json_contiguous_keys int_of_json x
       in
       let* word_of_pos =
         let* x = List.assoc_opt "word_of_pos" l in
-        int_map_of_json int_of_json x
+        int_map_of_json_contiguous_keys int_of_json x
       in
       let* line_count_of_page =
         let* x = List.assoc_opt "line_count_of_page" l in
-        int_map_of_json int_of_json x
+        int_map_of_json_contiguous_keys int_of_json x
       in
       let* page_count =
         let* x = List.assoc_opt "page_count" l in
