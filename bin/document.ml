@@ -79,10 +79,7 @@ let of_in_channel ic : t =
 
 let save_index ~env ~hash index =
   let fs = Eio.Stdenv.fs env in
-  (try
-     Eio.Path.(mkdir ~perm:0644 (fs / !Params.index_dir));
-   with _ -> ()
-  );
+  Eio.Path.(mkdir ~perm:0644 (fs / !Params.index_dir));
   let path =
     Eio.Path.(fs / Filename.concat !Params.index_dir (Fmt.str "%s.index" hash))
   in
