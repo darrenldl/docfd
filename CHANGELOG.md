@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0
+
+- Added index serialization
+
 ## 1.0.2
 
 - Fixed file tree scan
