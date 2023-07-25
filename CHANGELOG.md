@@ -2,7 +2,7 @@
 
 ## 1.1.0
 
-- Added index serialization
+- Added index saving and loading
 
 ## 1.0.2
 
