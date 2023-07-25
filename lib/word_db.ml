@@ -29,3 +29,31 @@ let word_of_index i t : string =
 
 let index_of_word s t : int =
   String_map.find s t.index_of_word
+
+let to_json (t : t) : Yojson.Safe.t =
+  let l =
+    Int_map.to_seq t.word_of_index
+    |> Seq.map (fun (_, s) -> `String s)
+    |> List.of_seq
+  in
+  `List l
+
+let of_json (json : Yojson.Safe.t) : t option =
+  match json with
+  | `List l -> (
+      let db = ref empty in
+      let exception Invalid in
+      try
+        List.iter (fun x ->
+            match x with
+            | `String s -> (
+                let (db', _) = add s !db in
+                db := db'
+              )
+            | _ -> raise Invalid
+          ) l;
+        Some !db
+      with
+      | Invalid -> None
+    )
+  | _ -> None

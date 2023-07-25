@@ -8,5 +8,6 @@
             oseq
             eio
             domainslib
+            yojson
  )
 )

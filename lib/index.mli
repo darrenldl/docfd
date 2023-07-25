@@ -49,3 +49,7 @@ val search : Search_phrase.t -> t -> Search_result.t array
 val fulfills_content_reqs : Content_req_exp.t -> t -> bool
 
 val global_line_count : t -> int
+
+val to_json : t -> Yojson.Safe.t
+
+val of_json : Yojson.Safe.t -> t option
