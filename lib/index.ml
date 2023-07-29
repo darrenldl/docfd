@@ -226,6 +226,7 @@ let of_seq (s : (Line_loc.t * string) Seq.t) : t =
     |> chunks_of_words
     |> List.of_seq
     |> Eio.Fiber.List.map (fun chunk ->
+        Eio.Fiber.yield ();
         Task_pool.run (fun () -> of_chunk shared_word_db chunk))
   in
   let res =
@@ -351,6 +352,7 @@ let line_count_of_page page t : int =
 module Search = struct
   let usable_positions
       ?around_pos
+      ~eio_yield
       ~(consider_edit_dist : bool)
       ((search_word, dfa) : (string * Spelll.automaton))
       (t : t)
@@ -368,6 +370,9 @@ module Search = struct
     in
     word_ci_and_positions_to_consider
     |> Seq.filter (fun (indexed_word, _pos_s) ->
+        if eio_yield then (
+          Eio.Fiber.yield ();
+        );
         (not (String.equal indexed_word ""))
         &&
         (not (String.for_all Parser_components.is_space indexed_word))
@@ -395,7 +400,12 @@ module Search = struct
       match l with
       | [] -> Seq.return []
       | (search_word, dfa) :: rest -> (
-          usable_positions ~around_pos ~consider_edit_dist (search_word, dfa) t
+          usable_positions
+            ~around_pos
+            ~eio_yield:false
+            ~consider_edit_dist
+            (search_word, dfa)
+            t
           |> Seq.flat_map (fun pos ->
               aux pos rest
               |> Seq.map (fun l -> pos :: l)
@@ -415,8 +425,9 @@ module Search = struct
       match List.combine phrase.phrase phrase.fuzzy_index with
       | [] -> failwith "Unexpected case"
       | first_word :: rest -> (
+          Eio.Fiber.yield ();
           let possible_start_count, possible_starts =
-            usable_positions ~consider_edit_dist first_word t
+            usable_positions ~eio_yield:true ~consider_edit_dist first_word t
             |> Misc_utils.list_and_length_of_seq
           in
           if possible_start_count = 0 then
@@ -431,6 +442,7 @@ module Search = struct
             in
             possible_starts
             |> Eio.Fiber.List.map (fun pos ->
+                Eio.Fiber.yield ();
                 Task_pool.run
                   (fun () ->
                      search_around_pos ~consider_edit_dist pos rest t
@@ -439,10 +451,10 @@ module Search = struct
                      |> List.of_seq
                   )
               )
-            |> List.fold_left (fun s (l : int list list) ->
-                Seq.append s (List.to_seq l)
+            |> List.to_seq
+            |> Seq.flat_map (fun (l : int list list) ->
+                List.to_seq l
               )
-              Seq.empty
           )
         )
     )
@@ -472,6 +484,7 @@ let search
   let arr =
     Search.search ~consider_edit_dist:true phrase t
     |> Seq.map (fun l ->
+        Eio.Fiber.yield ();
         Search_result.make
           ~search_phrase:phrase.phrase
           ~found_phrase:(List.map

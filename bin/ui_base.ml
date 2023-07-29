@@ -1,4 +1,5 @@
 open Docfd_lib
+open Lwd_infix
 
 type input_mode =
   | Navigate
@@ -322,3 +323,33 @@ module Search_bar = struct
             );
       ]
 end
+
+let ui_loop ~quit root =
+  let renderer = Nottui.Renderer.make () in
+  let term = term () in
+  let root =
+    let$ root = root in
+    root
+    |> Nottui.Ui.event_filter (fun x ->
+        match x with
+        | `Key (`Escape, []) -> (
+            Lwd.set quit true;
+            `Handled
+          )
+        | _ -> `Unhandled
+      )
+  in
+  let rec loop () =
+    if not (Lwd.peek quit) then (
+      Nottui.Ui_loop.step
+        ~process_event:true
+        ~timeout:0.01
+        ~renderer
+        term
+        (Lwd.observe @@ root);
+      Eio.Fiber.yield ();
+      loop ()
+    )
+  in
+  loop ();
+  Notty_unix.Term.release term

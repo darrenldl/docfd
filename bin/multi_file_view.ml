@@ -13,7 +13,13 @@ module Vars = struct
   let require_field = Lwd.var Ui_base.empty_text_field
 
   let require_field_focus_handle = Nottui.Focus.make ()
+
+  let stop_search_signal = Atomic.make (Stop_signal.make ())
 end
+
+let cancel_search () =
+  Stop_signal.signal (Atomic.get Vars.stop_search_signal);
+  Atomic.set Vars.stop_search_signal (Stop_signal.make ())
 
 let set_document_selected ~choice_count n =
   let n = Misc_utils.bound_selection ~choice_count n in
@@ -21,6 +27,7 @@ let set_document_selected ~choice_count n =
   Lwd.set Vars.index_of_search_result_selected 0
 
 let reset_document_selected () =
+  cancel_search ();
   Lwd.set Vars.index_of_document_selected 0;
   Lwd.set Vars.index_of_search_result_selected 0
 
@@ -37,7 +44,7 @@ let reload_document (doc : Document.t) =
           reset_document_selected ();
           let document_store =
             Lwd.peek Ui_base.Vars.document_store
-            |> Document_store.add_document doc
+            |> Document_store.add_document ~stop_signal:(Atomic.get Vars.stop_search_signal) doc
           in
           Lwd.set Ui_base.Vars.document_store document_store;
         )
@@ -62,7 +69,9 @@ let update_search_phrase () =
   in
   let document_store =
     Lwd.peek Ui_base.Vars.document_store
-    |> Document_store.update_search_phrase search_phrase
+    |> Document_store.update_search_phrase
+      ~stop_signal:(Atomic.get Vars.stop_search_signal)
+      search_phrase
   in
   Lwd.set Ui_base.Vars.document_store document_store
 
@@ -73,7 +82,9 @@ let update_content_reqs () =
   in
   let document_store =
     Lwd.peek Ui_base.Vars.document_store
-    |> Document_store.update_content_reqs content_reqs
+    |> Document_store.update_content_reqs
+      ~stop_signal:(Atomic.get Vars.stop_search_signal)
+      content_reqs
   in
   Lwd.set Ui_base.Vars.document_store document_store
 

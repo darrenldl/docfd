@@ -4,6 +4,8 @@
 
 - Added index saving and loading
 
+- Added search cancellation
+
 ## 1.0.2
 
 - Fixed file tree scan

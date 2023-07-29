@@ -3,13 +3,20 @@ open Lwd_infix
 
 module Vars = struct
   let search_field_focus_handle = Nottui.Focus.make ()
+
+  let stop_search_signal = Atomic.make (Stop_signal.make ())
 end
+
+let cancel_search () =
+  Stop_signal.signal (Atomic.get Vars.stop_search_signal);
+  Atomic.set Vars.stop_search_signal (Stop_signal.make ())
 
 let set_search_result_selected ~choice_count n =
   let n = Misc_utils.bound_selection ~choice_count n in
   Lwd.set Ui_base.Vars.Single_file.index_of_search_result_selected n
 
 let reset_search_result_selected () =
+  cancel_search ();
   Lwd.set Ui_base.Vars.Single_file.index_of_search_result_selected 0
 
 let update_search_phrase () =
@@ -21,7 +28,9 @@ let update_search_phrase () =
   in
   let document_store =
     Lwd.peek Ui_base.Vars.Single_file.document_store
-    |> Document_store.update_search_phrase search_phrase
+    |> Document_store.update_search_phrase
+      ~stop_signal:(Atomic.get Vars.stop_search_signal)
+      search_phrase
   in
   Lwd.set Ui_base.Vars.Single_file.document_store document_store
 
@@ -32,14 +41,15 @@ let reload_document (doc : Document.t) : unit =
       match Document.of_path ~env:(Ui_base.eio_env ()) path with
       | Ok doc -> (
           reset_search_result_selected ();
+          let stop_signal = Atomic.get Vars.stop_search_signal in
           let global_document_store =
             Lwd.peek Ui_base.Vars.document_store
-            |> Document_store.add_document doc
+            |> Document_store.add_document ~stop_signal doc
           in
           Lwd.set Ui_base.Vars.document_store global_document_store;
           let document_store =
             Lwd.peek Ui_base.Vars.Single_file.document_store
-            |> Document_store.add_document doc
+            |> Document_store.add_document ~stop_signal doc
           in
           Lwd.set Ui_base.Vars.Single_file.document_store document_store;
         )

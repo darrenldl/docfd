@@ -221,7 +221,6 @@ let run
          )
       );
       Ui_base.Vars.eio_env := Some env;
-      let renderer = Nottui.Renderer.make () in
       Lwd.set Ui_base.Vars.ui_mode init_ui_mode;
       let root : Nottui.ui Lwd.t =
         let$* ui_mode : Ui_base.ui_mode = Lwd.get Ui_base.Vars.ui_mode in
@@ -232,12 +231,8 @@ let run
       let rec loop () =
         Ui_base.Vars.file_to_open := None;
         Lwd.set Ui_base.Vars.quit false;
-        Nottui.Ui_loop.run
-          ~term:Ui_base.(term ())
-          ~renderer
+        Ui_base.ui_loop
           ~quit:Ui_base.Vars.quit
-          ~quit_on_escape:false
-          ~quit_on_ctrl_q:false
           root;
         match !Ui_base.Vars.file_to_open with
         | None -> ()
