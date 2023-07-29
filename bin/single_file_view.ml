@@ -113,7 +113,7 @@ module Bottom_pane = struct
             { label = "Enter"; msg = "confirm and exit search mode" };
           ];
           [
-            { label = ""; msg = "" };
+            { label = "Space"; msg = "stop an ongoing search" };
           ];
         ]
       in
@@ -225,9 +225,14 @@ let keyboard_handler
             (search_result_current_choice-1);
           `Handled
         )
+      | (`ASCII ' ', []) -> (
+          cancel_search ();
+          `Handled
+        )
       | (`ASCII '/', []) -> (
           Nottui.Focus.request Vars.search_field_focus_handle;
           Lwd.set Ui_base.Vars.input_mode Search;
+          cancel_search ();
           `Handled
         )
       | (`ASCII 'x', []) -> (
