@@ -19,7 +19,7 @@ let signal (t : t) =
 
 let await (t : t) =
   Eio.Mutex.use_ro t.mutex (fun () ->
-      while not (t.stop) do
+      while not t.stop do
         Eio.Condition.await t.cond t.mutex;
       done
     )
