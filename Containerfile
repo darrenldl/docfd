@@ -1,5 +1,4 @@
 FROM docker.io/ocaml/opam:alpine-ocaml-5.1
-USER root
 RUN opam init --disable-sandboxing
 RUN opam install dune containers fmt
 RUN opam install utop ocp-indent
