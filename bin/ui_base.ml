@@ -324,9 +324,8 @@ module Search_bar = struct
       ]
 end
 
-let ui_loop ~quit root =
+let ui_loop ~quit ~term root =
   let renderer = Nottui.Renderer.make () in
-  let term = term () in
   let root =
     let$ root = root in
     root
@@ -351,5 +350,4 @@ let ui_loop ~quit root =
       loop ()
     )
   in
-  loop ();
-  Notty_unix.Term.release term
+  loop ()

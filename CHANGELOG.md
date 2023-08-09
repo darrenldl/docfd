@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1
+
+- Fixed releasing Notty terminal too early
+
 ## 1.1.0
 
 - Added index saving and loading

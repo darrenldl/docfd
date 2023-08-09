@@ -228,11 +228,13 @@ let run
         | Ui_multi_file -> Multi_file_view.main
         | Ui_single_file -> Single_file_view.main
       in
+      let term = Ui_base.term () in
       let rec loop () =
         Ui_base.Vars.file_to_open := None;
         Lwd.set Ui_base.Vars.quit false;
         Ui_base.ui_loop
           ~quit:Ui_base.Vars.quit
+          ~term
           root;
         match !Ui_base.Vars.file_to_open with
         | None -> ()
@@ -263,7 +265,8 @@ let run
             loop ()
           )
       in
-      loop ()
+      loop ();
+      Notty_unix.Term.release term
     )
 
 let files_arg = Arg.(value & pos_all string [ "." ] & info [])
