@@ -315,9 +315,11 @@ module Search_bar = struct
         search_label ~padding ~input_mode;
         Nottui_widgets.edit_field (Lwd.get edit_field)
           ~focus:focus_handle
-          ~on_change:(fun (text, x) -> Lwd.set edit_field (text, x))
-          ~on_submit:(fun _ ->
+          ~on_change:(fun (text, x) ->
+              Lwd.set edit_field (text, x);
               f ();
+            )
+          ~on_submit:(fun _ ->
               Nottui.Focus.release focus_handle;
               Lwd.set Vars.input_mode Navigate
             );

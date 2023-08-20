@@ -156,7 +156,7 @@ module Bottom_pane = struct
     Ui_base.Search_bar.main ~input_mode
       ~edit_field:Ui_base.Vars.Single_file.search_field
       ~focus_handle:Vars.search_field_focus_handle
-      ~f:(fun () -> update_search_phrase ())
+      ~f:update_search_phrase
 
   let main
       ~document_info
