@@ -113,7 +113,7 @@ module Bottom_pane = struct
             { label = "Enter"; msg = "confirm and exit search mode" };
           ];
           [
-            { label = "Space"; msg = "stop an ongoing search" };
+            { label = ""; msg = "" };
           ];
         ]
       in
@@ -223,10 +223,6 @@ let keyboard_handler
           set_search_result_selected
             ~choice_count:search_result_choice_count
             (search_result_current_choice-1);
-          `Handled
-        )
-      | (`ASCII ' ', []) -> (
-          cancel_search ();
           `Handled
         )
       | (`ASCII '/', []) -> (

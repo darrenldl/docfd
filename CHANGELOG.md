@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0
+
+- Removed UI components for search cancellation
+
+- Added real time refresh of search
+
 ## 1.1.1
 
 - Fixed releasing Notty terminal too early

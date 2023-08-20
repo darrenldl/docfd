@@ -283,9 +283,7 @@ module Bottom_pane = struct
           [
             { label = "Enter"; msg = "confirm file content requirements and exit" };
           ];
-          [
-            { label = "Space"; msg = "stop an ongoing search" };
-          ];
+          empty_row;
           empty_row;
         ]
       in
@@ -294,9 +292,7 @@ module Bottom_pane = struct
           [
             { label = "Enter"; msg = "confirm and exit search mode" };
           ];
-          [
-            { label = "Space"; msg = "stop an ongoing search" };
-          ];
+          empty_row;
           empty_row;
         ]
       in
@@ -436,10 +432,6 @@ let keyboard_handler
       | (`ASCII '?', []) -> (
           Nottui.Focus.request Vars.require_field_focus_handle;
           Lwd.set Ui_base.Vars.input_mode Require_content;
-          `Handled
-        )
-      | (`ASCII ' ', []) -> (
-          cancel_search ();
           `Handled
         )
       | (`ASCII '/', []) -> (
