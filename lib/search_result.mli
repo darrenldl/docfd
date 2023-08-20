@@ -8,4 +8,8 @@ val found_phrase : t -> (int * string * string) list
 
 val score : t -> float
 
+val equal : t -> t -> bool
+
 val compare : t -> t -> int
+
+val compare_rev : t -> t -> int

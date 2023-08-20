@@ -183,7 +183,7 @@ let usable_documents (t : t) : (Document.t * Search_result.t array) array =
       |> Array.of_seq
     in
     Array.sort (fun (_d0, s0) (_d1, s1) ->
-        Search_result.compare s0.(0) s1.(0)
+        Search_result.compare_rev s0.(0) s1.(0)
       )
       arr;
     arr

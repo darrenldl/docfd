@@ -418,7 +418,7 @@ module Search = struct
       ~consider_edit_dist
       (phrase : Search_phrase.t)
       (t : t)
-    : int list Seq.t =
+    : Search_result.t Seq.t =
     if Search_phrase.is_empty phrase then
       Seq.empty
     else (
@@ -447,14 +447,31 @@ module Search = struct
                   (fun () ->
                      search_around_pos ~consider_edit_dist pos rest t
                      |> Seq.map (fun l -> pos :: l)
-                     |> Seq.take search_limit_per_start
-                     |> List.of_seq
+                     |> Seq.map (fun l ->
+                         Search_result.make
+                           ~search_phrase:phrase.phrase
+                           ~found_phrase:(List.map
+                                            (fun pos ->
+                                               (pos,
+                                                word_ci_of_pos pos t,
+                                                word_of_pos pos t
+                                               )
+                                            ) l)
+                       )
+                     |> Seq.fold_left (fun best_results r ->
+                         let best_results = Search_result_heap.add best_results r in
+                         if Search_result_heap.size best_results <= search_limit_per_start then (
+                           best_results
+                         ) else (
+                           let x = Search_result_heap.find_min_exn best_results in
+                           Search_result_heap.delete_one Search_result.equal x best_results
+                         )
+                       )
+                       Search_result_heap.empty
                   )
               )
             |> List.to_seq
-            |> Seq.flat_map (fun (l : int list list) ->
-                List.to_seq l
-              )
+            |> Seq.flat_map Search_result_heap.to_seq
           )
         )
     )
@@ -483,21 +500,9 @@ let search
   : Search_result.t array =
   let arr =
     Search.search ~consider_edit_dist:true phrase t
-    |> Seq.map (fun l ->
-        Eio.Fiber.yield ();
-        Search_result.make
-          ~search_phrase:phrase.phrase
-          ~found_phrase:(List.map
-                           (fun pos ->
-                              (pos,
-                               word_ci_of_pos pos t,
-                               word_of_pos pos t
-                              )
-                           ) l)
-      )
     |> Array.of_seq
   in
-  Array.sort Search_result.compare arr;
+  Array.sort Search_result.compare_rev arr;
   arr
 
 let to_json (t : t) : Yojson.Safe.t =

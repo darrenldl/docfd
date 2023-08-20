@@ -3,6 +3,13 @@ type t = {
   found_phrase : (int * string * string) list;
 }
 
+let equal t1 t2 =
+  List.length t1.search_phrase = List.length t2.search_phrase
+  && List.for_all2 String.equal t1.search_phrase t2.search_phrase
+  && List.length t1.found_phrase = List.length t2.found_phrase
+  && List.for_all2 (fun (pos0, _, _) (pos1, _, _) -> pos0 = pos1)
+    t1.found_phrase t2.found_phrase
+
 type stats = {
   total_found_char_count : float;
   exact_match_found_char_count : float;
@@ -194,4 +201,7 @@ let score (t : t) : float =
   )
 
 let compare t1 t2 =
-  Float.compare (score t2) (score t1)
+  Float.compare (score t1) (score t2)
+
+let compare_rev t1 t2 =
+  compare t2 t1
