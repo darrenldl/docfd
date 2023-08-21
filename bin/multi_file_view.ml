@@ -290,7 +290,7 @@ module Bottom_pane = struct
       let search_grid =
         [
           [
-            { label = "Enter"; msg = "confirm and exit search mode" };
+            { label = "Enter"; msg = "exit search mode" };
           ];
           empty_row;
           empty_row;
