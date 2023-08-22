@@ -103,7 +103,7 @@ let open_text_path index ~editor ~path ~search_result =
         | "hx" ->
           Fmt.str "%s %s:%d" editor path line_num
         | "emacs" ->
-          Fmt.str "%s %s:%d" editor path line_num
+          Fmt.str "%s +%d %s" editor line_num path
         | "micro" ->
           Fmt.str "%s %s:%d" editor path line_num
         | _ ->
