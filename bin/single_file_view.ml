@@ -188,6 +188,7 @@ let keyboard_handler
       | (`Escape, [])
       | (`ASCII 'q', [])
       | (`ASCII 'C', [`Ctrl]) -> (
+          cancel_search ();
           Lwd.set Ui_base.Vars.quit true;
           `Handled
         )

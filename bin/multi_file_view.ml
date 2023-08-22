@@ -373,6 +373,7 @@ let keyboard_handler
       | (`Escape, [])
       | (`ASCII 'q', [])
       | (`ASCII 'C', [`Ctrl]) -> (
+          cancel_search ();
           Ui_base.Vars.file_to_open := None;
           Lwd.set Ui_base.Vars.quit true;
           `Handled
