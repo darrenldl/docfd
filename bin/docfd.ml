@@ -1,5 +1,6 @@
 open Cmdliner
 open Lwd_infix
+open Docfd_lib
 
 let stdin_is_atty () =
   Unix.isatty Unix.stdin
@@ -77,6 +78,33 @@ let list_files_recursively (dir : string) : string list =
   in
   aux 0 dir;
   !l
+
+let open_text_path index ~editor ~path ~search_result =
+  let path = Filename.quote path in
+  let first_word = List.hd @@ Search_result.found_phrase search_result in
+  let first_word_loc = Index.loc_of_pos first_word.Search_result.found_word_pos index in
+  let line_num = first_word_loc
+                 |> Index.Loc.line_loc
+                 |> Index.Line_loc.line_num_in_page
+  in
+  let cmd =
+    match Filename.basename editor with
+    | "nano" ->
+      Fmt.str "%s +%d %s" editor line_num path
+    | "nvim" | "vim" | "vi" ->
+      Fmt.str "%s +%d %s" editor line_num path
+    | "kakoune" ->
+      Fmt.str "%s +%d %s" editor line_num path
+    | "hx" ->
+      Fmt.str "%s %s:%d" editor path line_num
+    | "emacs" ->
+      Fmt.str "%s %s:%d" editor path line_num
+    | "micro" ->
+      Fmt.str "%s %s:%d" editor path line_num
+    | _ ->
+      Fmt.str "%s %s" editor path
+  in
+  Sys.command cmd |> ignore
 
 let run
     ~(env : Eio_unix.Stdenv.base)
@@ -230,15 +258,15 @@ let run
       in
       let term = Ui_base.term () in
       let rec loop () =
-        Ui_base.Vars.file_to_open := None;
+        Ui_base.Vars.file_and_search_result_to_open := None;
         Lwd.set Ui_base.Vars.quit false;
         Ui_base.ui_loop
           ~quit:Ui_base.Vars.quit
           ~term
           root;
-        match !Ui_base.Vars.file_to_open with
+        match !Ui_base.Vars.file_and_search_result_to_open with
         | None -> ()
-        | Some doc -> (
+        | Some (doc, search_result) -> (
             (match doc.path with
              | None -> ()
              | Some path ->
@@ -251,7 +279,7 @@ let run
                  | Some editor, _
                  | None, Some editor -> (
                      let old_stats = Unix.stat path in
-                     Sys.command (Fmt.str "%s %s" editor (Filename.quote path)) |> ignore;
+                     open_text_path doc.index ~editor ~path ~search_result;
                      let new_stats = Unix.stat path in
                      if Float.abs (new_stats.st_mtime -. old_stats.st_mtime) >= 0.000_001 then (
                        (match Lwd.peek Ui_base.Vars.ui_mode with

@@ -374,7 +374,7 @@ let keyboard_handler
       | (`ASCII 'q', [])
       | (`ASCII 'C', [`Ctrl]) -> (
           cancel_search ();
-          Ui_base.Vars.file_to_open := None;
+          Ui_base.Vars.file_and_search_result_to_open := None;
           Lwd.set Ui_base.Vars.quit true;
           `Handled
         )
@@ -447,8 +447,9 @@ let keyboard_handler
           `Handled
         )
       | (`Enter, []) -> (
-          Option.iter (fun (doc, _search_results) ->
-              Ui_base.Vars.file_to_open := Some doc;
+          Option.iter (fun (doc, search_results) ->
+              Ui_base.Vars.file_and_search_result_to_open :=
+                Some (doc, search_results.(search_result_current_choice));
               Lwd.set Ui_base.Vars.quit true;
             )
             document_info;

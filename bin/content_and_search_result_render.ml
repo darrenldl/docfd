@@ -16,8 +16,8 @@ let start_and_end_inc_global_line_num_of_search_result
   match Search_result.found_phrase search_result with
   | [] -> failwith "Unexpected case"
   | l -> (
-      List.fold_left (fun s_e (pos, _, _) ->
-          let loc = Index.loc_of_pos pos index in
+      List.fold_left (fun s_e Search_result.{ found_word_pos; _ } ->
+          let loc = Index.loc_of_pos found_word_pos index in
           let line_loc = Index.Loc.line_loc loc in
           let global_line_num = Index.Line_loc.global_line_num line_loc in
           match s_e with
@@ -60,7 +60,7 @@ let color_word_image_grid
     (index : Index.t)
     (search_result : Search_result.t)
   : unit =
-  List.iter (fun (pos, _word_ci, word) ->
+  List.iter (fun Search_result.{ found_word_pos = pos; found_word = word; _ } ->
       let loc = Index.loc_of_pos pos index in
       let line_loc = Index.Loc.line_loc loc in
       let global_line_num = Index.Line_loc.global_line_num line_loc in

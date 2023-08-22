@@ -239,7 +239,8 @@ let keyboard_handler
         )
       | (`Enter, []) -> (
           Lwd.set Ui_base.Vars.quit true;
-          Ui_base.Vars.file_to_open := Some document;
+          Ui_base.Vars.file_and_search_result_to_open :=
+            Some (document, search_results.(search_result_current_choice));
           `Handled
         )
       | _ -> `Handled
