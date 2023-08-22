@@ -1,16 +1,17 @@
 open Result_syntax
+open Docfd_lib
 
 type t = {
   path : string option;
   title : string option;
-  index : Docfd_lib.Index.t;
+  index : Index.t;
 }
 
 let make_empty () : t =
   {
     path = None;
     title = None;
-    index = Docfd_lib.Index.empty;
+    index = Index.empty;
   }
 
 let copy (t : t) =
@@ -28,7 +29,7 @@ let parse_lines (s : string Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
     | Content -> (
-        let index = Docfd_lib.Index.of_lines s in
+        let index = Index.of_lines s in
         let empty = make_empty () in
         {
           empty with
@@ -50,7 +51,7 @@ let parse_pages (s : string list Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
     | Content -> (
-        let index = Docfd_lib.Index.of_pages s in
+        let index = Index.of_pages s in
         let empty = make_empty () in
         {
           empty with
@@ -85,17 +86,17 @@ let save_index ~env ~hash index =
   let path =
     Eio.Path.(fs / Filename.concat !Params.index_dir (Fmt.str "%s.index" hash))
   in
-  let json = Docfd_lib.Index.to_json index in
+  let json = Index.to_json index in
   Eio.Path.save ~create:(`Or_truncate 0o644) path (Yojson.Safe.to_string json)
 
-let find_index ~env ~hash : Docfd_lib.Index.t option =
+let find_index ~env ~hash : Index.t option =
   let fs = Eio.Stdenv.fs env in
   try
     let path =
       Eio.Path.(fs / Filename.concat !Params.index_dir (Fmt.str "%s.index" hash))
     in
     let json = Yojson.Safe.from_string (Eio.Path.load path) in
-    Docfd_lib.Index.of_json json
+    Index.of_json json
   with
   | _ -> None
 
@@ -134,10 +135,10 @@ let of_path ~(env : Eio_unix.Stdenv.base) path : (t, string) result =
   match find_index ~env ~hash with
   | Some index -> (
       let title =
-        if Docfd_lib.Index.global_line_count index = 0 then
+        if Index.global_line_count index = 0 then
           None
         else
-          Some (Docfd_lib.Index.line_of_global_line_num 0 index)
+          Some (Index.line_of_global_line_num 0 index)
       in
       Ok { path = Some path; title; index }
     )
