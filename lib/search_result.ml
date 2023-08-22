@@ -1,13 +1,19 @@
+type indexed_found_word = {
+  found_word_pos : int;
+  found_word_ci : string;
+  found_word : string;
+}
+
 type t = {
   search_phrase : string list;
-  found_phrase : (int * string * string) list;
+  found_phrase : indexed_found_word list;
 }
 
 let equal t1 t2 =
   List.length t1.search_phrase = List.length t2.search_phrase
   && List.for_all2 String.equal t1.search_phrase t2.search_phrase
   && List.length t1.found_phrase = List.length t2.found_phrase
-  && List.for_all2 (fun (pos0, _, _) (pos1, _, _) -> pos0 = pos1)
+  && List.for_all2 (fun x1 x2 -> x1.found_word_pos = x2.found_word_pos)
     t1.found_phrase t2.found_phrase
 
 type stats = {
@@ -59,7 +65,7 @@ let score (t : t) : float =
     -0.01 < x && x < 0.01
   in
   let stats =
-    List.fold_left2 (fun (stats : stats) search_word (_found_word_pos, found_word_ci, found_word) ->
+    List.fold_left2 (fun (stats : stats) search_word { found_word_ci; found_word; _ } ->
         let search_word_len = Int.to_float (String.length search_word) in
         let found_word_len = Int.to_float (String.length found_word) in
         let search_word_ci = String.lowercase_ascii search_word in
@@ -114,24 +120,25 @@ let score (t : t) : float =
   in
   let unique_match_count =
     t.found_phrase
-    |> List.map (fun (pos, _, _) -> pos)
+    |> List.map (fun x -> x.found_word_pos)
     |> List.sort_uniq Int.compare
     |> List.length
     |> Int.to_float
   in
   let (total_distance, out_of_order_match_count, _) =
-    List.fold_left (fun (total_dist, out_of_order_match_count, last_pos) (pos, _, _) ->
-        match last_pos with
-        | None -> (total_dist, out_of_order_match_count, Some pos)
-        | Some last_pos ->
-          let total_dist = total_dist +. Int.to_float (abs (pos - last_pos)) in
-          let out_of_order_match_count =
-            if last_pos < pos then
-              out_of_order_match_count
-            else
-              out_of_order_match_count +. 1.0
-          in
-          (total_dist, out_of_order_match_count, Some pos)
+    List.fold_left
+      (fun (total_dist, out_of_order_match_count, last_pos) { found_word_pos = pos; _ } ->
+         match last_pos with
+         | None -> (total_dist, out_of_order_match_count, Some pos)
+         | Some last_pos ->
+           let total_dist = total_dist +. Int.to_float (abs (pos - last_pos)) in
+           let out_of_order_match_count =
+             if last_pos < pos then
+               out_of_order_match_count
+             else
+               out_of_order_match_count +. 1.0
+           in
+           (total_dist, out_of_order_match_count, Some pos)
       )
       (0.0, 0.0, None)
       t.found_phrase
