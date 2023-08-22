@@ -6,6 +6,15 @@
 
 - Added real time refresh of search
 
+- Added code to open selected text file at selected search result for:
+
+    - nano
+    - neovim/vim/vi
+    - helix
+    - kakoune
+    - emacs
+    - micro
+
 ## 1.1.1
 
 - Fixed releasing Notty terminal too early
