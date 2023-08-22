@@ -81,28 +81,34 @@ let list_files_recursively (dir : string) : string list =
 
 let open_text_path index ~editor ~path ~search_result =
   let path = Filename.quote path in
-  let first_word = List.hd @@ Search_result.found_phrase search_result in
-  let first_word_loc = Index.loc_of_pos first_word.Search_result.found_word_pos index in
-  let line_num = first_word_loc
-                 |> Index.Loc.line_loc
-                 |> Index.Line_loc.line_num_in_page
-  in
+  let fallback = Fmt.str "%s %s" editor path in
   let cmd =
-    match Filename.basename editor with
-    | "nano" ->
-      Fmt.str "%s +%d %s" editor line_num path
-    | "nvim" | "vim" | "vi" ->
-      Fmt.str "%s +%d %s" editor line_num path
-    | "kakoune" ->
-      Fmt.str "%s +%d %s" editor line_num path
-    | "hx" ->
-      Fmt.str "%s %s:%d" editor path line_num
-    | "emacs" ->
-      Fmt.str "%s %s:%d" editor path line_num
-    | "micro" ->
-      Fmt.str "%s %s:%d" editor path line_num
-    | _ ->
-      Fmt.str "%s %s" editor path
+    match search_result with
+    | None -> fallback
+    | Some search_result -> (
+        let first_word = List.hd @@ Search_result.found_phrase search_result in
+        let first_word_loc = Index.loc_of_pos first_word.Search_result.found_word_pos index in
+        let line_num = first_word_loc
+                       |> Index.Loc.line_loc
+                       |> Index.Line_loc.line_num_in_page
+                       |> (fun x -> x + 1)
+        in
+        match Filename.basename editor with
+        | "nano" ->
+          Fmt.str "%s +%d %s" editor line_num path
+        | "nvim" | "vim" | "vi" ->
+          Fmt.str "%s +%d %s" editor line_num path
+        | "kakoune" ->
+          Fmt.str "%s +%d %s" editor line_num path
+        | "hx" ->
+          Fmt.str "%s %s:%d" editor path line_num
+        | "emacs" ->
+          Fmt.str "%s %s:%d" editor path line_num
+        | "micro" ->
+          Fmt.str "%s %s:%d" editor path line_num
+        | _ ->
+          fallback
+      )
   in
   Sys.command cmd |> ignore
 

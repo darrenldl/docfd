@@ -19,7 +19,8 @@ let empty_text_field = ("", 0)
 module Vars = struct
   let quit = Lwd.var false
 
-  let file_and_search_result_to_open : (Document.t * Search_result.t) option ref = ref None
+  let file_and_search_result_to_open : (Document.t * Search_result.t option) option ref =
+    ref None
 
   let eio_env : Eio_unix.Stdenv.base option ref = ref None
 

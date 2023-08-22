@@ -239,8 +239,14 @@ let keyboard_handler
         )
       | (`Enter, []) -> (
           Lwd.set Ui_base.Vars.quit true;
+          let search_result =
+            if search_result_current_choice < Array.length search_results then
+              Some search_results.(search_result_current_choice)
+            else
+              None
+          in
           Ui_base.Vars.file_and_search_result_to_open :=
-            Some (document, search_results.(search_result_current_choice));
+            Some (document, search_result);
           `Handled
         )
       | _ -> `Handled
