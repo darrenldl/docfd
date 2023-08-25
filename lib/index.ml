@@ -451,9 +451,9 @@ module Search = struct
                          Search_result.make
                            ~search_phrase:phrase.phrase
                            ~found_phrase:(List.map
-                                            (fun found_word_pos ->
+                                            (fun pos ->
                                                Search_result.{
-                                                 found_word_pos;
+                                                 found_word_pos = pos;
                                                  found_word_ci = word_ci_of_pos pos t;
                                                  found_word = word_of_pos pos t;
                                                }) l)

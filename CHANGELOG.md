@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1
+
+- Fixed search results when multiple words are involved
+
 ## 1.2.0
 
 - Removed UI components for search cancellation
