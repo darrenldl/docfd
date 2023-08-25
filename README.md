@@ -1,5 +1,5 @@
 # Docfd
-TUI fuzzy document finder
+TUI multiline fuzzy document finder
 
 ## Installation
 

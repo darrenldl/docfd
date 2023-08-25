@@ -15,7 +15,7 @@
 
 (package
  (name docfd)
- (synopsis "TUI fuzzy document finder")
+ (synopsis "TUI multiline fuzzy document finder")
  (description "")
  (documentation https://github.com/darrenldl/docfd)
  (depends
