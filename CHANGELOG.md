@@ -15,6 +15,8 @@
     - emacs
     - micro
 
+- Added "rescan for documents" to multi-file view
+
 ## 1.1.1
 
 - Fixed releasing Notty terminal too early
