@@ -98,7 +98,7 @@ let open_text_path index ~editor ~path ~search_result =
           Fmt.str "%s +%d %s" editor line_num path
         | "nvim" | "vim" | "vi" ->
           Fmt.str "%s +%d %s" editor line_num path
-        | "kakoune" ->
+        | "kak" ->
           Fmt.str "%s +%d %s" editor line_num path
         | "hx" ->
           Fmt.str "%s %s:%d" editor path line_num

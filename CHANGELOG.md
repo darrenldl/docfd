@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2
+
+- Fixed editor recognition for kakoune
+
 ## 1.2.1
 
 - Fixed search results when multiple words are involved
