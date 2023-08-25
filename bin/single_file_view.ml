@@ -103,7 +103,7 @@ module Bottom_pane = struct
       let navigate_line0 =
         [
           { label = "Enter"; msg = "open document" };
-          { label = "/"; msg = "switch to search mode" };
+          { label = "/"; msg = "search mode" };
           { label = "x"; msg = "clear search" };
         ]
       in
@@ -123,7 +123,7 @@ module Bottom_pane = struct
            navigate_line0;
            [
              { label = "Tab";
-               msg = "switch to multi-file view" };
+               msg = "multi-file view" };
              { label = "r"; msg = "reload" };
              { label = "q"; msg = "exit" };
            ];
@@ -245,8 +245,8 @@ let keyboard_handler
             else
               None
           in
-          Ui_base.Vars.file_and_search_result_to_open :=
-            Some (document, search_result);
+          Ui_base.Vars.action :=
+            Some (Ui_base.Open_file_and_search_result (document, search_result));
           `Handled
         )
       | _ -> `Handled

@@ -164,12 +164,12 @@ let run
        Params.index_dir := Filename.concat home Params.index_dir_name;
      )
   );
-  let init_ui_mode, document_src =
+  let compute_init_ui_mode_and_document_src () : Ui_base.ui_mode * Ui_base.document_src =
     if not (stdin_is_atty ()) then
       Ui_base.(Ui_single_file, Stdin)
     else (
       match files with
-      | [] -> Fmt.pr "Error: No files provided\n"; exit 1
+      | [] -> Ui_base.(Ui_multi_file, Files [])
       | [ f ] -> (
           if Sys.is_directory f then
             Ui_base.(Ui_multi_file, Files (list_files_recursively f))
@@ -194,11 +194,15 @@ let run
         )
     )
   in
+  let init_ui_mode, document_src =
+    compute_init_ui_mode_and_document_src ()
+  in
+  let document_src = ref document_src in
   if !Params.debug then (
     Printf.printf "Scanning completed\n"
   );
   if !Params.debug then (
-    match document_src with
+    match !document_src with
     | Stdin -> Printf.printf "Document source: stdin\n"
     | Files files -> (
         Printf.printf "Document source: files\n";
@@ -208,7 +212,7 @@ let run
           files
       )
   );
-  (match document_src with
+  (match !document_src with
    | Stdin -> ()
    | Files files -> (
        if List.exists Misc_utils.path_is_pdf files then (
@@ -219,60 +223,70 @@ let run
        )
      )
   );
-  let all_documents =
-    match document_src with
-    | Stdin ->
-      [ Document.of_in_channel stdin ]
-    | Files files ->
-      Eio.Fiber.List.filter_map (fun path ->
-          match Document.of_path ~env path with
-          | Ok x -> Some x
-          | Error _ -> None) files
+  let stdin_text =
+    match !document_src with
+    | Stdin -> Some (Document.of_in_channel stdin)
+    | _ -> None
   in
-  match all_documents with
-  | [] -> Printf.printf "No suitable documents found\n"
-  | _ -> (
-      Ui_base.Vars.init_ui_mode := init_ui_mode;
-      let document_store = all_documents
-                           |> List.to_seq
-                           |> Document_store.of_seq
-      in
-      Lwd.set Ui_base.Vars.document_store document_store;
-      (match init_ui_mode with
-       | Ui_base.Ui_single_file -> Lwd.set Ui_base.Vars.Single_file.document_store document_store
-       | _ -> ()
-      );
-      Ui_base.Vars.total_document_count := List.length all_documents;
-      (match document_src with
-       | Stdin -> (
-           let input =
-             Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
-           in
-           Ui_base.Vars.term := Some (Notty_unix.Term.create ~input ())
-         )
-       | Files _ -> (
-           Ui_base.Vars.term := Some (Notty_unix.Term.create ());
-         )
-      );
-      Ui_base.Vars.eio_env := Some env;
-      Lwd.set Ui_base.Vars.ui_mode init_ui_mode;
-      let root : Nottui.ui Lwd.t =
-        let$* ui_mode : Ui_base.ui_mode = Lwd.get Ui_base.Vars.ui_mode in
-        match ui_mode with
-        | Ui_multi_file -> Multi_file_view.main
-        | Ui_single_file -> Single_file_view.main
-      in
-      let term = Ui_base.term () in
-      let rec loop () =
-        Ui_base.Vars.file_and_search_result_to_open := None;
-        Lwd.set Ui_base.Vars.quit false;
-        Ui_base.ui_loop
-          ~quit:Ui_base.Vars.quit
-          ~term
-          root;
-        match !Ui_base.Vars.file_and_search_result_to_open with
-        | None -> ()
-        | Some (doc, search_result) -> (
+  let compute_document_store () =
+    let all_documents =
+      match !document_src with
+      | Stdin -> [ Option.get stdin_text ]
+      | Files files ->
+        Eio.Fiber.List.filter_map (fun path ->
+            match Document.of_path ~env path with
+            | Ok x -> Some x
+            | Error _ -> None) files
+    in
+    all_documents
+    |> List.to_seq
+    |> Document_store.of_seq
+  in
+  Ui_base.Vars.init_ui_mode := init_ui_mode;
+  let init_document_store = compute_document_store () in
+  Lwd.set Ui_base.Vars.document_store init_document_store;
+  (match init_ui_mode with
+   | Ui_base.Ui_single_file -> Lwd.set Ui_base.Vars.Single_file.document_store init_document_store
+   | _ -> ()
+  );
+  (match !document_src with
+   | Stdin -> (
+       let input =
+         Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
+       in
+       Ui_base.Vars.term := Some (Notty_unix.Term.create ~input ())
+     )
+   | Files _ -> (
+       Ui_base.Vars.term := Some (Notty_unix.Term.create ());
+     )
+  );
+  Ui_base.Vars.eio_env := Some env;
+  Lwd.set Ui_base.Vars.ui_mode init_ui_mode;
+  let root : Nottui.ui Lwd.t =
+    let$* ui_mode : Ui_base.ui_mode = Lwd.get Ui_base.Vars.ui_mode in
+    match ui_mode with
+    | Ui_multi_file -> Multi_file_view.main
+    | Ui_single_file -> Single_file_view.main
+  in
+  let term = Ui_base.term () in
+  let rec loop () =
+    Ui_base.Vars.action := None;
+    Lwd.set Ui_base.Vars.quit false;
+    Ui_base.ui_loop
+      ~quit:Ui_base.Vars.quit
+      ~term
+      root;
+    match !Ui_base.Vars.action with
+    | None -> ()
+    | Some action -> (
+        match action with
+        | Ui_base.Recompute_document_src -> (
+            let _, document_src' = compute_init_ui_mode_and_document_src () in
+            document_src := document_src';
+            Lwd.set Ui_base.Vars.document_store (compute_document_store ());
+            loop ()
+          )
+        | Open_file_and_search_result (doc, search_result) -> (
             (match doc.path with
              | None -> ()
              | Some path ->
@@ -298,15 +312,15 @@ let run
             );
             loop ()
           )
-      in
-      loop ();
-      Notty_unix.Term.release term
-    )
+      )
+  in
+  loop ();
+  Notty_unix.Term.release term
 
 let files_arg = Arg.(value & pos_all string [ "." ] & info [])
 
 let cmd ~env =
-  let doc = "TUI fuzzy document finder" in
+  let doc = "TUI multiline fuzzy document finder" in
   let version = Version_string.s in
   Cmd.v (Cmd.info "docfd" ~version ~doc)
     Term.(const (run ~env)

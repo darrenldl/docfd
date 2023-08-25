@@ -232,7 +232,7 @@ module Bottom_pane = struct
         let file_shown_count =
           Notty.I.strf ~attr:Ui_base.Status_bar.attr
             "%5d/%d documents listed"
-            document_count !Ui_base.Vars.total_document_count
+            document_count (Document_store.size (Lwd.peek Ui_base.Vars.document_store))
         in
         let index_of_selected =
           Notty.I.strf ~attr:Ui_base.Status_bar.attr
@@ -264,16 +264,16 @@ module Bottom_pane = struct
         [
           [
             { label = "Enter"; msg = "open document" };
-            { label = "?"; msg = "set file content requirements" };
+            { label = "?"; msg = "set file content reqs" };
+            { label = "Tab"; msg = "single file view" };
           ];
           [
-            { label = "/"; msg = "switch to search mode" };
+            { label = "/"; msg = "search mode" };
             { label = "x"; msg = "clear search" };
           ];
           [
-            { label = "Tab";
-              msg = "switch to single file view" };
             { label = "r"; msg = "reload document selected" };
+            { label = "Shift+r"; msg = "rescan for documents" };
             { label = "q"; msg = "exit" };
           ];
         ]
@@ -374,7 +374,12 @@ let keyboard_handler
       | (`ASCII 'q', [])
       | (`ASCII 'C', [`Ctrl]) -> (
           cancel_search ();
-          Ui_base.Vars.file_and_search_result_to_open := None;
+          Ui_base.Vars.action := None;
+          Lwd.set Ui_base.Vars.quit true;
+          `Handled
+        )
+      | (`ASCII 'R', []) -> (
+          Ui_base.Vars.action := Some Ui_base.Recompute_document_src;
           Lwd.set Ui_base.Vars.quit true;
           `Handled
         )
@@ -454,8 +459,8 @@ let keyboard_handler
                 else
                   None
               in
-              Ui_base.Vars.file_and_search_result_to_open :=
-                Some (doc, search_result);
+              Ui_base.Vars.action :=
+                Some (Ui_base.Open_file_and_search_result (doc, search_result));
               Lwd.set Ui_base.Vars.quit true;
             )
             document_info;

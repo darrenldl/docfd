@@ -14,13 +14,16 @@ type document_src =
   | Stdin
   | Files of string list
 
+type top_level_action =
+  | Recompute_document_src
+  | Open_file_and_search_result of Document.t * Search_result.t option
+
 let empty_text_field = ("", 0)
 
 module Vars = struct
   let quit = Lwd.var false
 
-  let file_and_search_result_to_open : (Document.t * Search_result.t option) option ref =
-    ref None
+  let action : top_level_action option ref = ref None
 
   let eio_env : Eio_unix.Stdenv.base option ref = ref None
 
@@ -36,8 +39,6 @@ module Vars = struct
 
   let document_store : Document_store.t Lwd.var =
     Lwd.var Document_store.empty
-
-  let total_document_count : int ref = ref 0
 
   module Single_file = struct
     let search_field = Lwd.var empty_text_field
