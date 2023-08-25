@@ -194,15 +194,17 @@ let run
         )
     )
   in
-  let init_ui_mode, document_src =
+  let compute_document_src () =
+    snd (compute_init_ui_mode_and_document_src ())
+  in
+  let init_ui_mode, init_document_src =
     compute_init_ui_mode_and_document_src ()
   in
-  let document_src = ref document_src in
   if !Params.debug then (
     Printf.printf "Scanning completed\n"
   );
   if !Params.debug then (
-    match !document_src with
+    match init_document_src with
     | Stdin -> Printf.printf "Document source: stdin\n"
     | Files files -> (
         Printf.printf "Document source: files\n";
@@ -212,7 +214,7 @@ let run
           files
       )
   );
-  (match !document_src with
+  (match init_document_src with
    | Stdin -> ()
    | Files files -> (
        if List.exists Misc_utils.path_is_pdf files then (
@@ -223,33 +225,36 @@ let run
        )
      )
   );
-  let stdin_text =
-    match !document_src with
+  let stdin_document =
+    match init_document_src with
     | Stdin -> Some (Document.of_in_channel stdin)
     | _ -> None
   in
-  let compute_document_store () =
+  let document_store_of_document_src document_src =
     let all_documents =
-      match !document_src with
-      | Stdin -> [ Option.get stdin_text ]
-      | Files files ->
-        Eio.Fiber.List.filter_map (fun path ->
-            match Document.of_path ~env path with
-            | Ok x -> Some x
-            | Error _ -> None) files
+      match document_src with
+      | Ui_base.Stdin -> (
+          [ Option.get stdin_document ]
+        )
+      | Files files -> (
+          Eio.Fiber.List.filter_map (fun path ->
+              match Document.of_path ~env path with
+              | Ok x -> Some x
+              | Error _ -> None) files
+        )
     in
     all_documents
     |> List.to_seq
     |> Document_store.of_seq
   in
   Ui_base.Vars.init_ui_mode := init_ui_mode;
-  let init_document_store = compute_document_store () in
+  let init_document_store = document_store_of_document_src init_document_src in
   Lwd.set Ui_base.Vars.document_store init_document_store;
   (match init_ui_mode with
    | Ui_base.Ui_single_file -> Lwd.set Ui_base.Vars.Single_file.document_store init_document_store
    | _ -> ()
   );
-  (match !document_src with
+  (match init_document_src with
    | Stdin -> (
        let input =
          Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
@@ -281,9 +286,8 @@ let run
     | Some action -> (
         match action with
         | Ui_base.Recompute_document_src -> (
-            let _, document_src' = compute_init_ui_mode_and_document_src () in
-            document_src := document_src';
-            Lwd.set Ui_base.Vars.document_store (compute_document_store ());
+            let document_src = compute_document_src () in
+            Lwd.set Ui_base.Vars.document_store (document_store_of_document_src document_src);
             loop ()
           )
         | Open_file_and_search_result (doc, search_result) -> (
