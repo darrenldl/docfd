@@ -12,6 +12,9 @@ type t = {
   search_results : Search_result.t array String_option_map.t;
 }
 
+let size (t : t) =
+  String_option_map.cardinal t.all_documents
+
 let empty : t =
   {
     all_documents = String_option_map.empty;

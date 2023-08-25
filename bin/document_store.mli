@@ -6,6 +6,8 @@ type key = string option
 
 type value = Document.t * Search_result.t array
 
+val size : t -> int
+
 val empty : t
 
 val update_content_reqs : stop_signal:Stop_signal.t -> Content_req_exp.t -> t -> t
