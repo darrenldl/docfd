@@ -71,7 +71,7 @@ type multi_indexed_word = {
 
 type chunk = multi_indexed_word array
 
-let empty : t = {
+let make () : t = {
   word_db = Word_db.make ();
   pos_s_of_word_ci = Int_map.empty;
   loc_of_pos = Int_map.empty;
@@ -153,7 +153,7 @@ type shared_word_db = {
 let of_chunk (shared_word_db : shared_word_db) (arr : chunk) : t =
   Array.fold_left
     (fun
-      { word_db = _;
+      { word_db = dummy_word_db;
         pos_s_of_word_ci;
         loc_of_pos;
         line_loc_of_global_line_num;
@@ -190,7 +190,7 @@ let of_chunk (shared_word_db : shared_word_db) (arr : chunk) : t =
         Option.value ~default:0
           (Int_map.find_opt line_loc.page_num line_count_of_page)
       in
-      { word_db = Word_db.make ();
+      { word_db = dummy_word_db;
         pos_s_of_word_ci = Int_map.add index_of_word_ci pos_s pos_s_of_word_ci;
         loc_of_pos = Int_map.add pos loc loc_of_pos;
         line_loc_of_global_line_num =
@@ -207,7 +207,7 @@ let of_chunk (shared_word_db : shared_word_db) (arr : chunk) : t =
         global_line_count = max global_line_count (global_line_num + 1);
       }
     )
-    empty
+    (make ())
     arr
 
 let chunks_of_words (s : multi_indexed_word Seq.t) : chunk Seq.t =
@@ -233,7 +233,7 @@ let of_seq (s : (Line_loc.t * string) Seq.t) : t =
     List.fold_left (fun acc index ->
         union acc index
       )
-      empty
+      (make ())
       indices
   in
   { res with word_db = shared_word_db.word_db }

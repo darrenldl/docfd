@@ -22,7 +22,7 @@ end
 
 type t
 
-val empty : t
+val make : unit -> t
 
 val of_lines : string Seq.t -> t
 
