@@ -7,11 +7,11 @@ type t = {
   index : Index.t;
 }
 
-let make_empty () : t =
+let make () : t =
   {
     path = None;
     title = None;
-    index = Index.empty;
+    index = Index.make ();
   }
 
 let copy (t : t) =
@@ -30,7 +30,7 @@ let parse_lines (s : string Seq.t) : t =
     match stage with
     | Content -> (
         let index = Index.of_lines s in
-        let empty = make_empty () in
+        let empty = make () in
         {
           empty with
           title;
@@ -52,7 +52,7 @@ let parse_pages (s : string list Seq.t) : t =
     match stage with
     | Content -> (
         let index = Index.of_pages s in
-        let empty = make_empty () in
+        let empty = make () in
         {
           empty with
           title;
