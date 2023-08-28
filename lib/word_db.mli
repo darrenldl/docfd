@@ -1,12 +1,12 @@
 type t
 
-val empty : t
+val make : unit -> t
 
-val add : string -> t -> t * int
+val add : t -> string -> int
 
-val word_of_index : int -> t -> string
+val word_of_index : t -> int -> string
 
-val index_of_word : string -> t -> int
+val index_of_word : t -> string -> int
 
 val to_json : t -> Yojson.Safe.t
 

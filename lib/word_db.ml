@@ -1,39 +1,33 @@
 type t = {
-  unique_count : int;
-  word_of_index : string Int_map.t;
-  index_of_word : int String_map.t;
+  word_of_index : (string, CCVector.rw) CCVector.t;
+  mutable index_of_word : int String_map.t;
 }
 
-let empty : t = {
-  unique_count = 0;
-  word_of_index = Int_map.empty;
+let make () : t = {
+  word_of_index = CCVector.create ();
   index_of_word = String_map.empty;
 }
 
-let add (word : string) (t : t) : t * int =
+let add (t : t) (word : string) : int =
   match String_map.find_opt word t.index_of_word with
-  | Some index -> (t, index)
+  | Some index -> index
   | None -> (
-      let index = t.unique_count in
-      ({
-        unique_count = t.unique_count + 1;
-        word_of_index = Int_map.add index word t.word_of_index;
-        index_of_word = String_map.add word index t.index_of_word;
-      },
-        index
-      )
+      let index = CCVector.length t.word_of_index in
+      CCVector.push t.word_of_index word;
+      t.index_of_word <- String_map.add word index t.index_of_word;
+      index
     )
 
-let word_of_index i t : string =
-  Int_map.find i t.word_of_index
+let word_of_index t i : string =
+  CCVector.get t.word_of_index i
 
-let index_of_word s t : int =
+let index_of_word t s : int =
   String_map.find s t.index_of_word
 
 let to_json (t : t) : Yojson.Safe.t =
   let l =
-    Int_map.to_seq t.word_of_index
-    |> Seq.map (fun (_, s) -> `String s)
+    CCVector.to_seq t.word_of_index
+    |> Seq.map (fun s -> `String s)
     |> List.of_seq
   in
   `List l
@@ -41,18 +35,17 @@ let to_json (t : t) : Yojson.Safe.t =
 let of_json (json : Yojson.Safe.t) : t option =
   match json with
   | `List l -> (
-      let db = ref empty in
+      let db = make () in
       let exception Invalid in
       try
         List.iter (fun x ->
             match x with
             | `String s -> (
-                let (db', _) = add s !db in
-                db := db'
+                add db s |> ignore
               )
             | _ -> raise Invalid
           ) l;
-        Some !db
+        Some db
       with
       | Invalid -> None
     )

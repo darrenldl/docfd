@@ -72,7 +72,7 @@ type multi_indexed_word = {
 type chunk = multi_indexed_word array
 
 let empty : t = {
-  word_db = Word_db.empty;
+  word_db = Word_db.make ();
   pos_s_of_word_ci = Int_map.empty;
   loc_of_pos = Int_map.empty;
   line_loc_of_global_line_num = Int_map.empty;
@@ -87,7 +87,7 @@ let empty : t = {
 
 let union (x : t) (y : t) =
   {
-    word_db = Word_db.empty;
+    word_db = Word_db.make ();
     pos_s_of_word_ci =
       Int_map.union (fun _k s0 s1 -> Some (Int_set.union s0 s1))
         x.pos_s_of_word_ci
@@ -170,8 +170,8 @@ let of_chunk (shared_word_db : shared_word_db) (arr : chunk) : t =
 
       Mutex.lock shared_word_db.lock;
       let word_db = shared_word_db.word_db in
-      let word_db, index_of_word = Word_db.add word word_db in
-      let word_db, index_of_word_ci = Word_db.add word_ci word_db in
+      let index_of_word = Word_db.add word_db word in
+      let index_of_word_ci = Word_db.add word_db word_ci in
       shared_word_db.word_db <- word_db;
       Mutex.unlock shared_word_db.lock;
 
@@ -190,7 +190,7 @@ let of_chunk (shared_word_db : shared_word_db) (arr : chunk) : t =
         Option.value ~default:0
           (Int_map.find_opt line_loc.page_num line_count_of_page)
       in
-      { word_db = Word_db.empty;
+      { word_db = Word_db.make ();
         pos_s_of_word_ci = Int_map.add index_of_word_ci pos_s pos_s_of_word_ci;
         loc_of_pos = Int_map.add pos loc loc_of_pos;
         line_loc_of_global_line_num =
@@ -216,7 +216,7 @@ let chunks_of_words (s : multi_indexed_word Seq.t) : chunk Seq.t =
 let of_seq (s : (Line_loc.t * string) Seq.t) : t =
   let shared_word_db : shared_word_db =
     { lock = Mutex.create ();
-      word_db = Word_db.empty;
+      word_db = Word_db.make ();
     }
   in
   let indices =
@@ -271,18 +271,18 @@ let of_pages (s : string list Seq.t) : t =
 let word_ci_of_pos pos (t : t) : string =
   match Int_map.find_opt pos t.word_ci_of_pos with
   | None -> invalid_arg "Index.word_ci_of_pos: Cannot find pos"
-  | Some x -> Word_db.word_of_index x t.word_db
+  | Some x -> Word_db.word_of_index t.word_db x
 
 let word_of_pos pos (t : t) : string =
   match Int_map.find_opt pos t.word_of_pos with
   | None -> invalid_arg "Index.word_of_pos: Cannot find pos"
-  | Some x -> Word_db.word_of_index x t.word_db
+  | Some x -> Word_db.word_of_index t.word_db x
 
 let word_ci_and_pos_s ?range_inc (t : t) : (string * Int_set.t) Seq.t =
   match range_inc with
   | None -> (
       Int_map.to_seq t.pos_s_of_word_ci
-      |> Seq.map (fun (i, s) -> (Word_db.word_of_index i t.word_db, s))
+      |> Seq.map (fun (i, s) -> (Word_db.word_of_index t.word_db i, s))
     )
   | Some (start, end_inc) -> (
       assert (start <= end_inc);
@@ -299,7 +299,7 @@ let word_ci_and_pos_s ?range_inc (t : t) : (string * Int_set.t) Seq.t =
       in
       Int_set.to_seq words_to_consider
       |> Seq.map (fun index ->
-          (Word_db.word_of_index index t.word_db, Int_map.find index t.pos_s_of_word_ci)
+          (Word_db.word_of_index t.word_db index, Int_map.find index t.pos_s_of_word_ci)
         )
       |> Seq.map (fun (word, pos_s) ->
           let _, _, m =
