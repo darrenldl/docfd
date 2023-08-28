@@ -1,5 +1,5 @@
 type t = {
-  word_of_index : (string, CCVector.rw) CCVector.t;
+  word_of_index : string CCVector.vector;
   mutable index_of_word : int String_map.t;
 }
 
