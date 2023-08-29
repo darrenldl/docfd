@@ -1,6 +1,6 @@
 let search_result_limit = 1000
 
-let default_max_word_search_range = 40
+let default_max_word_search_range = 20
 
 let max_word_search_range = ref default_max_word_search_range
 
