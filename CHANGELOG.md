@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.0
+
+- Index data structure optimizations
+
+- Search procedure optimizations
+
 ## 1.2.2
 
 - Fixed editor recognition for kakoune
