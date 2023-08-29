@@ -146,7 +146,7 @@ module Raw = struct
 
   type shared_word_db = {
     lock : Mutex.t;
-    mutable word_db : Word_db.t;
+    word_db : Word_db.t;
   }
 
   let of_chunk (shared_word_db : shared_word_db) (arr : chunk) : t =
@@ -168,10 +168,12 @@ module Raw = struct
         let word_ci = String.lowercase_ascii word in
 
         Mutex.lock shared_word_db.lock;
-        let word_db = shared_word_db.word_db in
-        let index_of_word = Word_db.add word_db word in
-        let index_of_word_ci = Word_db.add word_db word_ci in
-        shared_word_db.word_db <- word_db;
+        let index_of_word =
+          Word_db.add shared_word_db.word_db word
+        in
+        let index_of_word_ci =
+          Word_db.add shared_word_db.word_db word_ci
+        in
         Mutex.unlock shared_word_db.lock;
 
         let line_loc = loc.Loc.line_loc in
@@ -271,13 +273,13 @@ end
 type t = {
   word_db : Word_db.t;
   pos_s_of_word_ci : Int_set.t Int_map.t;
-  loc_of_pos : Loc.t CCVector.vector;
-  line_loc_of_global_line_num : Line_loc.t CCVector.vector;
+  loc_of_pos : Loc.t CCVector.ro_vector;
+  line_loc_of_global_line_num : Line_loc.t CCVector.ro_vector;
   global_line_num_of_line_loc : int Line_loc_map.t;
-  start_end_inc_pos_of_global_line_num : (int * int) CCVector.vector;
-  word_ci_of_pos : int CCVector.vector;
-  word_of_pos : int CCVector.vector;
-  line_count_of_page : int CCVector.vector;
+  start_end_inc_pos_of_global_line_num : (int * int) CCVector.ro_vector;
+  word_ci_of_pos : int CCVector.ro_vector;
+  word_of_pos : int CCVector.ro_vector;
+  line_count_of_page : int CCVector.ro_vector;
   page_count : int;
   global_line_count : int;
 }
@@ -285,13 +287,13 @@ type t = {
 let make () : t = {
   word_db = Word_db.make ();
   pos_s_of_word_ci = Int_map.empty;
-  loc_of_pos = CCVector.create ();
-  line_loc_of_global_line_num = CCVector.create ();
+  loc_of_pos = CCVector.(freeze (create ()));
+  line_loc_of_global_line_num = CCVector.(freeze (create ()));
   global_line_num_of_line_loc = Line_loc_map.empty;
-  start_end_inc_pos_of_global_line_num = CCVector.create ();
-  word_ci_of_pos = CCVector.create ();
-  word_of_pos = CCVector.create ();
-  line_count_of_page = CCVector.create ();
+  start_end_inc_pos_of_global_line_num = CCVector.(freeze (create ()));
+  word_ci_of_pos = CCVector.(freeze (create ()));
+  word_of_pos = CCVector.(freeze (create ()));
+  line_count_of_page = CCVector.(freeze (create ()));
   page_count = 0;
   global_line_count = 0;
 }
@@ -299,11 +301,12 @@ let make () : t = {
 let global_line_count t = t.global_line_count
 
 let ccvector_of_int_map
-  : 'a . 'a Int_map.t -> ('a, _) CCVector.t =
+  : 'a . 'a Int_map.t -> 'a CCVector.ro_vector =
   fun m ->
   Int_map.to_seq m
   |> Seq.map snd
   |> CCVector.of_seq
+  |> CCVector.freeze
 
 let of_raw (raw : Raw.t) : t =
   {
@@ -347,7 +350,7 @@ let word_ci_and_pos_s ?range_inc (t : t) : (string * Int_set.t) Seq.t =
   | Some (start, end_inc) -> (
       assert (start <= end_inc);
       let start = max 0 start in
-      let end_inc = min (CCVector.length t.word_ci_of_pos) end_inc in
+      let end_inc = min (CCVector.length t.word_ci_of_pos - 1) end_inc in
       let words_to_consider = ref Int_set.empty in
       for pos = start to end_inc do
         let index = CCVector.get t.word_ci_of_pos pos in
@@ -654,7 +657,7 @@ let of_json (json : Yojson.Safe.t) : t option =
     | _ -> None
   in
   let ccvector_of_json
-    : 'a . (Yojson.Safe.t -> 'a option) -> Yojson.Safe.t -> 'a CCVector.vector option =
+    : 'a . (Yojson.Safe.t -> 'a option) -> Yojson.Safe.t -> 'a CCVector.ro_vector option =
     fun f json ->
       match json with
       | `List l -> (
@@ -668,7 +671,7 @@ let of_json (json : Yojson.Safe.t) : t option =
                     CCVector.push vec v
                   )
               ) l;
-            Some vec
+            Some (CCVector.freeze vec)
           with
           | Invalid -> None
         )
