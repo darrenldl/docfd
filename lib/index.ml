@@ -428,9 +428,8 @@ module Search = struct
         if eio_yield then (
           Eio.Fiber.yield ();
         );
-        (not (String.equal indexed_word ""))
-        &&
-        (not (String.for_all Parser_components.is_space indexed_word))
+        (String.length indexed_word > 0)
+        && (not (Parser_components.is_space indexed_word.[0]))
       )
     |> Seq.filter (fun (indexed_word, _pos_s) ->
         if Parser_components.is_possibly_utf_8 (String.get indexed_word 0) then
