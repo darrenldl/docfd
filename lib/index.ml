@@ -416,8 +416,8 @@ module Search = struct
       match around_pos with
       | None -> word_ci_and_pos_s t
       | Some around_pos ->
-        let start = around_pos - (!Params.max_word_search_range+1) in
-        let end_inc = around_pos + (!Params.max_word_search_range+1) in
+        let start = around_pos - !Params.max_word_search_distance in
+        let end_inc = around_pos + !Params.max_word_search_distance in
         word_ci_and_pos_s ~range_inc:(start, end_inc) t
     in
     let search_word_ci =

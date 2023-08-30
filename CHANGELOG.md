@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.1
+
+- Added more commandline argument error checking
+
+- Adjusted help messages
+
+- Adjusted max word search range calculation
+
+- Renamed `max-word-search-range` to `max-word-search-dist`
+
 ## 1.3.0
 
 - Index data structure optimizations

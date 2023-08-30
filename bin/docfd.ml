@@ -8,36 +8,65 @@ let stdin_is_atty () =
 let stdout_is_atty () =
   Unix.isatty Unix.stdout
 
+let max_depth_arg_name = "max-depth"
+
 let max_depth_arg =
   let doc =
     "Scan up to N levels in the file tree."
   in
-  Arg.(value & opt int Params.default_max_file_tree_depth & info [ "max-depth" ] ~doc ~docv:"N")
+  Arg.(
+    value
+    & opt int Params.default_max_file_tree_depth
+    & info [ max_depth_arg_name ] ~doc ~docv:"N"
+  )
+
+let exts_arg_name = "exts"
 
 let exts_arg =
   let doc =
     "File extensions to use, comma separated."
   in
-  Arg.(value & opt string Params.default_recognized_exts & info [ "exts" ] ~doc ~docv:"EXTS")
+  Arg.(
+    value
+    & opt string Params.default_recognized_exts
+    & info [ exts_arg_name ] ~doc ~docv:"EXTS"
+  )
 
-let max_fuzzy_edit_distance_arg =
+let max_fuzzy_edit_dist_arg_name = "max-fuzzy-edit"
+
+let max_fuzzy_edit_dist_arg =
   let doc =
     "Maximum edit distance for fuzzy matches."
   in
-  Arg.(value & opt int Params.default_max_fuzzy_edit_distance & info [ "max-fuzzy-edit" ] ~doc ~docv:"N")
+  Arg.(
+    value
+    & opt int Params.default_max_fuzzy_edit_distance
+    & info [ max_fuzzy_edit_dist_arg_name ] ~doc ~docv:"N"
+  )
 
-let max_word_search_range_arg =
+let max_word_search_dist_arg_name = "max-word-search-dist"
+
+let max_word_search_dist_arg =
   let doc =
-    "Maximum range to look for the next matching word/symbol in content search. Note that contiguous spaces count as one word/symbol as well."
+    "Maximum distance to look for the next matching word/symbol in search. If two words are adjacent words, then they are 1 distance away from each other. Note that contiguous spaces count as one word/symbol as well."
   in
-  Arg.(value & opt int Params.default_max_word_search_range
-       & info [ "max-word-search-range" ] ~doc ~docv:"N")
+  Arg.(
+    value
+    & opt int Params.default_max_word_search_distance
+    & info [ max_word_search_dist_arg_name ] ~doc ~docv:"N"
+  )
+
+let index_chunk_word_count_arg_name = "index-chunk-word-count"
 
 let index_chunk_word_count_arg =
   let doc =
     "Number of words to send as a task unit to the thread pool for indexing."
   in
-  Arg.(value & opt int Params.default_index_chunk_word_count & info [ "index-chunk-word-count" ] ~doc ~docv:"N")
+  Arg.(
+    value
+    & opt int Params.default_index_chunk_word_count
+    & info [ index_chunk_word_count_arg_name ] ~doc ~docv:"N"
+  )
 
 let debug_arg =
   let doc =
@@ -116,16 +145,32 @@ let run
     ~(env : Eio_unix.Stdenv.base)
     (debug : bool)
     (max_depth : int)
-    (max_fuzzy_edit_distance : int)
-    (max_word_search_range : int)
+    (max_fuzzy_edit_dist : int)
+    (max_word_search_dist : int)
     (index_chunk_word_count : int)
     (exts : string)
     (files : string list)
   =
+  if max_depth < 1 then (
+    Fmt.pr "Invalid %s: cannot be < 1\n" max_depth_arg_name;
+    exit 1
+  );
+  if max_fuzzy_edit_dist < 0 then (
+    Fmt.pr "Invalid %s: cannot be < 0\n" max_fuzzy_edit_dist_arg_name;
+    exit 1
+  );
+  if max_word_search_dist < 1 then (
+    Fmt.pr "Invalid %s: cannot be < 1\n" max_word_search_dist_arg_name;
+    exit 1
+  );
+  if index_chunk_word_count < 1 then (
+    Fmt.pr "Invalid %s: cannot be < 1\n" index_chunk_word_count_arg_name;
+    exit 1
+  );
   Params.debug := debug;
   Params.max_file_tree_depth := max_depth;
-  Params.max_fuzzy_edit_distance := max_fuzzy_edit_distance;
-  Params.max_word_search_range := max_word_search_range;
+  Params.max_fuzzy_edit_distance := max_fuzzy_edit_dist;
+  Params.max_word_search_distance := max_word_search_dist;
   Params.index_chunk_word_count := index_chunk_word_count;
   let recognized_exts =
     String.split_on_char ',' exts
@@ -330,8 +375,8 @@ let cmd ~env =
     Term.(const (run ~env)
           $ debug_arg
           $ max_depth_arg
-          $ max_fuzzy_edit_distance_arg
-          $ max_word_search_range_arg
+          $ max_fuzzy_edit_dist_arg
+          $ max_word_search_dist_arg
           $ index_chunk_word_count_arg
           $ exts_arg
           $ files_arg)
