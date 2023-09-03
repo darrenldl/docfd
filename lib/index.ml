@@ -341,11 +341,11 @@ let word_ci_of_pos pos (t : t) : string =
 let word_of_pos pos (t : t) : string =
   Word_db.word_of_index t.word_db (CCVector.get t.word_of_pos pos)
 
-let word_ci_and_pos_s ?range_inc (t : t) : (string * Int_set.t) Seq.t =
+let word_ci_and_pos_s ?range_inc (t : t) : (string * Int_set.t) Iter.t =
   match range_inc with
   | None -> (
-      Int_map.to_seq t.pos_s_of_word_ci
-      |> Seq.map (fun (i, s) -> (Word_db.word_of_index t.word_db i, s))
+      Int_map.to_iter t.pos_s_of_word_ci
+      |> Iter.map (fun (i, s) -> (Word_db.word_of_index t.word_db i, s))
     )
   | Some (start, end_inc) -> (
       assert (start <= end_inc);
@@ -356,11 +356,11 @@ let word_ci_and_pos_s ?range_inc (t : t) : (string * Int_set.t) Seq.t =
         let index = CCVector.get t.word_ci_of_pos pos in
         words_to_consider := Int_set.add index !words_to_consider
       done;
-      Int_set.to_seq !words_to_consider
-      |> Seq.map (fun index ->
+      Int_set.to_iter !words_to_consider
+      |> Iter.map (fun index ->
           (Word_db.word_of_index t.word_db index, Int_map.find index t.pos_s_of_word_ci)
         )
-      |> Seq.map (fun (word, pos_s) ->
+      |> Iter.map (fun (word, pos_s) ->
           let _, _, m =
             Int_set.split (start-1) pos_s
           in
@@ -411,7 +411,7 @@ module Search = struct
       ~(consider_edit_dist : bool)
       ((search_word, dfa) : (string * Spelll.automaton))
       (t : t)
-    : int Seq.t =
+    : int Iter.t =
     let word_ci_and_positions_to_consider =
       match around_pos with
       | None -> word_ci_and_pos_s t
@@ -424,14 +424,14 @@ module Search = struct
       String.lowercase_ascii search_word
     in
     word_ci_and_positions_to_consider
-    |> Seq.filter (fun (indexed_word, _pos_s) ->
+    |> Iter.filter (fun (indexed_word, _pos_s) ->
         if eio_yield then (
           Eio.Fiber.yield ();
         );
         (String.length indexed_word > 0)
         && (not (Parser_components.is_space indexed_word.[0]))
       )
-    |> Seq.filter (fun (indexed_word, _pos_s) ->
+    |> Iter.filter (fun (indexed_word, _pos_s) ->
         if Parser_components.is_possibly_utf_8 (String.get indexed_word 0) then
           String.equal search_word_ci indexed_word
         else (
@@ -442,17 +442,17 @@ module Search = struct
               && Spelll.match_with dfa indexed_word)
         )
       )
-    |> Seq.flat_map (fun (_indexed_word, pos_s) -> Int_set.to_seq pos_s)
+    |> Iter.flat_map (fun (_indexed_word, pos_s) -> Int_set.to_iter pos_s)
 
   let search_around_pos
       ~consider_edit_dist
       (around_pos : int)
       (l : (string * Spelll.automaton) list)
       (t : t)
-    : int list Seq.t =
+    : int list Iter.t =
     let rec aux around_pos l =
       match l with
-      | [] -> Seq.return []
+      | [] -> Iter.return []
       | (search_word, dfa) :: rest -> (
           usable_positions
             ~around_pos
@@ -460,9 +460,9 @@ module Search = struct
             ~consider_edit_dist
             (search_word, dfa)
             t
-          |> Seq.flat_map (fun pos ->
+          |> Iter.flat_map (fun pos ->
               aux pos rest
-              |> Seq.map (fun l -> pos :: l)
+              |> Iter.map (fun l -> pos :: l)
             )
         )
     in
@@ -472,9 +472,9 @@ module Search = struct
       ~consider_edit_dist
       (phrase : Search_phrase.t)
       (t : t)
-    : Search_result.t Seq.t =
+    : Search_result.t Iter.t =
     if Search_phrase.is_empty phrase then
-      Seq.empty
+      Iter.empty
     else (
       match List.combine phrase.phrase phrase.fuzzy_index with
       | [] -> failwith "Unexpected case"
@@ -482,10 +482,10 @@ module Search = struct
           Eio.Fiber.yield ();
           let possible_start_count, possible_starts =
             usable_positions ~eio_yield:true ~consider_edit_dist first_word t
-            |> Misc_utils.list_and_length_of_seq
+            |> Misc_utils.list_and_length_of_iter
           in
           if possible_start_count = 0 then
-            Seq.empty
+            Iter.empty
           else (
             let search_limit_per_start =
               max
@@ -500,8 +500,8 @@ module Search = struct
                 Task_pool.run
                   (fun () ->
                      search_around_pos ~consider_edit_dist pos rest t
-                     |> Seq.map (fun l -> pos :: l)
-                     |> Seq.map (fun l ->
+                     |> Iter.map (fun l -> pos :: l)
+                     |> Iter.map (fun l ->
                          Search_result.make
                            ~search_phrase:phrase.phrase
                            ~found_phrase:(List.map
@@ -512,7 +512,7 @@ module Search = struct
                                                  found_word = word_of_pos pos t;
                                                }) l)
                        )
-                     |> Seq.fold_left (fun best_results r ->
+                     |> Iter.fold (fun best_results r ->
                          let best_results = Search_result_heap.add best_results r in
                          if Search_result_heap.size best_results <= search_limit_per_start then (
                            best_results
@@ -524,8 +524,8 @@ module Search = struct
                        Search_result_heap.empty
                   )
               )
-            |> List.to_seq
-            |> Seq.flat_map Search_result_heap.to_seq
+            |> Iter.of_list
+            |> Iter.flat_map Search_result_heap.to_iter
           )
         )
     )
@@ -539,7 +539,7 @@ let fulfills_content_reqs
     let open Content_req_exp in
     match e with
     | Phrase phrase ->
-      not (Seq.is_empty (Search.search ~consider_edit_dist:false phrase t))
+      not (Iter.is_empty (Search.search ~consider_edit_dist:false phrase t))
     | Binary_op (op, e1, e2) -> (
         match op with
         | And -> aux e1 && aux e2
@@ -554,7 +554,7 @@ let search
   : Search_result.t array =
   let arr =
     Search.search ~consider_edit_dist:true phrase t
-    |> Array.of_seq
+    |> Iter.to_array
   in
   Array.sort Search_result.compare_rev arr;
   arr

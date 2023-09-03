@@ -57,6 +57,16 @@ let list_and_length_of_seq (s : 'a Seq.t) : int * 'a list =
   in
   (len, List.rev acc)
 
+let list_and_length_of_iter (s : 'a Iter.t) : int * 'a list =
+  let len, acc =
+    Iter.fold (fun (len, acc) x ->
+        (len + 1, x :: acc)
+      )
+      (0, [])
+      s
+  in
+  (len, List.rev acc)
+
 let path_is_pdf (s : string) =
   Filename.extension s = ".pdf"
 

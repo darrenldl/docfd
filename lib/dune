@@ -9,5 +9,6 @@
             eio
             domainslib
             yojson
+            iter
  )
 )

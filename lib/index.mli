@@ -32,7 +32,7 @@ val word_ci_of_pos : int -> t -> string
 
 val word_of_pos : int -> t -> string
 
-val word_ci_and_pos_s : ?range_inc:(int * int) -> t -> (string * Int_set.t) Seq.t
+val word_ci_and_pos_s : ?range_inc:(int * int) -> t -> (string * Int_set.t) Iter.t
 
 val words_of_global_line_num : int -> t -> string Seq.t
 
