@@ -16,6 +16,10 @@ release-static :
 	mkdir -p statically-linked
 	cp -f _build/default/bin/docfd.exe statically-linked/docfd
 
+.PHONY: profile
+profile :
+	OCAMLPARAM='_,ccopt=-static' dune build --release profile/main.exe
+
 .PHONY: format
 format :
 	$(OCPINDENT)
