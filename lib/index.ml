@@ -432,7 +432,7 @@ module Search = struct
         && (not (Parser_components.is_space indexed_word.[0]))
       )
     |> Seq.filter (fun (indexed_word, _pos_s) ->
-        if Parser_components.is_possibly_utf_8 (String.get indexed_word 0) then
+        if Parser_components.is_possibly_utf_8 indexed_word.[0] then
           String.equal search_word_ci indexed_word
         else (
           String.equal search_word_ci indexed_word
