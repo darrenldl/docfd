@@ -20,3 +20,4 @@ RUN opam install domainslib
 RUN opam install kcas_data
 RUN opam install yojson
 RUN opam install digestif
+RUN opam install containers-data

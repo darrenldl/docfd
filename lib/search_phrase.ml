@@ -3,6 +3,16 @@ type t = {
   fuzzy_index : Spelll.automaton list;
 }
 
+type cache = {
+  mutex : Mutex.t;
+  cache : (string, Spelll.automaton) CCCache.t;
+}
+
+let cache = {
+  mutex = Mutex.create ();
+  cache = CCCache.lru ~eq:String.equal 100;
+}
+
 let phrase t =
   t.phrase
 
@@ -31,7 +41,16 @@ let make
   in
   let fuzzy_index =
     phrase
-    |> List.map (fun x -> Spelll.of_string ~limit:fuzzy_max_edit_distance x)
+    |> List.map (fun x ->
+        Mutex.lock cache.mutex;
+        let dfa =
+          CCCache.with_cache cache.cache
+            (Spelll.of_string ~limit:fuzzy_max_edit_distance)
+            x
+        in
+        Mutex.unlock cache.mutex;
+        dfa
+      )
   in
   {
     phrase;
