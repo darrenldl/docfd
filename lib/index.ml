@@ -473,9 +473,9 @@ module Search = struct
       (phrase : Search_phrase.t)
       (t : t)
     : Search_result.t Seq.t =
-    if Search_phrase.is_empty phrase then
+    if Search_phrase.is_empty phrase then (
       Seq.empty
-    else (
+    ) else (
       match List.combine phrase.phrase phrase.fuzzy_index with
       | [] -> failwith "Unexpected case"
       | first_word :: rest -> (
