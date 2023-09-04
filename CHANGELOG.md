@@ -4,9 +4,7 @@
 
 - Performance tuning
 
-- Data structure and search procedure optimizations
-
-    - Added caching to search phrase automaton construction
+    - Added caching to search phrase automata construction
     - Removed dispatching of search to task pool
     - Adjusted search result limits
 
