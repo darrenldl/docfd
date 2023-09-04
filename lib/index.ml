@@ -489,9 +489,9 @@ module Search = struct
           else (
             let search_limit_per_start =
               max
-                1
+                Params.search_result_min_per_start
                 (
-                  (Params.search_result_limit + possible_start_count - 1) / possible_start_count
+                  (Params.search_result_max_total + possible_start_count - 1) / possible_start_count
                 )
             in
             possible_starts
