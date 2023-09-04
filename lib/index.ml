@@ -59,6 +59,7 @@ module Raw = struct
     start_end_inc_pos_of_global_line_num : (int * int) Int_map.t;
     word_ci_of_pos : int Int_map.t;
     word_of_pos : int Int_map.t;
+    word_ci_bk_tree : int BK_tree.t;
     line_count_of_page : int Int_map.t;
     page_count : int;
     global_line_count : int;
@@ -81,6 +82,7 @@ module Raw = struct
     start_end_inc_pos_of_global_line_num = Int_map.empty;
     word_ci_of_pos = Int_map.empty;
     word_of_pos = Int_map.empty;
+    word_ci_bk_tree = BK_tree.empty;
     line_count_of_page = Int_map.empty;
     page_count = 0;
     global_line_count = 0;
@@ -118,6 +120,10 @@ module Raw = struct
         Int_map.union (fun _k x _ -> Some x)
           x.word_of_pos
           y.word_of_pos;
+      word_ci_bk_tree =
+        BK_tree.union
+        x.word_ci_bk_tree
+        y.word_ci_bk_tree;
       line_count_of_page =
         Int_map.union (fun _k x y -> Some (max x y))
           x.line_count_of_page
@@ -160,6 +166,7 @@ module Raw = struct
           start_end_inc_pos_of_global_line_num;
           word_ci_of_pos;
           word_of_pos;
+          word_ci_bk_tree;
           line_count_of_page;
           page_count;
           global_line_count;
@@ -202,6 +209,7 @@ module Raw = struct
             Int_map.add global_line_num start_end_inc_pos start_end_inc_pos_of_global_line_num;
           word_ci_of_pos = Int_map.add pos index_of_word_ci word_ci_of_pos;
           word_of_pos = Int_map.add pos index_of_word word_of_pos;
+          word_ci_bk_tree = BK_tree.add word_ci index_of_word_ci word_ci_bk_tree;
           line_count_of_page =
             Int_map.add line_loc.page_num (max cur_page_line_count (line_loc.line_num_in_page + 1)) line_count_of_page;
           page_count = max page_count (line_loc.page_num + 1);
