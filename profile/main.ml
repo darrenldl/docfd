@@ -50,17 +50,23 @@ let lines = [
   "Quisque dignissim quis leo eu finibus.  ";
 ]
 
+let bench ~name ~cycle (f : unit -> 'a) =
+  let start_time = Sys.time () in
+  for _=0 to cycle-1 do
+    f () |> ignore
+  done;
+  let end_time = Sys.time () in
+  Printf.printf "%s: time per cycle: %6fs\n" name
+    ((end_time -. start_time) /. (float_of_int cycle))
+
 let main _env =
   let index = Index.of_lines (List.to_seq lines) in
   let fuzzy_max_edit_distance = 3 in
-  let cycle = 5000 in
   let search_phrase = Search_phrase.make ~fuzzy_max_edit_distance ~phrase:"vestibul rutru" in
-  let start_time = Sys.time () in
-  for _=0 to cycle-1 do
-    Index.search search_phrase index |> ignore;
-  done;
-  let end_time = Sys.time () in
-  Printf.printf "Time per cycle: %6fs\n" ((end_time -. start_time) /. (float_of_int cycle));
+  bench ~name:"Spelll.of_string" ~cycle:10 (fun () ->
+      Spelll.of_string ~limit:3 "Pellentesque");
+  bench ~name:"Index.search" ~cycle:1000 (fun () ->
+      Index.search search_phrase index);
   ()
 
 let () = Eio_main.run main
