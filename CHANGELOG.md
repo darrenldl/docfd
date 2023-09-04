@@ -6,6 +6,10 @@
 
 - Data structure and search procedure optimizations
 
+    - Added caching to search phrase automaton construction
+    - Removed dispatching of search to task pool
+    - Adjusted search result limits
+
 ## 1.3.1
 
 - Added more commandline argument error checking
