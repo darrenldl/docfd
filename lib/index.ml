@@ -495,36 +495,32 @@ module Search = struct
                 )
             in
             possible_starts
-            |> Eio.Fiber.List.map (fun pos ->
-                Eio.Fiber.yield ();
-                Task_pool.run
-                  (fun () ->
-                     search_around_pos ~consider_edit_dist pos rest t
-                     |> Seq.map (fun l -> pos :: l)
-                     |> Seq.map (fun l ->
-                         Search_result.make
-                           ~search_phrase:phrase.phrase
-                           ~found_phrase:(List.map
-                                            (fun pos ->
-                                               Search_result.{
-                                                 found_word_pos = pos;
-                                                 found_word_ci = word_ci_of_pos pos t;
-                                                 found_word = word_of_pos pos t;
-                                               }) l)
-                       )
-                     |> Seq.fold_left (fun best_results r ->
-                         let best_results = Search_result_heap.add best_results r in
-                         if Search_result_heap.size best_results <= search_limit_per_start then (
-                           best_results
-                         ) else (
-                           let x = Search_result_heap.find_min_exn best_results in
-                           Search_result_heap.delete_one Search_result.equal x best_results
-                         )
-                       )
-                       Search_result_heap.empty
-                  )
-              )
             |> List.to_seq
+            |> Seq.map (fun pos ->
+                search_around_pos ~consider_edit_dist pos rest t
+                |> Seq.map (fun l -> pos :: l)
+                |> Seq.map (fun l ->
+                    Search_result.make
+                      ~search_phrase:phrase.phrase
+                      ~found_phrase:(List.map
+                                       (fun pos ->
+                                          Search_result.{
+                                            found_word_pos = pos;
+                                            found_word_ci = word_ci_of_pos pos t;
+                                            found_word = word_of_pos pos t;
+                                          }) l)
+                  )
+                |> Seq.fold_left (fun best_results r ->
+                    let best_results = Search_result_heap.add best_results r in
+                    if Search_result_heap.size best_results <= search_limit_per_start then (
+                      best_results
+                    ) else (
+                      let x = Search_result_heap.find_min_exn best_results in
+                      Search_result_heap.delete_one Search_result.equal x best_results
+                    )
+                  )
+                  Search_result_heap.empty
+              )
             |> Seq.flat_map Search_result_heap.to_seq
           )
         )
