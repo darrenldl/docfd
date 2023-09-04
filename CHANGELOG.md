@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.2
+
+- Performance tuning
+
+- Data structure and search procedure optimizations
+
 ## 1.3.1
 
 - Added more commandline argument error checking
