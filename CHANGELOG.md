@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.3
+
+- Performance tuning
+
+    - Switched back to using the old default max word search distance of 20
+
 ## 1.3.2
 
 - Performance tuning

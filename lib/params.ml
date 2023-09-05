@@ -2,7 +2,7 @@ let search_result_max_total = 50
 
 let search_result_min_per_start = 5
 
-let default_max_word_search_distance = 10
+let default_max_word_search_distance = 20
 
 let max_word_search_distance = ref default_max_word_search_distance
 
