@@ -2,7 +2,7 @@ include Docfd_lib.Params'
 
 let debug = ref false
 
-let default_max_fuzzy_edit_distance = 3
+let default_max_fuzzy_edit_distance = 2
 
 let max_fuzzy_edit_distance = ref default_max_fuzzy_edit_distance
 

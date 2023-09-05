@@ -5,6 +5,8 @@
 - Performance tuning
 
     - Switched back to using the old default max word search distance of 20
+    - Reduced default max fuzzy edit distance from 3 to 2 to prevent massive
+      slowdown on long words
 
 ## 1.3.2
 

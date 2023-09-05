@@ -63,8 +63,17 @@ let main _env =
   let index = Index.of_lines (List.to_seq lines) in
   let fuzzy_max_edit_distance = 3 in
   let search_phrase = Search_phrase.make ~fuzzy_max_edit_distance ~phrase:"vestibul rutru" in
-  bench ~name:"Spelll.of_string" ~cycle:10 (fun () ->
-      Spelll.of_string ~limit:3 "Pellentesque");
+  let s = "PellentesquePellentesque" in
+  for len=1 to 20 do
+    let limit = 2 in
+    bench ~name:(Fmt.str "Spelll.of_string, limit: %d, len %2d:" limit len) ~cycle:10 (fun () ->
+        Spelll.of_string ~limit:2 (String.sub s 0 len))
+  done;
+  for len=1 to 20 do
+    let limit = 1 in
+    bench ~name:(Fmt.str "Spelll.of_string, limit: %d, len %2d:" limit len) ~cycle:10 (fun () ->
+        Spelll.of_string ~limit:1 (String.sub s 0 len))
+  done;
   bench ~name:"Index.search" ~cycle:1000 (fun () ->
       Index.search search_phrase index);
   ()
