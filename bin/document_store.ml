@@ -114,10 +114,12 @@ let update_search_phrase ~(stop_signal : Stop_signal.t) search_phrase (t : t) : 
            String_option_map.empty
         )
         (fun () ->
-           String_option_map.mapi (fun _path doc ->
-               Index.search search_phrase doc.Document.index
+           t.filtered_documents
+           |> String_option_map.to_list
+           |> Task_pool.map_list (fun (path, doc) ->
+               (path, Index.search search_phrase doc.Document.index)
              )
-             t.filtered_documents
+           |> String_option_map.of_list
         )
     in
     { t with
