@@ -1,4 +1,5 @@
-let pool = Domainslib.Task.setup_pool
+let pool =
+  Domainslib.Task.setup_pool
     ~num_domains:(max 1 (Domain.recommended_domain_count () - 1))
     ()
 
@@ -10,3 +11,15 @@ let run (f : unit -> 'a) : 'a =
       )
   in
   Eio.Promise.await p
+
+let map_list : 'a 'b . ('a -> 'b) -> 'a list -> 'b list =
+  fun f l ->
+  Eio.Fiber.List.map (fun x -> f x) l
+
+let filter_list : 'a 'b . ('a -> bool) -> 'a list -> 'a list =
+  fun f l ->
+  Eio.Fiber.List.filter (fun x -> f x) l
+
+let filter_map_list : 'a 'b . ('a -> 'b option) -> 'a list -> 'b list =
+  fun f l ->
+  Eio.Fiber.List.filter_map (fun x -> f x) l

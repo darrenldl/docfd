@@ -69,13 +69,15 @@ let update_content_reqs
              String_option_map.empty
           )
           (fun () ->
-             String_option_map.filter_map (fun _path doc ->
+             t.all_documents
+             |> String_option_map.to_list
+             |> Task_pool.filter_map_list (fun (path, doc) ->
                  if Index.fulfills_content_reqs content_reqs doc.Document.index then
-                   Some doc
+                   Some (path, doc)
                  else
                    None
                )
-               t.all_documents
+             |> String_option_map.of_list
           )
       )
     in
@@ -86,10 +88,13 @@ let update_content_reqs
            String_option_map.empty
         )
         (fun () ->
-           String_option_map.mapi (fun _path doc ->
-               Index.search t.search_phrase doc.Document.index
+           filtered_documents
+           |> String_option_map.to_list
+           |> Task_pool.map_list (fun (path, doc) ->
+               (path, Index.search t.search_phrase doc.Document.index)
              )
-             filtered_documents)
+           |> String_option_map.of_list
+        )
     in
     { t with
       content_reqs;
