@@ -23,3 +23,5 @@ let index_dir_name = ".docfd"
 let index_dir = ref ""
 
 let hash_chunk_size = 4096
+
+let text_editor = ref ""

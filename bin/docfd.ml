@@ -209,6 +209,16 @@ let run
        Params.index_dir := Filename.concat home Params.index_dir_name;
      )
   );
+  (match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
+   | None, None -> (
+       Printf.printf "Error: Both env variables VISUAL and EDITOR are unset\n";
+       exit 1
+     )
+   | Some editor, _
+   | None, Some editor -> (
+       Params.text_editor := editor;
+     )
+  );
   let compute_init_ui_mode_and_document_src () : Ui_base.ui_mode * Ui_base.document_src =
     if not (stdin_is_atty ()) then
       Ui_base.(Ui_single_file, Stdin)
@@ -342,21 +352,19 @@ let run
                if Misc_utils.path_is_pdf path then (
                  Proc_utils.run_in_background (Fmt.str "xdg-open %s" (Filename.quote path)) |> ignore;
                ) else (
-                 match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
-                 | None, None ->
-                   Printf.printf "Error: Both env variables VISUAL and EDITOR are unset\n"; exit 1
-                 | Some editor, _
-                 | None, Some editor -> (
-                     let old_stats = Unix.stat path in
-                     open_text_path doc.index ~editor ~path ~search_result;
-                     let new_stats = Unix.stat path in
-                     if Float.abs (new_stats.st_mtime -. old_stats.st_mtime) >= 0.000_001 then (
-                       (match Lwd.peek Ui_base.Vars.ui_mode with
-                        | Ui_single_file -> Single_file_view.reload_document doc
-                        | Ui_multi_file -> Multi_file_view.reload_document doc
-                       );
-                     );
-                   )
+                 let old_stats = Unix.stat path in
+                 open_text_path
+                   doc.index
+                   ~editor:!Params.text_editor
+                   ~path
+                   ~search_result;
+                 let new_stats = Unix.stat path in
+                 if Float.abs (new_stats.st_mtime -. old_stats.st_mtime) >= 0.000_001 then (
+                   (match Lwd.peek Ui_base.Vars.ui_mode with
+                    | Ui_single_file -> Single_file_view.reload_document doc
+                    | Ui_multi_file -> Multi_file_view.reload_document doc
+                   );
+                 );
                )
             );
             loop ()
