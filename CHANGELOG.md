@@ -1,5 +1,7 @@
 # Changelog
 
+## 1.3.5
+
 ## 1.3.4
 
 - Added dispatching of search to task pool at file granularity
