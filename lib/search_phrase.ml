@@ -10,7 +10,7 @@ type cache = {
 
 let cache = {
   mutex = Mutex.create ();
-  cache = CCCache.lru ~eq:String.equal 100;
+  cache = CCCache.lru ~eq:String.equal Params.search_word_automaton_cache_size;
 }
 
 let phrase t =
