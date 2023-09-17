@@ -4,6 +4,10 @@
 
 - Moved reading of environment variables `VISUAL` and `EDITOR` to program start
 
+- Performance tuning
+
+    - Increased cache size for search phrase automata
+
 ## 1.3.4
 
 - Added dispatching of search to task pool at file granularity
