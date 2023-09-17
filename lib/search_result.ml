@@ -224,10 +224,10 @@ let score (t : t) : float =
      (stats.ci_exact_match_found_char_count /. total_char_count))
     +.
     (sub_match_score
-     *. (stats.sub_match_total_char_count /. total_char_count))
+     *. (stats.sub_match_overlap_char_count /. total_char_count))
     +.
     (ci_sub_match_score
-     *. (stats.ci_sub_match_total_char_count /. total_char_count))
+     *. (stats.ci_sub_match_overlap_char_count /. total_char_count))
     +.
     (fuzzy_match_score
      *. (stats.fuzzy_match_found_char_count /. total_char_count))
