@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.3.5
+## 1.4.0
 
 - Moved reading of environment variables `VISUAL` and `EDITOR` to program start
 
