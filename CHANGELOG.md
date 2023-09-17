@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.0
+
+- Made substring matching bidirectional
+
+- Fixed and improved search result ranking
+
 ## 1.4.0
 
 - Moved reading of environment variables `VISUAL` and `EDITOR` to program start
