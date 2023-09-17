@@ -383,18 +383,18 @@ let words_of_global_line_num x t : string Seq.t =
   )
 
 let line_of_global_line_num x t =
-  if x >= global_line_count t then
+  if x >= global_line_count t then (
     invalid_arg "Index.line_of_global_line_num: global_line_num out of range"
-  else (
+  ) else (
     words_of_global_line_num x t
     |> List.of_seq
     |> String.concat ""
   )
 
 let line_loc_of_global_line_num x t =
-  if x >= global_line_count t then
+  if x >= global_line_count t then (
     invalid_arg "Index.line_loc_of_global_line_num: global_line_num out of range"
-  else (
+  ) else (
     CCVector.get t.line_loc_of_global_line_num x
   )
 
