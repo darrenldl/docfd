@@ -2,7 +2,7 @@
 
 ## 1.3.5
 
-- Moved reading of env vars `VISUAL` and `EDITOR` to program start
+- Moved reading of environment variables `VISUAL` and `EDITOR` to program start
 
 ## 1.3.4
 
