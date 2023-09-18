@@ -4,7 +4,7 @@
 
 - Made substring matching bidirectional
 
-- Fixed and improved search result ranking
+- Tuned search result ranking
 
 ## 1.4.0
 

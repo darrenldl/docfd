@@ -210,6 +210,21 @@ let score (t : t) : float =
   let total_char_count =
     stats.total_search_char_count +. stats.total_found_char_count
   in
+  let exact_match_weight =
+    (stats.exact_match_found_char_count *. 2.0) /. total_char_count
+  in
+  let ci_exact_match_weight =
+    (stats.ci_exact_match_found_char_count *. 2.0) /. total_char_count
+  in
+  let sub_match_weight =
+    (stats.sub_match_overlap_char_count *. 2.0) /. total_char_count
+  in
+  let ci_sub_match_weight =
+    (stats.ci_sub_match_overlap_char_count *. 2.0) /. total_char_count
+  in
+  let fuzzy_match_weight =
+    (stats.fuzzy_match_found_char_count *. 2.0) /. total_char_count
+  in
   (1.0 +. (0.10 *. (unique_match_count /. search_phrase_length)))
   *.
   (1.0 -. (out_of_order_match_count /. search_phrase_length))
@@ -217,20 +232,15 @@ let score (t : t) : float =
   (if quite_close_to_zero average_distance then 1.0 else 1.0 /. average_distance)
   *.
   (
-    (exact_match_score *.
-     (stats.exact_match_found_char_count /. total_char_count))
+    (exact_match_weight *. exact_match_score)
     +.
-    (ci_exact_match_score *.
-     (stats.ci_exact_match_found_char_count /. total_char_count))
+    (ci_exact_match_weight *. ci_exact_match_score)
     +.
-    (sub_match_score
-     *. (stats.sub_match_overlap_char_count /. total_char_count))
+    (sub_match_weight *. sub_match_score)
     +.
-    (ci_sub_match_score
-     *. (stats.ci_sub_match_overlap_char_count /. total_char_count))
+    (ci_sub_match_weight *. ci_sub_match_score)
     +.
-    (fuzzy_match_score
-     *. (stats.fuzzy_match_found_char_count /. total_char_count))
+    (fuzzy_match_weight *. fuzzy_match_score)
   )
 
 let compare t1 t2 =
