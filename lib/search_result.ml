@@ -165,30 +165,32 @@ let score (t : t) : float =
     total_distance /. unique_match_count
   in
   let exact_match_score =
-    if quite_close_to_zero stats.exact_match_found_char_count then
+    if quite_close_to_zero stats.exact_match_found_char_count then (
       0.0
-    else
+    ) else (
       1.4
+    )
   in
   let ci_exact_match_score =
-    if quite_close_to_zero stats.ci_exact_match_found_char_count then
+    if quite_close_to_zero stats.ci_exact_match_found_char_count then (
       0.0
-    else
+    ) else (
       1.2
+    )
   in
   let sub_match_score =
-    if quite_close_to_zero stats.sub_match_total_char_count then
+    if quite_close_to_zero stats.sub_match_total_char_count then (
       0.0
-    else (
+    ) else (
       (stats.sub_match_overlap_char_count *. 2.0)
       /.
       stats.sub_match_total_char_count
     )
   in
   let ci_sub_match_score =
-    if quite_close_to_zero stats.ci_sub_match_total_char_count then
+    if quite_close_to_zero stats.ci_sub_match_total_char_count then (
       0.0
-    else (
+    ) else (
       0.9
       *.
       ((stats.ci_sub_match_overlap_char_count *. 2.0)
@@ -197,9 +199,9 @@ let score (t : t) : float =
     )
   in
   let fuzzy_match_score =
-    if quite_close_to_zero stats.fuzzy_match_search_char_count then
+    if quite_close_to_zero stats.fuzzy_match_search_char_count then (
       0.0
-    else (
+    ) else (
       1.0
       -.
       (stats.fuzzy_match_edit_distance
