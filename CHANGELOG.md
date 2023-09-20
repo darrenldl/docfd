@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.1
+
+- Tuned search result ranking
+
 ## 1.5.0
 
 - Made substring matching bidirectional
