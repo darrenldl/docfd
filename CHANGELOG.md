@@ -2,7 +2,7 @@
 
 ## 1.5.1
 
-- Tuned search result ranking
+- Tuned search procedure and search result ranking
 
 ## 1.5.0
 

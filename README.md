@@ -66,7 +66,7 @@ Otherwise, Docfd uses **Multi-file view**.
 The default TUI is divided into four sections:
 - Left is the list of documents which satisfy the search phrase
 - Top right is the content view of the document which tracks the search result selected
-- Bottom right is the ranked content search result list
+- Bottom right is the ranked search result list
 - Bottom pane consists of:
     - Status bar
     - Key binding info
@@ -90,7 +90,7 @@ Docfd operates in modes, the initial mode is `Navigation` mode.
     - Up arrow
     - Page up
     - Scroll up with mouse wheel when hovering above the area
-- Scroll down the content search result list
+- Scroll down the search result list
     - `Shift`+`j`
     - `Shift`+Down arrow
     - `Shift`+Page down
@@ -182,7 +182,7 @@ is used.
 ![](screenshots/single-file1.png)
 
 In this view, the TUI is divided into only two sections:
-- Top is ranked content search result list
+- Top is ranked search result list
 - Bottom is the search interface
 
 #### Controls
@@ -193,7 +193,7 @@ The controls are simplified in single file view,
 namely `Shift` is optional for scrolling through search result list.
 
 `Navigation` mode
-- Scroll down the content search result list
+- Scroll down the search result list
     - `j`
     - Down arrow
     - Page down
