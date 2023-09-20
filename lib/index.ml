@@ -432,12 +432,14 @@ module Search = struct
         && (not (Parser_components.is_space indexed_word.[0]))
       )
     |> Seq.filter (fun (indexed_word, _pos_s) ->
+        let indexed_word_len = String.length indexed_word in
         if Parser_components.is_possibly_utf_8 indexed_word.[0] then
           String.equal search_word_ci indexed_word
         else (
           String.equal search_word_ci indexed_word
           || CCString.find ~sub:search_word_ci indexed_word >= 0
-          || CCString.find ~sub:indexed_word search_word_ci >= 0
+          || (CCString.find ~sub:indexed_word search_word_ci >= 0
+              && indexed_word_len >= 3)
           || (consider_edit_dist
               && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word search_word_ci.[0]
               && Spelll.match_with dfa indexed_word)
