@@ -21,10 +21,14 @@ type stats = {
   total_found_char_count : float;
   exact_match_found_char_count : float;
   ci_exact_match_found_char_count : float;
-  sub_match_overlap_char_count : float;
-  sub_match_total_char_count : float;
-  ci_sub_match_overlap_char_count : float;
-  ci_sub_match_total_char_count : float;
+  sub_match_search_word_in_found_word_char_count : float;
+  sub_match_found_word_in_search_word_char_count : float;
+  sub_match_search_char_count : float;
+  sub_match_found_char_count : float;
+  ci_sub_match_search_word_in_found_word_char_count : float;
+  ci_sub_match_found_word_in_search_word_char_count : float;
+  ci_sub_match_search_char_count : float;
+  ci_sub_match_found_char_count : float;
   fuzzy_match_edit_distance : float;
   fuzzy_match_search_char_count : float;
   fuzzy_match_found_char_count : float;
@@ -35,10 +39,14 @@ let empty_stats = {
   total_found_char_count = 0.0;
   exact_match_found_char_count = 0.0;
   ci_exact_match_found_char_count = 0.0;
-  sub_match_overlap_char_count = 0.0;
-  sub_match_total_char_count = 0.0;
-  ci_sub_match_overlap_char_count = 0.0;
-  ci_sub_match_total_char_count = 0.0;
+  sub_match_search_word_in_found_word_char_count = 0.0;
+  sub_match_found_word_in_search_word_char_count = 0.0;
+  sub_match_search_char_count = 0.0;
+  sub_match_found_char_count = 0.0;
+  ci_sub_match_search_word_in_found_word_char_count = 0.0;
+  ci_sub_match_found_word_in_search_word_char_count = 0.0;
+  ci_sub_match_search_char_count = 0.0;
+  ci_sub_match_found_char_count = 0.0;
   fuzzy_match_edit_distance = 0.0;
   fuzzy_match_search_char_count = 0.0;
   fuzzy_match_found_char_count = 0.0;
@@ -91,31 +99,39 @@ let score (t : t) : float =
           }
         ) else if CCString.find ~sub:search_word found_word >= 0 then (
           { stats with
-            sub_match_overlap_char_count =
-              stats.sub_match_overlap_char_count +. search_word_len;
-            sub_match_total_char_count =
-              stats.sub_match_total_char_count +. search_word_len +. found_word_len;
+            sub_match_search_word_in_found_word_char_count =
+              stats.sub_match_search_word_in_found_word_char_count +. search_word_len;
+            sub_match_search_char_count =
+              stats.sub_match_search_char_count +. search_word_len;
+            sub_match_found_char_count =
+              stats.sub_match_found_char_count +. found_word_len;
           }
         ) else if CCString.find ~sub:found_word search_word >= 0 then (
           { stats with
-            sub_match_overlap_char_count =
-              stats.sub_match_overlap_char_count +. found_word_len;
-            sub_match_total_char_count =
-              stats.sub_match_total_char_count +. search_word_len +. found_word_len;
+            sub_match_found_word_in_search_word_char_count =
+              stats.sub_match_found_word_in_search_word_char_count +. found_word_len;
+            sub_match_search_char_count =
+              stats.sub_match_search_char_count +. search_word_len;
+            sub_match_found_char_count =
+              stats.sub_match_found_char_count +. found_word_len;
           }
         ) else if CCString.find ~sub:search_word_ci found_word_ci >= 0 then (
           { stats with
-            ci_sub_match_overlap_char_count =
-              stats.ci_sub_match_overlap_char_count +. search_word_len;
-            ci_sub_match_total_char_count =
-              stats.ci_sub_match_total_char_count +. search_word_len +. found_word_len;
+            ci_sub_match_search_word_in_found_word_char_count =
+              stats.ci_sub_match_search_word_in_found_word_char_count +. search_word_len;
+            ci_sub_match_search_char_count =
+              stats.ci_sub_match_search_char_count +. search_word_len;
+            ci_sub_match_found_char_count =
+              stats.ci_sub_match_found_char_count +. found_word_len;
           }
         ) else if CCString.find ~sub:found_word_ci search_word_ci >= 0 then (
           { stats with
-            ci_sub_match_overlap_char_count =
-              stats.ci_sub_match_overlap_char_count +. found_word_len;
-            ci_sub_match_total_char_count =
-              stats.ci_sub_match_total_char_count +. search_word_len +. found_word_len;
+            ci_sub_match_found_word_in_search_word_char_count =
+              stats.ci_sub_match_found_word_in_search_word_char_count +. found_word_len;
+            ci_sub_match_search_char_count =
+              stats.ci_sub_match_search_char_count +. search_word_len;
+            ci_sub_match_found_char_count =
+              stats.ci_sub_match_found_char_count +. found_word_len;
           }
         ) else (
           { stats with
@@ -162,7 +178,11 @@ let score (t : t) : float =
       t.found_phrase
   in
   let average_distance =
-    total_distance /. unique_match_count
+    if quite_close_to_zero (unique_match_count -. 1.0) then (
+      0.0
+    ) else (
+      total_distance /. (unique_match_count -. 1.0)
+    )
   in
   let exact_match_score =
     if quite_close_to_zero stats.exact_match_found_char_count then (
@@ -178,24 +198,40 @@ let score (t : t) : float =
       1.2
     )
   in
-  let sub_match_score =
-    if quite_close_to_zero stats.sub_match_total_char_count then (
+  let sub_match_score_s_in_f =
+    if quite_close_to_zero stats.sub_match_found_char_count then (
       0.0
     ) else (
-      (stats.sub_match_overlap_char_count *. 2.0)
+      stats.sub_match_search_word_in_found_word_char_count
       /.
-      stats.sub_match_total_char_count
+      stats.sub_match_found_char_count
     )
   in
-  let ci_sub_match_score =
-    if quite_close_to_zero stats.ci_sub_match_total_char_count then (
+  let sub_match_score_f_in_s =
+    if quite_close_to_zero stats.sub_match_search_char_count then (
       0.0
     ) else (
-      0.9
-      *.
-      ((stats.ci_sub_match_overlap_char_count *. 2.0)
-       /.
-       stats.ci_sub_match_total_char_count)
+      stats.sub_match_found_word_in_search_word_char_count
+      /.
+      stats.sub_match_search_char_count
+    )
+  in
+  let ci_sub_match_score_s_in_f =
+    if quite_close_to_zero stats.ci_sub_match_found_char_count then (
+      0.0
+    ) else (
+      stats.ci_sub_match_search_word_in_found_word_char_count
+      /.
+      stats.ci_sub_match_found_char_count
+    )
+  in
+  let ci_sub_match_score_f_in_s =
+    if quite_close_to_zero stats.ci_sub_match_search_char_count then (
+      0.0
+    ) else (
+      stats.ci_sub_match_found_word_in_search_word_char_count
+      /.
+      stats.ci_sub_match_search_char_count
     )
   in
   let fuzzy_match_score =
@@ -218,29 +254,54 @@ let score (t : t) : float =
   let ci_exact_match_weight =
     (stats.ci_exact_match_found_char_count *. 2.0) /. total_char_count
   in
-  let sub_match_weight =
-    (stats.sub_match_overlap_char_count *. 2.0) /. total_char_count
+  let sub_match_weight_s_in_f =
+    stats.sub_match_found_char_count /. stats.total_found_char_count
   in
-  let ci_sub_match_weight =
-    (stats.ci_sub_match_overlap_char_count *. 2.0) /. total_char_count
+  let sub_match_weight_f_in_s =
+    0.8
+    *.
+    (stats.sub_match_search_char_count /. stats.total_search_char_count)
+  in
+  let ci_sub_match_weight_s_in_f =
+    0.9
+    *.
+    (stats.ci_sub_match_found_char_count /. stats.total_found_char_count)
+  in
+  let ci_sub_match_weight_f_in_s =
+    0.9
+    *.
+    0.8
+    *.
+    (stats.ci_sub_match_search_char_count /. stats.total_search_char_count)
   in
   let fuzzy_match_weight =
     (stats.fuzzy_match_found_char_count *. 2.0) /. total_char_count
   in
+  let distance_score =
+    if average_distance <= 1.0 then (
+      1.0
+    ) else (
+      1.0 +. (0.20 *. (1.0 /. average_distance))
+    )
+  in
   (1.0 +. (0.10 *. (unique_match_count /. search_phrase_length)))
   *.
-  (1.0 -. (out_of_order_match_count /. search_phrase_length))
+  (1.0 -. (0.10 *. (out_of_order_match_count /. search_phrase_length)))
   *.
-  (if quite_close_to_zero average_distance then 1.0 else 1.0 /. average_distance)
+  distance_score
   *.
   (
     (exact_match_weight *. exact_match_score)
     +.
     (ci_exact_match_weight *. ci_exact_match_score)
     +.
-    (sub_match_weight *. sub_match_score)
+    (sub_match_weight_s_in_f *. sub_match_score_s_in_f)
     +.
-    (ci_sub_match_weight *. ci_sub_match_score)
+    (sub_match_weight_f_in_s *. sub_match_score_f_in_s)
+    +.
+    (ci_sub_match_weight_s_in_f *. ci_sub_match_score_s_in_f)
+    +.
+    (ci_sub_match_weight_f_in_s *. ci_sub_match_score_f_in_s)
     +.
     (fuzzy_match_weight *. fuzzy_match_score)
   )
