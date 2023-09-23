@@ -72,7 +72,7 @@ let score (t : t) : float =
   assert (match t.search_phrase with [] -> false | _ -> true);
   assert (List.length t.search_phrase = List.length t.found_phrase);
   let quite_close_to_zero x =
-    abs x < 0.01
+    Float.abs x < 0.01
   in
   let stats =
     List.fold_left2 (fun (stats : stats) search_word { found_word_ci; found_word; _ } ->
