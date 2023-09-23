@@ -72,7 +72,7 @@ let score (t : t) : float =
   assert (match t.search_phrase with [] -> false | _ -> true);
   assert (List.length t.search_phrase = List.length t.found_phrase);
   let quite_close_to_zero x =
-    -0.01 < x && x < 0.01
+    abs x < 0.01
   in
   let stats =
     List.fold_left2 (fun (stats : stats) search_word { found_word_ci; found_word; _ } ->
@@ -178,10 +178,12 @@ let score (t : t) : float =
       t.found_phrase
   in
   let average_distance =
-    if quite_close_to_zero (unique_match_count -. 1.0) then (
+    let gaps = unique_match_count -. 1.0 in
+    assert (gaps >= 0.0);
+    if quite_close_to_zero gaps then (
       0.0
     ) else (
-      total_distance /. (unique_match_count -. 1.0)
+      total_distance /. gaps
     )
   in
   let exact_match_score =
