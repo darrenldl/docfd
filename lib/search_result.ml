@@ -74,6 +74,22 @@ let score (t : t) : float =
   let quite_close_to_zero x =
     Float.abs x < 0.01
   in
+  let add_sub_match_search_and_found_char_count ~search_word_len ~found_word_len stats =
+    { stats with
+      sub_match_search_char_count =
+        stats.sub_match_search_char_count +. search_word_len;
+      sub_match_found_char_count =
+        stats.sub_match_found_char_count +. found_word_len;
+    }
+  in
+  let add_ci_sub_match_search_and_found_char_count ~search_word_len ~found_word_len stats =
+    { stats with
+      ci_sub_match_search_char_count =
+        stats.ci_sub_match_search_char_count +. search_word_len;
+      ci_sub_match_found_char_count =
+        stats.ci_sub_match_found_char_count +. found_word_len;
+    }
+  in
   let stats =
     List.fold_left2 (fun (stats : stats) search_word { found_word_ci; found_word; _ } ->
         let search_word_len = Int.to_float (String.length search_word) in
@@ -101,38 +117,34 @@ let score (t : t) : float =
           { stats with
             sub_match_search_word_in_found_word_char_count =
               stats.sub_match_search_word_in_found_word_char_count +. search_word_len;
-            sub_match_search_char_count =
-              stats.sub_match_search_char_count +. search_word_len;
-            sub_match_found_char_count =
-              stats.sub_match_found_char_count +. found_word_len;
           }
+          |> add_sub_match_search_and_found_char_count
+            ~search_word_len
+            ~found_word_len
         ) else if CCString.find ~sub:found_word search_word >= 0 then (
           { stats with
             sub_match_found_word_in_search_word_char_count =
               stats.sub_match_found_word_in_search_word_char_count +. found_word_len;
-            sub_match_search_char_count =
-              stats.sub_match_search_char_count +. search_word_len;
-            sub_match_found_char_count =
-              stats.sub_match_found_char_count +. found_word_len;
           }
+          |> add_sub_match_search_and_found_char_count
+            ~search_word_len
+            ~found_word_len
         ) else if CCString.find ~sub:search_word_ci found_word_ci >= 0 then (
           { stats with
             ci_sub_match_search_word_in_found_word_char_count =
               stats.ci_sub_match_search_word_in_found_word_char_count +. search_word_len;
-            ci_sub_match_search_char_count =
-              stats.ci_sub_match_search_char_count +. search_word_len;
-            ci_sub_match_found_char_count =
-              stats.ci_sub_match_found_char_count +. found_word_len;
           }
+          |> add_ci_sub_match_search_and_found_char_count
+            ~search_word_len
+            ~found_word_len
         ) else if CCString.find ~sub:found_word_ci search_word_ci >= 0 then (
           { stats with
             ci_sub_match_found_word_in_search_word_char_count =
               stats.ci_sub_match_found_word_in_search_word_char_count +. found_word_len;
-            ci_sub_match_search_char_count =
-              stats.ci_sub_match_search_char_count +. search_word_len;
-            ci_sub_match_found_char_count =
-              stats.ci_sub_match_found_char_count +. found_word_len;
           }
+          |> add_ci_sub_match_search_and_found_char_count
+            ~search_word_len
+            ~found_word_len
         ) else (
           { stats with
             fuzzy_match_edit_distance =
