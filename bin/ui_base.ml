@@ -346,7 +346,7 @@ let ui_loop ~quit ~term root =
     if not (Lwd.peek quit) then (
       Nottui.Ui_loop.step
         ~process_event:true
-        ~timeout:0.01
+        ~timeout:0.05
         ~renderer
         term
         (Lwd.observe @@ root);
