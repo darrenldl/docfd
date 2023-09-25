@@ -45,6 +45,8 @@ module Vars = struct
 
     let index_of_search_result_selected = Lwd.var 0
 
+    let fallback_start_global_line_num = Lwd.var 0
+
     let document_store : Document_store.t Lwd.var = Lwd.var Document_store.empty
   end
 end
@@ -60,32 +62,10 @@ let full_term_sized_background () =
   Notty.I.void term_width term_height
   |> Nottui.Ui.atom
 
-module Content_view = struct
-  let main
-      ~(document_info : Document.t * Search_result.t array)
-      ~(search_result_selected : int)
-    : Nottui.ui Lwd.t =
-    let (document, search_results) = document_info in
-    let (_term_width, term_height) = Notty_unix.Term.size (term ()) in
-    let height = term_height / 2 in
-    let search_result =
-      if Array.length search_results = 0 then
-        None
-      else
-        Some search_results.(search_result_selected)
-    in
-    let content =
-      Content_and_search_result_render.content_snippet
-        ?search_result
-        ~height
-        document.index
-    in
-    Lwd.return (Nottui.Ui.atom content)
-end
-
 let mouse_handler
     ~(choice_count : int)
     ~(current_choice : int Lwd.var)
+    ~(f : choice_count:int -> int -> unit)
     ~x ~y
     (button : Notty.Unescape.button)
   =
@@ -102,6 +82,44 @@ let mouse_handler
       `Handled
     )
   | _ -> `Unhandled
+
+module Content_view = struct
+  let main
+      ~(document_info : Document.t * Search_result.t array)
+      ~(fallback_start_global_line_num : int Lwd.var)
+      ~(search_result_selected : int)
+    : Nottui.ui Lwd.t =
+    let (document, search_results) = document_info in
+    let (_term_width, term_height) = Notty_unix.Term.size (term ()) in
+    let height = term_height / 2 in
+    let search_result =
+      if Array.length search_results = 0 then
+        None
+      else
+        Some search_results.(search_result_selected)
+    in
+    let content =
+      Content_and_search_result_render.content_snippet
+        ?search_result
+        ~fallback_start_global_line_num:(Lwd.peek fallback_start_global_line_num)
+        ~height
+        document.index
+    in
+    Nottui.Ui.atom content
+    |> (fun content ->
+        match search_result with
+        | None -> (
+            Nottui.Ui.mouse_area
+              (mouse_handler
+                 ~choice_count:(Index.global_line_count document.index)
+                 ~current_choice:fallback_start_global_line_num
+              )
+              content
+          )
+        | Some _ -> content
+      )
+    |> Lwd.return
+end
 
 module Search_result_list = struct
   let main

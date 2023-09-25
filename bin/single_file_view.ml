@@ -66,6 +66,7 @@ module Top_pane = struct
     Nottui_widgets.v_pane
       (Ui_base.Content_view.main
          ~document_info
+         ~fallback_start_global_line_num:Ui_base.Vars.Single_file.fallback_start_global_line_num
          ~search_result_selected)
       (Ui_base.Search_result_list.main
          ~document_info

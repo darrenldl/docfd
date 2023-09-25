@@ -6,6 +6,8 @@ module Vars = struct
 
   let index_of_search_result_selected = Lwd.var 0
 
+  let fallback_content_preview_start_line_num = Lwd.var 0
+
   let search_field = Lwd.var Ui_base.empty_text_field
 
   let search_field_focus_handle = Nottui.Focus.make ()
@@ -24,16 +26,22 @@ let cancel_search () =
 let set_document_selected ~choice_count n =
   let n = Misc_utils.bound_selection ~choice_count n in
   Lwd.set Vars.index_of_document_selected n;
-  Lwd.set Vars.index_of_search_result_selected 0
+  Lwd.set Vars.index_of_search_result_selected 0;
+  Lwd.set Vars.fallback_content_preview_start_line_num 0
 
 let reset_document_selected () =
   cancel_search ();
   Lwd.set Vars.index_of_document_selected 0;
-  Lwd.set Vars.index_of_search_result_selected 0
+  Lwd.set Vars.index_of_search_result_selected 0;
+  Lwd.set Vars.fallback_content_preview_start_line_num 0
 
 let set_search_result_selected ~choice_count n =
   let n = Misc_utils.bound_selection ~choice_count n in
   Lwd.set Vars.index_of_search_result_selected n
+
+let set_fallback_content_preview_start_line_num ~document_global_line_count n =
+  let n = Misc_utils.bound_selection ~choice_count:document_global_line_count n in
+  Lwd.set Vars.fallback_content_preview_start_line_num n
 
 let reload_document (doc : Document.t) =
   match doc.path with
@@ -199,7 +207,10 @@ module Top_pane = struct
         let$* search_result_selected = Lwd.get Vars.index_of_search_result_selected in
         let document_info = document_info_s.(document_selected) in
         Nottui_widgets.v_pane
-          (Ui_base.Content_view.main ~document_info ~search_result_selected)
+          (Ui_base.Content_view.main
+             ~document_info
+             ~fallback_start_global_line_num:Vars.fallback_content_preview_start_line_num
+             ~search_result_selected)
           (Ui_base.Search_result_list.main
              ~document_info
              ~index_of_search_result_selected:Vars.index_of_search_result_selected)
@@ -364,8 +375,17 @@ let keyboard_handler
     | None -> 0
     | Some (_doc, search_results) -> Array.length search_results
   in
+  let document_global_line_count =
+    match document_info with
+    | None -> 0
+    | Some (doc, _search_results) ->
+      Index.global_line_count doc.index
+  in
   let search_result_current_choice =
     Lwd.peek Vars.index_of_search_result_selected
+  in
+  let fallback_content_preview_current_start_line_num =
+    Lwd.peek Vars.fallback_content_preview_start_line_num
   in
   match Lwd.peek Ui_base.Vars.input_mode with
   | Navigate -> (
@@ -409,6 +429,9 @@ let keyboard_handler
           set_search_result_selected
             ~choice_count:search_result_choice_count
             (search_result_current_choice+1);
+          set_fallback_content_preview_start_line_num
+            ~document_global_line_count
+            (fallback_content_preview_current_start_line_num+1);
           `Handled
         )
       | (`Page `Up, [`Shift])
@@ -417,6 +440,9 @@ let keyboard_handler
           set_search_result_selected
             ~choice_count:search_result_choice_count
             (search_result_current_choice-1);
+          set_fallback_content_preview_start_line_num
+            ~document_global_line_count
+            (fallback_content_preview_current_start_line_num-1);
           `Handled
         )
       | (`Page `Down, [])

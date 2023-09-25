@@ -121,6 +121,7 @@ let render_grid ~(render_mode : render_mode) (grid : word_image_grid) (index : I
 
 let content_snippet
     ?(search_result : Search_result.t option)
+    ~(fallback_start_global_line_num : int)
     ~(height : int)
     (index : Index.t)
   : Notty.image =
@@ -133,8 +134,8 @@ let content_snippet
   | None ->
     let grid =
       word_image_grid_of_index
-        ~start_global_line_num:0
-        ~end_inc_global_line_num:(min max_line_num height)
+        ~start_global_line_num:fallback_start_global_line_num
+        ~end_inc_global_line_num:(min max_line_num (fallback_start_global_line_num + height))
         index
     in
     render_grid ~render_mode:`None grid index
