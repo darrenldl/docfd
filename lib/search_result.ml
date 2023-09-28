@@ -202,14 +202,14 @@ let score (t : t) : float =
     if quite_close_to_zero stats.exact_match_found_char_count then (
       0.0
     ) else (
-      1.4
+      1.0
     )
   in
   let ci_exact_match_score =
     if quite_close_to_zero stats.ci_exact_match_found_char_count then (
       0.0
     ) else (
-      1.2
+      1.0
     )
   in
   let sub_match_score_s_in_f =
@@ -262,29 +262,47 @@ let score (t : t) : float =
   let total_char_count =
     stats.total_search_char_count +. stats.total_found_char_count
   in
+  let case_sensitive_bonus_multiplier =
+    if
+      List.exists
+        (fun search_word ->
+           not
+             (String.equal
+                (String.lowercase_ascii search_word)
+                search_word))
+        t.search_phrase
+    then (
+      1.10
+    ) else (
+      1.00
+    )
+  in
   let exact_match_weight =
+    case_sensitive_bonus_multiplier
+    *.
     (stats.exact_match_found_char_count *. 2.0) /. total_char_count
   in
   let ci_exact_match_weight =
     (stats.ci_exact_match_found_char_count *. 2.0) /. total_char_count
   in
+  let f_in_s_penalty_multiplier = 0.8 in
   let sub_match_weight_s_in_f =
+    case_sensitive_bonus_multiplier
+    *.
     stats.sub_match_found_char_count /. stats.total_found_char_count
   in
   let sub_match_weight_f_in_s =
-    0.8
+    case_sensitive_bonus_multiplier
+    *.
+    f_in_s_penalty_multiplier
     *.
     (stats.sub_match_search_char_count /. stats.total_search_char_count)
   in
   let ci_sub_match_weight_s_in_f =
-    0.9
-    *.
     (stats.ci_sub_match_found_char_count /. stats.total_found_char_count)
   in
   let ci_sub_match_weight_f_in_s =
-    0.9
-    *.
-    0.8
+    f_in_s_penalty_multiplier
     *.
     (stats.ci_sub_match_search_char_count /. stats.total_search_char_count)
   in
