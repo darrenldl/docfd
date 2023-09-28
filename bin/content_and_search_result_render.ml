@@ -184,7 +184,7 @@ let search_results
       let img = render_grid ~render_mode grid index in
       if !Params.debug then (
         let score = Search_result.score search_result in
-        I.strf "(score: %f)" score
+        I.strf "(Score: %f)" score
         <->
         img
       ) else (

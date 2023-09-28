@@ -103,7 +103,7 @@ module Top_pane = struct
             I.empty
           else (
             let x = search_results.(0) in
-            I.strf "(best search result score: %f)" (Search_result.score x)
+            I.strf "(Best search result score: %f)" (Search_result.score x)
           )
         ) else (
           I.empty
