@@ -4,6 +4,9 @@
 
 - Tuned search procedure and search result ranking
 
+    - Case-sensitive bonus only applies if search phrase
+      is not all ascii lower case
+
 ## 1.5.0
 
 - Made substring matching bidirectional
