@@ -555,7 +555,7 @@ let search
     Search.search ~consider_edit_dist:true phrase t
     |> Array.of_seq
   in
-  Array.sort Search_result.compare_rev arr;
+  Array.sort Search_result.compare_relevance arr;
   arr
 
 let to_json (t : t) : Yojson.Safe.t =

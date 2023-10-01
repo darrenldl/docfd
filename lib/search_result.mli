@@ -16,6 +16,4 @@ val score : t -> float
 
 val equal : t -> t -> bool
 
-val compare : t -> t -> int
-
-val compare_rev : t -> t -> int
+val compare_relevance : t -> t -> int

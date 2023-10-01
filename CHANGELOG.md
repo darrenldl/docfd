@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.2
+
+- Added line number into search result ranking consideration
+
 ## 1.5.1
 
 - Tuned search procedure and search result ranking

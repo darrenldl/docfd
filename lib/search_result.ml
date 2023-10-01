@@ -72,7 +72,7 @@ let score (t : t) : float =
   assert (match t.search_phrase with [] -> false | _ -> true);
   assert (List.length t.search_phrase = List.length t.found_phrase);
   let quite_close_to_zero x =
-    Float.abs x < 0.01
+    Float.abs x < Params.float_compare_margin
   in
   let add_sub_match_search_and_found_char_count ~search_word_len ~found_word_len stats =
     { stats with
@@ -338,8 +338,15 @@ let score (t : t) : float =
     (fuzzy_match_weight *. fuzzy_match_score)
   )
 
-let compare t1 t2 =
-  Float.compare (score t1) (score t2)
-
-let compare_rev t1 t2 =
-  compare t2 t1
+let compare_relevance (t1 : t) (t2 : t) =
+  let t1_score = score t1 in
+  let t2_score = score t2 in
+  (* Order the more relevant result to front *)
+  if Float.abs (t1_score -. t2_score) < Params.float_compare_margin then (
+    let t1_found_phrase_start_pos = (List.hd t1.found_phrase).found_word_pos in
+    let t2_found_phrase_start_pos = (List.hd t2.found_phrase).found_word_pos in
+    Int.compare t1_found_phrase_start_pos t2_found_phrase_start_pos
+  ) else (
+    (* Order result with higher score to front *)
+    Float.compare t2_score t1_score
+  )
