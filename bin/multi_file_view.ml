@@ -264,12 +264,12 @@ module Bottom_pane = struct
         [
           [
             { label = "Enter"; msg = "open document" };
-            { label = "?"; msg = "set file content reqs" };
-            { label = "Tab"; msg = "single file view" };
-          ];
-          [
             { label = "/"; msg = "search mode" };
             { label = "x"; msg = "clear search" };
+          ];
+          [
+            { label = "Tab"; msg = "single file view" };
+            { label = "?"; msg = "set file content reqs" };
           ];
           [
             { label = "r"; msg = "reload document selected" };
