@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.3
+
+- Updated key binding info pane of multi-file view
+
 ## 1.5.2
 
 - Added line number into search result ranking consideration
