@@ -80,73 +80,102 @@ type render_mode = [
 let render_grid
     ~(render_mode : render_mode)
     ~width
+    ?(height : int option)
     (grid : word_image_grid)
     (index : Index.t)
   : Notty.image =
-  grid.data
-  |> Array.to_list
-  |> List.mapi (fun i words ->
-      let words =
-        match Array.to_list words with
-        | [] -> [ I.void 0 1 ]
-        | l -> l
-      in
-      let global_line_num = grid.start_global_line_num + i in
-      let line_loc = Index.line_loc_of_global_line_num global_line_num index in
-      let display_line_num = Index.Line_loc.line_num_in_page line_loc + 1 in
-      let display_page_num = Index.Line_loc.page_num line_loc + 1 in
-      let left_column_label =
-        match render_mode with
-        | `Page_num_only -> (
-            I.hcat
-              [ I.strf ~attr:A.(fg lightyellow) "Page %d" display_page_num
-              ; I.strf ": " ]
-          )
-        | `Line_num_only -> (
-            I.hcat
-              [ I.strf ~attr:A.(fg lightyellow) "%d" display_line_num
-              ; I.strf ": " ]
-          )
-        | `Page_and_line_num -> (
-            I.hcat
-              [ I.strf ~attr:A.(fg lightyellow) "Page %d, %d"
-                  display_page_num
-                  display_line_num
-              ; I.strf ": " ]
-          )
-        | `None -> (
-            I.strf ""
-          )
-      in
-      let content_width = max 1 (width - I.width left_column_label) in
-      let content_lines : Notty.image list list =
-        List.fold_left
-          (fun ((cur_len, acc) : int * Notty.image list list) word ->
-             let word_len = I.width word in
-             let new_len = cur_len + word_len in
-             match acc with
-             | [] -> (new_len, [ [ word ] ])
-             | line :: rest -> (
-                 if new_len > content_width then (
-                   (word_len, [ word ] :: acc)
-                 ) else (
-                   (new_len, (word :: line) :: rest)
+  let mid_row = Array.length grid.data / 2 in
+  let images =
+    grid.data
+    |> Array.to_list
+    |> List.mapi (fun i words ->
+        let words =
+          match Array.to_list words with
+          | [] -> [ I.void 0 1 ]
+          | l -> l
+        in
+        let global_line_num = grid.start_global_line_num + i in
+        let line_loc = Index.line_loc_of_global_line_num global_line_num index in
+        let display_line_num = Index.Line_loc.line_num_in_page line_loc + 1 in
+        let display_page_num = Index.Line_loc.page_num line_loc + 1 in
+        let left_column_label =
+          match render_mode with
+          | `Page_num_only -> (
+              I.hcat
+                [ I.strf ~attr:A.(fg lightyellow) "Page %d" display_page_num
+                ; I.strf ": " ]
+            )
+          | `Line_num_only -> (
+              I.hcat
+                [ I.strf ~attr:A.(fg lightyellow) "%d" display_line_num
+                ; I.strf ": " ]
+            )
+          | `Page_and_line_num -> (
+              I.hcat
+                [ I.strf ~attr:A.(fg lightyellow) "Page %d, %d"
+                    display_page_num
+                    display_line_num
+                ; I.strf ": " ]
+            )
+          | `None -> (
+              I.strf ""
+            )
+        in
+        let content_width = max 1 (width - I.width left_column_label) in
+        let content_lines : Notty.image list list =
+          List.fold_left
+            (fun ((cur_len, acc) : int * Notty.image list list) word ->
+               let word_len = I.width word in
+               let new_len = cur_len + word_len in
+               match acc with
+               | [] -> (new_len, [ [ word ] ])
+               | line :: rest -> (
+                   if new_len > content_width then (
+                     (word_len, [ word ] :: acc)
+                   ) else (
+                     (new_len, (word :: line) :: rest)
+                   )
                  )
-               )
+            )
+            (0, [])
+            words
+          |> snd
+          |> List.rev_map List.rev
+        in
+        let content =
+          content_lines
+          |> List.map I.hcat
+          |> I.vcat
+        in
+        I.hcat [ left_column_label; content ]
+      )
+  in
+  let img = I.vcat images in
+  match height with
+  | None -> img
+  | Some height -> (
+      let focal_point =
+        CCList.foldi (fun focal_point i img ->
+            if i < mid_row then (
+              focal_point + I.height img
+            ) else if i = mid_row then (
+              focal_point + (I.height img / 2)
+            ) else (
+              focal_point
+            )
           )
-          (0, [])
-          words
-        |> snd
-        |> List.map List.rev
+          0
+          images
       in
-      let content =
-        content_lines
-        |> List.map I.hcat
-        |> I.vcat
-      in
-      I.hcat [ left_column_label; content ]
+      let img_height = I.height img in
+      if img_height <= height then (
+        img
+      ) else (
+        let target_region_start = max 0 (focal_point - (height / 2)) in
+        let target_region_end_inc = target_region_start + height in
+        I.vcrop target_region_start (img_height - target_region_end_inc) img
+      )
     )
-  |> I.vcat
 
 let content_snippet
     ?(search_result : Search_result.t option)
@@ -160,29 +189,31 @@ let content_snippet
     | n -> n - 1
   in
   match search_result with
-  | None ->
-    let grid =
-      word_image_grid_of_index
-        ~start_global_line_num:0
-        ~end_inc_global_line_num:(min max_line_num height)
-        index
-    in
-    render_grid ~render_mode:`None ~width grid index
-  | Some search_result ->
-    let (relevant_start_line, relevant_end_inc_line) =
-      start_and_end_inc_global_line_num_of_search_result index search_result
-    in
-    let avg = (relevant_start_line + relevant_end_inc_line) / 2 in
-    let start_global_line_num = max 0 (avg - height / 2 + 1) in
-    let end_inc_global_line_num = min max_line_num (avg + height) in
-    let grid =
-      word_image_grid_of_index
-        ~start_global_line_num
-        ~end_inc_global_line_num
-        index
-    in
-    color_word_image_grid grid index search_result;
-    render_grid ~render_mode:`None ~width grid index
+  | None -> (
+      let grid =
+        word_image_grid_of_index
+          ~start_global_line_num:0
+          ~end_inc_global_line_num:(min max_line_num height)
+          index
+      in
+      render_grid ~render_mode:`None ~width ~height grid index
+    )
+  | Some search_result -> (
+      let (relevant_start_line, relevant_end_inc_line) =
+        start_and_end_inc_global_line_num_of_search_result index search_result
+      in
+      let avg = (relevant_start_line + relevant_end_inc_line) / 2 in
+      let start_global_line_num = max 0 (avg - height / 2 + 1) in
+      let end_inc_global_line_num = min max_line_num (start_global_line_num + height) in
+      let grid =
+        word_image_grid_of_index
+          ~start_global_line_num
+          ~end_inc_global_line_num
+          index
+      in
+      color_word_image_grid grid index search_result;
+      render_grid ~render_mode:`None ~width ~height grid index
+    )
 
 let search_results
     ~render_mode
