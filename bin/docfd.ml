@@ -211,7 +211,7 @@ let run
   );
   (match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
    | None, None -> (
-       Printf.printf "Error: Both environment variables VISUAL and EDITOR are unset\n";
+       Printf.printf "Error: Environment variable VISUAL or EDITOR needs to be set\n";
        exit 1
      )
    | Some editor, _
