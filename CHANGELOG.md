@@ -3,6 +3,9 @@
 ## 1.6.0
 
 - Docfd now saves stdin into a tmp file before processing
+  to allow opening in text editor
+
+- Added `--add-exts` argument for additional file extensions
 
 ## 1.5.3
 
