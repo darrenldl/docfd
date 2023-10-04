@@ -75,9 +75,6 @@ let parse_pages (s : string list Seq.t) : t =
   in
   aux Title None s
 
-let of_in_channel ic : t =
-  parse_lines (CCIO.read_lines_seq ic)
-
 let save_index ~env ~hash index =
   let fs = Eio.Stdenv.fs env in
   (try

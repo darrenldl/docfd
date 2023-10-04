@@ -221,7 +221,14 @@ let run
   );
   let compute_init_ui_mode_and_document_src () : Ui_base.ui_mode * Ui_base.document_src =
     if not (stdin_is_atty ()) then
-      Ui_base.(Ui_single_file, Stdin)
+      match File_utils.read_in_channel_to_tmp_file stdin with
+      | Ok tmp_file -> (
+          Ui_base.(Ui_single_file, Stdin tmp_file)
+        )
+      | Error msg -> (
+          Fmt.pr "Error: %s" msg;
+          exit 1
+        )
     else (
       match files with
       | [] -> Ui_base.(Ui_multi_file, Files [])
@@ -260,7 +267,7 @@ let run
   );
   if !Params.debug then (
     match init_document_src with
-    | Stdin -> Printf.printf "Document source: stdin\n"
+    | Stdin _ -> Printf.printf "Document source: stdin\n"
     | Files files -> (
         Printf.printf "Document source: files\n";
         List.iter (fun file ->
@@ -270,7 +277,7 @@ let run
       )
   );
   (match init_document_src with
-   | Stdin -> ()
+   | Stdin _ -> ()
    | Files files -> (
        if List.exists Misc_utils.path_is_pdf files then (
          if not (Proc_utils.command_exists "pdftotext") then (
@@ -280,16 +287,16 @@ let run
        )
      )
   );
-  let stdin_document =
-    match init_document_src with
-    | Stdin -> Some (Document.of_in_channel stdin)
-    | _ -> None
-  in
   let document_store_of_document_src document_src =
     let all_documents =
       match document_src with
-      | Ui_base.Stdin -> (
-          [ Option.get stdin_document ]
+      | Ui_base.Stdin path -> (
+          match Document.of_path ~env path with
+          | Ok x -> [ x ]
+          | Error msg ->  (
+              Fmt.pr "Error: %s" msg;
+              exit 1
+            )
         )
       | Files files -> (
           Eio.Fiber.List.filter_map (fun path ->
@@ -310,7 +317,7 @@ let run
    | _ -> ()
   );
   (match init_document_src with
-   | Stdin -> (
+   | Stdin _ -> (
        let input =
          Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
        in

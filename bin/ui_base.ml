@@ -11,7 +11,7 @@ type ui_mode =
   | Ui_multi_file
 
 type document_src =
-  | Stdin
+  | Stdin of string
   | Files of string list
 
 type top_level_action =

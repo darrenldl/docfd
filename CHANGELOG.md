@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.0
+
+- Docfd now saves stdin into a tmp file before processing
+
 ## 1.5.3
 
 - Updated key binding info pane of multi-file view
