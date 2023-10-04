@@ -62,6 +62,7 @@ let full_term_sized_background () =
 
 module Content_view = struct
   let main
+      ~width
       ~(document_info : Document.t * Search_result.t array)
       ~(search_result_selected : int)
     : Nottui.ui Lwd.t =
@@ -78,6 +79,7 @@ module Content_view = struct
       Content_and_search_result_render.content_snippet
         ?search_result
         ~height
+        ~width
         document.index
     in
     Lwd.return (Nottui.Ui.atom content)
@@ -105,6 +107,7 @@ let mouse_handler
 
 module Search_result_list = struct
   let main
+      ~width
       ~(document_info : (Document.t * Search_result.t array))
       ~(index_of_search_result_selected : int Lwd.var)
     : Nottui.ui Lwd.t =
@@ -127,6 +130,7 @@ module Search_result_list = struct
           ~render_mode
           ~start:search_result_selected
           ~end_exc:(min (search_result_selected + term_height / 2) result_count)
+          ~width
           document.index
           search_results
       in

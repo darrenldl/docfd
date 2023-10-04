@@ -77,7 +77,12 @@ type render_mode = [
   | `None
 ]
 
-let render_grid ~(render_mode : render_mode) (grid : word_image_grid) (index : Index.t) : Notty.image =
+let render_grid
+    ~(render_mode : render_mode)
+    ~width
+    (grid : word_image_grid)
+    (index : Index.t)
+  : Notty.image =
   grid.data
   |> Array.to_list
   |> List.mapi (fun i words ->
@@ -90,37 +95,62 @@ let render_grid ~(render_mode : render_mode) (grid : word_image_grid) (index : I
       let line_loc = Index.line_loc_of_global_line_num global_line_num index in
       let display_line_num = Index.Line_loc.line_num_in_page line_loc + 1 in
       let display_page_num = Index.Line_loc.page_num line_loc + 1 in
-      let content =
+      let left_column_label =
         match render_mode with
-        | `Page_num_only ->
-          I.strf ~attr:A.(fg lightyellow) "Page %d" display_page_num
-          ::
-          I.strf ": "
-          ::
-          words
-        | `Line_num_only ->
-          I.strf ~attr:A.(fg lightyellow) "%d" display_line_num
-          ::
-          I.strf ": "
-          ::
-          words
-        | `Page_and_line_num ->
-          I.strf ~attr:A.(fg lightyellow) "Page %d, %d"
-            display_page_num
-            display_line_num
-          ::
-          I.strf ": "
-          ::
-          words
-        | `None ->
-          words
+        | `Page_num_only -> (
+            I.hcat
+              [ I.strf ~attr:A.(fg lightyellow) "Page %d" display_page_num
+              ; I.strf ": " ]
+          )
+        | `Line_num_only -> (
+            I.hcat
+              [ I.strf ~attr:A.(fg lightyellow) "%d" display_line_num
+              ; I.strf ": " ]
+          )
+        | `Page_and_line_num -> (
+            I.hcat
+              [ I.strf ~attr:A.(fg lightyellow) "Page %d, %d"
+                  display_page_num
+                  display_line_num
+              ; I.strf ": " ]
+          )
+        | `None -> (
+            I.strf ""
+          )
       in
-      I.hcat content
+      let content_width = max 1 (width - I.width left_column_label) in
+      let content_lines : Notty.image list list =
+        List.fold_left
+          (fun ((cur_len, acc) : int * Notty.image list list) word ->
+             let word_len = I.width word in
+             let new_len = cur_len + word_len in
+             match acc with
+             | [] -> (new_len, [ [ word ] ])
+             | line :: rest -> (
+                 if new_len > content_width then (
+                   (word_len, [ word ] :: acc)
+                 ) else (
+                   (new_len, (word :: line) :: rest)
+                 )
+               )
+          )
+          (0, [])
+          words
+        |> snd
+        |> List.map List.rev
+      in
+      let content =
+        content_lines
+        |> List.map I.hcat
+        |> I.vcat
+      in
+      I.hcat [ left_column_label; content ]
     )
   |> I.vcat
 
 let content_snippet
     ?(search_result : Search_result.t option)
+    ~(width : int)
     ~(height : int)
     (index : Index.t)
   : Notty.image =
@@ -137,7 +167,7 @@ let content_snippet
         ~end_inc_global_line_num:(min max_line_num height)
         index
     in
-    render_grid ~render_mode:`None grid index
+    render_grid ~render_mode:`None ~width grid index
   | Some search_result ->
     let (relevant_start_line, relevant_end_inc_line) =
       start_and_end_inc_global_line_num_of_search_result index search_result
@@ -152,12 +182,13 @@ let content_snippet
         index
     in
     color_word_image_grid grid index search_result;
-    render_grid ~render_mode:`None grid index
+    render_grid ~render_mode:`None ~width grid index
 
 let search_results
     ~render_mode
     ~start
     ~end_exc
+    ~width
     (index : Index.t)
     (results : Search_result.t array)
   : Notty.image list =
@@ -181,7 +212,7 @@ let search_results
           index
       in
       color_word_image_grid grid index search_result;
-      let img = render_grid ~render_mode grid index in
+      let img = render_grid ~render_mode ~width grid index in
       if !Params.debug then (
         let score = Search_result.score search_result in
         I.strf "(Score: %f)" score

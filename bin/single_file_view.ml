@@ -59,11 +59,14 @@ module Top_pane = struct
     let$* search_result_selected =
       Lwd.get Ui_base.Vars.Single_file.index_of_search_result_selected
     in
+    let (term_width, _term_height) = Notty_unix.Term.size (Ui_base.term ()) in
     Nottui_widgets.v_pane
       (Ui_base.Content_view.main
+         ~width:term_width
          ~document_info
          ~search_result_selected)
       (Ui_base.Search_result_list.main
+         ~width:term_width
          ~document_info
          ~index_of_search_result_selected:Ui_base.Vars.Single_file.index_of_search_result_selected)
 end
