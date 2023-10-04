@@ -1,52 +1,52 @@
 open Docfd_lib
 
-type key = string option
+type key = string
 
 type value = Document.t * Search_result.t array
 
 type t = {
-  all_documents : Document.t String_option_map.t;
-  filtered_documents : Document.t String_option_map.t;
+  all_documents : Document.t String_map.t;
+  filtered_documents : Document.t String_map.t;
   content_reqs : Content_req_exp.t;
   search_phrase : Search_phrase.t;
-  search_results : Search_result.t array String_option_map.t;
+  search_results : Search_result.t array String_map.t;
 }
 
 let size (t : t) =
-  String_option_map.cardinal t.all_documents
+  String_map.cardinal t.all_documents
 
 let empty : t =
   {
-    all_documents = String_option_map.empty;
-    filtered_documents = String_option_map.empty;
+    all_documents = String_map.empty;
+    filtered_documents = String_map.empty;
     content_reqs = Content_req_exp.empty;
     search_phrase = Search_phrase.empty;
-    search_results = String_option_map.empty;
+    search_results = String_map.empty;
   }
 
 let search_phrase (t : t) = t.search_phrase
 
 let single_out ~path (t : t) =
-  match String_option_map.find_opt path t.filtered_documents with
+  match String_map.find_opt path t.filtered_documents with
   | None -> None
   | Some doc ->
-    let search_results = String_option_map.find path t.search_results in
-    let all_documents = String_option_map.(add path doc empty) in
+    let search_results = String_map.find path t.search_results in
+    let all_documents = String_map.(add path doc empty) in
     Some
       {
         all_documents;
         filtered_documents = all_documents;
         content_reqs = t.content_reqs;
         search_phrase = t.search_phrase;
-        search_results = String_option_map.(add path search_results empty);
+        search_results = String_map.(add path search_results empty);
       }
 
 let min_binding (t : t) =
-  match String_option_map.min_binding_opt t.all_documents with
+  match String_map.min_binding_opt t.all_documents with
   | None -> None
   | Some (path, doc) -> (
       let search_results =
-        String_option_map.find path t.search_results
+        String_map.find path t.search_results
       in
       Some (path, (doc, search_results))
     )
@@ -66,18 +66,18 @@ let update_content_reqs
         Eio.Fiber.first
           (fun () ->
              Stop_signal.await stop_signal;
-             String_option_map.empty
+             String_map.empty
           )
           (fun () ->
              t.all_documents
-             |> String_option_map.to_list
+             |> String_map.to_list
              |> Task_pool.filter_map_list (fun (path, doc) ->
                  if Index.fulfills_content_reqs content_reqs doc.Document.index then
                    Some (path, doc)
                  else
                    None
                )
-             |> String_option_map.of_list
+             |> String_map.of_list
           )
       )
     in
@@ -85,15 +85,15 @@ let update_content_reqs
       Eio.Fiber.first
         (fun () ->
            Stop_signal.await stop_signal;
-           String_option_map.empty
+           String_map.empty
         )
         (fun () ->
            filtered_documents
-           |> String_option_map.to_list
+           |> String_map.to_list
            |> Task_pool.map_list (fun (path, doc) ->
                (path, Index.search t.search_phrase doc.Document.index)
              )
-           |> String_option_map.of_list
+           |> String_map.of_list
         )
     in
     { t with
@@ -111,15 +111,15 @@ let update_search_phrase ~(stop_signal : Stop_signal.t) search_phrase (t : t) : 
       Eio.Fiber.first
         (fun () ->
            Stop_signal.await stop_signal;
-           String_option_map.empty
+           String_map.empty
         )
         (fun () ->
            t.filtered_documents
-           |> String_option_map.to_list
+           |> String_map.to_list
            |> Task_pool.map_list (fun (path, doc) ->
                (path, Index.search search_phrase doc.Document.index)
              )
-           |> String_option_map.of_list
+           |> String_map.of_list
         )
     in
     { t with
@@ -133,11 +133,11 @@ let add_document ~(stop_signal : Stop_signal.t) (doc : Document.t) (t : t) : t =
     Eio.Fiber.first
       (fun () ->
          Stop_signal.await stop_signal;
-         String_option_map.empty
+         String_map.empty
       )
       (fun () ->
          if Index.fulfills_content_reqs t.content_reqs doc.index then
-           String_option_map.add doc.path doc t.filtered_documents
+           String_map.add doc.path doc t.filtered_documents
          else
            t.filtered_documents
       )
@@ -146,10 +146,10 @@ let add_document ~(stop_signal : Stop_signal.t) (doc : Document.t) (t : t) : t =
     Eio.Fiber.first
       (fun () ->
          Stop_signal.await stop_signal;
-         String_option_map.empty
+         String_map.empty
       )
       (fun () ->
-         String_option_map.add
+         String_map.add
            doc.path
            (Index.search t.search_phrase doc.index)
            t.search_results
@@ -157,7 +157,7 @@ let add_document ~(stop_signal : Stop_signal.t) (doc : Document.t) (t : t) : t =
   in
   { t with
     all_documents =
-      String_option_map.add
+      String_map.add
         doc.path
         doc
         t.all_documents;
@@ -176,15 +176,15 @@ let of_seq (s : Document.t Seq.t) =
 let usable_documents (t : t) : (Document.t * Search_result.t array) array =
   if Search_phrase.is_empty t.search_phrase then (
     t.filtered_documents
-    |> String_option_map.to_seq
+    |> String_map.to_seq
     |> Seq.map (fun (_path, doc) -> (doc, [||]))
     |> Array.of_seq
   ) else (
     let arr =
       t.filtered_documents
-      |> String_option_map.to_seq
+      |> String_map.to_seq
       |> Seq.filter_map (fun (path, doc) ->
-          let search_results = String_option_map.find path t.search_results in
+          let search_results = String_map.find path t.search_results in
           if Array.length search_results = 0 then
             None
           else

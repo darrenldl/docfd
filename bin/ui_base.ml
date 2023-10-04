@@ -116,9 +116,11 @@ module Search_result_list = struct
     ) else (
       let (_term_width, term_height) = Notty_unix.Term.size (term ()) in
       let render_mode =
-        match document.path with
-        | Some path when Misc_utils.path_is_pdf path -> `Page_num_only
-        | _ -> `Line_num_only
+        if Misc_utils.path_is_pdf document.path then (
+          `Page_num_only
+        ) else (
+          `Line_num_only
+        )
       in
       let images =
         Content_and_search_result_render.search_results

@@ -2,7 +2,7 @@ open Docfd_lib
 
 type t
 
-type key = string option
+type key = string
 
 type value = Document.t * Search_result.t array
 
@@ -24,4 +24,4 @@ val usable_documents : t -> value array
 
 val min_binding : t -> (key * value) option
 
-val single_out : path:string option -> t -> t option
+val single_out : path:string -> t -> t option

@@ -36,20 +36,16 @@ let set_search_result_selected ~choice_count n =
   Lwd.set Vars.index_of_search_result_selected n
 
 let reload_document (doc : Document.t) =
-  match doc.path with
-  | None -> ()
-  | Some path -> (
-      match Document.of_path ~env:(Ui_base.eio_env ()) path with
-      | Ok doc -> (
-          reset_document_selected ();
-          let document_store =
-            Lwd.peek Ui_base.Vars.document_store
-            |> Document_store.add_document ~stop_signal:(Atomic.get Vars.stop_search_signal) doc
-          in
-          Lwd.set Ui_base.Vars.document_store document_store;
-        )
-      | Error _ -> ()
+  match Document.of_path ~env:(Ui_base.eio_env ()) doc.path with
+  | Ok doc -> (
+      reset_document_selected ();
+      let document_store =
+        Lwd.peek Ui_base.Vars.document_store
+        |> Document_store.add_document ~stop_signal:(Atomic.get Vars.stop_search_signal) doc
+      in
+      Lwd.set Ui_base.Vars.document_store document_store;
     )
+  | Error _ -> ()
 
 let reload_document_selected
     ~(document_info_s : Document_store.value array)
@@ -128,8 +124,7 @@ module Top_pane = struct
       let path_image =
         I.string A.(fg lightgreen) "@ "
         <|>
-        I.string A.empty
-          (Option.value ~default:Params.stdin_doc_path_placeholder doc.path);
+        I.string A.empty doc.path
       in
       let title =
         Option.value ~default:"" doc.title

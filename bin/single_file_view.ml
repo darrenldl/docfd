@@ -35,26 +35,22 @@ let update_search_phrase () =
   Lwd.set Ui_base.Vars.Single_file.document_store document_store
 
 let reload_document (doc : Document.t) : unit =
-  match doc.path with
-  | None -> ()
-  | Some path -> (
-      match Document.of_path ~env:(Ui_base.eio_env ()) path with
-      | Ok doc -> (
-          reset_search_result_selected ();
-          let stop_signal = Atomic.get Vars.stop_search_signal in
-          let global_document_store =
-            Lwd.peek Ui_base.Vars.document_store
-            |> Document_store.add_document ~stop_signal doc
-          in
-          Lwd.set Ui_base.Vars.document_store global_document_store;
-          let document_store =
-            Lwd.peek Ui_base.Vars.Single_file.document_store
-            |> Document_store.add_document ~stop_signal doc
-          in
-          Lwd.set Ui_base.Vars.Single_file.document_store document_store;
-        )
-      | Error _ -> ()
+  match Document.of_path ~env:(Ui_base.eio_env ()) doc.path with
+  | Ok doc -> (
+      reset_search_result_selected ();
+      let stop_signal = Atomic.get Vars.stop_search_signal in
+      let global_document_store =
+        Lwd.peek Ui_base.Vars.document_store
+        |> Document_store.add_document ~stop_signal doc
+      in
+      Lwd.set Ui_base.Vars.document_store global_document_store;
+      let document_store =
+        Lwd.peek Ui_base.Vars.Single_file.document_store
+        |> Document_store.add_document ~stop_signal doc
+      in
+      Lwd.set Ui_base.Vars.Single_file.document_store document_store;
     )
+  | Error _ -> ()
 
 module Top_pane = struct
   let main
@@ -77,18 +73,13 @@ module Bottom_pane = struct
       ~(document : Document.t)
       ~(input_mode : Ui_base.input_mode)
     =
-    let path =
-      match document.path with
-      | None -> Params.stdin_doc_path_placeholder
-      | Some s -> s
-    in
     let content =
       Notty.I.hcat
         [
           List.assoc input_mode Ui_base.Status_bar.input_mode_images;
           Ui_base.Status_bar.element_spacer;
           Notty.I.strf ~attr:Ui_base.Status_bar.attr
-            "Document: %s" path;
+            "Document: %s" document.path;
         ]
       |> Nottui.Ui.atom
     in

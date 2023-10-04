@@ -353,26 +353,22 @@ let run
             loop ()
           )
         | Open_file_and_search_result (doc, search_result) -> (
-            (match doc.path with
-             | None -> ()
-             | Some path ->
-               if Misc_utils.path_is_pdf path then (
-                 Proc_utils.run_in_background (Fmt.str "xdg-open %s" (Filename.quote path)) |> ignore;
-               ) else (
-                 let old_stats = Unix.stat path in
-                 open_text_path
-                   doc.index
-                   ~editor:!Params.text_editor
-                   ~path
-                   ~search_result;
-                 let new_stats = Unix.stat path in
-                 if Float.abs (new_stats.st_mtime -. old_stats.st_mtime) >= 0.000_001 then (
-                   (match Lwd.peek Ui_base.Vars.ui_mode with
-                    | Ui_single_file -> Single_file_view.reload_document doc
-                    | Ui_multi_file -> Multi_file_view.reload_document doc
-                   );
-                 );
-               )
+            if Misc_utils.path_is_pdf doc.path then (
+              Proc_utils.run_in_background (Fmt.str "xdg-open %s" (Filename.quote doc.path)) |> ignore;
+            ) else (
+              let old_stats = Unix.stat doc.path in
+              open_text_path
+                doc.index
+                ~editor:!Params.text_editor
+                ~path:doc.path
+                ~search_result;
+              let new_stats = Unix.stat doc.path in
+              if Float.abs (new_stats.st_mtime -. old_stats.st_mtime) >= Params.float_compare_margin then (
+                (match Lwd.peek Ui_base.Vars.ui_mode with
+                 | Ui_single_file -> Single_file_view.reload_document doc
+                 | Ui_multi_file -> Multi_file_view.reload_document doc
+                );
+              );
             );
             loop ()
           )

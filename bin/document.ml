@@ -2,14 +2,14 @@ open Result_syntax
 open Docfd_lib
 
 type t = {
-  path : string option;
+  path : string;
   title : string option;
   index : Index.t;
 }
 
-let make () : t =
+let make ~path : t =
   {
-    path = None;
+    path;
     title = None;
     index = Index.make ();
   }
@@ -25,12 +25,12 @@ type work_stage =
   | Title
   | Content
 
-let parse_lines (s : string Seq.t) : t =
+let parse_lines ~path (s : string Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
     | Content -> (
         let index = Index.of_lines s in
-        let empty = make () in
+        let empty = make ~path in
         {
           empty with
           title;
@@ -47,12 +47,12 @@ let parse_lines (s : string Seq.t) : t =
   in
   aux Title None s
 
-let parse_pages (s : string list Seq.t) : t =
+let parse_pages ~path (s : string list Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
     | Content -> (
         let index = Index.of_pages s in
-        let empty = make () in
+        let empty = make ~path in
         {
           empty with
           title;
@@ -102,8 +102,7 @@ let of_text_path ~env path : (t, string) result =
   try
     Eio.Path.(with_lines (fs / path))
       (fun lines ->
-         let document = parse_lines lines in
-         Ok { document with path = Some path }
+         Ok (parse_lines ~path lines)
       )
   with
   | _ -> Error (Printf.sprintf "Failed to read file: %s" path)
@@ -115,8 +114,7 @@ let of_pdf_path ~env path : (t, string) result =
     let cmd = [ "pdftotext"; "-f"; page_num_string; "-l"; page_num_string; path; "-" ] in
     match Proc_utils.run_return_stdout ~proc_mgr cmd with
     | None -> (
-        let document = parse_pages (acc |> List.rev |> List.to_seq) in
-        { document with path = Some path }
+        parse_pages ~path (acc |> List.rev |> List.to_seq)
       )
     | Some page -> (
         aux (page :: acc) (page_num + 1)
@@ -137,7 +135,7 @@ let of_path ~(env : Eio_unix.Stdenv.base) path : (t, string) result =
         else
           Some (Index.line_of_global_line_num 0 index)
       in
-      Ok { path = Some path; title; index }
+      Ok { path; title; index }
     )
   | None -> (
       let+ t =
