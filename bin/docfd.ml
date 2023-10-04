@@ -379,6 +379,15 @@ let run
       )
   in
   loop ();
+  (match init_document_src with
+   | Stdin tmp_file -> (
+       try
+         Sys.remove tmp_file
+       with
+       | _ -> ()
+     )
+   | Files _ -> ()
+  );
   Notty_unix.Term.release term
 
 let files_arg = Arg.(value & pos_all string [ "." ] & info [])
