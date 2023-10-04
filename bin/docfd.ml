@@ -32,6 +32,18 @@ let exts_arg =
     & info [ exts_arg_name ] ~doc ~docv:"EXTS"
   )
 
+let add_exts_arg_name = "add-exts"
+
+let add_exts_arg =
+  let doc =
+    "Additional file extensions to use, comma separated."
+  in
+  Arg.(
+    value
+    & opt string ""
+    & info [ add_exts_arg_name ] ~doc ~docv:"EXTS"
+  )
+
 let max_fuzzy_edit_dist_arg_name = "max-fuzzy-edit"
 
 let max_fuzzy_edit_dist_arg =
@@ -108,7 +120,7 @@ let list_files_recursively (dir : string) : string list =
   aux 0 dir;
   !l
 
-let open_text_path index ~editor ~path ~search_result =
+let open_text_path index document_src ~editor ~path ~search_result =
   let path = Filename.quote path in
   let fallback = Fmt.str "%s %s" editor path in
   let cmd =
@@ -139,6 +151,11 @@ let open_text_path index ~editor ~path ~search_result =
           fallback
       )
   in
+  let cmd =
+    match document_src with
+    | Ui_base.Stdin _ -> Fmt.str "</dev/tty %s" cmd
+    | _ -> cmd
+  in
   Sys.command cmd |> ignore
 
 let run
@@ -149,6 +166,7 @@ let run
     (max_word_search_dist : int)
     (index_chunk_word_count : int)
     (exts : string)
+    (additional_exts : string)
     (files : string list)
   =
   if max_depth < 1 then (
@@ -173,7 +191,8 @@ let run
   Params.max_word_search_distance := max_word_search_dist;
   Params.index_chunk_word_count := index_chunk_word_count;
   let recognized_exts =
-    String.split_on_char ',' exts
+    Fmt.str "%s,%s" exts additional_exts
+    |> String.split_on_char ','
     |> List.map (fun s ->
         s
         |> Misc_utils.remove_leading_dots
@@ -359,6 +378,7 @@ let run
               let old_stats = Unix.stat doc.path in
               open_text_path
                 doc.index
+                init_document_src
                 ~editor:!Params.text_editor
                 ~path:doc.path
                 ~search_result;
@@ -399,6 +419,7 @@ let cmd ~env =
           $ max_word_search_dist_arg
           $ index_chunk_word_count_arg
           $ exts_arg
+          $ add_exts_arg
           $ files_arg)
 
 let () = Eio_main.run (fun env ->
