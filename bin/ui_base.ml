@@ -37,6 +37,8 @@ module Vars = struct
 
   let term : Notty_unix.Term.t option ref = ref None
 
+  let term_width_height : (int * int) Lwd.var = Lwd.var (0, 0)
+
   let document_store : Document_store.t Lwd.var =
     Lwd.var Document_store.empty
 
@@ -55,8 +57,8 @@ let eio_env () =
 let term () =
   Option.get !Vars.term
 
-let full_term_sized_background () =
-  let (term_width, term_height) = Notty_unix.Term.size (term ()) in
+let full_term_sized_background =
+  let$ (term_width, term_height) = Lwd.get Vars.term_width_height in
   Notty.I.void term_width term_height
   |> Nottui.Ui.atom
 
@@ -67,7 +69,7 @@ module Content_view = struct
       ~(search_result_selected : int)
     : Nottui.ui Lwd.t =
     let (document, search_results) = document_info in
-    let (_term_width, term_height) = Notty_unix.Term.size (term ()) in
+    let$ (_term_width, term_height) = Lwd.get Vars.term_width_height in
     let height = term_height / 2 in
     let search_result =
       if Array.length search_results = 0 then
@@ -82,7 +84,7 @@ module Content_view = struct
         ~width
         document.index
     in
-    Lwd.return (Nottui.Ui.atom content)
+    Nottui.Ui.atom content
 end
 
 let mouse_handler
@@ -117,7 +119,7 @@ module Search_result_list = struct
     if result_count = 0 then (
       Lwd.return Nottui.Ui.empty
     ) else (
-      let (_term_width, term_height) = Notty_unix.Term.size (term ()) in
+      let$* (_term_width, term_height) = Lwd.get Vars.term_width_height in
       let render_mode =
         if Misc_utils.path_is_pdf document.path then (
           `Page_num_only
@@ -141,13 +143,13 @@ module Search_result_list = struct
           )
         |> Nottui.Ui.vcat
       in
-      Nottui.Ui.join_z (full_term_sized_background ()) pane
+      let$ background = full_term_sized_background in
+      Nottui.Ui.join_z background pane
       |> Nottui.Ui.mouse_area
         (mouse_handler
            ~choice_count:result_count
            ~current_choice:index_of_search_result_selected
         )
-      |> Lwd.return
     )
 end
 
@@ -158,8 +160,8 @@ module Status_bar = struct
 
   let attr = Notty.A.(bg bg_color ++ fg fg_color)
 
-  let background_bar () =
-    let (term_width, _term_height) = Notty_unix.Term.size (term ()) in
+  let background_bar : Nottui.Ui.t Lwd.t =
+    let$ (term_width, _term_height) = Lwd.get Vars.term_width_height in
     Notty.I.char Notty.A.(bg bg_color) ' ' term_width 1
     |> Nottui.Ui.atom
 
@@ -334,6 +336,8 @@ module Search_bar = struct
       ]
 end
 
+let term' : unit -> Notty_unix.Term.t = term
+
 let ui_loop ~quit ~term root =
   let renderer = Nottui.Renderer.make () in
   let root =
@@ -350,6 +354,11 @@ let ui_loop ~quit ~term root =
   in
   let rec loop () =
     if not (Lwd.peek quit) then (
+      let (term_width, term_height) = Notty_unix.Term.size (term' ()) in
+      let (prev_term_width, prev_term_height) = Lwd.peek Vars.term_width_height in
+      if term_width <> prev_term_width || term_height <> prev_term_height then (
+        Lwd.set Vars.term_width_height (term_width, term_height)
+      );
       Nottui.Ui_loop.step
         ~process_event:true
         ~timeout:0.05

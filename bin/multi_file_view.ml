@@ -158,11 +158,11 @@ module Top_pane = struct
         ~(document_selected : int)
       : Nottui.ui Lwd.t =
       let document_count = Array.length document_info_s in
-      let pane =
+      let$* pane =
         if document_count = 0 then (
-          Nottui.Ui.empty
+          Lwd.return Nottui.Ui.empty
         ) else (
-          let (_term_width, term_height) = Notty_unix.Term.size (Ui_base.term ()) in
+          let$ (_term_width, term_height) = Lwd.get Ui_base.Vars.term_width_height in
           CCInt.range'
             document_selected
             (min (document_selected + term_height / 2) document_count)
@@ -175,12 +175,12 @@ module Top_pane = struct
           |> Nottui.Ui.vcat
         )
       in
-      Nottui.Ui.join_z (Ui_base.full_term_sized_background ()) pane
+      let$ background = Ui_base.full_term_sized_background in
+      Nottui.Ui.join_z background pane
       |> Nottui.Ui.mouse_area
         (Ui_base.mouse_handler
            ~choice_count:document_count
            ~current_choice:Vars.index_of_document_selected)
-      |> Lwd.return
   end
 
   module Right_pane = struct
@@ -193,7 +193,7 @@ module Top_pane = struct
       else (
         let$* search_result_selected = Lwd.get Vars.index_of_search_result_selected in
         let document_info = document_info_s.(document_selected) in
-        let (term_width, _term_height) = Notty_unix.Term.size (Ui_base.term ()) in
+        let$* (term_width, _term_height) = Lwd.get Ui_base.Vars.term_width_height in
         Nottui_widgets.v_pane
           (Ui_base.Content_view.main
              ~width:term_width
@@ -219,8 +219,8 @@ module Bottom_pane = struct
   let status_bar
       ~(document_info_s : Document_store.value array)
       ~(input_mode : Ui_base.input_mode)
-    =
-    let$ index_of_document_selected = Lwd.get Vars.index_of_document_selected in
+    : Nottui.Ui.t Lwd.t =
+    let$* index_of_document_selected = Lwd.get Vars.index_of_document_selected in
     let document_count = Array.length document_info_s in
     let input_mode_image =
       List.assoc input_mode Ui_base.Status_bar.input_mode_images
@@ -250,7 +250,8 @@ module Bottom_pane = struct
         |> Nottui.Ui.atom
       )
     in
-    Nottui.Ui.join_z (Ui_base.Status_bar.background_bar ()) content
+    let$ bar = Ui_base.Status_bar.background_bar in
+    Nottui.Ui.join_z bar content
 
   module Key_binding_info = struct
     let grid_contents : Ui_base.Key_binding_info.grid_contents =

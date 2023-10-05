@@ -59,7 +59,7 @@ module Top_pane = struct
     let$* search_result_selected =
       Lwd.get Ui_base.Vars.Single_file.index_of_search_result_selected
     in
-    let (term_width, _term_height) = Notty_unix.Term.size (Ui_base.term ()) in
+    let$* (term_width, _term_height) = Lwd.get Ui_base.Vars.term_width_height in
     Nottui_widgets.v_pane
       (Ui_base.Content_view.main
          ~width:term_width
@@ -86,10 +86,8 @@ module Bottom_pane = struct
         ]
       |> Nottui.Ui.atom
     in
-    Nottui.Ui.join_z
-      (Ui_base.Status_bar.background_bar ())
-      content
-    |> Lwd.return
+    let$ bar = Ui_base.Status_bar.background_bar in
+    Nottui.Ui.join_z bar content
 
   module Key_binding_info = struct
     let grid_contents : Ui_base.Key_binding_info.grid_contents =
