@@ -7,6 +7,8 @@
 
 - Added `--add-exts` argument for additional file extensions
 
+- Added real-time response to terminal size
+
 ## 1.5.3
 
 - Updated key binding info pane of multi-file view
