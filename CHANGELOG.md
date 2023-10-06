@@ -7,7 +7,7 @@
 
 - Added `--add-exts` argument for additional file extensions
 
-- Added real-time response to terminal size
+- Added real-time response to terminal size changes
 
 ## 1.5.3
 
