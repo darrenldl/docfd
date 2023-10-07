@@ -1,6 +1,8 @@
 # Docfd
 TUI multiline fuzzy document finder
 
+![](demo-vhs-gifs/repo.gif)
+
 ## Installation
 
 Statically linked binaries are available via
