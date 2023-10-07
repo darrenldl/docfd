@@ -3,7 +3,7 @@ TUI multiline fuzzy document finder
 
 ![](demo-vhs-gifs/repo.gif)
 
-Demo gif(s) are made with [vhs](https://github.com/charmbracelet/vhs).
+Demo gifs are made with [vhs](https://github.com/charmbracelet/vhs).
 
 ## Installation
 
