@@ -17,7 +17,7 @@ Type "k"
 Sleep 1s
 
 Type "/"
-Type "Fuzy serch"
+Type "Fuzy search"
 Enter
 Sleep 1s
 
