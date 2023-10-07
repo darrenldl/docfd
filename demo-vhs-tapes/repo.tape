@@ -13,10 +13,6 @@ Enter
 
 Type "j"
 Sleep 1s
-Type "j"
-Sleep 1s
-Type "k"
-Sleep 1s
 Type "k"
 Sleep 1s
 
