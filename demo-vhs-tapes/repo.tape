@@ -4,7 +4,7 @@ Set Framerate 10
 
 Set Width  1024
 Set Height  768
-Set FontSize 20
+Set FontSize 15
 
 Set TypingSpeed 100ms
 
@@ -17,7 +17,7 @@ Type "k"
 Sleep 1s
 
 Type "/"
-Type "fuzzy search"
+Type "Fuzy serch"
 Enter
 Sleep 1s
 
