@@ -195,8 +195,8 @@ module Top_pane = struct
         let document_info = document_info_s.(document_selected) in
         let$* (term_width, _term_height) = Lwd.get Ui_base.Vars.term_width_height in
         let width =
-          (* Deducting 1 for the middle pane separator bar *)
-          term_width / 2 - 1
+          (* Minus 1 for pane separator bar *)
+          term_width / 2 - 1 - Params.line_wrap_underestimate_offset
         in
         Nottui_widgets.v_pane
           (Ui_base.Content_view.main

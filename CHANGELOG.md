@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.3
+
+- Further underestimate space available for the purpose of line wrapping
+
 ## 1.6.2
 
 - Fixed line wrapping

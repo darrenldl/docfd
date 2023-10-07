@@ -23,3 +23,5 @@ let index_dir = ref ""
 let hash_chunk_size = 4096
 
 let text_editor = ref ""
+
+let line_wrap_underestimate_offset = 2
