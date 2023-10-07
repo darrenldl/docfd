@@ -194,7 +194,10 @@ module Top_pane = struct
         let$* search_result_selected = Lwd.get Vars.index_of_search_result_selected in
         let document_info = document_info_s.(document_selected) in
         let$* (term_width, _term_height) = Lwd.get Ui_base.Vars.term_width_height in
-        let width = term_width / 2 in
+        let width =
+          (* Deducting 1 for the middle pane separator bar *)
+          term_width / 2 - 1
+        in
         Nottui_widgets.v_pane
           (Ui_base.Content_view.main
              ~width
