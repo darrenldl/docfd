@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.1
+
+- Fixed line wrapping
+
 ## 1.6.0
 
 - Docfd now saves stdin into a tmp file before processing
