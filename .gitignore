@@ -14,3 +14,4 @@ test*.pdf
 *.tar.gz
 /statically-linked/
 perf.data*
+*.pdf
