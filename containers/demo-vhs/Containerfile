@@ -1,0 +1,3 @@
+FROM ghcr.io/charmbracelet/vhs
+
+RUN apt-get install -y poppler-utils
