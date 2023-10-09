@@ -13,3 +13,5 @@ let index_chunk_word_count = ref default_index_chunk_word_count
 let search_word_automaton_cache_size = 200
 
 let float_compare_margin = 0.000_001
+
+let search_chunk_size = 50

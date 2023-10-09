@@ -71,7 +71,7 @@ let update_content_reqs
           (fun () ->
              t.all_documents
              |> String_map.to_list
-             |> Task_pool.filter_map_list (fun (path, doc) ->
+             |> Eio.Fiber.List.filter_map (fun (path, doc) ->
                  if Index.fulfills_content_reqs content_reqs doc.Document.index then
                    Some (path, doc)
                  else
@@ -90,7 +90,7 @@ let update_content_reqs
         (fun () ->
            filtered_documents
            |> String_map.to_list
-           |> Task_pool.map_list (fun (path, doc) ->
+           |> Eio.Fiber.List.map (fun (path, doc) ->
                (path, Index.search t.search_phrase doc.Document.index)
              )
            |> String_map.of_list
@@ -116,7 +116,7 @@ let update_search_phrase ~(stop_signal : Stop_signal.t) search_phrase (t : t) : 
         (fun () ->
            t.filtered_documents
            |> String_map.to_list
-           |> Task_pool.map_list (fun (path, doc) ->
+           |> Eio.Fiber.List.map (fun (path, doc) ->
                (path, Index.search search_phrase doc.Document.index)
              )
            |> String_map.of_list
