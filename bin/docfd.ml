@@ -221,7 +221,7 @@ let run
   );
   (match Sys.getenv_opt "HOME" with
    | None -> (
-       Fmt.pr "Env variable HOME is not set\n";
+       Fmt.pr "Environment variable HOME is not set\n";
        exit 1
      )
    | Some home -> (

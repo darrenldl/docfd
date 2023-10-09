@@ -1,10 +1,12 @@
 # Changelog
 
-## 1.6.4
+## 1.7.0
 
 - Added back parallel search
 
 - General optimizations
+
+- Added index file rotation
 
 ## 1.6.3
 
