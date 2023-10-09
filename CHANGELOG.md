@@ -2,7 +2,9 @@
 
 ## 1.6.4
 
-- Optimizations
+- Added back parallel search
+
+- General optimizations
 
 ## 1.6.3
 
