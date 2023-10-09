@@ -88,22 +88,23 @@ let clean_up_index_dir ~index_dir =
     |> List.filter (fun x ->
         not (Sys.is_directory x) && Filename.extension x = Params.index_file_ext)
   in
-  let files_to_keep =
+  let all_files_arr =
     all_files
     |> List.map (fun x ->
         let stat = Unix.stat x in
         let modification_time = stat.st_mtime in
         (x, modification_time)
       )
-    |> List.sort_uniq (fun (_x1, x2) (_y1, y2) -> Float.compare y2 x2)
-    |> List.map fst
-    |> CCList.take Params.max_index_file_count
+    |> Array.of_list
   in
-  List.iter (fun x ->
-      if not (List.mem x files_to_keep) then (
-        Sys.remove x
-      )
-    ) all_files
+  let file_count = Array.length all_files_arr in
+  if file_count > Params.max_index_file_count then (
+    Array.sort (fun (_x1, x2) (_y1, y2) -> Float.compare y2 x2) all_files_arr;
+    for i=Params.max_index_file_count to file_count - 1 do
+      let path, _mtime = all_files_arr.(i) in
+      Sys.remove path
+    done
+  )
 
 let save_index ~env ~hash index : (unit, string) result =
   let fs = Eio.Stdenv.fs env in
