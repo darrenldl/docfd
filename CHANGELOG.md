@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.4
+
+- Optimizations
+
 ## 1.6.3
 
 - Further underestimate space available for the purpose of line wrapping
