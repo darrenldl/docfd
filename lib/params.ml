@@ -14,4 +14,4 @@ let search_word_automaton_cache_size = 200
 
 let float_compare_margin = 0.000_001
 
-let search_chunk_size = 50
+let search_chunk_size = 200
