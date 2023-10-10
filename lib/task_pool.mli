@@ -1,3 +1,5 @@
+val size : int
+
 val run : (unit -> 'a) -> 'a
 
 val map_list : ('a -> 'b) -> 'a list -> 'b list

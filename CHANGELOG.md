@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.7.1
+
+- Parallelization fine-tuning
+
 ## 1.7.0
 
 - Added back parallel search

@@ -71,11 +71,12 @@ let update_content_reqs
           (fun () ->
              t.all_documents
              |> String_map.to_list
-             |> Eio.Fiber.List.filter_map (fun (path, doc) ->
-                 if Index.fulfills_content_reqs content_reqs doc.Document.index then
-                   Some (path, doc)
-                 else
-                   None
+             |> Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size
+               (fun (path, doc) ->
+                  if Index.fulfills_content_reqs content_reqs doc.Document.index then
+                    Some (path, doc)
+                  else
+                    None
                )
              |> String_map.of_list
           )
@@ -90,8 +91,9 @@ let update_content_reqs
         (fun () ->
            filtered_documents
            |> String_map.to_list
-           |> Eio.Fiber.List.map (fun (path, doc) ->
-               (path, Index.search t.search_phrase doc.Document.index)
+           |> Eio.Fiber.List.map ~max_fibers:Task_pool.size
+             (fun (path, doc) ->
+                (path, Index.search t.search_phrase doc.Document.index)
              )
            |> String_map.of_list
         )
@@ -116,8 +118,9 @@ let update_search_phrase ~(stop_signal : Stop_signal.t) search_phrase (t : t) : 
         (fun () ->
            t.filtered_documents
            |> String_map.to_list
-           |> Eio.Fiber.List.map (fun (path, doc) ->
-               (path, Index.search search_phrase doc.Document.index)
+           |> Eio.Fiber.List.map ~max_fibers:Task_pool.size
+             (fun (path, doc) ->
+                (path, Index.search search_phrase doc.Document.index)
              )
            |> String_map.of_list
         )
