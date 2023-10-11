@@ -79,12 +79,12 @@ type render_mode = [
 
 let render_grid
     ~(render_mode : render_mode)
+    ~target_row
     ~width
     ?(height : int option)
     (grid : word_image_grid)
     (index : Index.t)
   : Notty.image =
-  let mid_row = Array.length grid.data / 2 in
   let images =
     grid.data
     |> Array.to_list
@@ -165,9 +165,9 @@ let render_grid
   | Some height -> (
       let focal_point =
         CCList.foldi (fun focal_point i img ->
-            if i < mid_row then (
+            if i < target_row then (
               focal_point + I.height img
-            ) else if i = mid_row then (
+            ) else if i = target_row then (
               focal_point + (I.height img / 2)
             ) else (
               focal_point
@@ -180,7 +180,7 @@ let render_grid
       if img_height <= height then (
         img
       ) else (
-        let target_region_start = max 0 (focal_point - (height / 2)) in
+        let target_region_start = max 0 (focal_point - ((height / 2) - 1)) in
         let target_region_end_inc = target_region_start + height in
         I.vcrop target_region_start (img_height - target_region_end_inc) img
       )
@@ -205,7 +205,7 @@ let content_snippet
           ~end_inc_global_line_num:(min max_line_num height)
           index
       in
-      render_grid ~render_mode:`None ~width ~height grid index
+      render_grid ~render_mode:`None ~target_row:0 ~width ~height grid index
     )
   | Some search_result -> (
       let (relevant_start_line, relevant_end_inc_line) =
@@ -221,7 +221,13 @@ let content_snippet
           index
       in
       color_word_image_grid grid index search_result;
-      render_grid ~render_mode:`None ~width ~height grid index
+      render_grid
+        ~render_mode:`None
+        ~target_row:(relevant_start_line - start_global_line_num)
+        ~width
+        ~height
+        grid
+        index
     )
 
 let search_results
@@ -252,7 +258,7 @@ let search_results
           index
       in
       color_word_image_grid grid index search_result;
-      let img = render_grid ~render_mode ~width grid index in
+      let img = render_grid ~render_mode ~target_row:0 ~width grid index in
       if !Params.debug then (
         let score = Search_result.score search_result in
         I.strf "(Score: %f)" score

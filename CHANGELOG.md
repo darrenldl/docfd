@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.7.2
+
+- Fixed content pane sometimes not showing all the lines
+  depending on terminal size and length of lines
+
 ## 1.7.1
 
 - Parallelization fine-tuning
