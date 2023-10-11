@@ -5,7 +5,7 @@
 - Fixed content pane sometimes not showing all the lines
   depending on terminal size and width of lines
 
-- Adjusted chunk size for parallel search
+- Made chunk size dynamic for parallel search
 
 ## 1.7.1
 
