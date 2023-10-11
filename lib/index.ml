@@ -497,7 +497,7 @@ module Search = struct
                 )
             in
             let search_chunk_size =
-              possible_start_count / Task_pool.size
+              max 10 (possible_start_count / Task_pool.size)
             in
             possible_starts
             |> CCList.chunks search_chunk_size
