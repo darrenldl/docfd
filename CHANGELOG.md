@@ -5,6 +5,8 @@
 - Fixed content pane sometimes not showing all the lines
   depending on terminal size and length of lines
 
+- Adjusted chunk size for parallel search
+
 ## 1.7.1
 
 - Parallelization fine-tuning

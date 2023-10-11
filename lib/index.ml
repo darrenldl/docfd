@@ -496,8 +496,11 @@ module Search = struct
                   (Params.search_result_max_total + possible_start_count - 1) / possible_start_count
                 )
             in
+            let search_chunk_size =
+              possible_start_count / Task_pool.size
+            in
             possible_starts
-            |> CCList.chunks Params.search_chunk_size
+            |> CCList.chunks search_chunk_size
             |> Task_pool.map_list (fun (pos_list : int list) : Search_result_heap.t list ->
                 pos_list
                 |> List.map (fun pos ->
