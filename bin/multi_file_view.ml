@@ -179,8 +179,20 @@ module Top_pane = struct
       Nottui.Ui.join_z background pane
       |> Nottui.Ui.mouse_area
         (Ui_base.mouse_handler
-           ~choice_count:document_count
-           ~current_choice:Vars.index_of_document_selected)
+           ~f:(fun direction ->
+               let offset =
+                 match direction with
+                 | `Up -> -1
+                 | `Down -> 1
+               in
+               let document_current_choice =
+                 Lwd.peek Vars.index_of_document_selected
+               in
+               set_document_selected
+                 ~choice_count:document_count
+                 (document_current_choice + offset);
+             )
+        )
   end
 
   module Right_pane = struct

@@ -88,21 +88,19 @@ module Content_view = struct
 end
 
 let mouse_handler
-    ~(choice_count : int)
-    ~(current_choice : int Lwd.var)
+    ~(f : [ `Up | `Down ] -> unit)
     ~x ~y
     (button : Notty.Unescape.button)
   =
   let _ = x in
   let _ = y in
-  let n = Lwd.peek current_choice in
   match button with
   | `Scroll `Down -> (
-      Lwd.set current_choice (Misc_utils.bound_selection ~choice_count (n + 1));
+      f `Down;
       `Handled
     )
   | `Scroll `Up -> (
-      Lwd.set current_choice (Misc_utils.bound_selection ~choice_count (n - 1));
+      f `Up;
       `Handled
     )
   | _ -> `Unhandled
@@ -147,8 +145,16 @@ module Search_result_list = struct
       Nottui.Ui.join_z background pane
       |> Nottui.Ui.mouse_area
         (mouse_handler
-           ~choice_count:result_count
-           ~current_choice:index_of_search_result_selected
+           ~f:(fun direction ->
+               let n = Lwd.peek index_of_search_result_selected in
+               let offset =
+                 match direction with
+                 | `Up -> -1
+                 | `Down -> 1
+               in
+               Lwd.set index_of_search_result_selected
+                 (Misc_utils.bound_selection ~choice_count:result_count (n + offset))
+             )
         )
     )
 end
