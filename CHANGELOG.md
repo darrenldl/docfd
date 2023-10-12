@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.7.3
+
+- Fixed crash from using mouse scrolling in multi-file view
+
+    - The mouse handler did not reset the search result selected
+      when selecting a different document
+    - This leads to out of bound access if the newly selected document
+      does not have enough search results
+
 ## 1.7.2
 
 - Fixed content pane sometimes not showing all the lines
