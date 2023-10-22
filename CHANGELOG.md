@@ -8,10 +8,14 @@
 - Removed pointless index saving when number of documents exceeds
   index cache limit
 
-- Added configuration file support
-
 - Moved index cache to `XDG_CACHE_HOME/docfd`, which overall
   defaults to `$HOME/.cache/docfd`
+
+- Added cache related arguments
+
+    - `--cache-dir`
+    - `--cache-size`
+    - `--no-cache`
 
 ## 1.7.3
 
