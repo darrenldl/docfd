@@ -79,12 +79,12 @@ let refresh_modification_time ~path =
   let time = Unix.time () in
   Unix.utimes path time time
 
-let clean_up_index_dir ~index_dir =
+let clean_up_cache_dir ~cache_dir =
   let all_files =
-    Sys.readdir index_dir
+    Sys.readdir cache_dir
     |> Array.to_list
     |> List.map (fun x ->
-        Filename.concat index_dir x)
+        Filename.concat cache_dir x)
     |> List.filter (fun x ->
         not (Sys.is_directory x) && Filename.extension x = Params.index_file_ext)
   in
@@ -98,45 +98,50 @@ let clean_up_index_dir ~index_dir =
     |> Array.of_list
   in
   let file_count = Array.length all_files_arr in
-  if file_count > Params.max_index_file_count then (
+  if file_count > !Params.cache_size then (
     Array.sort (fun (_x1, x2) (_y1, y2) -> Float.compare y2 x2) all_files_arr;
-    for i=Params.max_index_file_count to file_count - 1 do
+    for i = !Params.cache_size to file_count - 1 do
       let path, _mtime = all_files_arr.(i) in
       Sys.remove path
     done
   )
 
 let save_index ~env ~hash index : (unit, string) result =
-  let fs = Eio.Stdenv.fs env in
-  (try
-     Eio.Path.(mkdir ~perm:0o755 (fs / !Params.index_dir));
-   with _ -> ());
-  let path =
-    Eio.Path.(fs /
-              Filename.concat !Params.index_dir (Fmt.str "%s%s" hash Params.index_file_ext))
-  in
-  let json = Index.to_json index in
-  try
-    Eio.Path.save ~create:(`Or_truncate 0o644) path (Yojson.Safe.to_string json);
-    clean_up_index_dir ~index_dir:!Params.index_dir;
-    Ok ()
-  with
-  | _ -> Error (Fmt.str "Failed to save index to %s" hash)
+  match !Params.cache_dir with
+  | None -> Ok ()
+  | Some cache_dir -> (
+      let fs = Eio.Stdenv.fs env in
+      let path =
+        Eio.Path.(fs /
+                  Filename.concat cache_dir (Fmt.str "%s%s" hash Params.index_file_ext))
+      in
+      let json = Index.to_json index in
+      try
+        Eio.Path.save ~create:(`Or_truncate 0o644) path (Yojson.Safe.to_string json);
+        clean_up_cache_dir ~cache_dir;
+        Ok ()
+      with
+      | _ -> Error (Fmt.str "Failed to save index to %s" hash)
+    )
 
 let find_index ~env ~hash : Index.t option =
-  let fs = Eio.Stdenv.fs env in
-  try
-    let path_str =
-      Filename.concat !Params.index_dir (Fmt.str "%s.index" hash)
-    in
-    let path =
-      Eio.Path.(fs / path_str)
-    in
-    refresh_modification_time ~path:path_str;
-    let json = Yojson.Safe.from_string (Eio.Path.load path) in
-    Index.of_json json
-  with
-  | _ -> None
+  match !Params.cache_dir with
+  | None -> None
+  | Some cache_dir -> (
+      let fs = Eio.Stdenv.fs env in
+      try
+        let path_str =
+          Filename.concat cache_dir (Fmt.str "%s.index" hash)
+        in
+        let path =
+          Eio.Path.(fs / path_str)
+        in
+        refresh_modification_time ~path:path_str;
+        let json = Yojson.Safe.from_string (Eio.Path.load path) in
+        Index.of_json json
+      with
+      | _ -> None
+    )
 
 let of_text_path ~env path : (t, string) result =
   let fs = Eio.Stdenv.fs env in

@@ -16,10 +16,6 @@ let default_recognized_exts = "txt,md,pdf"
 
 let recognized_exts : string list ref = ref []
 
-let index_dir_name = ".docfd"
-
-let index_dir = ref ""
-
 let index_file_ext = ".index"
 
 let hash_chunk_size = 4096
@@ -28,4 +24,8 @@ let text_editor = ref ""
 
 let line_wrap_underestimate_offset = 2
 
-let max_index_file_count = 100
+let default_cache_size = 100
+
+let cache_size = ref default_cache_size
+
+let cache_dir : string option ref = ref None

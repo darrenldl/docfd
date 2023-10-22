@@ -80,6 +80,47 @@ let index_chunk_word_count_arg =
     & info [ index_chunk_word_count_arg_name ] ~doc ~docv:"N"
   )
 
+let cache_dir_arg =
+  let doc =
+    "Index cache directory."
+  in
+  let home_dir =
+    match Sys.getenv_opt "HOME" with
+    | None -> (
+        Fmt.pr "Error: Environment variable HOME is not set\n";
+        exit 1
+      )
+    | Some home -> home
+  in
+  let cache_home =
+    match Sys.getenv_opt "XDG_CACHE_HOME" with
+    | None -> Filename.concat home_dir ".cache"
+    | Some x -> x
+  in
+  Arg.(
+    value
+    & opt string (Filename.concat cache_home "docfd")
+    & info [ "cache-dir" ] ~doc ~docv:"DIR"
+  )
+
+let cache_size_arg_name = "cache-size"
+
+let cache_size_arg =
+  let doc =
+    "Maximum number of indices to cache. One index corresponds to one file."
+  in
+  Arg.(
+    value
+    & opt int Params.default_cache_size
+    & info [ cache_size_arg_name ] ~doc ~docv:"N"
+  )
+
+let no_cache_arg =
+  let doc =
+    Fmt.str "Disable cache usage."
+  in
+  Arg.(value & flag & info [ "no-cache" ] ~doc)
+
 let debug_arg =
   let doc =
     Fmt.str "Display debug info."
@@ -92,8 +133,7 @@ let list_files_recursively (dir : string) : string list =
     l := x :: !l
   in
   let rec aux depth path =
-    if depth >= !Params.max_file_tree_depth then ()
-    else (
+    if depth <= !Params.max_file_tree_depth then (
       match Sys.is_directory path with
       | is_dir -> (
           if is_dir then (
@@ -115,7 +155,7 @@ let list_files_recursively (dir : string) : string list =
           )
         )
       | exception _ -> ()
-    )
+    ) else ()
   in
   aux 0 dir;
   !l
@@ -167,6 +207,9 @@ let run
     (index_chunk_word_count : int)
     (exts : string)
     (additional_exts : string)
+    (cache_dir : string)
+    (cache_size : int)
+    (no_cache : bool)
     (files : string list)
   =
   if max_depth < 1 then (
@@ -185,11 +228,50 @@ let run
     Fmt.pr "Invalid %s: cannot be < 1\n" index_chunk_word_count_arg_name;
     exit 1
   );
+  if cache_size < 1 then (
+    Fmt.pr "Invalid %s: cannot be < 1\n" cache_size_arg_name;
+    exit 1
+  );
   Params.debug := debug;
   Params.max_file_tree_depth := max_depth;
   Params.max_fuzzy_edit_distance := max_fuzzy_edit_dist;
   Params.max_word_search_distance := max_word_search_dist;
   Params.index_chunk_word_count := index_chunk_word_count;
+  Params.cache_size := cache_size;
+  Params.cache_dir := (
+    if no_cache then (
+      None
+    ) else (
+      if Sys.file_exists cache_dir then (
+        if not (Sys.is_directory cache_dir) then (
+          Fmt.pr "Error: \"%s\" is not a directory\n" cache_dir;
+          exit 1
+        ) else (
+          Some cache_dir
+        )
+      ) else (
+        (try
+           Sys.mkdir cache_dir 0o755
+         with
+         | _ -> (
+             Fmt.pr "Error: Failed to create directory \"%s\"\n" cache_dir;
+             exit 1
+           )
+        );
+        Some cache_dir
+      )
+    )
+  );
+  (match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
+   | None, None -> (
+       Printf.printf "Error: Environment variable VISUAL or EDITOR needs to be set\n";
+       exit 1
+     )
+   | Some editor, _
+   | None, Some editor -> (
+       Params.text_editor := editor;
+     )
+  );
   let recognized_exts =
     Fmt.str "%s,%s" exts additional_exts
     |> String.split_on_char ','
@@ -218,25 +300,6 @@ let run
     files;
   if !Params.debug then (
     Printf.printf "Scanning for documents\n"
-  );
-  (match Sys.getenv_opt "HOME" with
-   | None -> (
-       Fmt.pr "Environment variable HOME is not set\n";
-       exit 1
-     )
-   | Some home -> (
-       Params.index_dir := Filename.concat home Params.index_dir_name;
-     )
-  );
-  (match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
-   | None, None -> (
-       Printf.printf "Error: Environment variable VISUAL or EDITOR needs to be set\n";
-       exit 1
-     )
-   | Some editor, _
-   | None, Some editor -> (
-       Params.text_editor := editor;
-     )
   );
   let compute_init_ui_mode_and_document_src () : Ui_base.ui_mode * Ui_base.document_src =
     if not (stdin_is_atty ()) then
@@ -420,6 +483,9 @@ let cmd ~env =
           $ index_chunk_word_count_arg
           $ exts_arg
           $ add_exts_arg
+          $ cache_dir_arg
+          $ cache_size_arg
+          $ no_cache_arg
           $ files_arg)
 
 let () = Eio_main.run (fun env ->
