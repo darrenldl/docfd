@@ -5,8 +5,7 @@
 - Swapped to using Nottui at [a337a77](https://github.com/let-def/lwd/commit/a337a778001e6c1dbaed7e758c9e05f300abd388)
   which fixes event handling, and pasting into edit field works correctly as a result
 
-- Removed pointless index saving when number of documents exceeds
-  index cache limit
+- Caching is now disabled if number of documents exceeds cache size
 
 - Moved index cache to `XDG_CACHE_HOME/docfd`, which overall
   defaults to `$HOME/.cache/docfd`

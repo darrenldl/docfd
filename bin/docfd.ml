@@ -117,7 +117,7 @@ let cache_size_arg =
 
 let no_cache_arg =
   let doc =
-    Fmt.str "Disable cache usage."
+    Fmt.str "Disable caching."
   in
   Arg.(value & flag & info [ "no-cache" ] ~doc)
 
@@ -366,6 +366,15 @@ let run
            Fmt.pr "Error: Command pdftotext not found\n";
            exit 1
          )
+       );
+       let file_count = List.length files in
+       if file_count > !Params.cache_size then (
+         if !Params.debug then (
+           Printf.printf "File count %d exceeds cache size %d, caching disabled\n"
+             file_count
+             !Params.cache_size
+         );
+         Params.cache_dir := None
        )
      )
   );
