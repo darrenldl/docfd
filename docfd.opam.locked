@@ -1,0 +1,96 @@
+opam-version: "2.0"
+name: "docfd"
+version: "1.8.0"
+synopsis: "TUI multiline fuzzy document finder"
+maintainer: "Darren Ldl"
+authors: "Darren Ldl"
+license: "MIT"
+tags: ["fuzzy" "document" "finder"]
+homepage: "https://github.com/darrenldl/docfd"
+doc: "https://github.com/darrenldl/docfd"
+bug-reports: "https://github.com/darrenldl/docfd/issues"
+depends: [
+  "angstrom" {= "0.15.0"}
+  "base-bigarray" {= "base"}
+  "base-bytes" {= "base"}
+  "base-domains" {= "base"}
+  "base-nnp" {= "base"}
+  "base-threads" {= "base"}
+  "base-unix" {= "base"}
+  "bigstringaf" {= "0.9.1"}
+  "cmdliner" {= "1.2.0"}
+  "containers" {= "3.12"}
+  "containers-data" {= "3.12"}
+  "cppo" {= "1.6.9"}
+  "csexp" {= "1.5.2"}
+  "cstruct" {= "6.2.0"}
+  "digestif" {= "1.1.4"}
+  "domain-local-await" {= "1.0.0"}
+  "domain_shims" {= "0.1.0"}
+  "domainslib" {= "0.5.1"}
+  "dune" {= "3.11.1"}
+  "dune-configurator" {= "3.11.1"}
+  "eio" {= "0.12"}
+  "eio_linux" {= "0.12"}
+  "eio_main" {= "0.12"}
+  "eio_posix" {= "0.12"}
+  "either" {= "1.0.0"}
+  "eqaf" {= "0.9"}
+  "fmt" {= "0.9.0"}
+  "hmap" {= "0.8.1"}
+  "iomux" {= "0.3"}
+  "logs" {= "0.7.0"}
+  "lwd" {= "0.3"}
+  "lwt" {= "5.7.0"}
+  "lwt-dllist" {= "1.0.1"}
+  "mtime" {= "2.0.0"}
+  "nottui" {= "0.3"}
+  "notty" {= "0.2.3"}
+  "ocaml" {= "5.1.0"}
+  "ocaml-base-compiler" {= "5.1.0"}
+  "ocaml-config" {= "3"}
+  "ocaml-options-vanilla" {= "1"}
+  "ocaml-syntax-shims" {= "1.0.0"}
+  "ocamlbuild" {= "0.14.2"}
+  "ocamlfind" {= "1.9.6"}
+  "ocplib-endian" {= "1.2"}
+  "optint" {= "0.3.0"}
+  "oseq" {= "0.5"}
+  "psq" {= "0.2.1"}
+  "result" {= "1.5"}
+  "saturn" {= "0.4.0"}
+  "saturn_lockfree" {= "0.4.0"}
+  "seq" {= "base"}
+  "spelll" {= "0.4"}
+  "stdlib-shims" {= "0.3.0"}
+  "thread-table" {= "1.0.0"}
+  "topkg" {= "1.0.7"}
+  "uring" {= "0.7"}
+  "uutf" {= "1.0.3"}
+  "yojson" {= "2.1.1"}
+]
+build: [
+  ["dune" "subst"] {dev}
+  [
+    "dune"
+    "build"
+    "-p"
+    name
+    "-j"
+    jobs
+    "@install"
+    "@runtest" {with-test}
+    "@doc" {with-doc}
+  ]
+]
+dev-repo: "git+https://github.com/darrenldl/docfd.git"
+pin-depends: [
+  [
+    "nottui.0.3"
+    "git+https://github.com/let-def/lwd.git#a337a778001e6c1dbaed7e758c9e05f300abd388"
+  ]
+  [
+    "ocaml-base-compiler.5.1.0"
+    "https://github.com/ocaml/ocaml/archive/5.1.0.tar.gz"
+  ]
+]
