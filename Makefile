@@ -9,6 +9,10 @@ all :
 	./update-version-string.sh
 	dune build @all
 
+.PHONY: podman-build
+podman-build:
+	podman build --format docker -t localhost/docfd -f containers/docfd/Containerfile .
+
 .PHONY: release-static
 release-static :
 	./update-version-string.sh
