@@ -12,3 +12,7 @@ echo "Detected version for Docfd:" $ver
 echo "Writing to" $path
 
 echo "let s = "\"$ver\" > $path
+
+echo "Replacing version string in dune-project"
+
+sed -i "s/(version .*/(version $ver)/" dune-project
