@@ -4,16 +4,17 @@ USER root
 RUN apk add linux-headers
 RUN apk add poppler-utils
 
+USER opam
+RUN opam-2.2 init --disable-sandboxing
+SHELL ["/bin/bash", "--login" , "-c"]
+RUN opam-2.2 install dune
+RUN opam-2.2 install utop ocp-indent
+
+USER root
 COPY . /home/opam/docfd
 RUN chown -R opam:opam /home/opam/docfd
 
 USER opam
-RUN opam-2.2 init --disable-sandboxing
-
-RUN opam install dune
-SHELL ["/bin/bash", "--login" , "-c"]
 WORKDIR /home/opam/docfd
 RUN dune build docfd.opam
-RUN opam install utop ocp-indent
-RUN opam install . --deps-only
-RUN opam pin add nottui https://github.com/let-def/lwd.git#a337a778001e6c1dbaed7e758c9e05f300abd388
+RUN opam-2.2 install . --deps-only
