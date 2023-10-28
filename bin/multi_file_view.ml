@@ -94,7 +94,7 @@ module Top_pane = struct
       let open Notty.Infix in
       let (doc, search_results) = document_info in
       let search_result_score_image =
-        if !Params.debug then (
+        if Option.is_some !Params.debug_output then (
           if Array.length search_results = 0 then
             I.empty
           else (

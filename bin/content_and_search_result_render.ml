@@ -258,7 +258,7 @@ let search_results
       in
       color_word_image_grid grid index search_result;
       let img = render_grid ~render_mode ~target_row:0 ~width grid index in
-      if !Params.debug then (
+      if Option.is_some !Params.debug_output then (
         let score = Search_result.score search_result in
         I.strf "(Score: %f)" score
         <->

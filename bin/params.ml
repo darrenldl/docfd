@@ -1,6 +1,6 @@
 include Docfd_lib.Params'
 
-let debug = ref false
+let debug_output : out_channel option ref = ref None
 
 let default_max_fuzzy_edit_distance = 2
 

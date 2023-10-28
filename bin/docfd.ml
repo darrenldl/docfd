@@ -121,11 +121,15 @@ let no_cache_arg =
   in
   Arg.(value & flag & info [ "no-cache" ] ~doc)
 
-let debug_arg =
+let debug_log_arg =
   let doc =
-    Fmt.str "Display debug info."
+    Fmt.str "Specify debug log file and enable debug mode where additional info is displayed on UI. If FILE is -, then debug info is printed to stdout instead. Otherwise FILE is opened in append mode."
   in
-  Arg.(value & flag & info [ "debug" ] ~doc)
+  Arg.(
+    value
+    & opt string ""
+    & info [ "debug-log" ] ~doc ~docv:"FILE"
+  )
 
 let list_files_recursively (dir : string) : string list =
   let l = ref [] in
@@ -198,9 +202,16 @@ let open_text_path index document_src ~editor ~path ~search_result =
   in
   Sys.command cmd |> ignore
 
+let do_if_debug (f : out_channel -> unit) =
+  match !Params.debug_output with
+  | None -> ()
+  | Some oc -> (
+      f oc
+    )
+
 let run
     ~(env : Eio_unix.Stdenv.base)
-    (debug : bool)
+    (debug_log : string)
     (max_depth : int)
     (max_fuzzy_edit_dist : int)
     (max_word_search_dist : int)
@@ -213,26 +224,38 @@ let run
     (files : string list)
   =
   if max_depth < 1 then (
-    Fmt.pr "Invalid %s: cannot be < 1\n" max_depth_arg_name;
+    Fmt.pr "Error: Invalid %s: cannot be < 1\n" max_depth_arg_name;
     exit 1
   );
   if max_fuzzy_edit_dist < 0 then (
-    Fmt.pr "Invalid %s: cannot be < 0\n" max_fuzzy_edit_dist_arg_name;
+    Fmt.pr "Error: Invalid %s: cannot be < 0\n" max_fuzzy_edit_dist_arg_name;
     exit 1
   );
   if max_word_search_dist < 1 then (
-    Fmt.pr "Invalid %s: cannot be < 1\n" max_word_search_dist_arg_name;
+    Fmt.pr "Error: Invalid %s: cannot be < 1\n" max_word_search_dist_arg_name;
     exit 1
   );
   if index_chunk_word_count < 1 then (
-    Fmt.pr "Invalid %s: cannot be < 1\n" index_chunk_word_count_arg_name;
+    Fmt.pr "Error: Invalid %s: cannot be < 1\n" index_chunk_word_count_arg_name;
     exit 1
   );
   if cache_size < 1 then (
-    Fmt.pr "Invalid %s: cannot be < 1\n" cache_size_arg_name;
+    Fmt.pr "Error: Invalid %s: cannot be < 1\n" cache_size_arg_name;
     exit 1
   );
-  Params.debug := debug;
+  Params.debug_output := (match debug_log with
+      | "" -> None
+      | "-" -> Some stdout
+      | _ -> (
+          try
+            Some (open_out_gen [ Open_append; Open_creat; Open_wronly; Open_text ] 0o644 debug_log)
+          with
+          | _ -> (
+              Printf.printf "Error: Failed to open debug log file %s" debug_log;
+              exit 1
+            )
+        )
+    );
   Params.max_file_tree_depth := max_depth;
   Params.max_fuzzy_edit_distance := max_fuzzy_edit_dist;
   Params.max_word_search_distance := max_word_search_dist;
@@ -298,9 +321,9 @@ let run
       )
     )
     files;
-  if !Params.debug then (
-    Printf.printf "Scanning for documents\n"
-  );
+  do_if_debug (fun oc ->
+      Printf.fprintf oc "Scanning for documents\n"
+    );
   let compute_init_ui_mode_and_document_src () : Ui_base.ui_mode * Ui_base.document_src =
     if not (stdin_is_atty ()) then
       match File_utils.read_in_channel_to_tmp_file stdin with
@@ -344,20 +367,20 @@ let run
   let init_ui_mode, init_document_src =
     compute_init_ui_mode_and_document_src ()
   in
-  if !Params.debug then (
-    Printf.printf "Scanning completed\n"
-  );
-  if !Params.debug then (
-    match init_document_src with
-    | Stdin _ -> Printf.printf "Document source: stdin\n"
-    | Files files -> (
-        Printf.printf "Document source: files\n";
-        List.iter (fun file ->
-            Printf.printf "File: %s\n" file;
-          )
-          files
-      )
-  );
+  do_if_debug (fun oc ->
+      Printf.fprintf oc "Scanning completed\n"
+    );
+  do_if_debug (fun oc ->
+      match init_document_src with
+      | Stdin _ -> Printf.fprintf oc "Document source: stdin\n"
+      | Files files -> (
+          Printf.fprintf oc "Document source: files\n";
+          List.iter (fun file ->
+              Printf.fprintf oc "File: %s\n" file;
+            )
+            files
+        )
+    );
   (match init_document_src with
    | Stdin _ -> ()
    | Files files -> (
@@ -369,11 +392,11 @@ let run
        );
        let file_count = List.length files in
        if file_count > !Params.cache_size then (
-         if !Params.debug then (
-           Printf.printf "File count %d exceeds cache size %d, caching disabled\n"
-             file_count
-             !Params.cache_size
-         );
+         do_if_debug (fun oc ->
+             Printf.fprintf oc "File count %d exceeds cache size %d, caching disabled\n"
+               file_count
+               !Params.cache_size
+           );
          Params.cache_dir := None
        )
      )
@@ -476,6 +499,16 @@ let run
      )
    | Files _ -> ()
   );
+  (match debug_log with
+   | "-" -> ()
+   | _ -> (
+       match !Params.debug_output with
+       | None -> ()
+       | Some oc -> (
+           close_out oc
+         )
+     )
+  );
   Notty_unix.Term.release term
 
 let files_arg = Arg.(value & pos_all string [ "." ] & info [])
@@ -485,7 +518,7 @@ let cmd ~env =
   let version = Version_string.s in
   Cmd.v (Cmd.info "docfd" ~version ~doc)
     Term.(const (run ~env)
-          $ debug_arg
+          $ debug_log_arg
           $ max_depth_arg
           $ max_fuzzy_edit_dist_arg
           $ max_word_search_dist_arg
