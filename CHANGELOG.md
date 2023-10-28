@@ -18,6 +18,8 @@
 
 - Fixed search result centering in content view pane
 
+- Changed `--debug` to `--debug-log` to support outputting debug log to a file
+
 ## 1.7.3
 
 - Fixed crash from using mouse scrolling in multi-file view
