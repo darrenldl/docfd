@@ -165,10 +165,11 @@ let render_grid
   | Some height -> (
       let focal_point =
         CCList.foldi (fun focal_point i img ->
+            let img_height = I.height img in
             if i < target_row then (
-              focal_point + I.height img
+              focal_point + img_height
             ) else if i = target_row then (
-              focal_point + (Misc_utils.div_round_to_closest (I.height img) 2)
+              focal_point + (Misc_utils.div_round_to_closest img_height 2)
             ) else (
               focal_point
             )
