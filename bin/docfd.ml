@@ -121,6 +121,12 @@ let no_cache_arg =
   in
   Arg.(value & flag & info [ "no-cache" ] ~doc)
 
+let index_only_arg =
+  let doc =
+    Fmt.str "Exit after indexing."
+  in
+  Arg.(value & flag & info [ "index-only" ] ~doc)
+
 let debug_log_arg =
   let doc =
     Fmt.str "Specify debug log file and enable debug mode where additional info is displayed on UI. If FILE is -, then debug info is printed to stdout instead. Otherwise FILE is opened in append mode."
@@ -221,6 +227,7 @@ let run
     (cache_dir : string)
     (cache_size : int)
     (no_cache : bool)
+    (index_only : bool)
     (files : string list)
   =
   if max_depth < 1 then (
@@ -248,7 +255,12 @@ let run
       | "-" -> Some stdout
       | _ -> (
           try
-            Some (open_out_gen [ Open_append; Open_creat; Open_wronly; Open_text ] 0o644 debug_log)
+            Some (
+              open_out_gen
+                [ Open_append; Open_creat; Open_wronly; Open_text ]
+                0o644
+                debug_log
+            )
           with
           | _ -> (
               Printf.printf "Error: Failed to open debug log file %s" debug_log;
@@ -431,6 +443,9 @@ let run
   in
   Ui_base.Vars.init_ui_mode := init_ui_mode;
   let init_document_store = document_store_of_document_src init_document_src in
+  if index_only then (
+    exit 0
+  );
   Lwd.set Ui_base.Vars.document_store init_document_store;
   (match init_ui_mode with
    | Ui_base.Ui_single_file -> Lwd.set Ui_base.Vars.Single_file.document_store init_document_store
@@ -534,6 +549,7 @@ let cmd ~env =
           $ cache_dir_arg
           $ cache_size_arg
           $ no_cache_arg
+          $ index_only_arg
           $ files_arg)
 
 let () = Eio_main.run (fun env ->
