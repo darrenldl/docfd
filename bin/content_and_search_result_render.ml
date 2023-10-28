@@ -168,7 +168,7 @@ let render_grid
             if i < target_row then (
               focal_point + I.height img
             ) else if i = target_row then (
-              focal_point + (I.height img / 2)
+              focal_point + (Misc_utils.div_round_to_closest (I.height img) 2)
             ) else (
               focal_point
             )
@@ -177,13 +177,11 @@ let render_grid
           images
       in
       let img_height = I.height img in
-      if img_height <= height then (
-        img
-      ) else (
-        let target_region_start = max 0 (focal_point - (height / 2)) in
-        let target_region_end_inc = target_region_start + height in
-        I.vcrop target_region_start (img_height - target_region_end_inc) img
-      )
+      let target_region_start =
+        max 0 (focal_point - (Misc_utils.div_round_to_closest height 2))
+      in
+      let target_region_end_inc = target_region_start + height in
+      I.vcrop target_region_start (img_height - target_region_end_inc) img
     )
 
 let content_snippet
@@ -212,7 +210,7 @@ let content_snippet
         start_and_end_inc_global_line_num_of_search_result index search_result
       in
       let avg = (relevant_start_line + relevant_end_inc_line) / 2 in
-      let start_global_line_num = max 0 (avg - height / 2 + 1) in
+      let start_global_line_num = max 0 (avg - (Misc_utils.div_round_to_closest height 2)) in
       let end_inc_global_line_num = min max_line_num (start_global_line_num + height) in
       let grid =
         word_image_grid_of_index

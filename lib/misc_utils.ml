@@ -78,3 +78,6 @@ let remove_leading_dots (s : string) =
     in
     aux 0
   )
+
+let div_round_to_closest x y =
+  (x + y - 1) / y
