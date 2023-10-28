@@ -416,7 +416,13 @@ let run
           Eio.Fiber.List.filter_map (fun path ->
               match Document.of_path ~env path with
               | Ok x -> Some x
-              | Error _ -> None) files
+              | Error msg -> (
+                  do_if_debug (fun oc ->
+                      Printf.fprintf oc "%s\n" msg
+                    );
+                  None
+                )
+            ) files
         )
     in
     all_documents
