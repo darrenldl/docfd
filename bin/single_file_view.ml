@@ -54,20 +54,24 @@ let reload_document (doc : Document.t) : unit =
 
 module Top_pane = struct
   let main
+      ~width
+      ~height
       ~document_info
     : Nottui.ui Lwd.t =
     let$* search_result_selected =
       Lwd.get Ui_base.Vars.Single_file.index_of_search_result_selected
     in
-    let$* (term_width, _term_height) = Lwd.get Ui_base.Vars.term_width_height in
-    let width = term_width - Params.line_wrap_underestimate_offset in
+    let sub_pane_width = width - Params.line_wrap_underestimate_offset in
+    let sub_pane_height = height / 2 in
     Nottui_widgets.v_pane
       (Ui_base.Content_view.main
-         ~width
+         ~height:sub_pane_height
+         ~width:sub_pane_width
          ~document_info
          ~search_result_selected)
       (Ui_base.Search_result_list.main
-         ~width
+         ~height:sub_pane_height
+         ~width:sub_pane_width
          ~document_info
          ~index_of_search_result_selected:Ui_base.Vars.Single_file.index_of_search_result_selected)
 end
@@ -250,11 +254,21 @@ let main : Nottui.ui Lwd.t =
   let _, document_info =
     Option.get (Document_store.min_binding document_store)
   in
+  let$* bottom_pane = Bottom_pane.main ~document_info in
+  let bottom_pane_height = Nottui.Ui.layout_height bottom_pane in
+  let$* (term_width, term_height) = Lwd.get Ui_base.Vars.term_width_height in
+  let top_pane_height = term_height - bottom_pane_height in
+  let$* top_pane =
+    Top_pane.main
+      ~width:term_width
+      ~height:top_pane_height
+      ~document_info
+  in
   Nottui_widgets.vbox
     [
-      (let$ top_pane = Top_pane.main ~document_info in
-       Nottui.Ui.keyboard_area
-         (keyboard_handler ~document_info)
-         top_pane);
-      Bottom_pane.main ~document_info;
+      Lwd.return (
+        Nottui.Ui.keyboard_area
+          (keyboard_handler ~document_info)
+          top_pane);
+      Lwd.return bottom_pane;
     ]

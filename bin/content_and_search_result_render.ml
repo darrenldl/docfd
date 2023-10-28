@@ -180,7 +180,7 @@ let render_grid
       if img_height <= height then (
         img
       ) else (
-        let target_region_start = max 0 (focal_point - ((height / 2) - 1)) in
+        let target_region_start = max 0 (focal_point - (height / 2)) in
         let target_region_end_inc = target_region_start + height in
         I.vcrop target_region_start (img_height - target_region_end_inc) img
       )

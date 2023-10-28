@@ -64,13 +64,12 @@ let full_term_sized_background =
 
 module Content_view = struct
   let main
+      ~height
       ~width
       ~(document_info : Document.t * Search_result.t array)
       ~(search_result_selected : int)
     : Nottui.ui Lwd.t =
     let (document, search_results) = document_info in
-    let$ (_term_width, term_height) = Lwd.get Vars.term_width_height in
-    let height = term_height / 2 in
     let search_result =
       if Array.length search_results = 0 then
         None
@@ -84,7 +83,7 @@ module Content_view = struct
         ~width
         document.index
     in
-    Nottui.Ui.atom content
+    Lwd.return (Nottui.Ui.atom content)
 end
 
 let mouse_handler
@@ -107,6 +106,7 @@ let mouse_handler
 
 module Search_result_list = struct
   let main
+      ~height
       ~width
       ~(document_info : (Document.t * Search_result.t array))
       ~(index_of_search_result_selected : int Lwd.var)
@@ -117,7 +117,6 @@ module Search_result_list = struct
     if result_count = 0 then (
       Lwd.return Nottui.Ui.empty
     ) else (
-      let$* (_term_width, term_height) = Lwd.get Vars.term_width_height in
       let render_mode =
         if Misc_utils.path_is_pdf document.path then (
           `Page_num_only
@@ -129,7 +128,7 @@ module Search_result_list = struct
         Content_and_search_result_render.search_results
           ~render_mode
           ~start:search_result_selected
-          ~end_exc:(min (search_result_selected + term_height / 2) result_count)
+          ~end_exc:(min (search_result_selected + height) result_count)
           ~width
           document.index
           search_results
