@@ -426,8 +426,16 @@ let run
         )
       | Files files -> (
           Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size (fun path ->
+              do_if_debug (fun oc ->
+                  Printf.fprintf oc "Loading document: %s\n" path;
+                );
               match Document.of_path ~env path with
-              | Ok x -> Some x
+              | Ok x -> (
+                  do_if_debug (fun oc ->
+                      Printf.fprintf oc "Document %s loaded successfully\n" path;
+                    );
+                  Some x
+                )
               | Error msg -> (
                   do_if_debug (fun oc ->
                       Printf.fprintf oc "%s\n" msg
