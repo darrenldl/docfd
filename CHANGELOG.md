@@ -16,6 +16,8 @@
     - `--cache-size`
     - `--no-cache`
 
+- Fixed search result centering in content view pane
+
 ## 1.7.3
 
 - Fixed crash from using mouse scrolling in multi-file view
