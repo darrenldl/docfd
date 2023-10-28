@@ -413,7 +413,7 @@ let run
             )
         )
       | Files files -> (
-          Eio.Fiber.List.filter_map (fun path ->
+          Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size (fun path ->
               match Document.of_path ~env path with
               | Ok x -> Some x
               | Error msg -> (
