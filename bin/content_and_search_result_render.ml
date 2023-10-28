@@ -163,15 +163,15 @@ let render_grid
   match height with
   | None -> img
   | Some height -> (
-      let focal_point =
-        CCList.foldi (fun focal_point i img ->
+      let focal_point_offset =
+        CCList.foldi (fun focal_point_offset i img ->
             let img_height = I.height img in
             if i < target_row then (
-              focal_point + img_height
+              focal_point_offset + img_height
             ) else if i = target_row then (
-              focal_point + (Misc_utils.div_round_to_closest img_height 2)
+              focal_point_offset + (Misc_utils.div_round_to_closest img_height 2)
             ) else (
-              focal_point
+              focal_point_offset
             )
           )
           0
@@ -179,7 +179,7 @@ let render_grid
       in
       let img_height = I.height img in
       let target_region_start =
-        max 0 (focal_point - (Misc_utils.div_round_to_closest height 2))
+        max 0 (focal_point_offset - (Misc_utils.div_round_to_closest height 2))
       in
       let target_region_end_inc = target_region_start + height in
       I.vcrop target_region_start (img_height - target_region_end_inc) img
