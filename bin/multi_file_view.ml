@@ -411,6 +411,7 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'R', []) -> (
+          reset_document_selected ();
           Ui_base.Vars.action := Some Ui_base.Recompute_document_src;
           Lwd.set Ui_base.Vars.quit true;
           `Handled

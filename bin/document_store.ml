@@ -24,6 +24,8 @@ let empty : t =
     search_results = String_map.empty;
   }
 
+let content_reqs (t : t) = t.content_reqs
+
 let search_phrase (t : t) = t.search_phrase
 
 let single_out ~path (t : t) =
