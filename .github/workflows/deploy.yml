@@ -28,9 +28,9 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-      - run: opam install --locked .
+      - run: opam-2.2 install --locked .
 
-      - run: make release-static
+      - run: eval $(opam env) && make release-static
 
       - run: tar cfvz docfd-${{ env.GITHUB_TAG }}-${{ matrix.os }}.tar.gz statically-linked/docfd
 
