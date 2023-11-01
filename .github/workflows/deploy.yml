@@ -32,7 +32,7 @@ jobs:
 
       - run: make release-static
 
-      - run: tar cfvz docfd-${{ env.GITHUB_TAG }}-${{ matrix.os }}.tar.gz statically-linked/ 
+      - run: tar cfvz docfd-${{ env.GITHUB_TAG }}-${{ matrix.os }}.tar.gz statically-linked/docfd
 
       - name: Release
         uses: softprops/action-gh-release@v1
