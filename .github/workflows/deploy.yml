@@ -28,7 +28,7 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-      - run: opam-2.2 install --locked .
+      - run: opam install --locked .
 
       - run: eval $(opam env) && make release-static
 
