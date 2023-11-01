@@ -32,10 +32,10 @@ jobs:
 
       - run: make release-static
 
-      - run: cp statically-linked/ ${{ matrix.os }}-docfd
+      - run: tar cfvz docfd-${{ env.GITHUB_TAG }}-${{ matrix.os }}.tar.gz statically-linked/ 
 
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ${{ matrix.os }}-docfd
+            docfd-${{ env.GITHUB_TAG }}-${{ matrix.os }}.tar.gz
