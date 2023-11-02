@@ -22,6 +22,8 @@
 
 - Added `--index-only` flag
 
+- Fixed document rescanning in multi-file view
+
 ## 1.7.3
 
 - Fixed crash from using mouse scrolling in multi-file view
