@@ -11,7 +11,6 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - macos-latest
           - ubuntu-latest
         ocaml-compiler:
           - "5.1"
@@ -33,7 +32,9 @@ jobs:
 
       - run: eval $(opam env) && make release-static
 
-      - run: tar cfvz docfd-${{ env.GITHUB_TAG }}-${{ matrix.os }}.tar.gz statically-linked/docfd
+      - run: |
+          mv statically-linked/docfd docfd
+          tar cfvz docfd-${{ env.GITHUB_TAG }}-${{ matrix.os }}.tar.gz docfd
 
       - name: Release
         uses: softprops/action-gh-release@v1
