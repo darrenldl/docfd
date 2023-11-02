@@ -34,7 +34,7 @@ jobs:
 
       - run: |
           mv statically-linked/docfd docfd
-          tar cfvz docfd-${{ env.GITHUB_TAG }}-${{ matrix.os }}.tar.gz docfd
+          tar -cvzf docfd-${{ env.GITHUB_TAG }}-${{ matrix.os }}.tar.gz docfd
 
       - name: Release
         uses: softprops/action-gh-release@v1
