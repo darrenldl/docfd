@@ -8,8 +8,10 @@ Set FontSize 15
 
 Set TypingSpeed 100ms
 
-Type "docfd"
+Type@80ms "docfd --cache-dir .cache --exts md"
 Enter
+
+Sleep 0.1s
 
 Type "j"
 Sleep 1s
