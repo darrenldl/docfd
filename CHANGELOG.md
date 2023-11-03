@@ -23,7 +23,7 @@
 - Fixed file opening failure due to exhausting file descriptors
 
     - This was caused by not bounding the number of concurrent fibers when loading files
-      with `Document.of_path` in `Eio.Fiber.List.filter_map`
+      via `Document.of_path` in `Eio.Fiber.List.filter_map`
 
 - Added `--index-only` flag
 
