@@ -13,6 +13,10 @@ all :
 podman-build:
 	podman build --format docker -t localhost/docfd -f containers/docfd/Containerfile .
 
+.PHONY: podman-build-demo-vhs
+podman-build-demo-vhs:
+	podman build --format docker -t localhost/docfd-demo-vhs -f containers/demo-vhs/Containerfile .
+
 .PHONY: release-static
 release-static :
 	python3 update-version-string.py
