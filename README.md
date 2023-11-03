@@ -7,11 +7,11 @@ Navigating repo
 
 ![](demo-vhs-gifs/repo.gif)
 
+---
+
 Navigating "OCaml Programming: Correct + Efficient + Beautiful" book PDF
 
 ![](demo-vhs-gifs/pdf.gif)
-
-Demo gifs are made with [vhs](https://github.com/charmbracelet/vhs).
 
 ## Installation
 
@@ -238,3 +238,7 @@ namely `Shift` is optional for scrolling through search result list.
 - `Enter` to confirm search phrase and exit search mode
 
 </details>
+
+## Acknowledgement
+
+- Demo gifs are made using [vhs](https://github.com/charmbracelet/vhs).
