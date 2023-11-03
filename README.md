@@ -1,7 +1,13 @@
 # Docfd
 TUI multiline fuzzy document finder
 
+---
+
+Navigating repo
+
 ![](demo-vhs-gifs/repo.gif)
+
+Navigating "OCaml Programming: Correct + Efficient + Beautiful" book PDF
 
 ![](demo-vhs-gifs/pdf.gif)
 
