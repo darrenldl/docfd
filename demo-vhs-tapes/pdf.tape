@@ -8,18 +8,7 @@ Set FontSize 15
 
 Set TypingSpeed 100ms
 
-Set LoopOffset 150
-
-Type@1ms "docfd ocaml_programming.pdf"
-Enter
-
-Sleep 15s
-
-Type "q"
-Type "clear"
-Enter
-
-Type@80ms "docfd ocaml_programming.pdf # pdf is indexed beforehand"
+Type@80ms "docfd --cache-dir .cache ocaml_programming.pdf # pdf is indexed beforehand"
 Enter
 
 Sleep 3s

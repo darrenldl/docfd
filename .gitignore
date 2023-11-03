@@ -15,3 +15,4 @@ test*.pdf
 /statically-linked/
 perf.data*
 *.pdf
+.cache
