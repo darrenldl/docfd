@@ -3,8 +3,8 @@ opam-version: "2.0"
 version: "1.8.0"
 synopsis: "TUI multiline fuzzy document finder"
 description: ""
-maintainer: ["Darren Ldl"]
-authors: ["Darren Ldl"]
+maintainer: ["Darren Li"]
+authors: ["Darren Li"]
 license: "MIT"
 tags: ["fuzzy" "document" "finder"]
 homepage: "https://github.com/darrenldl/docfd"

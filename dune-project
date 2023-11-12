@@ -7,9 +7,9 @@
 (source
  (github darrenldl/docfd))
 
-(authors "Darren Ldl")
+(authors "Darren Li")
 
-(maintainers "Darren Ldl")
+(maintainers "Darren Li")
 
 (license MIT)
 
