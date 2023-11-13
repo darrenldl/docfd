@@ -34,7 +34,7 @@ Statically linked binaries are available via
 
 <details>
 
-#### Text editor
+#### Text editor integration
 
 Docfd opens file at first line of search result using the text editor
 specified by `$VISUAL` (this is checked first) or `$EDITOR`
