@@ -3,13 +3,13 @@ TUI multiline fuzzy document finder
 
 ---
 
-Navigating repo
+Navigating repo:
 
 ![](demo-vhs-gifs/repo.gif)
 
 ---
 
-Navigating "OCaml Programming: Correct + Efficient + Beautiful" book PDF
+Navigating "OCaml Programming: Correct + Efficient + Beautiful" book PDF:
 
 ![](demo-vhs-gifs/pdf.gif)
 
@@ -28,13 +28,13 @@ Statically linked binaries are available via
 
 - Content view pane that shows the snippet surrounding the search result selected
 
-- Text editor and PDF viewer integration
+- Text editor integration
 
 ## Integration details
 
 <details>
 
-#### Text file
+#### Text editor
 
 Docfd opens file at first line of search result using the text editor
 specified by `$VISUAL` (this is checked first) or `$EDITOR`
@@ -47,23 +47,7 @@ if the text editor is one of the following:
 - `emacs`
 - `micro`
 
-#### PDF
-
-Docfd opens file at page of search result and start
-a text search of the matched phrase if
-`xdg-mime query default application/pdf`
-contains any of the following as substring (case-insensitive match):
-
-- evince
-- okular
-- xreader
-- atril
-
-If none of the above applies,
-then Docfd opens at page, but skips text search, if
-the `xdg-mime` query result contains any of the following:
-
-- mupdf
+Otherwise the file is opened via the text editor regularly.
 
 </details>
 
