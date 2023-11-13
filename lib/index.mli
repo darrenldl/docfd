@@ -40,6 +40,8 @@ val line_of_global_line_num : int -> t -> string
 
 val line_loc_of_global_line_num : int -> t -> Line_loc.t
 
+val words_of_page : t -> string Seq.t
+
 val loc_of_pos : int -> t -> Loc.t
 
 val line_count_of_page : int -> t -> int

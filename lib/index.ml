@@ -397,6 +397,11 @@ let line_loc_of_global_line_num x t =
     CCVector.get t.line_loc_of_global_line_num x
   )
 
+let words_of_page t x =
+  t.words_of_page x
+  |> Int_set.to_seq t.words
+  
+
 let loc_of_pos pos t : Loc.t =
   CCVector.get t.loc_of_pos pos
 

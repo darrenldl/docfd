@@ -170,6 +170,36 @@ let list_files_recursively (dir : string) : string list =
   aux 0 dir;
   !l
 
+let open_pdf_path index ~viewer ~path ~search_result =
+  let path = Filename.quote path in
+  let fallback = Fmt.str "xdg-open %s" path in
+  let cmd =
+    match search_result with
+    | None -> fallback
+    | Some search_result -> (
+      let found_phrase = Search_result.found_phrase search_result in
+      let first_word = List.hd found_phrase in
+      let first_word_loc = Index.loc_of_pos first_word.Search_result.found_word_pos index in
+      let most_unique_word = first_word in
+      let page_num = first_word_loc
+    |> Index.Loc.line_loc
+    |> Index.Line_loc.page_num
+    |> (fun x -> x + 1)
+      in
+      let contains_sub ~sub = CCString.find ~sub viewer >= 0 in
+      if contains_sub "okular" then
+        Fmt.str "okular --page %d --find %s %s" page_num most_unique_word path
+      else if contains_sub "evince" then
+        Fmt.str "evince --page %d --find %s %s" page_num most_unique_word path
+      else if contains_sub "xreader" then
+      else if contains_sub "atril" then
+      else if contains_sub "mupdf" then
+      else
+        fallback
+    )
+  in
+  Proc_utils.run_in_background cmd |> ignore
+
 let open_text_path index document_src ~editor ~path ~search_result =
   let path = Filename.quote path in
   let fallback = Fmt.str "%s %s" editor path in
@@ -510,6 +540,11 @@ let run
           )
         | Open_file_and_search_result (doc, search_result) -> (
             if Misc_utils.path_is_pdf doc.path then (
+              open_pdf_path
+              doc.index
+  ~viewer:!Params.
+  ~path:doc.path
+  ~search_result;
               Proc_utils.run_in_background (Fmt.str "xdg-open %s" (Filename.quote doc.path)) |> ignore;
             ) else (
               let old_stats = Unix.stat doc.path in
