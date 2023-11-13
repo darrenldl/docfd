@@ -28,6 +28,45 @@ Statically linked binaries are available via
 
 - Content view pane that shows the snippet surrounding the search result selected
 
+- Text editor and PDF viewer integration
+
+## Integration details
+
+<details>
+
+#### Text file
+
+Docfd opens file at first line of search result using the text editor
+specified by `$VISUAL` (this is checked first) or `$EDITOR`
+if the text editor is one of the following:
+
+- `nano`
+- `nvim`/`vim`/`vi`
+- `kak`
+- `hx`
+- `emacs`
+- `micro`
+
+#### PDF
+
+Docfd opens file at page of search result and start
+a text search of the matched phrase if
+`xdg-mime query default application/pdf`
+contains any of the following as substring (case-insensitive match):
+
+- evince
+- okular
+- xreader
+- atril
+
+If none of the above applies,
+then Docfd opens at page, but skips text search, if
+the `xdg-mime` query result contains any of the following:
+
+- mupdf
+
+</details>
+
 ## Usage
 
 #### Read from piped stdin
