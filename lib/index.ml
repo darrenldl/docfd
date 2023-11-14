@@ -57,9 +57,10 @@ module Raw = struct
     line_loc_of_global_line_num : Line_loc.t Int_map.t;
     global_line_num_of_line_loc : int Line_loc_map.t;
     start_end_inc_pos_of_global_line_num : (int * int) Int_map.t;
+    start_end_inc_pos_of_page_num : (int * int) Int_map.t;
     word_ci_of_pos : int Int_map.t;
     word_of_pos : int Int_map.t;
-    line_count_of_page : int Int_map.t;
+    line_count_of_page_num : int Int_map.t;
     page_count : int;
     global_line_count : int;
   }
@@ -79,9 +80,10 @@ module Raw = struct
     line_loc_of_global_line_num = Int_map.empty;
     global_line_num_of_line_loc = Line_loc_map.empty;
     start_end_inc_pos_of_global_line_num = Int_map.empty;
+    start_end_inc_pos_of_page_num = Int_map.empty;
     word_ci_of_pos = Int_map.empty;
     word_of_pos = Int_map.empty;
-    line_count_of_page = Int_map.empty;
+    line_count_of_page_num = Int_map.empty;
     page_count = 0;
     global_line_count = 0;
   }
@@ -110,6 +112,11 @@ module Raw = struct
             Some (min start_x start_y, max end_inc_x end_inc_y))
           x.start_end_inc_pos_of_global_line_num
           y.start_end_inc_pos_of_global_line_num;
+      start_end_inc_pos_of_page_num =
+        Int_map.union (fun _k (start_x, end_inc_x) (start_y, end_inc_y) ->
+            Some (min start_x start_y, max end_inc_x end_inc_y))
+          x.start_end_inc_pos_of_page_num
+          y.start_end_inc_pos_of_page_num;
       word_ci_of_pos =
         Int_map.union (fun _k x _ -> Some x)
           x.word_ci_of_pos
@@ -118,10 +125,10 @@ module Raw = struct
         Int_map.union (fun _k x _ -> Some x)
           x.word_of_pos
           y.word_of_pos;
-      line_count_of_page =
+      line_count_of_page_num =
         Int_map.union (fun _k x y -> Some (max x y))
-          x.line_count_of_page
-          y.line_count_of_page;
+          x.line_count_of_page_num
+          y.line_count_of_page_num;
       page_count = max x.page_count y.page_count;
       global_line_count = max x.global_line_count y.global_line_count;
     }
@@ -158,9 +165,10 @@ module Raw = struct
           line_loc_of_global_line_num;
           global_line_num_of_line_loc;
           start_end_inc_pos_of_global_line_num;
+          start_end_inc_pos_of_page_num;
           word_ci_of_pos;
           word_of_pos;
-          line_count_of_page;
+          line_count_of_page_num;
           page_count;
           global_line_count;
         }
@@ -178,18 +186,14 @@ module Raw = struct
 
         let line_loc = loc.Loc.line_loc in
         let global_line_num = line_loc.global_line_num in
+        let page_num = line_loc.page_num in
         let pos_s = Option.value ~default:Int_set.empty
             (Int_map.find_opt index_of_word_ci pos_s_of_word_ci)
                     |> Int_set.add pos
         in
-        let start_end_inc_pos =
-          match Int_map.find_opt global_line_num start_end_inc_pos_of_global_line_num with
-          | None -> (pos, pos)
-          | Some (x, y) -> (min x pos, max y pos)
-        in
         let cur_page_line_count =
           Option.value ~default:0
-            (Int_map.find_opt line_loc.page_num line_count_of_page)
+            (Int_map.find_opt page_num line_count_of_page_num)
         in
         { word_db = dummy_word_db;
           pos_s_of_word_ci = Int_map.add index_of_word_ci pos_s pos_s_of_word_ci;
@@ -199,11 +203,23 @@ module Raw = struct
           global_line_num_of_line_loc =
             Line_loc_map.add line_loc global_line_num global_line_num_of_line_loc;
           start_end_inc_pos_of_global_line_num =
-            Int_map.add global_line_num start_end_inc_pos start_end_inc_pos_of_global_line_num;
+            Int_map.add
+              global_line_num
+              (match Int_map.find_opt global_line_num start_end_inc_pos_of_global_line_num with
+               | None -> (pos, pos)
+               | Some (x, y) -> (min x pos, max y pos))
+              start_end_inc_pos_of_global_line_num;
+          start_end_inc_pos_of_page_num =
+            Int_map.add
+              page_num
+              (match Int_map.find_opt page_num start_end_inc_pos_of_page_num with
+               | None -> (pos, pos)
+               | Some (x, y) -> (min x pos, max y pos))
+              start_end_inc_pos_of_page_num;
           word_ci_of_pos = Int_map.add pos index_of_word_ci word_ci_of_pos;
           word_of_pos = Int_map.add pos index_of_word word_of_pos;
-          line_count_of_page =
-            Int_map.add line_loc.page_num (max cur_page_line_count (line_loc.line_num_in_page + 1)) line_count_of_page;
+          line_count_of_page_num =
+            Int_map.add line_loc.page_num (max cur_page_line_count (line_loc.line_num_in_page + 1)) line_count_of_page_num;
           page_count = max page_count (line_loc.page_num + 1);
           global_line_count = max global_line_count (global_line_num + 1);
         }
@@ -276,9 +292,10 @@ type t = {
   line_loc_of_global_line_num : Line_loc.t CCVector.ro_vector;
   global_line_num_of_line_loc : int Line_loc_map.t;
   start_end_inc_pos_of_global_line_num : (int * int) CCVector.ro_vector;
+  start_end_inc_pos_of_page_num : (int * int) CCVector.ro_vector;
   word_ci_of_pos : int CCVector.ro_vector;
   word_of_pos : int CCVector.ro_vector;
-  line_count_of_page : int CCVector.ro_vector;
+  line_count_of_page_num : int CCVector.ro_vector;
   page_count : int;
   global_line_count : int;
 }
@@ -290,14 +307,17 @@ let make () : t = {
   line_loc_of_global_line_num = CCVector.(freeze (create ()));
   global_line_num_of_line_loc = Line_loc_map.empty;
   start_end_inc_pos_of_global_line_num = CCVector.(freeze (create ()));
+  start_end_inc_pos_of_page_num = CCVector.(freeze (create ()));
   word_ci_of_pos = CCVector.(freeze (create ()));
   word_of_pos = CCVector.(freeze (create ()));
-  line_count_of_page = CCVector.(freeze (create ()));
+  line_count_of_page_num = CCVector.(freeze (create ()));
   page_count = 0;
   global_line_count = 0;
 }
 
 let global_line_count t = t.global_line_count
+
+let page_count t = t.page_count
 
 let ccvector_of_int_map
   : 'a . 'a Int_map.t -> 'a CCVector.ro_vector =
@@ -308,22 +328,35 @@ let ccvector_of_int_map
   |> CCVector.freeze
 
 let of_raw (raw : Raw.t) : t =
+  let line_loc_of_global_line_num =
+    ccvector_of_int_map raw.Raw.line_loc_of_global_line_num
+  in
+  let start_end_inc_pos_of_global_line_num =
+    ccvector_of_int_map raw.Raw.start_end_inc_pos_of_global_line_num
+  in
+  let start_end_inc_pos_of_page_num =
+    ccvector_of_int_map raw.Raw.start_end_inc_pos_of_page_num
+  in
+  let page_count = raw.Raw.page_count in
+  let global_line_count = raw.Raw.global_line_count in
+  assert (global_line_count = CCVector.length line_loc_of_global_line_num);
+  assert (global_line_count = CCVector.length start_end_inc_pos_of_global_line_num);
+  assert (page_count = CCVector.length start_end_inc_pos_of_page_num);
   {
     word_db = raw.Raw.word_db;
     pos_s_of_word_ci = raw.Raw.pos_s_of_word_ci;
     loc_of_pos =
       ccvector_of_int_map raw.Raw.loc_of_pos;
-    line_loc_of_global_line_num =
-      ccvector_of_int_map raw.Raw.line_loc_of_global_line_num;
+    line_loc_of_global_line_num;
     global_line_num_of_line_loc =
       raw.Raw.global_line_num_of_line_loc;
-    start_end_inc_pos_of_global_line_num =
-      ccvector_of_int_map raw.Raw.start_end_inc_pos_of_global_line_num;
+    start_end_inc_pos_of_global_line_num;
+    start_end_inc_pos_of_page_num;
     word_ci_of_pos = ccvector_of_int_map raw.Raw.word_ci_of_pos;
     word_of_pos = ccvector_of_int_map raw.Raw.word_of_pos;
-    line_count_of_page = ccvector_of_int_map raw.Raw.line_count_of_page;
-    page_count = raw.Raw.page_count;
-    global_line_count = raw.Raw.global_line_count;
+    line_count_of_page_num = ccvector_of_int_map raw.Raw.line_count_of_page_num;
+    page_count;
+    global_line_count;
   }
 
 let of_lines s =
@@ -371,11 +404,22 @@ let word_ci_and_pos_s ?range_inc (t : t) : (string * Int_set.t) Seq.t =
     )
 
 let words_of_global_line_num x t : string Seq.t =
-  if x >= global_line_count t then
+  if x >= global_line_count t then (
     invalid_arg "Index.words_of_global_line_num: global_line_num out of range"
-  else (
+  ) else (
     let (start, end_inc) =
       CCVector.get t.start_end_inc_pos_of_global_line_num x
+    in
+    OSeq.(start -- end_inc)
+    |> Seq.map (fun pos -> word_of_pos pos t)
+  )
+
+let words_of_page_num x t : string Seq.t =
+  if x >= page_count t then (
+    invalid_arg "Index.words_of_page_num: page_num out of range"
+  ) else (
+    let (start, end_inc) =
+      CCVector.get t.start_end_inc_pos_of_page_num x
     in
     OSeq.(start -- end_inc)
     |> Seq.map (fun pos -> word_of_pos pos t)
@@ -400,8 +444,8 @@ let line_loc_of_global_line_num x t =
 let loc_of_pos pos t : Loc.t =
   CCVector.get t.loc_of_pos pos
 
-let line_count_of_page page t : int =
-  CCVector.get t.line_count_of_page page
+let line_count_of_page_num page t : int =
+  CCVector.get t.line_count_of_page_num page
 
 module Search = struct
   let usable_positions
@@ -622,12 +666,14 @@ let to_json (t : t) : Yojson.Safe.t =
      json_of_line_loc_map json_of_int t.global_line_num_of_line_loc);
     ("start_end_inc_pos_of_global_line_num",
      json_of_ccvector json_of_int_int t.start_end_inc_pos_of_global_line_num);
+    ("start_end_inc_pos_of_page_num",
+     json_of_ccvector json_of_int_int t.start_end_inc_pos_of_page_num);
     ("word_ci_of_pos",
      json_of_ccvector json_of_int t.word_ci_of_pos);
     ("word_of_pos",
      json_of_ccvector json_of_int t.word_of_pos);
-    ("line_count_of_page",
-     json_of_ccvector json_of_int t.line_count_of_page);
+    ("line_count_of_page_num",
+     json_of_ccvector json_of_int t.line_count_of_page_num);
     ("page_count",
      `Int t.page_count);
     ("global_line_count",
@@ -764,6 +810,10 @@ let of_json (json : Yojson.Safe.t) : t option =
         let* x = List.assoc_opt "start_end_inc_pos_of_global_line_num" l in
         ccvector_of_json int_int_of_json x
       in
+      let* start_end_inc_pos_of_page_num =
+        let* x = List.assoc_opt "start_end_inc_pos_of_page_num" l in
+        ccvector_of_json int_int_of_json x
+      in
       let* word_ci_of_pos =
         let* x = List.assoc_opt "word_ci_of_pos" l in
         ccvector_of_json int_of_json x
@@ -772,8 +822,8 @@ let of_json (json : Yojson.Safe.t) : t option =
         let* x = List.assoc_opt "word_of_pos" l in
         ccvector_of_json int_of_json x
       in
-      let* line_count_of_page =
-        let* x = List.assoc_opt "line_count_of_page" l in
+      let* line_count_of_page_num =
+        let* x = List.assoc_opt "line_count_of_page_num" l in
         ccvector_of_json int_of_json x
       in
       let* page_count =
@@ -791,9 +841,10 @@ let of_json (json : Yojson.Safe.t) : t option =
         line_loc_of_global_line_num;
         global_line_num_of_line_loc;
         start_end_inc_pos_of_global_line_num;
+        start_end_inc_pos_of_page_num;
         word_ci_of_pos;
         word_of_pos;
-        line_count_of_page;
+        line_count_of_page_num;
         page_count;
         global_line_count;
       }

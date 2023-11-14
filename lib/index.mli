@@ -42,13 +42,17 @@ val line_loc_of_global_line_num : int -> t -> Line_loc.t
 
 val loc_of_pos : int -> t -> Loc.t
 
-val line_count_of_page : int -> t -> int
+val words_of_page_num : int -> t -> string Seq.t
+
+val line_count_of_page_num : int -> t -> int
 
 val search : Search_phrase.t -> t -> Search_result.t array
 
 val fulfills_content_reqs : Content_req_exp.t -> t -> bool
 
 val global_line_count : t -> int
+
+val page_count : t -> int
 
 val to_json : t -> Yojson.Safe.t
 
