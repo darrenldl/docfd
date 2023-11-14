@@ -12,7 +12,6 @@ let path_of_desktop_file file =
           with
           | _ -> false
         in
-        Printf.printf "test b\n";
         if in_dir then (
           Some (Filename.concat dir file)
         ) else (

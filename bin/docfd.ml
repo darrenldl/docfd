@@ -178,32 +178,52 @@ let open_pdf_path index ~path ~search_result =
     | None -> fallback
     | Some search_result -> (
         let found_phrase = Search_result.found_phrase search_result in
-        let first_word = List.hd found_phrase in
-        let first_word_loc = Index.loc_of_pos first_word.Search_result.found_word_pos index in
-        let page_num = first_word_loc
-                       |> Index.Loc.line_loc
-                       |> Index.Line_loc.page_num
-                       |> (fun x -> x + 1)
+        let page_nums = found_phrase
+                        |> List.map (fun word ->
+                            word.Search_result.found_word_pos
+                            |> (fun pos -> Index.loc_of_pos pos index)
+                            |> Index.Loc.line_loc
+                            |> Index.Line_loc.page_num
+                          )
+                        |> List.sort_uniq Int.compare
         in
-        let frequency_of_word = Misc_utils.frequencies_of_words
-            (Index.words_of_page_num page_num index)
+        let frequency_of_word_of_page : int String_map.t Int_map.t =
+          List.fold_left (fun acc page_num ->
+              let m = Misc_utils.frequencies_of_words
+                  (Index.words_of_page_num page_num index)
+              in
+              Int_map.add page_num m acc
+            )
+            Int_map.empty
+            page_nums
         in
-        let most_unique_word = found_phrase
-                               |> List.map (fun word ->
-                                   (word,
-                                    String_map.find word.Search_result.found_word frequency_of_word))
-                               |> List.fold_left (fun acc (x_word, x_freq) ->
-                                   match acc with
-                                   | None -> Some (x_word, x_freq)
-                                   | Some (_acc_word, acc_freq) ->
-                                     if x_freq > acc_freq then
-                                       Some (x_word, x_freq)
-                                     else
-                                       acc
-                                 )
-                                 None
-                               |> Option.get
-                               |> (fun (word, _freq) -> word.found_word)
+        let (most_unique_word, most_unique_word_page_num) =
+          found_phrase
+          |> List.map (fun word ->
+              let page_num =
+                Index.loc_of_pos word.Search_result.found_word_pos index
+                |> Index.Loc.line_loc
+                |> Index.Line_loc.page_num
+              in
+              let freq =
+                Int_map.find page_num frequency_of_word_of_page
+                |> String_map.find word.Search_result.found_word
+              in
+              (word, page_num, freq))
+          |> List.fold_left (fun acc x ->
+              let (_x_word, _x_page_num, x_freq) = x in
+              match acc with
+              | None -> Some x
+              | Some (_acc_word, _acc_page_num, acc_freq) ->
+                if x_freq > acc_freq then
+                  Some x
+                else
+                  acc
+            )
+            None
+          |> Option.get
+          |> (fun (word, page_num, _freq) ->
+              (word.found_word, page_num))
         in
         match Xdg_utils.default_pdf_viewer_desktop_file_path () with
         | None -> fallback
@@ -225,6 +245,7 @@ let open_pdf_path index ~path ~search_result =
               else
                 Fmt.str "%s %s" name args
             in
+            let page_num = most_unique_word_page_num + 1 in
             if contains "okular" then
               make_command "okular"
                 (Fmt.str "--page %d --find %s %s" page_num most_unique_word path)
