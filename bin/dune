@@ -22,6 +22,7 @@
  (public_name docfd)
  (libraries docfd_lib
             containers
+            containers.unix
             cmdliner
             fmt
             notty

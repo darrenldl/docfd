@@ -170,6 +170,63 @@ let list_files_recursively (dir : string) : string list =
   aux 0 dir;
   !l
 
+let open_pdf_path index ~path ~search_result =
+  let path = Filename.quote path in
+  let fallback = Fmt.str "xdg-open %s" path in
+  let cmd =
+    match search_result with
+    | None -> fallback
+    | Some search_result -> (
+        let found_phrase = Search_result.found_phrase search_result in
+        let first_word = List.hd found_phrase in
+        let first_word_loc = Index.loc_of_pos first_word.Search_result.found_word_pos index in
+        let most_unique_word = first_word.found_word in
+        let page_num = first_word_loc
+                       |> Index.Loc.line_loc
+                       |> Index.Line_loc.page_num
+                       |> (fun x -> x + 1)
+        in
+        match Xdg_utils.default_pdf_viewer_desktop_file_path () with
+        | None -> fallback
+        | Some viewer_desktop_file_path -> (
+            let flatpak_package_name =
+              let s = Filename.basename viewer_desktop_file_path in
+              Option.value ~default:s
+                (CCString.chop_suffix ~suf:".desktop" s)
+            in
+            let viewer_desktop_file_path_lowercase_ascii =
+              String.lowercase_ascii viewer_desktop_file_path
+            in
+            let contains sub =
+              CCString.find ~sub viewer_desktop_file_path_lowercase_ascii >= 0
+            in
+            let make_command name args =
+              if contains "flatpak" then
+                Fmt.str "flatpak run %s %s" flatpak_package_name args
+              else
+                Fmt.str "%s %s" name args
+            in
+            if contains "okular" then
+              make_command "okular"
+                (Fmt.str "--page %d --find %s %s" page_num most_unique_word path)
+            else if contains "evince" then
+              make_command "evince"
+                (Fmt.str "--page-index %d --find %s %s" page_num most_unique_word path)
+            else if contains "xreader" then
+              make_command "xreader"
+                (Fmt.str "--page-index %d --find %s %s" page_num most_unique_word path)
+            else if contains "atril" then
+              make_command "atril"
+                (Fmt.str "--page-index %d --find %s %s" page_num most_unique_word path)
+            else if contains "mupdf" then
+              make_command "mupdf" (Fmt.str "%s %d" path page_num)
+            else
+              fallback
+          )
+      )
+  in
+  Proc_utils.run_in_background cmd |> ignore
+
 let open_text_path index document_src ~editor ~path ~search_result =
   let path = Filename.quote path in
   let fallback = Fmt.str "%s %s" editor path in
@@ -510,7 +567,10 @@ let run
           )
         | Open_file_and_search_result (doc, search_result) -> (
             if Misc_utils.path_is_pdf doc.path then (
-              Proc_utils.run_in_background (Fmt.str "xdg-open %s" (Filename.quote doc.path)) |> ignore;
+              open_pdf_path
+                doc.index
+                ~path:doc.path
+                ~search_result
             ) else (
               let old_stats = Unix.stat doc.path in
               open_text_path
