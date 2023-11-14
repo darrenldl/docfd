@@ -28,7 +28,7 @@ Statically linked binaries are available via
 
 - Content view pane that shows the snippet surrounding the search result selected
 
-- Text editor integration
+- Text editor and PDF viewer integration
 
 ## Integration details
 
@@ -36,9 +36,10 @@ Statically linked binaries are available via
 
 #### Text editor integration
 
-Docfd opens file at first line of search result using the text editor
-specified by `$VISUAL` (this is checked first) or `$EDITOR`
-if the text editor is one of the following:
+Docfd uses the text editor specified by `$VISUAL` (this is checked first) or `$EDITOR`.
+
+Docfd opens the file at first line of search result
+for the following editors:
 
 - `nano`
 - `nvim`/`vim`/`vi`
@@ -47,7 +48,28 @@ if the text editor is one of the following:
 - `emacs`
 - `micro`
 
-Otherwise the file is opened via the text editor regularly.
+#### PDF viewer integration
+
+Docfd guesses the default PDF viewer based on the output
+of `xdg-mime query default application/pdf`,
+and calls the viewer either directly or via flatpak
+depending on where the desktop file can be first found
+in the list of directories specified by `$XDG_DATA_DIRS`.
+
+Docfd opens the file at first page of the search result
+and starts a text search of the most unique word
+of the matched phrase within the same page
+for the following viewers:
+
+- okular
+- evince
+- xreader
+- atril
+
+Docfd opens the file at first page of the search result
+for the following viewers:
+
+- mupdf
 
 </details>
 
