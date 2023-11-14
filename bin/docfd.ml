@@ -180,11 +180,30 @@ let open_pdf_path index ~path ~search_result =
         let found_phrase = Search_result.found_phrase search_result in
         let first_word = List.hd found_phrase in
         let first_word_loc = Index.loc_of_pos first_word.Search_result.found_word_pos index in
-        let most_unique_word = first_word.found_word in
         let page_num = first_word_loc
                        |> Index.Loc.line_loc
                        |> Index.Line_loc.page_num
                        |> (fun x -> x + 1)
+        in
+        let frequency_of_word = Misc_utils.frequencies_of_words
+            (Index.words_of_page_num page_num index)
+        in
+        let most_unique_word = found_phrase
+                               |> List.map (fun word ->
+                                   (word,
+                                    String_map.find word.Search_result.found_word frequency_of_word))
+                               |> List.fold_left (fun acc (x_word, x_freq) ->
+                                   match acc with
+                                   | None -> Some (x_word, x_freq)
+                                   | Some (_acc_word, acc_freq) ->
+                                     if x_freq > acc_freq then
+                                       Some (x_word, x_freq)
+                                     else
+                                       acc
+                                 )
+                                 None
+                               |> Option.get
+                               |> (fun (word, _freq) -> word.found_word)
         in
         match Xdg_utils.default_pdf_viewer_desktop_file_path () with
         | None -> fallback

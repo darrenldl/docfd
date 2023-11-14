@@ -81,3 +81,13 @@ let remove_leading_dots (s : string) =
 
 let div_round_to_closest x y =
   (x + y - 1) / y
+
+let frequencies_of_words (s : string Seq.t) : int String_map.t =
+  Seq.fold_left (fun m word ->
+      let count = Option.value ~default:0
+          (String_map.find_opt word m)
+      in
+      String_map.add word (count + 1) m
+    )
+    String_map.empty
+    s
