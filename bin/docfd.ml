@@ -567,6 +567,7 @@ let run
     | Ui_single_file -> Single_file_view.main
   in
   let rec loop () =
+    Sys.command "clear" |> ignore;
     let (term, tty_fd) =
       match init_document_src with
       | Stdin _ -> (
