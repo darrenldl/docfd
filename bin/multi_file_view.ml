@@ -13,13 +13,7 @@ module Vars = struct
   let require_field = Lwd.var Ui_base.empty_text_field
 
   let require_field_focus_handle = Nottui.Focus.make ()
-
-  let stop_search_signal = Atomic.make (Stop_signal.make ())
 end
-
-let cancel_search () =
-  Stop_signal.signal (Atomic.get Vars.stop_search_signal);
-  Atomic.set Vars.stop_search_signal (Stop_signal.make ())
 
 let set_document_selected ~choice_count n =
   let n = Misc_utils.bound_selection ~choice_count n in
@@ -27,7 +21,6 @@ let set_document_selected ~choice_count n =
   Lwd.set Vars.index_of_search_result_selected 0
 
 let reset_document_selected () =
-  cancel_search ();
   Lwd.set Vars.index_of_document_selected 0;
   Lwd.set Vars.index_of_search_result_selected 0
 
@@ -41,7 +34,7 @@ let reload_document (doc : Document.t) =
       reset_document_selected ();
       let document_store =
         Lwd.peek Ui_base.Vars.document_store
-        |> Document_store.add_document ~stop_signal:(Atomic.get Vars.stop_search_signal) doc
+        |> Document_store.add_document doc
       in
       Lwd.set Ui_base.Vars.document_store document_store;
     )
@@ -66,7 +59,6 @@ let update_search_phrase () =
   let document_store =
     Lwd.peek Ui_base.Vars.document_store
     |> Document_store.update_search_phrase
-      ~stop_signal:(Atomic.get Vars.stop_search_signal)
       search_phrase
   in
   Lwd.set Ui_base.Vars.document_store document_store
@@ -79,7 +71,6 @@ let update_content_reqs () =
   let document_store =
     Lwd.peek Ui_base.Vars.document_store
     |> Document_store.update_content_reqs
-      ~stop_signal:(Atomic.get Vars.stop_search_signal)
       content_reqs
   in
   Lwd.set Ui_base.Vars.document_store document_store
@@ -405,7 +396,6 @@ let keyboard_handler
       | (`Escape, [])
       | (`ASCII 'q', [])
       | (`ASCII 'C', [`Ctrl]) -> (
-          cancel_search ();
           Ui_base.Vars.action := None;
           Lwd.set Ui_base.Vars.quit true;
           `Handled
@@ -476,7 +466,6 @@ let keyboard_handler
       | (`ASCII '/', []) -> (
           Nottui.Focus.request Vars.search_field_focus_handle;
           Lwd.set Ui_base.Vars.input_mode Search;
-          cancel_search ();
           `Handled
         )
       | (`ASCII 'x', []) -> (
