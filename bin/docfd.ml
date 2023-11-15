@@ -436,7 +436,7 @@ let run
       Printf.fprintf oc "Scanning for documents\n"
     );
   let compute_init_ui_mode_and_document_src () : Ui_base.ui_mode * Ui_base.document_src =
-    if not (stdin_is_atty ()) then
+    if not (stdin_is_atty ()) then (
       match File_utils.read_in_channel_to_tmp_file stdin with
       | Ok tmp_file -> (
           Ui_base.(Ui_single_file, Stdin tmp_file)
@@ -445,7 +445,7 @@ let run
           Fmt.pr "Error: %s" msg;
           exit 1
         )
-    else (
+    ) else (
       match files with
       | [] -> Ui_base.(Ui_multi_file, Files [])
       | [ f ] -> (
@@ -558,17 +558,6 @@ let run
    | Ui_base.Ui_single_file -> Lwd.set Ui_base.Vars.Single_file.document_store init_document_store
    | _ -> ()
   );
-  (match init_document_src with
-   | Stdin _ -> (
-       let input =
-         Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
-       in
-       Ui_base.Vars.term := Some (Notty_unix.Term.create ~input ())
-     )
-   | Files _ -> (
-       Ui_base.Vars.term := Some (Notty_unix.Term.create ());
-     )
-  );
   Ui_base.Vars.eio_env := Some env;
   Lwd.set Ui_base.Vars.ui_mode init_ui_mode;
   let root : Nottui.ui Lwd.t =
@@ -577,14 +566,31 @@ let run
     | Ui_multi_file -> Multi_file_view.main
     | Ui_single_file -> Single_file_view.main
   in
-  let term = Ui_base.term () in
   let rec loop () =
+    let (term, tty_fd) =
+      match init_document_src with
+      | Stdin _ -> (
+          let input =
+            Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
+          in
+          (Notty_unix.Term.create ~input (), Some input)
+        )
+      | Files _ -> (
+          (Notty_unix.Term.create (), None)
+        )
+    in
+    Ui_base.Vars.term := Some term;
     Ui_base.Vars.action := None;
     Lwd.set Ui_base.Vars.quit false;
     Ui_base.ui_loop
       ~quit:Ui_base.Vars.quit
       ~term
       root;
+    (match tty_fd with
+     | None -> ()
+     | Some fd -> Unix.close fd
+    );
+    Notty_unix.Term.release term;
     match !Ui_base.Vars.action with
     | None -> ()
     | Some action -> (
@@ -647,8 +653,7 @@ let run
            close_out oc
          )
      )
-  );
-  Notty_unix.Term.release term
+  )
 
 let files_arg = Arg.(value & pos_all string [ "." ] & info [])
 
