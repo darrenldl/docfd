@@ -64,26 +64,26 @@ let update_content_reqs
       if Content_req_exp.is_empty content_reqs then (
         t.all_documents
       ) else (
-             t.all_documents
-             |> String_map.to_list
-             |> Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size
-               (fun (path, doc) ->
-                  if Index.fulfills_content_reqs content_reqs doc.Document.index then
-                    Some (path, doc)
-                  else
-                    None
-               )
-             |> String_map.of_list
+        t.all_documents
+        |> String_map.to_list
+        |> Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size
+          (fun (path, doc) ->
+             if Index.fulfills_content_reqs content_reqs doc.Document.index then
+               Some (path, doc)
+             else
+               None
+          )
+        |> String_map.of_list
       )
     in
     let search_results =
-           filtered_documents
-           |> String_map.to_list
-           |> Eio.Fiber.List.map ~max_fibers:Task_pool.size
-             (fun (path, doc) ->
-                (path, Index.search t.search_phrase doc.Document.index)
-             )
-           |> String_map.of_list
+      filtered_documents
+      |> String_map.to_list
+      |> Eio.Fiber.List.map ~max_fibers:Task_pool.size
+        (fun (path, doc) ->
+           (path, Index.search t.search_phrase doc.Document.index)
+        )
+      |> String_map.of_list
     in
     { t with
       content_reqs;
@@ -97,13 +97,13 @@ let update_search_phrase search_phrase (t : t) : t =
     t
   ) else (
     let search_results =
-           t.filtered_documents
-           |> String_map.to_list
-           |> Eio.Fiber.List.map ~max_fibers:Task_pool.size
-             (fun (path, doc) ->
-                (path, Index.search search_phrase doc.Document.index)
-             )
-           |> String_map.of_list
+      t.filtered_documents
+      |> String_map.to_list
+      |> Eio.Fiber.List.map ~max_fibers:Task_pool.size
+        (fun (path, doc) ->
+           (path, Index.search search_phrase doc.Document.index)
+        )
+      |> String_map.of_list
     in
     { t with
       search_phrase;
@@ -113,16 +113,16 @@ let update_search_phrase search_phrase (t : t) : t =
 
 let add_document (doc : Document.t) (t : t) : t =
   let filtered_documents =
-         if Index.fulfills_content_reqs t.content_reqs doc.index then
-           String_map.add doc.path doc t.filtered_documents
-         else
-           t.filtered_documents
+    if Index.fulfills_content_reqs t.content_reqs doc.index then
+      String_map.add doc.path doc t.filtered_documents
+    else
+      t.filtered_documents
   in
   let search_results =
-         String_map.add
-           doc.path
-           (Index.search t.search_phrase doc.index)
-           t.search_results
+    String_map.add
+      doc.path
+      (Index.search t.search_phrase doc.index)
+      t.search_results
   in
   { t with
     all_documents =
