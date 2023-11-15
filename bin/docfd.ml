@@ -251,7 +251,7 @@ let open_pdf_path index ~path ~search_result =
                 (Fmt.str "--page %d --find %s %s" page_num most_unique_word path)
             else if contains "evince" then
               make_command "evince"
-                (Fmt.str "--new-window --page-index %d --find %s %s" page_num most_unique_word path)
+                (Fmt.str "--page-index %d --find %s %s" page_num most_unique_word path)
             else if contains "xreader" then
               make_command "xreader"
                 (Fmt.str "--page-index %d --find %s %s" page_num most_unique_word path)
