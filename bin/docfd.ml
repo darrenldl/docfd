@@ -209,16 +209,18 @@ let open_pdf_path index ~path ~search_result =
                 Int_map.find page_num frequency_of_word_of_page
                 |> String_map.find word.Search_result.found_word
               in
-              (word, page_num, freq))
+              (word, page_num, freq)
+            )
           |> List.fold_left (fun acc x ->
               let (_x_word, _x_page_num, x_freq) = x in
               match acc with
               | None -> Some x
-              | Some (_acc_word, _acc_page_num, acc_freq) ->
-                if x_freq > acc_freq then
-                  Some x
-                else
-                  acc
+              | Some (_acc_word, _acc_page_num, acc_freq) -> (
+                  if x_freq > acc_freq then
+                    Some x
+                  else
+                    acc
+                )
             )
             None
           |> Option.get
