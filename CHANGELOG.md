@@ -10,8 +10,8 @@
     - atril
     - mupdf
 
-- Fixed change in terminal behavior by recreating `Notty_unix.Term.t`
-  after text editor is invoked
+- Fixed change in terminal behavior after invoking text editor
+  by recreating `Notty_unix.Term.t`
 
 ## 1.8.0
 
