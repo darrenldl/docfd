@@ -11,7 +11,7 @@ Navigating repo:
 
 Navigating "OCaml Programming: Correct + Efficient + Beautiful" book PDF:
 
-![](demo-vhs-gifs/pdf.gif)
+![](screenshots/pdf-viewer-integration.jpg)
 
 ## Installation
 
@@ -52,7 +52,7 @@ for the following editors:
 
 Docfd guesses the default PDF viewer based on the output
 of `xdg-mime query default application/pdf`,
-and calls the viewer either directly or via flatpak
+and invokes the viewer either directly or via flatpak
 depending on where the desktop file can be first found
 in the list of directories specified by `$XDG_DATA_DIRS`.
 
