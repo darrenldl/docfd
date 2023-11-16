@@ -13,6 +13,9 @@
 - Fixed change in terminal behavior after invoking text editor
   by recreating `Notty_unix.Term.t`
 
+- Fixed file auto-reloading to apply to all file types instead of
+  just text files
+
 ## 1.8.0
 
 - Swapped to using Nottui at [a337a77](https://github.com/let-def/lwd/commit/a337a778001e6c1dbaed7e758c9e05f300abd388)
