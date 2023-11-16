@@ -610,25 +610,28 @@ let run
             loop ()
           )
         | Open_file_and_search_result (doc, search_result) -> (
+            let old_stats = Unix.stat doc.path in
             if Misc_utils.path_is_pdf doc.path then (
               open_pdf_path
                 doc.index
                 ~path:doc.path
                 ~search_result
             ) else (
-              let old_stats = Unix.stat doc.path in
               open_text_path
                 doc.index
                 init_document_src
                 ~editor:!Params.text_editor
                 ~path:doc.path
-                ~search_result;
-              let new_stats = Unix.stat doc.path in
-              if Float.abs (new_stats.st_mtime -. old_stats.st_mtime) >= Params.float_compare_margin then (
-                (match Lwd.peek Ui_base.Vars.ui_mode with
-                 | Ui_single_file -> Single_file_view.reload_document doc
-                 | Ui_multi_file -> Multi_file_view.reload_document doc
-                );
+                ~search_result
+            );
+            let new_stats = Unix.stat doc.path in
+            if
+              Float.abs
+                (new_stats.st_mtime -. old_stats.st_mtime) >= Params.float_compare_margin
+            then (
+              (match Lwd.peek Ui_base.Vars.ui_mode with
+               | Ui_single_file -> Single_file_view.reload_document doc
+               | Ui_multi_file -> Multi_file_view.reload_document doc
               );
             );
             loop ()
