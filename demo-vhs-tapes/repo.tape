@@ -8,10 +8,10 @@ Set FontSize 15
 
 Set TypingSpeed 100ms
 
-Type@80ms "docfd --cache-dir .cache --exts md"
+Type@50ms "docfd --cache-dir .cache --exts md --max-depth 1 # using a local cache for demo"
 Enter
 
-Sleep 0.1s
+Sleep 1s
 
 Type "j"
 Sleep 1s
@@ -31,32 +31,13 @@ Sleep 1s
 Tab
 Sleep 1s
 
-Type "j"
-Sleep 1s
-Type "k"
-Sleep 1s
-
 Tab
-Sleep 2s
+Sleep 1s
 
-Type "x"
-Type "/"
-Type "search document"
 Enter
+Down@0.1s 30
 Sleep 1s
+Type@200ms ":q"
+Enter
 
-Type "J"
-Sleep 1s
-Type "J"
-Sleep 1s
-Type "K"
-Sleep 1s
-Type "K"
-Sleep 1s
-
-Type "j"
-Sleep 1s
-Type "j"
 Sleep 2s
-
-Type "q"

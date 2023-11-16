@@ -9,7 +9,8 @@ Navigating repo:
 
 ---
 
-Navigating "OCaml Programming: Correct + Efficient + Beautiful" book PDF:
+Navigating "OCaml Programming: Correct + Efficient + Beautiful" book PDF
+and opening it to location of search result via PDF viewer integration:
 
 ![](screenshots/pdf-viewer-integration.jpg)
 
