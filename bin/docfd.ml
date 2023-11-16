@@ -187,9 +187,9 @@ let open_pdf_path index ~path ~search_result =
                           )
                         |> List.sort_uniq Int.compare
         in
-        let frequency_of_word_of_page : int String_map.t Int_map.t =
+        let frequency_of_word_of_page_ci : int String_map.t Int_map.t =
           List.fold_left (fun acc page_num ->
-              let m = Misc_utils.frequencies_of_words
+              let m = Misc_utils.frequencies_of_words_ci
                   (Index.words_of_page_num page_num index)
               in
               Int_map.add page_num m acc
@@ -206,20 +206,30 @@ let open_pdf_path index ~path ~search_result =
                 |> Index.Line_loc.page_num
               in
               let freq =
-                Int_map.find page_num frequency_of_word_of_page
-                |> String_map.find word.Search_result.found_word
+                let m = Int_map.find page_num frequency_of_word_of_page_ci in
+                String_map.fold (fun word_on_page_ci freq acc_freq ->
+                    if
+                      CCString.find ~sub:word.Search_result.found_word_ci word_on_page_ci >= 0
+                    then (
+                      acc_freq + freq
+                    ) else (
+                      acc_freq
+                    )
+                  )
+                  m
+                  0
               in
               (word, page_num, freq)
             )
-          |> List.fold_left (fun acc x ->
+          |> List.fold_left (fun best x ->
               let (_x_word, _x_page_num, x_freq) = x in
-              match acc with
+              match best with
               | None -> Some x
-              | Some (_acc_word, _acc_page_num, acc_freq) -> (
-                  if x_freq > acc_freq then
+              | Some (_best_word, _best_page_num, best_freq) -> (
+                  if x_freq < best_freq then
                     Some x
                   else
-                    acc
+                    best
                 )
             )
             None
