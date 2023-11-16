@@ -205,8 +205,8 @@ let open_pdf_path index ~path ~search_result =
                 |> Index.Loc.line_loc
                 |> Index.Line_loc.page_num
               in
+              let m = Int_map.find page_num frequency_of_word_of_page_ci in
               let freq =
-                let m = Int_map.find page_num frequency_of_word_of_page_ci in
                 String_map.fold (fun word_on_page_ci freq acc_freq ->
                     if
                       CCString.find ~sub:word.Search_result.found_word_ci word_on_page_ci >= 0
