@@ -285,6 +285,34 @@ namely `Shift` is optional for scrolling through search result list.
 
 </details>
 
+## Limitations
+
+- File auto-reloading is not supported for PDF files,
+  as PDF viewers are invoked in the background via shell.
+  It is possible to support this properly
+  in the ways listed below, but requires
+  a lot of engineering for potentially very little gain:
+
+    - Docfd waits for PDF viewer to terminate fully
+      before resuming, but this
+      prohibits viewing multiple search results
+      simultaneously in different PDF viewer instances.
+
+    - Docfd manages the launched PDF viewers completely,
+      but these viewers are closed when Docfd terminates.
+
+    - Docfd invokes the PDF viewers via shell
+      so they stay open when Docfd terminates.
+      Docfd instead periodically checks if they are still running
+      via the PDF viewers' process IDs,
+      but this requires handling forks of forks.
+
+    - Outside of tracking whether the PDF viewer instances
+      interacting with the files are still running,
+      Docfd also needs to set up file update handling
+      either via `inotify` or via checking
+      file modification times periodically.
+
 ## Acknowledgement
 
 - Demo gifs are made using [vhs](https://github.com/charmbracelet/vhs).
