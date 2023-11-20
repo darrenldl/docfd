@@ -305,7 +305,7 @@ namely `Shift` is optional for scrolling through search result list.
       so they stay open when Docfd terminates.
       Docfd instead periodically checks if they are still running
       via the PDF viewers' process IDs,
-      but this requires handling forks of forks.
+      but this requires handling forks.
 
     - Outside of tracking whether the PDF viewer instances
       interacting with the files are still running,
