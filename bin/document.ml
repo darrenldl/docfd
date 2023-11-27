@@ -5,6 +5,7 @@ type t = {
   path : string;
   title : string option;
   index : Index.t;
+  last_scan : Timedesc.t;
 }
 
 let make ~path : t =
@@ -12,13 +13,7 @@ let make ~path : t =
     path;
     title = None;
     index = Index.make ();
-  }
-
-let copy (t : t) =
-  {
-    path = t.path;
-    title = t.title;
-    index = t.index;
+    last_scan = Timedesc.now ();
   }
 
 type work_stage =
@@ -181,7 +176,7 @@ let of_path ~(env : Eio_unix.Stdenv.base) path : (t, string) result =
         else
           Some (Index.line_of_global_line_num 0 index)
       in
-      Ok { path; title; index }
+      Ok { path; title; index; last_scan = Timedesc.now () }
     )
   | None -> (
       let* t =

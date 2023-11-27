@@ -28,6 +28,7 @@ depends: [
   "yojson"
   "eio_main"
   "containers-data"
+  "timedesc" {>= "2.0.0"}
   "odoc" {with-doc}
 ]
 build: [

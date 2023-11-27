@@ -37,6 +37,7 @@
    yojson
    eio_main
    containers-data
+   (timedesc (>= "2.0.0"))
    )
  (tags
   ("fuzzy" "document" "finder"

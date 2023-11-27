@@ -41,5 +41,8 @@
             domainslib
             digestif.ocaml
             digestif
+            timedesc
+            timedesc-tzlocal.unix
+            timedesc-tzdb.full
  )
 )
