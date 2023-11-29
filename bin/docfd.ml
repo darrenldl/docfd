@@ -448,48 +448,48 @@ let run
   let compute_init_ui_mode_and_document_src : unit -> Ui_base.ui_mode * Ui_base.document_src =
     let stdin_tmp_file = ref None in
     fun () ->
-    if not (stdin_is_atty ()) then (
-      match !stdin_tmp_file with
-      | None -> (
-      match File_utils.read_in_channel_to_tmp_file stdin with
-      | Ok tmp_file -> (
-        stdin_tmp_file := Some tmp_file;
-          Ui_base.(Ui_single_file, Stdin tmp_file)
-        )
-      | Error msg -> (
-          Fmt.pr "Error: %s" msg;
-          exit 1
-        )
+      if not (stdin_is_atty ()) then (
+        match !stdin_tmp_file with
+        | None -> (
+            match File_utils.read_in_channel_to_tmp_file stdin with
+            | Ok tmp_file -> (
+                stdin_tmp_file := Some tmp_file;
+                Ui_base.(Ui_single_file, Stdin tmp_file)
+              )
+            | Error msg -> (
+                Fmt.pr "Error: %s" msg;
+                exit 1
+              )
+          )
+        | Some tmp_file -> (
+            Ui_base.(Ui_single_file, Stdin tmp_file)
+          )
+      ) else (
+        match files with
+        | [] -> Ui_base.(Ui_multi_file, Files [])
+        | [ f ] -> (
+            if Sys.is_directory f then
+              Ui_base.(Ui_multi_file, Files (list_files_recursively f))
+            else
+              Ui_base.(Ui_single_file, Files [ f ])
+          )
+        | _ -> (
+            Ui_base.(Ui_multi_file,
+                     Files (
+                       files
+                       |> List.to_seq
+                       |> Seq.flat_map (fun f ->
+                           if Sys.is_directory f then
+                             List.to_seq (list_files_recursively f)
+                           else
+                             Seq.return f
+                         )
+                       |> List.of_seq
+                       |> List.sort_uniq String.compare
+                     )
+                    )
+          )
       )
-      | Some tmp_file -> (
-          Ui_base.(Ui_single_file, Stdin tmp_file)
-      )
-    ) else (
-      match files with
-      | [] -> Ui_base.(Ui_multi_file, Files [])
-      | [ f ] -> (
-          if Sys.is_directory f then
-            Ui_base.(Ui_multi_file, Files (list_files_recursively f))
-          else
-            Ui_base.(Ui_single_file, Files [ f ])
-        )
-      | _ -> (
-          Ui_base.(Ui_multi_file,
-                   Files (
-                     files
-                     |> List.to_seq
-                     |> Seq.flat_map (fun f ->
-                         if Sys.is_directory f then
-                           List.to_seq (list_files_recursively f)
-                         else
-                           Seq.return f
-                       )
-                     |> List.of_seq
-                     |> List.sort_uniq String.compare
-                   )
-                  )
-        )
-    )
   in
   let compute_document_src () =
     snd (compute_init_ui_mode_and_document_src ())
