@@ -29,7 +29,7 @@ let set_search_result_selected ~choice_count n =
   Lwd.set Vars.index_of_search_result_selected n
 
 let reload_document (doc : Document.t) =
-  match Document.of_path ~env:(Ui_base.eio_env ()) doc.path with
+  match Document.of_path ~env:(Ui_base.eio_env ()) (Document.path doc) with
   | Ok doc -> (
       reset_document_selected ();
       let document_store =
@@ -98,10 +98,11 @@ module Top_pane = struct
       in
       let preview_line_images =
         let line_count =
-          min Params.preview_line_count (Index.global_line_count doc.index)
+          min Params.preview_line_count (Index.global_line_count (Document.index doc))
         in
         OSeq.(0 --^ line_count)
-        |> Seq.map (fun global_line_num -> Index.line_of_global_line_num global_line_num doc.index)
+        |> Seq.map (fun global_line_num ->
+            Index.line_of_global_line_num global_line_num (Document.index doc))
         |> Seq.map (fun line ->
             (I.string A.(bg lightgreen) " ")
             <|>
@@ -115,16 +116,16 @@ module Top_pane = struct
       let path_image =
         I.string A.(fg lightgreen) "@ "
         <|>
-        I.string A.empty doc.path
+        I.string A.empty (Document.path doc)
       in
       let last_scan_image =
         I.string A.(fg lightgreen) "Last scan: "
         <|>
         I.string A.empty
-          (Timedesc.to_string ~format:Params.last_scan_format_string doc.last_scan)
+          (Timedesc.to_string ~format:Params.last_scan_format_string (Document.last_scan doc))
       in
       let title =
-        Option.value ~default:"" doc.title
+        Option.value ~default:"" (Document.title doc)
       in
       (if selected then (
           I.string A.(fg lightblue ++ st bold) title
@@ -412,7 +413,7 @@ let keyboard_handler
           Option.iter (fun (doc, _search_results) ->
               let document_store = Lwd.peek Ui_base.Vars.document_store in
               let single_file_document_store =
-                Option.get (Document_store.single_out ~path:doc.Document.path document_store)
+                Option.get (Document_store.single_out ~path:(Document.path doc) document_store)
               in
               Lwd.set Ui_base.Vars.Single_file.document_store single_file_document_store;
               Lwd.set Ui_base.Vars.Single_file.index_of_search_result_selected

@@ -620,21 +620,23 @@ let run
             loop ()
           )
         | Open_file_and_search_result (doc, search_result) -> (
-            let old_stats = Unix.stat doc.path in
-            if Misc_utils.path_is_pdf doc.path then (
+            let index = Document.index doc in
+            let path = Document.path doc in
+            let old_stats = Unix.stat path in
+            if Misc_utils.path_is_pdf path then (
               open_pdf_path
-                doc.index
-                ~path:doc.path
+                index
+                ~path
                 ~search_result
             ) else (
               open_text_path
-                doc.index
+                index
                 init_document_src
                 ~editor:!Params.text_editor
-                ~path:doc.path
+                ~path
                 ~search_result
             );
-            let new_stats = Unix.stat doc.path in
+            let new_stats = Unix.stat path in
             if
               Float.abs
                 (new_stats.st_mtime -. old_stats.st_mtime) >= Params.float_compare_margin

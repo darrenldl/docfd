@@ -8,6 +8,14 @@ type t = {
   last_scan : Timedesc.t;
 }
 
+let path (t : t) = t.path
+
+let title (t : t) = t.title
+
+let index (t : t) = t.index
+
+let last_scan (t : t) = t.last_scan
+
 let make ~path : t =
   {
     path;

@@ -68,7 +68,7 @@ let update_content_reqs
         |> String_map.to_list
         |> Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size
           (fun (path, doc) ->
-             if Index.fulfills_content_reqs content_reqs doc.Document.index then
+             if Index.fulfills_content_reqs content_reqs (Document.index doc) then
                Some (path, doc)
              else
                None
@@ -81,7 +81,7 @@ let update_content_reqs
       |> String_map.to_list
       |> Eio.Fiber.List.map ~max_fibers:Task_pool.size
         (fun (path, doc) ->
-           (path, Index.search t.search_phrase doc.Document.index)
+           (path, Index.search t.search_phrase (Document.index doc))
         )
       |> String_map.of_list
     in
@@ -101,7 +101,7 @@ let update_search_phrase search_phrase (t : t) : t =
       |> String_map.to_list
       |> Eio.Fiber.List.map ~max_fibers:Task_pool.size
         (fun (path, doc) ->
-           (path, Index.search search_phrase doc.Document.index)
+           (path, Index.search search_phrase (Document.index doc))
         )
       |> String_map.of_list
     in
@@ -113,21 +113,21 @@ let update_search_phrase search_phrase (t : t) : t =
 
 let add_document (doc : Document.t) (t : t) : t =
   let filtered_documents =
-    if Index.fulfills_content_reqs t.content_reqs doc.index then
-      String_map.add doc.path doc t.filtered_documents
+    if Index.fulfills_content_reqs t.content_reqs (Document.index doc) then
+      String_map.add (Document.path doc) doc t.filtered_documents
     else
       t.filtered_documents
   in
   let search_results =
     String_map.add
-      doc.path
-      (Index.search t.search_phrase doc.index)
+      (Document.path doc)
+      (Index.search t.search_phrase (Document.index doc))
       t.search_results
   in
   { t with
     all_documents =
       String_map.add
-        doc.path
+        (Document.path doc)
         doc
         t.all_documents;
     filtered_documents;

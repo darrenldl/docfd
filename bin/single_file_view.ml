@@ -27,7 +27,7 @@ let update_search_phrase () =
   Lwd.set Ui_base.Vars.Single_file.document_store document_store
 
 let reload_document (doc : Document.t) : unit =
-  match Document.of_path ~env:(Ui_base.eio_env ()) doc.path with
+  match Document.of_path ~env:(Ui_base.eio_env ()) (Document.path doc) with
   | Ok doc -> (
       reset_search_result_selected ();
       let global_document_store =
@@ -78,11 +78,12 @@ module Bottom_pane = struct
           List.assoc input_mode Ui_base.Status_bar.input_mode_images;
           Ui_base.Status_bar.element_spacer;
           Notty.I.strf ~attr:Ui_base.Status_bar.attr
-            "Document: %s" document.path;
+            "Document: %s" (Document.path document);
           Ui_base.Status_bar.element_spacer;
           Notty.I.strf ~attr:Ui_base.Status_bar.attr
             "Last scan: %a"
-            (Timedesc.pp ~format:Params.last_scan_format_string ()) document.last_scan
+            (Timedesc.pp ~format:Params.last_scan_format_string ())
+            (Document.last_scan document);
         ]
       |> Nottui.Ui.atom
     in

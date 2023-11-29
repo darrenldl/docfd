@@ -81,7 +81,7 @@ module Content_view = struct
         ?search_result
         ~height
         ~width
-        document.index
+        (Document.index document)
     in
     Lwd.return (Nottui.Ui.atom content)
 end
@@ -118,7 +118,7 @@ module Search_result_list = struct
       Lwd.return Nottui.Ui.empty
     ) else (
       let render_mode =
-        if Misc_utils.path_is_pdf document.path then (
+        if Misc_utils.path_is_pdf (Document.path document) then (
           `Page_num_only
         ) else (
           `Line_num_only
@@ -130,7 +130,7 @@ module Search_result_list = struct
           ~start:search_result_selected
           ~end_exc:(min (search_result_selected + height) result_count)
           ~width
-          document.index
+          (Document.index document)
           search_results
       in
       let pane =
