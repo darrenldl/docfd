@@ -445,16 +445,25 @@ let run
   do_if_debug (fun oc ->
       Printf.fprintf oc "Scanning for documents\n"
     );
-  let compute_init_ui_mode_and_document_src () : Ui_base.ui_mode * Ui_base.document_src =
+  let compute_init_ui_mode_and_document_src : unit -> Ui_base.ui_mode * Ui_base.document_src =
+    let stdin_tmp_file = ref None in
+    fun () ->
     if not (stdin_is_atty ()) then (
+      match !stdin_tmp_file with
+      | None -> (
       match File_utils.read_in_channel_to_tmp_file stdin with
       | Ok tmp_file -> (
+        stdin_tmp_file := Some tmp_file;
           Ui_base.(Ui_single_file, Stdin tmp_file)
         )
       | Error msg -> (
           Fmt.pr "Error: %s" msg;
           exit 1
         )
+      )
+      | Some tmp_file -> (
+          Ui_base.(Ui_single_file, Stdin tmp_file)
+      )
     ) else (
       match files with
       | [] -> Ui_base.(Ui_multi_file, Files [])
