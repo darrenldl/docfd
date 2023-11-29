@@ -13,7 +13,7 @@ let make ~path : t =
     path;
     title = None;
     index = Index.make ();
-    last_scan = Timedesc.now ();
+    last_scan = Timedesc.now ~tz_of_date_time:Params.tz ();
   }
 
 type work_stage =
@@ -176,7 +176,7 @@ let of_path ~(env : Eio_unix.Stdenv.base) path : (t, string) result =
         else
           Some (Index.line_of_global_line_num 0 index)
       in
-      Ok { path; title; index; last_scan = Timedesc.now () }
+      Ok { path; title; index; last_scan = Timedesc.now ~tz_of_date_time:Params.tz () }
     )
   | None -> (
       let* t =

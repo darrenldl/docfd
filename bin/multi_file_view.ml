@@ -117,31 +117,29 @@ module Top_pane = struct
         <|>
         I.string A.empty doc.path
       in
+      let last_scan_image =
+        I.string A.(fg lightgreen) "Last scan: "
+        <|>
+        I.string A.empty
+          (Timedesc.to_string ~format:Params.last_scan_format_string doc.last_scan)
+      in
       let title =
         Option.value ~default:"" doc.title
       in
-      if selected then (
-        (I.string A.(fg lightblue ++ st bold) title)
-        <->
-        (I.string A.empty "  "
-         <|>
-         I.vcat
-           [ search_result_score_image;
-             path_image;
-             preview_image;
-           ]
-        )
-      ) else (
-        (I.string A.(fg lightblue) title)
-        <->
-        (I.string A.empty "  "
-         <|>
-         I.vcat
-           [ search_result_score_image;
-             path_image;
-             preview_image;
-           ]
-        )
+      (if selected then (
+          I.string A.(fg lightblue ++ st bold) title
+        ) else (
+         I.string A.(fg lightblue) title
+       ))
+      <->
+      (I.string A.empty "  "
+       <|>
+       I.vcat
+         [ search_result_score_image;
+           path_image;
+           last_scan_image;
+           preview_image;
+         ]
       )
 
     let main

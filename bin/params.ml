@@ -29,3 +29,14 @@ let default_cache_size = 100
 let cache_size = ref default_cache_size
 
 let cache_dir : string option ref = ref None
+
+let tz : Timedesc.Time_zone.t =
+  Option.value ~default:Timedesc.Time_zone.utc
+    (Timedesc.Time_zone.local ())
+
+let last_scan_format_string =
+  "{year}-{mon:0X}-{day:0X} {hour:0X}:{min:0X}:{sec:0X}"
+  ^
+  (match Timedesc.Time_zone.local () with
+   | None -> "Z"
+   | Some _ -> "")
