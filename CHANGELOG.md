@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.0
+
+- Added "Last scan" field display to multi-file view and single file view
+
 ## 1.9.0
 
 - Added PDF viewer integration for:
