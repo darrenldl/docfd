@@ -79,6 +79,10 @@ module Bottom_pane = struct
           Ui_base.Status_bar.element_spacer;
           Notty.I.strf ~attr:Ui_base.Status_bar.attr
             "Document: %s" document.path;
+          Ui_base.Status_bar.element_spacer;
+          Notty.I.strf ~attr:Ui_base.Status_bar.attr
+            "Last scan: %a"
+            (Timedesc.pp ~format:Params.last_scan_format_string ()) document.last_scan
         ]
       |> Nottui.Ui.atom
     in
