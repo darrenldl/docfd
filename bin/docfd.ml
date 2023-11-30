@@ -137,7 +137,14 @@ let debug_log_arg =
     & info [ "debug-log" ] ~doc ~docv:"FILE"
   )
 
-let list_files_recursively (dir : string) : string list =
+let do_if_debug (f : out_channel -> unit) =
+  match !Params.debug_output with
+  | None -> ()
+  | Some oc -> (
+      f oc
+    )
+
+let list_files_recursive (dir : string) : string list =
   let l = ref [] in
   let add x =
     l := x :: !l
@@ -169,6 +176,39 @@ let list_files_recursively (dir : string) : string list =
   in
   aux 0 dir;
   !l
+
+let mkdir_recursive (dir : string) : unit =
+  let rec aux acc parts =
+    match parts with
+    | [] -> ()
+    | "" :: xs -> (
+        aux Filename.dir_sep xs
+      )
+    | x :: xs -> (
+        let acc = Filename.concat acc x in
+        match Sys.is_directory acc with
+        | true -> aux acc xs
+        | false -> (
+            Fmt.pr "Error: %S is not a directory\n" acc;
+            exit 1
+          )
+        | exception (Sys_error _) -> (
+            do_if_debug (fun oc ->
+                Printf.fprintf oc "Creating directory: %S\n" acc
+              );
+            (try
+               Sys.mkdir acc 0o755
+             with
+             | _ -> (
+                 Fmt.pr "Error: Failed to create directory: %S\n" acc;
+                 exit 1
+               )
+            );
+            aux acc xs
+          )
+      )
+  in
+  aux "" (CCString.split ~by:Filename.dir_sep dir)
 
 let open_pdf_path index ~path ~search_result =
   let path = Filename.quote path in
@@ -317,13 +357,6 @@ let open_text_path index document_src ~editor ~path ~search_result =
   in
   Sys.command cmd |> ignore
 
-let do_if_debug (f : out_channel -> unit) =
-  match !Params.debug_output with
-  | None -> ()
-  | Some oc -> (
-      f oc
-    )
-
 let run
     ~(env : Eio_unix.Stdenv.base)
     (debug_log : string)
@@ -386,24 +419,8 @@ let run
     if no_cache then (
       None
     ) else (
-      if Sys.file_exists cache_dir then (
-        if not (Sys.is_directory cache_dir) then (
-          Fmt.pr "Error: \"%s\" is not a directory\n" cache_dir;
-          exit 1
-        ) else (
-          Some cache_dir
-        )
-      ) else (
-        (try
-           Sys.mkdir cache_dir 0o755
-         with
-         | _ -> (
-             Fmt.pr "Error: Failed to create directory \"%s\"\n" cache_dir;
-             exit 1
-           )
-        );
-        Some cache_dir
-      )
+      mkdir_recursive cache_dir;
+      Some cache_dir
     )
   );
   (match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
@@ -469,7 +486,7 @@ let run
         | [] -> Ui_base.(Ui_multi_file, Files [])
         | [ f ] -> (
             if Sys.is_directory f then
-              Ui_base.(Ui_multi_file, Files (list_files_recursively f))
+              Ui_base.(Ui_multi_file, Files (list_files_recursive f))
             else
               Ui_base.(Ui_single_file, Files [ f ])
           )
@@ -480,7 +497,7 @@ let run
                        |> List.to_seq
                        |> Seq.flat_map (fun f ->
                            if Sys.is_directory f then
-                             List.to_seq (list_files_recursively f)
+                             List.to_seq (list_files_recursive f)
                            else
                              Seq.return f
                          )
