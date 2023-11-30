@@ -8,6 +8,8 @@
 
 - Added code to recursively mkdir cache directory if needed
 
+- Search procedure parameter tuning
+
 ## 1.9.0
 
 - Added PDF viewer integration for:
