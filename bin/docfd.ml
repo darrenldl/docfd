@@ -585,20 +585,44 @@ let run
     | Ui_multi_file -> Multi_file_view.main
     | Ui_single_file -> Single_file_view.main
   in
+  let get_term, close_term =
+    let term_and_tty_fd = ref None in
+    ((fun () ->
+        match !term_and_tty_fd with
+        | None -> (
+            match init_document_src with
+            | Stdin _ -> (
+                let input =
+                  Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
+                in
+                let term = Notty_unix.Term.create ~input () in
+                term_and_tty_fd := Some (term, Some input);
+                term
+              )
+            | Files _ -> (
+                let term = Notty_unix.Term.create () in
+                term_and_tty_fd := Some (term, None);
+                term
+              )
+          )
+        | Some (term, _tty_fd) -> term
+      ),
+     (fun () ->
+        match !term_and_tty_fd with
+        | None -> ()
+        | Some (term, tty_fd) -> (
+            (match tty_fd with
+             | None -> ()
+             | Some fd -> Unix.close fd);
+            Notty_unix.Term.release term;
+            term_and_tty_fd := None
+          )
+     )
+    )
+  in
   let rec loop () =
     Sys.command "clear -x" |> ignore;
-    let (term, tty_fd) =
-      match init_document_src with
-      | Stdin _ -> (
-          let input =
-            Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
-          in
-          (Notty_unix.Term.create ~input (), Some input)
-        )
-      | Files _ -> (
-          (Notty_unix.Term.create (), None)
-        )
-    in
+    let term = get_term () in
     Ui_base.Vars.term := Some term;
     Ui_base.Vars.action := None;
     Lwd.set Ui_base.Vars.quit false;
@@ -606,11 +630,6 @@ let run
       ~quit:Ui_base.Vars.quit
       ~term
       root;
-    (match tty_fd with
-     | None -> ()
-     | Some fd -> Unix.close fd
-    );
-    Notty_unix.Term.release term;
     match !Ui_base.Vars.action with
     | None -> ()
     | Some action -> (
@@ -638,6 +657,7 @@ let run
                 ~path
                 ~search_result
             ) else (
+              close_term ();
               open_text_path
                 index
                 init_document_src
@@ -660,6 +680,7 @@ let run
       )
   in
   loop ();
+  close_term ();
   (match init_document_src with
    | Stdin tmp_file -> (
        try
