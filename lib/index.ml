@@ -481,8 +481,8 @@ module Search = struct
         else (
           String.equal search_word_ci indexed_word
           || CCString.find ~sub:search_word_ci indexed_word >= 0
-          || (CCString.find ~sub:indexed_word search_word_ci >= 0
-              && indexed_word_len >= 3)
+          || (indexed_word_len >= 2
+              && CCString.find ~sub:indexed_word search_word_ci >= 0)
           || (consider_edit_dist
               && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word search_word_ci.[0]
               && Spelll.match_with dfa indexed_word)
