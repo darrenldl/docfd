@@ -4,6 +4,10 @@
 
 - Added "Last scan" field display to multi-file view and single file view
 
+- Reduced screen flashing by only recreating `Notty_unix.Term.t` when needed
+
+- Added code to recursively mkdir cache directory if needed
+
 ## 1.9.0
 
 - Added PDF viewer integration for:
