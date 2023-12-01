@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "docfd"
-version: "1.9.0"
+version: "1.10.0"
 synopsis: "TUI multiline fuzzy document finder"
 maintainer: "Darren Li"
 authors: "Darren Li"
@@ -57,6 +57,7 @@ depends: [
   "optint" {= "0.3.0"}
   "oseq" {= "0.5"}
   "psq" {= "0.2.1"}
+  "ptime" {= "1.1.0"}
   "result" {= "1.5"}
   "saturn" {= "0.4.0"}
   "saturn_lockfree" {= "0.4.0"}
@@ -64,6 +65,9 @@ depends: [
   "spelll" {= "0.4"}
   "stdlib-shims" {= "0.3.0"}
   "thread-table" {= "1.0.0"}
+  "timedesc" {= "2.0.0"}
+  "timedesc-tzdb" {= "2.0.0"}
+  "timedesc-tzlocal" {= "2.0.0"}
   "topkg" {= "1.0.7"}
   "uring" {= "0.7"}
   "uutf" {= "1.0.3"}
