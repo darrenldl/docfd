@@ -7,6 +7,7 @@ OCPINDENT = ocp-indent \
 .PHONY: all
 all :
 	python3 update-version-string.py
+	opam-2.2 lock .
 	dune build @all
 
 .PHONY: podman-build
@@ -20,6 +21,7 @@ podman-build-demo-vhs:
 .PHONY: release-static
 release-static :
 	python3 update-version-string.py
+	opam-2.2 lock .
 	OCAMLPARAM='_,ccopt=-static' dune build --release bin/docfd.exe
 	mkdir -p statically-linked
 	cp -f _build/default/bin/docfd.exe statically-linked/docfd
