@@ -133,13 +133,13 @@ module Top_pane = struct
          I.string A.(fg lightblue) title
        ))
       <->
-      (I.string A.empty "  "
+      (I.string A.empty "    "
        <|>
        I.vcat
          [ search_result_score_image;
            path_image;
-           last_scan_image;
            preview_image;
+           last_scan_image;
          ]
       )
 
