@@ -10,6 +10,8 @@
 
 - Search procedure parameter tuning
 
+- UI tuning
+
 ## 1.9.0
 
 - Added PDF viewer integration for:
