@@ -29,12 +29,12 @@ let sanitize_string s =
         let c = String.get_uint8 s pos in
         if c land 0b1000_0000 = 0b0000_0000 then (
           if 0x20 <= c && c <= 0x7E then (
-            BytesLabels.blit_string ~src:s ~src_pos:pos ~dst:bytes ~dst_pos:pos ~len:1
+            Bytes.blit_string s pos bytes pos 1
           );
           aux (pos+1)
         ) else (
           let len = Uchar.utf_decode_length decode in
-          BytesLabels.blit_string ~src:s ~src_pos:pos ~dst:bytes ~dst_pos:pos ~len;
+          Bytes.blit_string s pos bytes pos len;
           aux (pos+len)
         )
       ) else (
@@ -70,7 +70,7 @@ let remove_leading_dots (s : string) =
         if String.get s pos = '.' then
           aux (pos + 1)
         else (
-          StringLabels.sub s ~pos ~len:(str_len - pos)
+          String.sub s pos (str_len - pos)
         )
       ) else (
         ""
