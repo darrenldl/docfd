@@ -8,7 +8,7 @@ type t = {
   all_documents : Document.t String_map.t;
   filtered_documents : Document.t String_map.t;
   content_reqs : Content_req_exp.t;
-  search_phrase : Search_phrase.t;
+  search_exp : Search_exp.t;
   search_results : Search_result.t array String_map.t;
 }
 
@@ -20,13 +20,13 @@ let empty : t =
     all_documents = String_map.empty;
     filtered_documents = String_map.empty;
     content_reqs = Content_req_exp.empty;
-    search_phrase = Search_phrase.empty;
+    search_exp = Search_exp.empty;
     search_results = String_map.empty;
   }
 
 let content_reqs (t : t) = t.content_reqs
 
-let search_phrase (t : t) = t.search_phrase
+let search_exp (t : t) = t.search_exp
 
 let single_out ~path (t : t) =
   match String_map.find_opt path t.filtered_documents with
@@ -39,7 +39,7 @@ let single_out ~path (t : t) =
         all_documents;
         filtered_documents = all_documents;
         content_reqs = t.content_reqs;
-        search_phrase = t.search_phrase;
+        search_exp = t.search_exp;
         search_results = String_map.(add path search_results empty);
       }
 
@@ -81,7 +81,7 @@ let update_content_reqs
       |> String_map.to_list
       |> Eio.Fiber.List.map ~max_fibers:Task_pool.size
         (fun (path, doc) ->
-           (path, Index.search t.search_phrase (Document.index doc))
+           (path, Index.search t.search_exp (Document.index doc))
         )
       |> String_map.of_list
     in
@@ -92,8 +92,8 @@ let update_content_reqs
     }
   )
 
-let update_search_phrase search_phrase (t : t) : t =
-  if Search_phrase.equal search_phrase t.search_phrase then (
+let update_search_exp search_exp (t : t) : t =
+  if Search_exp.equal search_exp t.search_exp then (
     t
   ) else (
     let search_results =
@@ -101,12 +101,12 @@ let update_search_phrase search_phrase (t : t) : t =
       |> String_map.to_list
       |> Eio.Fiber.List.map ~max_fibers:Task_pool.size
         (fun (path, doc) ->
-           (path, Index.search search_phrase (Document.index doc))
+           (path, Index.search search_exp (Document.index doc))
         )
       |> String_map.of_list
     in
     { t with
-      search_phrase;
+      search_exp;
       search_results;
     }
   )
@@ -121,7 +121,7 @@ let add_document (doc : Document.t) (t : t) : t =
   let search_results =
     String_map.add
       (Document.path doc)
-      (Index.search t.search_phrase (Document.index doc))
+      (Index.search t.search_exp (Document.index doc))
       t.search_results
   in
   { t with
@@ -142,7 +142,7 @@ let of_seq (s : Document.t Seq.t) =
     s
 
 let usable_documents (t : t) : (Document.t * Search_result.t array) array =
-  if Search_phrase.is_empty t.search_phrase then (
+  if Search_exp.is_empty t.search_exp then (
     t.filtered_documents
     |> String_map.to_seq
     |> Seq.map (fun (_path, doc) -> (doc, [||]))

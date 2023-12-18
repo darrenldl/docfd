@@ -584,7 +584,7 @@ module Search = struct
       (exp : Search_exp.t)
       (t : t)
     : Search_result_heap.t =
-    Search_exp.flatten exp
+    Search_exp.flattened exp
     |> List.to_seq
     |> Seq.map (fun phrase -> search_single ~consider_edit_dist phrase t)
     |> Seq.fold_left Search_result_heap.merge Search_result_heap.empty

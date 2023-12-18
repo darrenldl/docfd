@@ -41,7 +41,7 @@ module Parsers = struct
     )
     >>| fun l ->
     let phrase = String.concat "" l in
-    Search_phrase.make ~fuzzy_max_edit_distance:0 ~phrase
+    Search_phrase.make ~fuzzy_max_edit_distance:0 phrase
 
   let and_op =
     char '&' *> spaces *> return (fun x y -> Binary_op (And, x, y))

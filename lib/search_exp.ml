@@ -11,7 +11,33 @@ and binary_op =
 type t = {
   fuzzy_max_edit_distance : int;
   exp : exp;
+  flattened : Search_phrase.t list;
 }
+
+let fuzzy_max_edit_distance (t : t) = t.fuzzy_max_edit_distance
+
+let flattened (t : t) = t.flattened
+
+let empty : t = {
+  fuzzy_max_edit_distance = 0;
+  exp = `List [];
+  flattened = [];
+}
+
+let is_empty (t : t) =
+  t.exp = `List []
+
+let equal (t1 : t) (t2 : t) =
+  let rec aux (e1 : exp) (e2 : exp) =
+    match e1, e2 with
+    | `Word s1, `Word s2 -> String.equal s1 s2
+    | `List l1, `List l2 -> List.equal aux l1 l2
+    | `Binary_op (Or, e1x, e1y), `Binary_op (Or, e2x, e2y) ->
+      aux e1x e2x && aux e1y e2y
+    | `Optional e1, `Optional e2 -> aux e1 e2
+    | _, _ -> false
+  in
+  aux t1.exp t2.exp
 
 let as_word x : exp = `Word x
 
@@ -68,7 +94,7 @@ module Parsers = struct
     <* spaces
 end
 
-let flatten ({ fuzzy_max_edit_distance; exp } : t) : Search_phrase.t list =
+let flatten ~fuzzy_max_edit_distance (exp : exp) : Search_phrase.t list =
   let rec aux (exp : exp) : string Seq.t =
     match exp with
     | `Word s -> Seq.return s
@@ -94,11 +120,17 @@ let flatten ({ fuzzy_max_edit_distance; exp } : t) : Search_phrase.t list =
       )
   in
   aux exp
-  |> Seq.map (fun phrase -> Search_phrase.make ~fuzzy_max_edit_distance ~phrase)
+  |> Seq.map (fun phrase -> Search_phrase.make ~fuzzy_max_edit_distance phrase)
   |> List.of_seq
   |> List.sort_uniq Search_phrase.compare
 
-let parse ~fuzzy_max_edit_distance s =
-  match Angstrom.(parse_string ~consume:Consume.All) Parsers.p s with
-  | Ok e -> e
-  | Error _ -> `List []
+let make ~fuzzy_max_edit_distance s =
+  let exp =
+    match Angstrom.(parse_string ~consume:Consume.All) Parsers.p s with
+    | Ok exp -> exp
+    | Error _ -> `List []
+  in
+  { fuzzy_max_edit_distance;
+    exp;
+    flattened = flatten ~fuzzy_max_edit_distance exp;
+  }

@@ -51,15 +51,14 @@ let reload_document_selected
 
 let update_search_phrase () =
   reset_document_selected ();
-  let search_phrase =
-    Search_phrase.make
+  let search_exp =
+    Search_exp.make
       ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
-      ~phrase:(fst @@ Lwd.peek Vars.search_field)
+      (fst @@ Lwd.peek Vars.search_field)
   in
   let document_store =
     Lwd.peek Ui_base.Vars.document_store
-    |> Document_store.update_search_phrase
-      search_phrase
+    |> Document_store.update_search_exp search_exp
   in
   Lwd.set Ui_base.Vars.document_store document_store
 

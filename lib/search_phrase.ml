@@ -36,7 +36,7 @@ let empty : t =
 
 let make
     ~fuzzy_max_edit_distance
-    ~phrase
+    phrase
   =
   let phrase = phrase
                |> Tokenize.f ~drop_spaces:true

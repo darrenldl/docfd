@@ -12,11 +12,11 @@ val empty : t
 
 val update_content_reqs : Content_req_exp.t -> t -> t
 
-val update_search_phrase : Search_phrase.t -> t -> t
+val update_search_exp : Search_exp.t -> t -> t
 
 val content_reqs : t -> Content_req_exp.t
 
-val search_phrase : t -> Search_phrase.t
+val search_exp : t -> Search_exp.t
 
 val add_document : Document.t -> t -> t
 
