@@ -56,7 +56,7 @@ module Parsers = struct
           choice [
             (end_of_input *> return empty);
             (phrase >>| fun p -> Phrase p);
-            (char '(' *> spaces *> exp <* spaces <* char ')' <* spaces);
+            (char '(' *> spaces *> exp <* char ')' <* spaces);
           ]
         in
         let conj = chainl1 base and_op in

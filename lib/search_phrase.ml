@@ -25,6 +25,9 @@ let fuzzy_index t =
 let equal (t1 : t) (t2 : t) =
   List.equal String.equal t1.phrase t2.phrase
 
+let compare (t1 : t) (t2 : t) =
+  List.compare String.compare t1.phrase t2.phrase
+
 let empty : t =
   {
     phrase = [];
