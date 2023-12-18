@@ -46,7 +46,7 @@ val words_of_page_num : int -> t -> string Seq.t
 
 val line_count_of_page_num : int -> t -> int
 
-val search : Search_phrase.t -> t -> Search_result.t array
+val search : Search_exp.t -> t -> Search_result.t array
 
 val fulfills_content_reqs : Content_req_exp.t -> t -> bool
 

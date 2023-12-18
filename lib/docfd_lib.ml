@@ -4,7 +4,7 @@ module Search_result = Search_result
 
 module Search_phrase = Search_phrase
 
-module Search_phrase_exp = Search_phrase_exp
+module Search_exp = Search_exp
 
 module Content_req_exp = Content_req_exp
 

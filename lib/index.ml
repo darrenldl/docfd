@@ -514,13 +514,13 @@ module Search = struct
     in
     aux around_pos l
 
-  let search
+  let search_single
       ~consider_edit_dist
       (phrase : Search_phrase.t)
       (t : t)
-    : Search_result.t Seq.t =
+    : Search_result_heap.t =
     if Search_phrase.is_empty phrase then (
-      Seq.empty
+      Search_result_heap.empty
     ) else (
       match List.combine phrase.phrase phrase.fuzzy_index with
       | [] -> failwith "Unexpected case"
@@ -531,7 +531,7 @@ module Search = struct
             |> Misc_utils.list_and_length_of_seq
           in
           if possible_start_count = 0 then
-            Seq.empty
+            Search_result_heap.empty
           else (
             let search_limit_per_start =
               max
@@ -545,7 +545,7 @@ module Search = struct
             in
             possible_starts
             |> CCList.chunks search_chunk_size
-            |> Task_pool.map_list (fun (pos_list : int list) : Search_result_heap.t list ->
+            |> Task_pool.map_list (fun (pos_list : int list) : Search_result_heap.t ->
                 pos_list
                 |> List.map (fun pos ->
                     search_around_pos ~consider_edit_dist pos rest t
@@ -572,15 +572,22 @@ module Search = struct
                       )
                       Search_result_heap.empty
                   )
+                |> List.fold_left Search_result_heap.merge Search_result_heap.empty
               )
-            |> List.to_seq
-            |> Seq.flat_map (fun (l : Search_result_heap.t list) ->
-                List.to_seq l
-                |> Seq.flat_map Search_result_heap.to_seq
-              )
+            |> List.fold_left Search_result_heap.merge Search_result_heap.empty
           )
         )
     )
+
+  let search
+      ~consider_edit_dist
+      (exp : Search_exp.t)
+      (t : t)
+    : Search_result_heap.t =
+    Search_exp.flatten exp
+    |> List.to_seq
+    |> Seq.map (fun phrase -> search_single ~consider_edit_dist phrase t)
+    |> Seq.fold_left Search_result_heap.merge Search_result_heap.empty
 end
 
 let fulfills_content_reqs
@@ -591,7 +598,7 @@ let fulfills_content_reqs
     let open Content_req_exp in
     match e with
     | Phrase phrase ->
-      not (Seq.is_empty (Search.search ~consider_edit_dist:false phrase t))
+      not (Search_result_heap.is_empty (Search.search_single ~consider_edit_dist:false phrase t))
     | Binary_op (op, e1, e2) -> (
         match op with
         | And -> aux e1 && aux e2
@@ -601,11 +608,12 @@ let fulfills_content_reqs
   Content_req_exp.is_empty e || aux e
 
 let search
-    (phrase : Search_phrase.t)
+    (exp : Search_exp.t)
     (t : t)
   : Search_result.t array =
   let arr =
-    Search.search ~consider_edit_dist:true phrase t
+    Search.search ~consider_edit_dist:true exp t
+    |> Search_result_heap.to_seq
     |> Array.of_seq
   in
   Array.sort Search_result.compare_relevance arr;
