@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.10.0
+## 2.0.0
 
 - Added "Last scan" field display to multi-file view and single file view
 
@@ -11,6 +11,8 @@
 - Search procedure parameter tuning
 
 - UI tuning
+
+- Added search expression support
 
 ## 1.9.0
 
