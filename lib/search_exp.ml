@@ -25,7 +25,7 @@ let empty : t = {
 }
 
 let is_empty (t : t) =
-  t.exp = `List []
+  t.flattened = []
 
 let equal (t1 : t) (t2 : t) =
   let rec aux (e1 : exp) (e2 : exp) =
