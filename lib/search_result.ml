@@ -323,6 +323,8 @@ module Score = struct
       +.
       (fuzzy_match_weight *. fuzzy_match_score)
     )
+    *.
+    (1.0 +. (0.05 *. search_phrase_length))
 end
 
 let make ~search_phrase ~found_phrase =
