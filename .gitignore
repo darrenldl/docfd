@@ -16,3 +16,4 @@ test*.pdf
 perf.data*
 *.pdf
 .cache
+*.log
