@@ -116,7 +116,6 @@ module Bottom_pane = struct
            [
              { label = "Tab"; msg = "multi-file view" };
              { label = "r"; msg = "reload" };
-             { label = "q"; msg = "exit" };
            ];
          ]
         );
@@ -125,7 +124,6 @@ module Bottom_pane = struct
            navigate_line0;
            [
              { label = "r"; msg = "reload" };
-             { label = "q"; msg = "exit" };
            ];
          ]
         );
@@ -176,8 +174,6 @@ let keyboard_handler
   match Lwd.peek Ui_base.Vars.input_mode with
   | Navigate -> (
       match key with
-      | (`Escape, [])
-      | (`ASCII 'q', [])
       | (`ASCII 'C', [`Ctrl]) -> (
           Lwd.set Ui_base.Vars.quit true;
           `Handled

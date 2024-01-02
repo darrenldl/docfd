@@ -295,7 +295,6 @@ module Bottom_pane = struct
           [
             { label = "r"; msg = "reload document selected" };
             { label = "Shift+r"; msg = "rescan for documents" };
-            { label = "q"; msg = "exit" };
           ];
         ]
       in
@@ -391,8 +390,6 @@ let keyboard_handler
   match Lwd.peek Ui_base.Vars.input_mode with
   | Navigate -> (
       match key with
-      | (`Escape, [])
-      | (`ASCII 'q', [])
       | (`ASCII 'C', [`Ctrl]) -> (
           Ui_base.Vars.action := None;
           Lwd.set Ui_base.Vars.quit true;

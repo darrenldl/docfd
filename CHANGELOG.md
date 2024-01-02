@@ -14,6 +14,8 @@
 
 - Added search expression support
 
+- Removed all quit key bindings except Ctrl+c
+
 ## 1.9.0
 
 - Added PDF viewer integration for:
