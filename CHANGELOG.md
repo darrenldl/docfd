@@ -16,6 +16,8 @@
 
 - Removed all quit key bindings except Esc and Ctrl+c
 
+- Added file selection support via `fzf`
+
 ## 1.9.0
 
 - Added PDF viewer integration for:
