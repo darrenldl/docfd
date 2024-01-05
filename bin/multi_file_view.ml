@@ -390,6 +390,7 @@ let keyboard_handler
   match Lwd.peek Ui_base.Vars.input_mode with
   | Navigate -> (
       match key with
+      | (`Escape, [])
       | (`ASCII 'C', [`Ctrl]) -> (
           Ui_base.Vars.action := None;
           Lwd.set Ui_base.Vars.quit true;

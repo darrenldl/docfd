@@ -14,7 +14,7 @@
 
 - Added search expression support
 
-- Removed all quit key bindings except Ctrl+c
+- Removed all quit key bindings except Esc and Ctrl+c
 
 ## 1.9.0
 

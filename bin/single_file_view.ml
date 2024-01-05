@@ -174,6 +174,7 @@ let keyboard_handler
   match Lwd.peek Ui_base.Vars.input_mode with
   | Navigate -> (
       match key with
+      | (`Escape, [])
       | (`ASCII 'C', [`Ctrl]) -> (
           Lwd.set Ui_base.Vars.quit true;
           `Handled
