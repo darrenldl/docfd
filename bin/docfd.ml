@@ -485,7 +485,7 @@ let run
           ) files;
         Out_channel.close write_to_fzf_oc;
         let pid =
-          Unix.create_process "fzf" [| "-m" |]
+          Unix.create_process "fzf" [| "fzf"; "--multi" |]
             stdin_for_fzf stdout_for_fzf Unix.stderr
         in
         Unix.waitpid [] pid |> ignore;
