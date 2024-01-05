@@ -144,7 +144,7 @@ let do_if_debug (f : out_channel -> unit) =
       f oc
     )
 
-let list_files_recursive (dir : string) : string list =
+let list_files_recursive (dirs : string list) : string list =
   let l = ref [] in
   let add x =
     l := x :: !l
@@ -174,8 +174,8 @@ let list_files_recursive (dir : string) : string list =
       | exception _ -> ()
     ) else ()
   in
-  aux 0 dir;
-  !l
+  List.iter (fun x -> aux 0 x) dirs;
+  List.sort_uniq String.compare !l
 
 let mkdir_recursive (dir : string) : unit =
   let rec aux acc parts =
@@ -452,6 +452,13 @@ let run
    | _ -> ()
   );
   Params.recognized_exts := recognized_exts;
+  let question_marks, files =
+    List.partition (fun s -> CCString.trim s = "?") files
+  in
+  let files = match files with
+    | [] -> [ "." ]
+    | _ -> files
+  in
   List.iter (fun file ->
       if not (Sys.file_exists file) then (
         Fmt.pr "Error: File \"%s\" does not exist\n" file;
@@ -459,6 +466,36 @@ let run
       )
     )
     files;
+  let files = list_files_recursive files in
+  let files =
+    match question_marks with
+    | [] -> files
+    | _ -> (
+        if not (Proc_utils.command_exists "fzf") then (
+          Fmt.pr "Error: Command fzf not found\n";
+          exit 1
+        );
+        let stdin_for_fzf, write_to_fzf = Unix.pipe ~cloexec:true () in
+        let read_from_fzf, stdout_for_fzf = Unix.pipe ~cloexec:true () in
+        let write_to_fzf_oc = Unix.out_channel_of_descr write_to_fzf in
+        let read_from_fzf_ic = Unix.in_channel_of_descr read_from_fzf in
+        List.iter (fun file ->
+            output_string write_to_fzf_oc file;
+            output_string write_to_fzf_oc "\n";
+          ) files;
+        Out_channel.close write_to_fzf_oc;
+        let pid =
+          Unix.create_process "fzf" [| "-m" |]
+            stdin_for_fzf stdout_for_fzf Unix.stderr
+        in
+        Unix.waitpid [] pid |> ignore;
+        Unix.close stdin_for_fzf;
+        Unix.close stdout_for_fzf;
+        let selection = CCIO.read_lines_l (Unix.in_channel_of_descr read_from_fzf) in
+        In_channel.close read_from_fzf_ic;
+        selection
+      )
+  in
   do_if_debug (fun oc ->
       Printf.fprintf oc "Scanning for documents\n"
     );
@@ -485,26 +522,10 @@ let run
         match files with
         | [] -> Ui_base.(Ui_multi_file, Files [])
         | [ f ] -> (
-            if Sys.is_directory f then
-              Ui_base.(Ui_multi_file, Files (list_files_recursive f))
-            else
-              Ui_base.(Ui_single_file, Files [ f ])
+            Ui_base.(Ui_single_file, Files [ f ])
           )
         | _ -> (
-            Ui_base.(Ui_multi_file,
-                     Files (
-                       files
-                       |> List.to_seq
-                       |> Seq.flat_map (fun f ->
-                           if Sys.is_directory f then
-                             List.to_seq (list_files_recursive f)
-                           else
-                             Seq.return f
-                         )
-                       |> List.of_seq
-                       |> List.sort_uniq String.compare
-                     )
-                    )
+            Ui_base.(Ui_multi_file, Files files)
           )
       )
   in
@@ -718,7 +739,7 @@ let run
      )
   )
 
-let files_arg = Arg.(value & pos_all string [ "." ] & info [])
+let files_arg = Arg.(value & pos_all string [] & info [])
 
 let cmd ~env =
   let doc = "TUI multiline fuzzy document finder" in
