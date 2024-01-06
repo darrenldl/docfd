@@ -488,11 +488,21 @@ let run
           Unix.create_process "fzf" [| "fzf"; "--multi" |]
             stdin_for_fzf stdout_for_fzf Unix.stderr
         in
-        Unix.waitpid [] pid |> ignore;
+        let _, process_status = Unix.waitpid [] pid in
         Unix.close stdin_for_fzf;
         Unix.close stdout_for_fzf;
         let selection = CCIO.read_lines_l (Unix.in_channel_of_descr read_from_fzf) in
         In_channel.close read_from_fzf_ic;
+        (match process_status with
+         | WEXITED n -> (
+             if n <> 0 then (
+               exit n
+             )
+           )
+         | WSIGNALED _ | WSTOPPED _ -> (
+             exit 1
+           )
+        );
         selection
       )
   in
