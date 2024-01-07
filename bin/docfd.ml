@@ -60,7 +60,9 @@ let max_word_search_dist_arg_name = "max-word-search-dist"
 
 let max_word_search_dist_arg =
   let doc =
-    "Maximum distance to look for the next matching word/symbol in search phrase. If two words are adjacent words, then they are 1 distance away from each other. Note that contiguous spaces count as one word/symbol as well."
+    "Maximum distance to look for the next matching word/symbol in search phrase.
+If two words are adjacent words, then they are 1 distance away from each other.
+Note that contiguous spaces count as one word/symbol as well."
   in
   Arg.(
     value
@@ -749,7 +751,15 @@ let run
      )
   )
 
-let files_arg = Arg.(value & pos_all string [] & info [])
+let files_arg =
+  let doc =
+    "PATH can be either file or directory.
+Directories are scanned for files with matching extensions.
+If any PATH is \"?\", then the list of files is passed onto fzf for user selection.
+If no paths are provided or only \"?\" is provided,
+then Docfd defaults to scanning the current working directory."
+  in
+  Arg.(value & pos_all string [] & info [] ~doc ~docv:"PATH")
 
 let cmd ~env =
   let doc = "TUI multiline fuzzy document finder" in
