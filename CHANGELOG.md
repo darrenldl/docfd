@@ -14,7 +14,7 @@
 
 - Added search expression support
 
-- Removed all quit key bindings except Esc and Ctrl+c
+- Adjusted quit key bindings to be: `Esc`, `Ctrl+c`, and `Ctrl+q`
 
 - Added file selection support via `fzf`
 

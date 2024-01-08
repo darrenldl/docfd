@@ -391,6 +391,7 @@ let keyboard_handler
   | Navigate -> (
       match key with
       | (`Escape, [])
+      | (`ASCII 'Q', [`Ctrl])
       | (`ASCII 'C', [`Ctrl]) -> (
           Ui_base.Vars.action := None;
           Lwd.set Ui_base.Vars.quit true;
