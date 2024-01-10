@@ -149,12 +149,12 @@ Docfd operates in modes, the initial mode is `Navigation` mode.
     - Page up
     - Scroll up with mouse wheel when hovering above the area
 - Scroll down the search result list
-    - `Shift`+`j`
+    - `Shift`+`J`
     - `Shift`+Down arrow
     - `Shift`+Page down
     - Scroll down with mouse wheel when hovering above the area
 - Scroll up the document list
-    - `Shift`+`k`
+    - `Shift`+`K`
     - `Shift`+Up arrow
     - `Shift`+Page up
     - Scroll up with mouse wheel when hovering above the area
@@ -170,7 +170,7 @@ Docfd operates in modes, the initial mode is `Navigation` mode.
 - Clear search phrase
     - `x`
 - Exit Docfd
-    - `q` or `Ctrl+c`
+    - `Esc`, `Ctrl+C` or `Ctrl+Q`
 
 `Search` mode
 - Search field is active in this mode
@@ -255,7 +255,7 @@ namely `Shift` is optional for scrolling through search result list.
     - `j`
     - Down arrow
     - Page down
-    - `Shift`+`j`
+    - `Shift`+`J`
     - `Shift`+Down arrow
     - `Shift`+Page down
     - Scroll down with mouse wheel when hovering above the area
@@ -263,7 +263,7 @@ namely `Shift` is optional for scrolling through search result list.
     - `k`
     - Up arrow
     - Page up
-    - `Shift`+`k`
+    - `Shift`+`K`
     - `Shift`+Up arrow
     - `Shift`+Page up
     - Scroll up with mouse wheel when hovering above the area
@@ -277,7 +277,7 @@ namely `Shift` is optional for scrolling through search result list.
 - Clear search phrase
     - `x`
 - Exit Docfd
-    - `q` or `Ctrl+c`
+    - `Esc`, `Ctrl+C` or `Ctrl+Q`
 
 `Search` mode
 - Search field is active in this mode

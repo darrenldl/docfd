@@ -294,7 +294,7 @@ module Bottom_pane = struct
           ];
           [
             { label = "r"; msg = "reload document selected" };
-            { label = "Shift+r"; msg = "rescan for documents" };
+            { label = "Shift+R"; msg = "rescan for documents" };
           ];
         ]
       in
