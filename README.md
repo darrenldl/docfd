@@ -19,6 +19,10 @@ and opening it to the closest location to the selected search result via PDF vie
 Statically linked binaries are available via
 [GitHub releases](https://github.com/darrenldl/docfd/releases)
 
+Docfd is also packaged on:
+
+- [AUR](https://aur.archlinux.org/packages/docfd-bin) by [kseistrup](https://github.com/kseistrup)
+
 ## Features
 
 - Multithreaded indexing and searching
