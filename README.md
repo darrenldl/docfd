@@ -48,6 +48,7 @@ for the following editors:
 - `hx`
 - `emacs`
 - `micro`
+- `jed`/`xjed`
 
 #### PDF viewer integration
 
