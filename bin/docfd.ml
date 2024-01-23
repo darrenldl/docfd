@@ -348,6 +348,10 @@ let open_text_path index document_src ~editor ~path ~search_result =
           Fmt.str "%s +%d %s" editor line_num path
         | "micro" ->
           Fmt.str "%s %s:%d" editor path line_num
+        | "jed" ->
+          Fmt.str "%s %s -g %d" editor path line_num
+        | "xjed" ->
+          Fmt.str "%s %s -g %d" editor path line_num
         | _ ->
           fallback
       )
