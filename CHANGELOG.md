@@ -5,7 +5,7 @@
 - Added text editor integration for `jed`/`xjed`
 
     - See [PR #3](https://github.com/darrenldl/docfd/pull/3)
-      by [Klaus Alexander Seiﬆrup](https://codeberg.org/kas)
+      by [kseistrup](https://github.com/kseistrup)
 
 ## 2.0.0
 
