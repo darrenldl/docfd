@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.1.0
+
+- Added text editor integration for `jed`
+
+    - See [PR #3](https://github.com/darrenldl/docfd/pull/3)
+      by [Klaus Alexander Seiﬆrup](https://codeberg.org/kas)
+
 ## 2.0.0
 
 - Added "Last scan" field display to multi-file view and single file view
