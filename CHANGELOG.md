@@ -2,7 +2,7 @@
 
 ## 2.1.0
 
-- Added text editor integration for `jed`
+- Added text editor integration for `jed`/`xjed`
 
     - See [PR #3](https://github.com/darrenldl/docfd/pull/3)
       by [Klaus Alexander Seiﬆrup](https://codeberg.org/kas)
