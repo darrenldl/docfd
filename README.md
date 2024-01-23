@@ -102,7 +102,8 @@ files with one of the following extensions by default:
 - `.md`
 - `.pdf`
 
-You can change the file extensions to use via `--exts`.
+You can change the file extensions to use via `--exts`,
+or add onto the list of extensions via `--add-exts`.
 
 If the list of paths is empty,
 then Docfd defaults to scanning the
@@ -114,6 +115,11 @@ is required to continue.
 If exactly one file is specified
 in the list of paths, then Docfd uses **Single file view**.
 Otherwise, Docfd uses **Multi-file view**.
+
+If any of the path is `?`, then file selection
+of the discovered files
+via `fzf`
+is invoked.
 
 ## Multi-file view
 
