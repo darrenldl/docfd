@@ -18,7 +18,7 @@
  (synopsis "TUI multiline fuzzy document finder")
  (description "")
  (documentation https://github.com/darrenldl/docfd)
- (version 2.0.0)
+ (version 2.1.0)
  (depends
    (ocaml (>= "5.1"))
    dune
