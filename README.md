@@ -1,6 +1,13 @@
 # Docfd
 TUI multiline fuzzy document finder
 
+Think interactive grep, but word/token based instead of regex and line based,
+so you can search across lines immediately.
+
+Docfd aims to provide good UX via integration with common text editors
+and PDF viewers,
+so you can jump immediately to the search result.
+
 ---
 
 Navigating repo:
