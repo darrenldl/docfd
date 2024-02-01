@@ -6,7 +6,7 @@ so you can search across lines easily.
 
 Docfd aims to provide good UX via integration with common text editors
 and PDF viewers,
-so you can jump directly to the search result with a single key press.
+so you can jump directly to a search result with a single key press.
 
 ---
 
