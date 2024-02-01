@@ -17,14 +17,15 @@
  (name docfd)
  (synopsis "TUI multiline fuzzy document finder")
  (description "
-Think interactive grep, but word/token based instead of regex and line based,
+Think interactive grep for both text files and PDFs,
+but word/token based instead of regex and line based,
 so you can search across lines easily.
 
 Docfd aims to provide good UX via integration with common text editors
 and PDF viewers,
 so you can jump directly to a search result with a single key press.
 
-## Features
+Features:
 
 - Multithreaded indexing and searching
 
