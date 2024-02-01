@@ -16,7 +16,26 @@
 (package
  (name docfd)
  (synopsis "TUI multiline fuzzy document finder")
- (description "")
+ (description "
+Think interactive grep, but word/token based instead of regex and line based,
+so you can search across lines easily.
+
+Docfd aims to provide good UX via integration with common text editors
+and PDF viewers,
+so you can jump directly to a search result with a single key press.
+
+## Features
+
+- Multithreaded indexing and searching
+
+- Multiline fuzzy search of multiple files or a single file
+
+- Swap between multi-file view and single file view on the fly
+
+- Content view pane that shows the snippet surrounding the search result selected
+
+- Text editor and PDF viewer integration
+              ")
  (documentation https://github.com/darrenldl/docfd)
  (version 2.1.0)
  (depends
