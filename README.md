@@ -22,15 +22,6 @@ and opening it to the closest location to the selected search result via PDF vie
 
 ![](screenshots/pdf-viewer-integration.jpg)
 
-## Installation
-
-Statically linked binaries are available via
-[GitHub releases](https://github.com/darrenldl/docfd/releases)
-
-Docfd is also packaged on:
-
-- [AUR](https://aur.archlinux.org/packages/docfd-bin) by [kseistrup](https://github.com/kseistrup)
-
 ## Features
 
 - Multithreaded indexing and searching
@@ -42,6 +33,21 @@ Docfd is also packaged on:
 - Content view pane that shows the snippet surrounding the search result selected
 
 - Text editor and PDF viewer integration
+
+## Installation
+
+Statically linked binaries are available via
+[GitHub releases](https://github.com/darrenldl/docfd/releases)
+
+Docfd is also packaged on:
+
+- [AUR](https://aur.archlinux.org/packages/docfd-bin) by [kseistrup](https://github.com/kseistrup)
+
+**Notes for packagers**: Outside of the OCaml toolchain for building (if you are
+packaging from source), Docfd also requires the following
+external tools at run time for full functionality:
+- `pdftotext` from poppler for PDF support
+- `fzf`
 
 ## Integration details
 
