@@ -46,7 +46,9 @@ Docfd is also packaged on:
 **Notes for packagers**: Outside of the OCaml toolchain for building (if you are
 packaging from source), Docfd also requires the following
 external tools at run time for full functionality:
+
 - `pdftotext` from poppler for PDF support
+
 - `fzf`
 
 ## Integration details
