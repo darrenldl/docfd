@@ -38,7 +38,6 @@ Features:
 - Text editor and PDF viewer integration
               ")
  (documentation https://github.com/darrenldl/docfd)
- (version 2.1.0)
  (depends
    (ocaml (>= "5.1"))
    dune
