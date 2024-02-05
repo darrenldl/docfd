@@ -47,7 +47,7 @@ Docfd is also packaged on:
 packaging from source), Docfd also requires the following
 external tools at run time for full functionality:
 
-- `pdftotext` from `poppler` or `poppler-utils` for PDF support
+- `pdftotext` from `poppler-utils` for PDF support
 
 - `fzf` for file selection menu if user requests it
 
