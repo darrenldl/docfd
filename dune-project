@@ -53,7 +53,7 @@ Features:
    (eio (>= "0.10"))
    (domainslib (>= "0.5.0"))
    digestif
-   yojson
+   (yojson (>= "2.0.2"))
    eio_main
    containers-data
    (timedesc (>= "2.0.0"))
