@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.1.1
+
+- Restored behaviour of skipping file extension checks for top-level
+  user specified files. This behaviour was likely removed during some
+  previous overhaul.
+
+    - This means, for instance, `docfd bin/docfd.ml` will now open the file
+      just fine without `--add-exts ml`
+
 ## 2.1.0
 
 - Added text editor integration for `jed`/`xjed`

@@ -168,7 +168,8 @@ let list_files_recursive (dirs : string list) : string list =
               next_choices
           ) else (
             let ext = Filename.extension path in
-            if List.mem ext !Params.recognized_exts then (
+            (* We skip file extension checks for top-level user specified files. *)
+            if depth = 0 || List.mem ext !Params.recognized_exts then (
               add path
             )
           )
