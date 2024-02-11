@@ -346,12 +346,12 @@ let score (t : t) =
   t.score
 
 let compare_relevance (t1 : t) (t2 : t) =
-  (* Order the more relevant result to front *)
+  (* Order the more relevant result to front. *)
   if Float.abs (t1.score -. t2.score) < Params.float_compare_margin then (
     let t1_found_phrase_start_pos = (List.hd t1.found_phrase).found_word_pos in
     let t2_found_phrase_start_pos = (List.hd t2.found_phrase).found_word_pos in
     Int.compare t1_found_phrase_start_pos t2_found_phrase_start_pos
   ) else (
-    (* Order result with higher score to front *)
+    (* Order result with higher score to front. *)
     Float.compare t2.score t1.score
   )
