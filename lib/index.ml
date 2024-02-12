@@ -565,37 +565,38 @@ module Search = struct
                               assert (List.exists (fun (x, y) -> c_x = x && c_y = y)
                                         Params.opening_closing_symbols);
                               if pos_x < pos_y then (
-                                let _, okay =
+                                let outstanding_opening_symbol_count =
                                   OSeq.(pos_x + 1 --^ pos_y)
-                                  |> Seq.fold_left (fun (count, okay) pos ->
-                                      let default = (count, okay) in
-                                      if okay then (
-                                        let word = word_of_pos pos t in
-                                        if String.length word = 1 then (
-                                          if String.get word 0 = c_x then (
-                                            (count + 1, okay)
-                                          ) else if String.get word 0 = c_y then (
-                                            if count = 0 then (
-                                              (count, false)
+                                  |> Seq.fold_left (fun count pos ->
+                                      match count with
+                                      | Some count -> (
+                                          let word = word_of_pos pos t in
+                                          if String.length word = 1 then (
+                                            if String.get word 0 = c_x then (
+                                              Some (count + 1)
+                                            ) else if String.get word 0 = c_y then (
+                                              if count = 0 then (
+                                                None
+                                              ) else (
+                                                Some (count - 1)
+                                              )
                                             ) else (
-                                              (count - 1, okay)
+                                              Some count
                                             )
                                           ) else (
-                                            default
+                                            Some count
                                           )
-                                        ) else (
-                                          default
                                         )
-                                      ) else (
-                                        default
-                                      )
+                                      | None -> None
                                     )
-                                    (0, true)
+                                    (Some 0)
                                 in
-                                if okay then (
-                                  is_match.(x) <- true;
-                                  is_match.(y) <- true;
-                                )
+                                match outstanding_opening_symbol_count with
+                                | Some 0 -> (
+                                    is_match.(x) <- true;
+                                    is_match.(y) <- true;
+                                  )
+                                | _ -> ()
                               )
                             )
                             opening_closing_symbol_pairs;
