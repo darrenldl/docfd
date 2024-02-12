@@ -111,7 +111,7 @@ one of:
 - `(expression)`
 - `expression | expression` (or), e.g. `go ( left | right )`
 
-To use literal `(`, `)` or `|`, `\\` needs to be placed in front
+To use literal `(`, `)` or `|`, `\` needs to be placed in front
 of the character.
 
 <details>
