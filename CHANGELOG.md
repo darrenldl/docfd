@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.1.1
+## 2.2.0
 
 - Restored behaviour of skipping file extension checks for top-level
   user specified files. This behaviour was likely removed during some
@@ -8,6 +8,12 @@
 
     - This means, for instance, `docfd bin/docfd.ml` will now open the file
       just fine without `--add-exts ml`
+
+- Bumped default max word search distance from 20 to 50
+
+- Added consideration for opening closing symbols in search result ranking
+
+    - Namely symbol pairs: `()`, `[]`, `{}`
 
 ## 2.1.0
 
