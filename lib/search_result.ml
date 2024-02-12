@@ -57,14 +57,12 @@ module Score = struct
   let f
       ~(search_phrase : string list)
       ~(found_phrase : indexed_found_word list)
-      ~(found_phrase_opening_closing_symbol_matches : bool list)
+      ~(found_phrase_opening_closing_symbol_match_count : int)
     : float =
     assert (match search_phrase with [] -> false | _ -> true);
     assert (List.length search_phrase = List.length found_phrase);
     let found_phrase_opening_closing_symbol_match_count =
-      found_phrase_opening_closing_symbol_matches
-      |> List.fold_left (fun c x -> if x then c + 1 else c) 0
-      |> (fun x -> assert (x mod 2 = 0); Int.to_float (x / 2))
+      Int.to_float found_phrase_opening_closing_symbol_match_count
     in
     let quite_close_to_zero x =
       Float.abs x < Params.float_compare_margin
@@ -336,14 +334,14 @@ module Score = struct
     )
 end
 
-let make ~search_phrase ~found_phrase ~found_phrase_opening_closing_symbol_matches =
+let make ~search_phrase ~found_phrase ~found_phrase_opening_closing_symbol_match_count =
   let len = List.length search_phrase in
   if len = 0 then (
     invalid_arg "Search_result.make search_phrase is empty"
   ) else if len <> List.length found_phrase then (
     invalid_arg "Length of found_phrase does not match length of search_phrase"
   ) else (
-    let score = Score.f ~search_phrase ~found_phrase ~found_phrase_opening_closing_symbol_matches in
+    let score = Score.f ~search_phrase ~found_phrase ~found_phrase_opening_closing_symbol_match_count in
     { score; search_phrase; found_phrase }
   )
 

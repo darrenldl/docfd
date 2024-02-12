@@ -9,7 +9,7 @@ type t
 val make :
   search_phrase:string list ->
   found_phrase:indexed_found_word list ->
-  found_phrase_opening_closing_symbol_matches:bool list ->
+  found_phrase_opening_closing_symbol_match_count:int ->
   t
 
 val search_phrase : t -> string list

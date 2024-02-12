@@ -554,10 +554,9 @@ module Search = struct
                         let opening_closing_symbol_pairs = List.map (fun pos -> word_of_pos pos t) l
                                                            |>  Misc_utils.opening_closing_symbol_pairs
                         in
-                        let found_phrase_opening_closing_symbol_matches =
+                        let found_phrase_opening_closing_symbol_match_count =
                           let pos_arr : int array = Array.of_list l in
-                          let is_match = Array.make (Array.length pos_arr) false in
-                          List.iter (fun (x, y) ->
+                          List.fold_left (fun total (x, y) ->
                               let pos_x = pos_arr.(x) in
                               let pos_y = pos_arr.(y) in
                               let c_x = String.get (word_of_pos pos_x t) 0 in
@@ -592,15 +591,14 @@ module Search = struct
                                     (Some 0)
                                 in
                                 match outstanding_opening_symbol_count with
-                                | Some 0 -> (
-                                    is_match.(x) <- true;
-                                    is_match.(y) <- true;
-                                  )
-                                | _ -> ()
+                                | Some 0 -> total + 1
+                                | _ -> total
+                              ) else (
+                                total
                               )
                             )
-                            opening_closing_symbol_pairs;
-                          Array.to_list is_match
+                            0
+                            opening_closing_symbol_pairs
                         in
                         Search_result.make
                           ~search_phrase:phrase.phrase
@@ -611,7 +609,7 @@ module Search = struct
                                                 found_word_ci = word_ci_of_pos pos t;
                                                 found_word = word_of_pos pos t;
                                               }) l)
-                          ~found_phrase_opening_closing_symbol_matches
+                          ~found_phrase_opening_closing_symbol_match_count
                       )
                     |> Seq.fold_left (fun best_results r ->
                         let best_results = Search_result_heap.add best_results r in
