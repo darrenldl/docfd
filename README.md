@@ -109,7 +109,10 @@ one of:
 
 - Search phrase, e.g. `fuzzy search`
 - `(expression)`
-- `expression | expression` (or), e.g. `go to ( left | right )`
+- `expression | expression` (or), e.g. `go ( left | right )`
+
+To use literal `(`, `)` or `|`, `\\` needs to be placed in front
+of the character.
 
 <details>
 
