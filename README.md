@@ -95,7 +95,7 @@ for the following viewers:
 
 </details>
 
-## Usage
+## Launching
 
 #### Read from piped stdin
 
@@ -126,6 +126,8 @@ files with one of the following extensions by default:
 You can change the file extensions to use via `--exts`,
 or add onto the list of extensions via `--add-exts`.
 
+<details>
+
 If the list of paths is empty,
 then Docfd defaults to scanning the
 current directory `.`.
@@ -141,6 +143,43 @@ If any of the path is `?`, then file selection
 of the discovered files
 via `fzf`
 is invoked.
+
+</details>
+
+## Searching
+
+The search field takes a search expression as input. A search expression is
+one of:
+
+- Search phrase, e.g. `fuzzy search`
+- `(expression)`
+- `expression | expression` (or), e.g. `go to ( left | right )`
+
+<details>
+
+#### Search phrase and search procedure
+
+Document content and user input in the search field are tokenized/segmented
+in the same way, based on:
+- Contiguous alphanumeric characters
+- Individual symbols
+- Individual UTF-8 characters
+- Spaces
+
+A search phrase is a list of said tokens.
+
+Search procedure is a DFS through the document index,
+where the search range for a word is fixed
+to a configured range surrounding the previous word (when applicable).
+
+A token in the index matches a token in the search phrase if they are:
+- A case-insensitive exact match
+- Or a case-insensitive substring match (token in search phrase being the substring)
+- Or within the configured case-insensitive edit distance threshold
+
+Search results are then ranked using heuristics.
+
+</details>
 
 ## Multi-file view
 
@@ -206,32 +245,6 @@ Docfd operates in modes, the initial mode is `Navigation` mode.
 `Require content` mode
 - Required content field is active in this mode
 - `Enter` to confirm file content requirements and exit the mode
-
-</details>
-
-#### Search phrase and search procedure
-
-<details>
-
-Document content and user input in the search field are tokenized/segmented
-in the same way, based on:
-- Contiguous alphanumeric characters
-- Individual symbols
-- Individual UTF-8 characters
-- Spaces
-
-A search phrase is a list of said tokens.
-
-Search procedure is a DFS through the document index,
-where the search range for a word is fixed
-to a configured range surrounding the previous word (when applicable).
-
-A token in the index matches a token in the search phrase if they are:
-- A case-insensitive exact match
-- Or a case-insensitive substring match (token in search phrase being the substring)
-- Or within the configured case-insensitive edit distance threshold
-
-Search results are then ranked using heuristics.
 
 </details>
 
