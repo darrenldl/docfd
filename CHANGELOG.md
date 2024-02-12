@@ -15,6 +15,8 @@
 
     - Namely symbol pairs: `()`, `[]`, `{}`
 
+- Fixed parsing of search expression w.r.t. `?`
+
 ## 2.1.0
 
 - Added text editor integration for `jed`/`xjed`
