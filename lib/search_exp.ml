@@ -51,7 +51,7 @@ module Parsers = struct
     many1 (
       take_while1 (fun c ->
           match c with
-          | '?' | '|' | '\\' | '(' | ')' -> false
+          | '|' | '\\' | '(' | ')' -> false
           | _ -> true
         )
       <|>
