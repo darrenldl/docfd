@@ -11,6 +11,12 @@
   )
 
 (rule
+  (targets char_map.ml)
+  (deps ../lib/char_map.ml)
+  (action (copy %{deps} %{targets}))
+  )
+
+(rule
   (targets string_set.ml)
   (deps ../lib/string_set.ml)
   (action (copy %{deps} %{targets}))

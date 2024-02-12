@@ -6,7 +6,11 @@ type indexed_found_word = {
 
 type t
 
-val make : search_phrase:string list -> found_phrase:indexed_found_word list -> t
+val make :
+  search_phrase:string list ->
+  found_phrase:indexed_found_word list ->
+  found_phrase_opening_closing_symbol_matches:bool list ->
+  t
 
 val search_phrase : t -> string list
 

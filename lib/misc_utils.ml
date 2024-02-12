@@ -92,3 +92,43 @@ let frequencies_of_words_ci (s : string Seq.t) : int String_map.t =
     )
     String_map.empty
     s
+
+let opening_closing_symbol_pairs (l : string list) : (int * int) list =
+  let _, pairs =
+    CCList.foldi
+      (fun ((m, pairs) : (int list Char_map.t) * ((int * int) list)) i s ->
+         if String.length s = 1 then (
+           let c = String.get s 0 in
+           match List.assoc_opt c Params.opening_closing_symbols with
+           | Some _ -> (
+               let stack =
+                 match Char_map.find_opt c m with
+                 | None -> []
+                 | Some l -> l
+               in
+               (Char_map.add c (i :: stack) m, pairs)
+             )
+           | None -> (
+               match List.assoc_opt c Params.opening_closing_symbols_flipped with
+               | Some corresponding_open_symbol -> (
+                   let stack =
+                     match Char_map.find_opt corresponding_open_symbol m with
+                     | None -> []
+                     | Some l -> l
+                   in
+                   match stack with
+                   | [] -> (m, pairs)
+                   | x :: xs -> (
+                       (Char_map.add corresponding_open_symbol xs m, (x, i) :: pairs)
+                     )
+                 )
+               | None -> (m, pairs)
+             )
+         ) else (
+           (m, pairs)
+         )
+      )
+      (Char_map.empty, [])
+      l
+  in
+  pairs

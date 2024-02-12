@@ -13,3 +13,10 @@ let index_chunk_word_count = ref default_index_chunk_word_count
 let search_word_automaton_cache_size = 200
 
 let float_compare_margin = 0.000_001
+
+let opening_closing_symbols = [ ('(', ')')
+                              ; ('[', ']')
+                              ; ('{', '}')
+                              ]
+
+let opening_closing_symbols_flipped = List.map (fun (x, y) -> (y, x)) opening_closing_symbols

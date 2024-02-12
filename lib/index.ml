@@ -550,7 +550,57 @@ module Search = struct
                 |> List.map (fun pos ->
                     search_around_pos ~consider_edit_dist pos rest t
                     |> Seq.map (fun l -> pos :: l)
-                    |> Seq.map (fun l ->
+                    |> Seq.map (fun (l : int list) ->
+                        let opening_closing_symbol_pairs = List.map (fun pos -> word_of_pos pos t) l
+                                                           |>  Misc_utils.opening_closing_symbol_pairs
+                        in
+                        let found_phrase_opening_closing_symbol_matches =
+                          let pos_arr : int array = Array.of_list l in
+                          let is_match = Array.make (Array.length pos_arr) false in
+                          List.iter (fun (x, y) ->
+                              let pos_x = pos_arr.(x) in
+                              let pos_y = pos_arr.(y) in
+                              let c_x = String.get (word_of_pos pos_x t) 0 in
+                              let c_y = String.get (word_of_pos pos_y t) 0 in
+                              assert (List.exists (fun (x, y) -> c_x = x && c_y = y)
+                                        Params.opening_closing_symbols);
+                              if pos_x < pos_y then (
+                                let _, okay =
+                                  OSeq.(pos_x + 1 --^ pos_y)
+                                  |> Seq.fold_left (fun (count, okay) pos ->
+                                      let default = (count, okay) in
+                                      if okay then (
+                                        let word = word_of_pos pos t in
+                                        if String.length word = 1 then (
+                                          if String.get word 0 = c_x then (
+                                            (count + 1, okay)
+                                          ) else if String.get word 0 = c_y then (
+                                            if count = 0 then (
+                                              (count, false)
+                                            ) else (
+                                              (count - 1, okay)
+                                            )
+                                          ) else (
+                                            default
+                                          )
+                                        ) else (
+                                          default
+                                        )
+                                      ) else (
+                                        default
+                                      )
+                                    )
+                                    (0, true)
+                                in
+                                if okay then (
+                                  is_match.(x) <- true;
+                                  is_match.(y) <- true;
+                                )
+                              )
+                            )
+                            opening_closing_symbol_pairs;
+                          Array.to_list is_match
+                        in
                         Search_result.make
                           ~search_phrase:phrase.phrase
                           ~found_phrase:(List.map
@@ -560,6 +610,7 @@ module Search = struct
                                                 found_word_ci = word_ci_of_pos pos t;
                                                 found_word = word_of_pos pos t;
                                               }) l)
+                          ~found_phrase_opening_closing_symbol_matches
                       )
                     |> Seq.fold_left (fun best_results r ->
                         let best_results = Search_result_heap.add best_results r in
