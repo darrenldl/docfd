@@ -217,7 +217,7 @@ module Top_pane = struct
     : Nottui.ui Lwd.t =
     let$* document_selected = Lwd.get Vars.index_of_document_selected in
     let sub_pane_width =
-      (* Minus 1 for pane separator bar *)
+      (* Minus 1 for pane separator bar. *)
       width / 2 - 1 - Params.line_wrap_underestimate_offset
     in
     let sub_pane_height =

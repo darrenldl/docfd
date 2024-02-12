@@ -51,7 +51,7 @@ let utf_8_char =
       )
     )
 
-(* Copied from Angstrom README *)
+(* Copied from Angstrom README. *)
 let chainl1 e op =
   let rec go acc =
     (lift2 (fun f x -> f acc x) op e >>= go) <|> return acc in
