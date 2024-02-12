@@ -11,7 +11,7 @@
 
 - Bumped default max word search distance from 20 to 50
 
-- Added consideration for opening closing symbols in search result ranking
+- Added consideration for balanced opening closing symbols in search result ranking
 
     - Namely symbol pairs: `()`, `[]`, `{}`
 
