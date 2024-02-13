@@ -72,6 +72,12 @@ module Parsers = struct
     fix (fun (exp : exp Angstrom.t) : exp Angstrom.t ->
         let base =
           choice [
+            (phrase >>| as_word_list);
+            (char '(' *> spaces *> exp <* char ')' <* spaces);
+          ]
+        in
+        let opt_base =
+          choice [
             (char '?' *> spaces *> phrase
              >>| fun l ->
              match l with
@@ -80,16 +86,15 @@ module Parsers = struct
                  `List ((`Optional (as_word x)) :: List.map as_word xs)
                )
             );
-            (char '?' *> spaces *> exp >>| fun p -> `Optional p);
-            (phrase >>| as_word_list);
-            (char '(' *> spaces *> exp <* char ')' <* spaces);
+            (char '?' *> spaces *> base >>| fun p -> `Optional p);
+            base;
           ]
         in
-        let bases =
-          many1 base
+        let opt_bases =
+          many1 opt_base
           >>| fun l -> `List l
         in
-        chainl1 bases or_op
+        chainl1 opt_bases or_op
       )
     <* spaces
 end
