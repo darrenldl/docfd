@@ -15,7 +15,12 @@
 
     - Namely symbol pairs: `()`, `[]`, `{}`
 
-- Fixed parsing of search expression w.r.t. `?`
+- Fixed crash from reading from stdin
+
+    - This was caused by calling `Notty_unix.Term.release` after closing the underlying
+      file descriptor in stdin input mode
+
+- Added back handling of optional operator `?` in search expression
 
 ## 2.1.0
 
