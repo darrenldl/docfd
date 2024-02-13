@@ -157,6 +157,7 @@ The search field takes a search expression as input. A search expression is
 one of:
 
 - Search phrase, e.g. `fuzzy search`
+- `?expression` (optional)
 - `(expression)`
 - `expression | expression` (or), e.g. `go ( left | right )`
 
@@ -164,6 +165,12 @@ To use literal `(`, `)` or `|`, `\` needs to be placed in front
 of the character.
 
 <details>
+
+#### Optional operator handling specifics
+
+For a phrase with optional operator, such as `?word0 word1 ...`,
+the first word is grouped implicitly,
+i.e. it is treated as `?(word0) word1 ...`.
 
 #### Search phrase and search procedure
 
