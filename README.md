@@ -95,12 +95,19 @@ If exactly one file is specified
 in the list of paths, then Docfd uses **Single file view**.
 Otherwise, Docfd uses **Multi-file view**.
 
+</details>
+
+#### Read from files selected with fzf
+
+```
+docfd [PATH...] ?
+```
+
+The `?` can be in any position in the path list.
 If any of the path is `?`, then file selection
 of the discovered files
 via `fzf`
 is invoked.
-
-</details>
 
 ## Searching
 
