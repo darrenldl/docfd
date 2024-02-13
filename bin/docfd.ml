@@ -664,10 +664,10 @@ let run
         match !term_and_tty_fd with
         | None -> ()
         | Some (term, tty_fd) -> (
+            Notty_unix.Term.release term;
             (match tty_fd with
              | None -> ()
              | Some fd -> Unix.close fd);
-            Notty_unix.Term.release term;
             term_and_tty_fd := None
           )
      )
