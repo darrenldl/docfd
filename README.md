@@ -124,11 +124,11 @@ files with one of the following extensions by default:
 You can change the file extensions to use via `--exts`,
 or add onto the list of extensions via `--add-exts`.
 
-<details>
-
 If the list of paths is empty,
 then Docfd defaults to scanning the
 current directory `.`.
+
+<details>
 
 If any of the file ends with `.pdf`, then `pdftotext`
 is required to continue.
