@@ -132,9 +132,9 @@ where the search range for a word is fixed
 to a configured range surrounding the previous word (when applicable).
 
 A token in the index matches a token in the search phrase if they are:
-- A case-insensitive exact match
-- Or a case-insensitive substring match (token in search phrase being the substring)
-- Or within the configured case-insensitive edit distance threshold
+- a case-insensitive exact match
+- or a case-insensitive substring match (token in search phrase being the substring)
+- or within the configured case-insensitive edit distance threshold
 
 Search results are then ranked using heuristics.
 
