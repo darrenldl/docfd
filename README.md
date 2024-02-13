@@ -32,10 +32,6 @@ and opening it to the closest location to the selected search result via PDF vie
 
 - Content view pane that shows the snippet surrounding the search result selected
 
-<details>
-test
-</details>
-
 - Text editor and PDF viewer integration
 
 <details>
