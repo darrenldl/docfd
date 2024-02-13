@@ -2,6 +2,7 @@ type exp = [
   | `Word of string
   | `List of exp list
   | `Binary_op of binary_op * exp * exp
+  | `Optional of exp
 ]
 
 and binary_op =
@@ -33,6 +34,7 @@ let equal (t1 : t) (t2 : t) =
     | `List l1, `List l2 -> List.equal aux l1 l2
     | `Binary_op (Or, e1x, e1y), `Binary_op (Or, e2x, e2y) ->
       aux e1x e2x && aux e1y e2y
+    | `Optional e1, `Optional e2 -> aux e1 e2
     | _, _ -> false
   in
   aux t1.exp t2.exp
@@ -51,7 +53,7 @@ module Parsers = struct
     many1 (
       take_while1 (fun c ->
           match c with
-          | '|' | '\\' | '(' | ')' -> false
+          | '?' | '|' | '\\' | '(' | ')' -> false
           | _ -> true
         )
       <|>
@@ -70,6 +72,15 @@ module Parsers = struct
     fix (fun (exp : exp Angstrom.t) : exp Angstrom.t ->
         let base =
           choice [
+            (char '?' *> spaces *> phrase
+             >>| fun l ->
+             match l with
+             | [] -> `Optional (`List [])
+             | x :: xs -> (
+                 `List ((`Optional (as_word x)) :: List.map as_word xs)
+               )
+            );
+            (char '?' *> spaces *> exp >>| fun p -> `Optional p);
             (phrase >>| as_word_list);
             (char '(' *> spaces *> exp <* char ')' <* spaces);
           ]
@@ -103,6 +114,9 @@ let flatten ~fuzzy_max_edit_distance (exp : exp) : Search_phrase.t list =
         Seq.append
           (aux x)
           (aux y)
+      )
+    | `Optional x -> (
+        Seq.cons "" (aux x)
       )
   in
   aux exp

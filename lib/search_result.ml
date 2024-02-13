@@ -309,6 +309,8 @@ module Score = struct
         1.0 -. (0.20 *. (average_distance /. (Int.to_float !Params.max_word_search_distance)))
       )
     in
+    (1.0 +. (0.10 *. search_phrase_length))
+    *.
     (1.0 +. (0.10 *. (unique_match_count /. search_phrase_length)))
     *.
     (1.0 -. (0.10 *. (out_of_order_match_count /. search_phrase_length)))
