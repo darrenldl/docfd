@@ -1,0 +1,9 @@
+(executable
+ (flags     (-w "+a-4-9-29-37-40-42-44-48-50-70@8" -g))
+ (name main)
+ (libraries qcheck
+            qcheck-alcotest
+            alcotest
+            docfd_lib
+            )
+ )

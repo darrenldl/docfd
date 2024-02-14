@@ -3,6 +3,9 @@ type t = {
   fuzzy_index : Spelll.automaton list;
 }
 
+let pp formatter (t : t) =
+  Fmt.pf formatter "%a" Fmt.(list ~sep:sp string) t.phrase
+
 type cache = {
   mutex : Mutex.t;
   cache : (string, Spelll.automaton) CCCache.t;

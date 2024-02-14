@@ -1,4 +1,4 @@
-SRCFILES = lib/*.ml lib/*.mli bin/*.ml bin/*.mli profile/*.ml
+SRCFILES = lib/*.ml lib/*.mli bin/*.ml bin/*.mli profile/*.ml tests/*.ml
 
 OCPINDENT = ocp-indent \
 	--inplace \
@@ -27,6 +27,10 @@ release-static :
 	OCAMLPARAM='_,ccopt=-static' dune build --release bin/docfd.exe
 	mkdir -p statically-linked
 	cp -f _build/default/bin/docfd.exe statically-linked/docfd
+
+.PHONY: tests
+tests :
+	OCAMLRUNPARAM=b dune exec tests/main.exe --no-buffer --force
 
 .PHONY: profile
 profile :
