@@ -57,6 +57,9 @@ Features:
    eio_main
    containers-data
    (timedesc (>= "2.0.0"))
+   (alcotest :with-test)
+   (qcheck-alcotest :with-test)
+   (qcheck :with-test)
    )
  (tags
   ("fuzzy" "document" "finder"

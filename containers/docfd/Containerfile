@@ -17,4 +17,4 @@ RUN chown -R opam:opam /home/opam/docfd
 USER opam
 WORKDIR /home/opam/docfd
 RUN dune build docfd.opam
-RUN opam-2.2 install . --deps-only
+RUN opam-2.2 install . --deps-only --with-test
