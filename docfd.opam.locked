@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "docfd"
-version: "1.10.0"
+version: "0.6.1"
 synopsis: "TUI multiline fuzzy document finder"
 maintainer: "Darren Li"
 authors: "Darren Li"
@@ -98,3 +98,23 @@ pin-depends: [
     "https://github.com/ocaml/ocaml/archive/5.1.0.tar.gz"
   ]
 ]
+description: """\
+Think interactive grep for both text files and PDFs,
+but word/token based instead of regex and line based,
+so you can search across lines easily.
+
+Docfd aims to provide good UX via integration with common text editors
+and PDF viewers,
+so you can jump directly to a search result with a single key press.
+
+Features:
+
+- Multithreaded indexing and searching
+
+- Multiline fuzzy search of multiple files or a single file
+
+- Swap between multi-file view and single file view on the fly
+
+- Content view pane that shows the snippet surrounding the search result selected
+
+- Text editor and PDF viewer integration"""
