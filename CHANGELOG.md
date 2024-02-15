@@ -22,6 +22,8 @@
 
 - Added back handling of optional operator `?` in search expression
 
+- Added test corpus to check translation of search expression to search phrases
+
 ## 2.1.0
 
 - Added text editor integration for `jed`/`xjed`
