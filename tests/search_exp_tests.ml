@@ -5,7 +5,7 @@ module Alco = struct
   let test_exp (s : string) (l : string list) =
     let fuzzy_max_edit_distance = 0 in
     Alcotest.(check (list search_phrase_testable))
-      "equal"
+      (Fmt.str "case %s" s)
       (List.map (Search_phrase.make ~fuzzy_max_edit_distance) l
        |> List.sort Search_phrase.compare)
       (Search_exp.make ~fuzzy_max_edit_distance s
@@ -30,6 +30,72 @@ module Alco = struct
       [ "go left"; "go right" ];
     test_exp "go (?up | left | right)"
       [ "go"; "go up"; "go left"; "go right" ];
+    test_exp "(left | right) (up | down)"
+      [ "left up"
+      ; "left down"
+      ; "right up"
+      ; "right down"
+      ];
+    test_exp "(?left | right) (up | down)"
+      [ "up"
+      ; "down"
+      ; "left up"
+      ; "left down"
+      ; "right up"
+      ; "right down"
+      ];
+    test_exp "go (left | right) or ( up | down )"
+      [ "go left or up"
+      ; "go left or down"
+      ; "go right or up"
+      ; "go right or down"
+      ];
+    test_exp "go (left | right) and/or ( up | down )"
+      [ "go left and / or up"
+      ; "go left and / or down"
+      ; "go right and / or up"
+      ; "go right and / or down"
+      ];
+    test_exp "go ?(left | right) ( up | down )"
+      [ "go up"
+      ; "go down"
+      ; "go left up"
+      ; "go left down"
+      ; "go right up"
+      ; "go right down"
+      ];
+    test_exp "go ?((left | right) or) ( up | down )"
+      [ "go up"
+      ; "go down"
+      ; "go left or up"
+      ; "go left or down"
+      ; "go right or up"
+      ; "go right or down"
+      ];
+    test_exp "go ?(?(left | right) or) ( up | down )"
+      [ "go up"
+      ; "go down"
+      ; "go or up"
+      ; "go or down"
+      ; "go left or up"
+      ; "go left or down"
+      ; "go right or up"
+      ; "go right or down"
+      ];
+    test_exp "go ?(?(left | right) or) or ( ?up | down )"
+      [ "go or"
+      ; "go or up"
+      ; "go or down"
+      ; "go or or"
+      ; "go or or up"
+      ; "go or or down"
+      ; "go left or or"
+      ; "go left or or up"
+      ; "go left or or down"
+      ; "go right or or"
+      ; "go right or or up"
+      ; "go right or or down"
+      ];
     ()
 
   let suite =
