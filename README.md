@@ -83,7 +83,8 @@ Statically linked binaries are available via
 
 Docfd is also packaged on:
 
-- [AUR](https://aur.archlinux.org/packages/docfd-bin) by [kseistrup](https://github.com/kseistrup)
+- [AUR](https://aur.archlinux.org/packages/docfd-bin) (as `docfd-bin`) by [kseistrup](https://github.com/kseistrup)
+- Nix (as `docfd`) by [chewblacka](https://github.com/chewblacka)
 
 **Notes for packagers**: Outside of the OCaml toolchain for building (if you are
 packaging from source), Docfd also requires the following
