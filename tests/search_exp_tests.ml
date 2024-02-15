@@ -2,10 +2,18 @@ open Docfd_lib
 open Test_utils
 
 module Alco = struct
+  let test_empty_exp (s : string) =
+    let fuzzy_max_edit_distance = 0 in
+    Alcotest.(check bool)
+      "true"
+      true
+      (Search_exp.is_empty
+         (Search_exp.make ~fuzzy_max_edit_distance s))
+
   let test_exp (s : string) (l : string list) =
     let fuzzy_max_edit_distance = 0 in
     Alcotest.(check (list search_phrase_testable))
-      (Fmt.str "case %s" s)
+      (Fmt.str "case %S" s)
       (List.map (Search_phrase.make ~fuzzy_max_edit_distance) l
        |> List.sort Search_phrase.compare)
       (Search_exp.make ~fuzzy_max_edit_distance s
@@ -14,6 +22,8 @@ module Alco = struct
       )
 
   let corpus () =
+    test_empty_exp "";
+    test_empty_exp "    ";
     test_exp "?hello"
       [ ""; "hello" ];
     test_exp "?hello world"
