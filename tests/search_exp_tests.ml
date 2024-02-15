@@ -46,6 +46,16 @@ module Alco = struct
       ; "right up"
       ; "right down"
       ];
+    test_exp "((a | b) (c | d)) (e | f)"
+      [ "a c e"
+      ; "a c f"
+      ; "a d e"
+      ; "a d f"
+      ; "b c e"
+      ; "b c f"
+      ; "b d e"
+      ; "b d f"
+      ];
     test_exp "(?left | right) (up | down)"
       [ "up"
       ; "down"
