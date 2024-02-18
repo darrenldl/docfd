@@ -83,7 +83,7 @@ Statically linked binaries are available via
 
 Docfd is also packaged on:
 
-- [Opam](https://ocaml.org/p/docfd/latest)
+- [opam](https://ocaml.org/p/docfd/latest)
 - [AUR](https://aur.archlinux.org/packages/docfd-bin) (as `docfd-bin`) by [kseistrup](https://github.com/kseistrup)
 - Nix (as `docfd`) by [chewblacka](https://github.com/chewblacka)
 
