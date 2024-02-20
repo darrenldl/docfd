@@ -159,7 +159,7 @@
       on direction
     - Made reverse substring match require at least 3 characters
     - Case-sensitive bonus only applies if search phrase
-      is not all ascii lower case
+      is not all ascii lowercase
 
 ## 1.5.0
 
