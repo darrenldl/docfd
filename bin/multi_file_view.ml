@@ -395,14 +395,14 @@ let keyboard_handler
       | (`Escape, [])
       | (`ASCII 'Q', [`Ctrl])
       | (`ASCII 'C', [`Ctrl]) -> (
-          Ui_base.Vars.action := None;
           Lwd.set Ui_base.Vars.quit true;
+          Ui_base.Vars.action := None;
           `Handled
         )
       | (`ASCII 'R', []) -> (
+          Lwd.set Ui_base.Vars.quit true;
           reset_document_selected ();
           Ui_base.Vars.action := Some Ui_base.Recompute_document_src;
-          Lwd.set Ui_base.Vars.quit true;
           `Handled
         )
       | (`ASCII 'r', []) -> (
@@ -474,15 +474,16 @@ let keyboard_handler
         )
       | (`ASCII 'P', []) -> (
           Option.iter (fun (doc, search_results) ->
+              Lwd.set Ui_base.Vars.quit true;
               Ui_base.Vars.action :=
                 Some (Ui_base.Print_file_path_and_search_result (doc, None));
-              Lwd.set Ui_base.Vars.quit true;
             )
             document_info;
           `Handled
         )
       | (`ASCII 'p', []) -> (
           Option.iter (fun (doc, search_results) ->
+              Lwd.set Ui_base.Vars.quit true;
               let search_result =
                 if search_result_current_choice < Array.length search_results then
                   Some search_results.(search_result_current_choice)
@@ -491,13 +492,13 @@ let keyboard_handler
               in
               Ui_base.Vars.action :=
                 Some (Ui_base.Print_file_path_and_search_result (doc, search_result));
-              Lwd.set Ui_base.Vars.quit true;
             )
             document_info;
           `Handled
         )
       | (`Enter, []) -> (
           Option.iter (fun (doc, search_results) ->
+              Lwd.set Ui_base.Vars.quit true;
               let search_result =
                 if search_result_current_choice < Array.length search_results then
                   Some search_results.(search_result_current_choice)
@@ -506,7 +507,6 @@ let keyboard_handler
               in
               Ui_base.Vars.action :=
                 Some (Ui_base.Open_file_and_search_result (doc, search_result));
-              Lwd.set Ui_base.Vars.quit true;
             )
             document_info;
           `Handled

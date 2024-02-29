@@ -186,6 +186,7 @@ let keyboard_handler
       | (`ASCII 'Q', [`Ctrl])
       | (`ASCII 'C', [`Ctrl]) -> (
           Lwd.set Ui_base.Vars.quit true;
+          Ui_base.Vars.action := None;
           `Handled
         )
       | (`ASCII 'r', []) -> (
