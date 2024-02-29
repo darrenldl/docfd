@@ -99,6 +99,12 @@ module Bottom_pane = struct
           { label = "x"; msg = "clear search" };
         ]
       in
+      let print_items =
+        [
+          { label = "p"; msg = "print search result" };
+          { label = "Shift+P"; msg = "print path" };
+        ]
+      in
       let navigate_line2 =
         [
           { label = "r"; msg = "reload" };
@@ -112,12 +118,6 @@ module Bottom_pane = struct
           [
             { label = ""; msg = "" };
           ];
-        ]
-      in
-      let print_items =
-        [
-          { label = "p"; msg = "print search result" };
-          { label = "Shift+P"; msg = "print path" };
         ]
       in
       [

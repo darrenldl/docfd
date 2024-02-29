@@ -203,19 +203,19 @@ module Status_bar = struct
 end
 
 module Key_binding_info = struct
-  type label_msg = {
+  type labelled_msg = {
     label : string;
     msg : string;
   }
 
-  type label_msg_line = label_msg list
+  type labelled_msg_line = labelled_msg list
 
   type grid_key = {
     input_mode : input_mode;
     init_ui_mode : ui_mode;
   }
 
-  type grid_contents = (grid_key * (label_msg_line list)) list
+  type grid_contents = (grid_key * (labelled_msg_line list)) list
 
   type grid_lookup = (grid_key * Nottui.ui Lwd.t) list
 
