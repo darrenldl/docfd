@@ -1,6 +1,7 @@
 open Cmdliner
 open Lwd_infix
 open Docfd_lib
+open Debug_utils
 
 let stdin_is_atty () =
   Unix.isatty Unix.stdin
@@ -138,13 +139,6 @@ let debug_log_arg =
     & opt string ""
     & info [ "debug-log" ] ~doc ~docv:"FILE"
   )
-
-let do_if_debug (f : out_channel -> unit) =
-  match !Params.debug_output with
-  | None -> ()
-  | Some oc -> (
-      f oc
-    )
 
 let list_files_recursive (dirs : string list) : string list =
   let l = ref [] in
