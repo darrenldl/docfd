@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.3.0
+
+- Fixed crash from search result snippet being bigger the content view pane
+
+    - Crash was from `Content_and_search_result_render.color_word_image_grid`
+
+- Added key binding to exit and print file name
+
+- Added key binding to exit and print search result
+
 ## 2.2.0
 
 - Restored behaviour of skipping file extension checks for top-level
