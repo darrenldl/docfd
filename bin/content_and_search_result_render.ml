@@ -191,11 +191,8 @@ let content_snippet
     ~(height : int)
     (index : Index.t)
   : Notty.image =
-  let max_line_num =
-    match Index.global_line_count index with
-    | 0 -> 0
-    | n -> n - 1
-  in
+  let max_line_num = Index.global_line_count index in
+  assert (max_line_num > 0);
   match search_result with
   | None -> (
       let grid =
