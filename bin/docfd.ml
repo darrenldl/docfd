@@ -393,7 +393,7 @@ let run
   );
   Params.debug_output := (match debug_log with
       | "" -> None
-      | "-" -> Some stdout
+      | "-" -> Some stderr
       | _ -> (
           try
             Some (

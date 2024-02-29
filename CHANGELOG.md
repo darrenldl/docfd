@@ -11,6 +11,8 @@
     - `p`: exit and print search result to stderr
     - `Shift+P`: exit and print file path to stderr
 
+- Changed `--debug-log -` to use stderr instead of stdout
+
 ## 2.2.0
 
 - Restored behaviour of skipping file extension checks for top-level
