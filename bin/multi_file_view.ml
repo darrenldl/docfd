@@ -290,9 +290,11 @@ module Bottom_pane = struct
           ];
           [
             { label = "Tab"; msg = "single file view" };
-            { label = "?"; msg = "set file content reqs" };
+            { label = "p"; msg = "print search result" };
+            { label = "Shift+P"; msg = "print path" };
           ];
           [
+            { label = "?"; msg = "set file content reqs" };
             { label = "r"; msg = "reload document selected" };
             { label = "Shift+R"; msg = "rescan for documents" };
           ];
@@ -468,6 +470,30 @@ let keyboard_handler
       | (`ASCII 'x', []) -> (
           Lwd.set Vars.search_field Ui_base.empty_text_field;
           update_search_phrase ();
+          `Handled
+        )
+      | (`ASCII 'P', []) -> (
+          Option.iter (fun (doc, search_results) ->
+              Ui_base.Vars.action :=
+                Some (Ui_base.Print_file_path_and_search_result (doc, None));
+              Lwd.set Ui_base.Vars.quit true;
+            )
+            document_info;
+          `Handled
+        )
+      | (`ASCII 'p', []) -> (
+          Option.iter (fun (doc, search_results) ->
+              let search_result =
+                if search_result_current_choice < Array.length search_results then
+                  Some search_results.(search_result_current_choice)
+                else
+                  None
+              in
+              Ui_base.Vars.action :=
+                Some (Ui_base.Print_file_path_and_search_result (doc, search_result));
+              Lwd.set Ui_base.Vars.quit true;
+            )
+            document_info;
           `Handled
         )
       | (`Enter, []) -> (

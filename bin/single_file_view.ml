@@ -99,6 +99,11 @@ module Bottom_pane = struct
           { label = "x"; msg = "clear search" };
         ]
       in
+      let navigate_line2 =
+        [
+          { label = "r"; msg = "reload" };
+        ]
+      in
       let search_grid =
         [
           [
@@ -109,22 +114,25 @@ module Bottom_pane = struct
           ];
         ]
       in
+      let print_items =
+        [
+          { label = "p"; msg = "print search result" };
+          { label = "Shift+P"; msg = "print path" };
+        ]
+      in
       [
         ({ input_mode = Navigate; init_ui_mode = Ui_multi_file },
          [
            navigate_line0;
-           [
-             { label = "Tab"; msg = "multi-file view" };
-             { label = "r"; msg = "reload" };
-           ];
+           ({ label = "Tab"; msg = "multi-file view" } :: print_items);
+           navigate_line2;
          ]
         );
         ({ input_mode = Navigate; init_ui_mode = Ui_single_file },
          [
            navigate_line0;
-           [
-             { label = "r"; msg = "reload" };
-           ];
+           print_items;
+           navigate_line2;
          ]
         );
         ({ input_mode = Search; init_ui_mode = Ui_multi_file },
@@ -222,6 +230,24 @@ let keyboard_handler
       | (`ASCII 'x', []) -> (
           Lwd.set Ui_base.Vars.Single_file.search_field Ui_base.empty_text_field;
           update_search_phrase ();
+          `Handled
+        )
+      | (`ASCII 'P', []) -> (
+          Lwd.set Ui_base.Vars.quit true;
+          Ui_base.Vars.action :=
+            Some (Ui_base.Print_file_path_and_search_result (document, None));
+          `Handled
+        )
+      | (`ASCII 'p', []) -> (
+          Lwd.set Ui_base.Vars.quit true;
+          let search_result =
+            if search_result_current_choice < Array.length search_results then
+              Some search_results.(search_result_current_choice)
+            else
+              None
+          in
+          Ui_base.Vars.action :=
+            Some (Ui_base.Print_file_path_and_search_result (document, search_result));
           `Handled
         )
       | (`Enter, []) -> (
