@@ -132,7 +132,7 @@ let index_only_arg =
 
 let debug_log_arg =
   let doc =
-    Fmt.str "Specify debug log file and enable debug mode where additional info is displayed on UI. If FILE is -, then debug info is printed to stdout instead. Otherwise FILE is opened in append mode."
+    Fmt.str "Specify debug log file to use and enable debug mode where additional info is displayed on UI. If FILE is -, then debug log is printed to stderr instead. Otherwise FILE is opened in append mode for log writing."
   in
   Arg.(
     value
