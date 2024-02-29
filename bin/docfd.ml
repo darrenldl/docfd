@@ -724,6 +724,33 @@ let run
             );
             loop ()
           )
+        | Print_file_path_and_search_result (doc, search_result) -> (
+            close_term ();
+            let path = Document.path doc in
+            Printf.eprintf "%s\n" path;
+            match search_result with
+            | None -> ()
+            | Some search_result -> (
+                let render_mode =
+                  if Misc_utils.path_is_pdf path then (
+                    `Page_num_only
+                  ) else (
+                    `Line_num_only
+                  )
+                in
+                let (term_width, _term_height) = Lwd.peek Ui_base.Vars.term_width_height in
+                Content_and_search_result_render.search_results
+                  ~render_mode
+                  ~start:0
+                  ~end_exc:1
+                  ~width:term_width
+                  (Document.index doc)
+                  [| search_result |]
+                |> List.hd
+                |> Notty_unix.eol
+                |> Notty_unix.output_image ~fd:stderr
+              )
+          )
       )
   in
   loop ();
