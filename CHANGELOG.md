@@ -6,9 +6,10 @@
 
     - Crash was from `Content_and_search_result_render.color_word_image_grid`
 
-- Added key binding to exit and print file name
+- Added key bindings
 
-- Added key binding to exit and print search result
+    - `p`: exit and print search result to stderr
+    - `Shift+P`: exit and print file path to stderr
 
 ## 2.2.0
 
