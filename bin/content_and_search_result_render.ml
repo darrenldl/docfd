@@ -60,13 +60,18 @@ let color_word_image_grid
     (index : Index.t)
     (search_result : Search_result.t)
   : unit =
+  let grid_end_inc_global_line_num = grid.start_global_line_num + Array.length grid.data - 1 in
   List.iter (fun Search_result.{ found_word_pos = pos; found_word = word; _ } ->
       let loc = Index.loc_of_pos pos index in
       let line_loc = Index.Loc.line_loc loc in
       let global_line_num = Index.Line_loc.global_line_num line_loc in
-      let pos_in_line = Index.Loc.pos_in_line loc in
-      grid.data.(global_line_num - grid.start_global_line_num).(pos_in_line) <-
-        I.string A.(fg black ++ bg lightyellow) word
+      if grid.start_global_line_num <= global_line_num
+      && global_line_num <= grid_end_inc_global_line_num
+      then (
+        let pos_in_line = Index.Loc.pos_in_line loc in
+        grid.data.(global_line_num - grid.start_global_line_num).(pos_in_line) <-
+          I.string A.(fg black ++ bg lightyellow) word
+      )
     )
     (Search_result.found_phrase search_result)
 
