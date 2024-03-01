@@ -160,7 +160,7 @@ let search_arg =
     & info [ "search" ] ~doc ~docv:"EXP"
   )
 
-let search_result_count_per_document_arg_name = "search-result-count"
+let search_result_count_per_document_arg_name = "search-result-count-per-document"
 
 let search_result_count_per_document_arg =
   let doc =
