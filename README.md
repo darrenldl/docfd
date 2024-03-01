@@ -79,7 +79,7 @@ for the following viewers:
 ## Installation
 
 Statically linked binaries are available via
-[GitHub releases](https://github.com/darrenldl/docfd/releases)
+[GitHub releases](https://github.com/darrenldl/docfd/releases).
 
 Docfd is also packaged on:
 
