@@ -473,7 +473,7 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'P', []) -> (
-          Option.iter (fun (doc, search_results) ->
+          Option.iter (fun (doc, _search_results) ->
               Lwd.set Ui_base.Vars.quit true;
               Ui_base.Vars.action :=
                 Some (Ui_base.Print_file_path_and_search_result (doc, None));
