@@ -2,7 +2,7 @@ open Docfd_lib
 
 type key = string
 
-type value = Document.t * Search_result.t array
+type document_info = Document.t * Search_result.t array
 
 type t = {
   all_documents : Document.t String_map.t;

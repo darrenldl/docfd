@@ -24,6 +24,10 @@ let text_editor = ref ""
 
 let line_wrap_underestimate_offset = 2
 
+let default_non_interactive_search_result_count = 10
+
+let default_search_result_print_text_width = 80
+
 let default_cache_size = 100
 
 let cache_size = ref default_cache_size

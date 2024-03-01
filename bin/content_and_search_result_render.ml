@@ -241,6 +241,8 @@ let search_results
   : Notty.image list =
   let open Notty in
   let open Notty.Infix in
+  let result_count = Array.length results in
+  let end_exc = min end_exc result_count in
   let results =
     Array.sub results
       start

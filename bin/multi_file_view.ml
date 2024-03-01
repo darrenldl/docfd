@@ -41,7 +41,7 @@ let reload_document (doc : Document.t) =
   | Error _ -> ()
 
 let reload_document_selected
-    ~(document_info_s : Document_store.value array)
+    ~(document_info_s : Document_store.document_info array)
   : unit =
   if Array.length document_info_s > 0 then (
     let index = Lwd.peek Vars.index_of_document_selected in
@@ -77,7 +77,7 @@ let update_content_reqs () =
 module Top_pane = struct
   module Document_list = struct
     let render_document_preview
-        ~(document_info : Document_store.value)
+        ~(document_info : Document_store.document_info)
         ~selected
       : Notty.image =
       let open Notty in
@@ -144,7 +144,7 @@ module Top_pane = struct
 
     let main
         ~height
-        ~(document_info_s : Document_store.value array)
+        ~(document_info_s : Document_store.document_info array)
         ~(document_selected : int)
       : Nottui.ui Lwd.t =
       let document_count = Array.length document_info_s in
@@ -188,7 +188,7 @@ module Top_pane = struct
     let main
         ~width
         ~height
-        ~(document_info_s : Document_store.value array)
+        ~(document_info_s : Document_store.document_info array)
         ~(document_selected : int)
       : Nottui.ui Lwd.t =
       if Array.length document_info_s = 0 then
@@ -213,7 +213,7 @@ module Top_pane = struct
   let main
       ~width
       ~height
-      ~(document_info_s : Document_store.value array)
+      ~(document_info_s : Document_store.document_info array)
     : Nottui.ui Lwd.t =
     let$* document_selected = Lwd.get Vars.index_of_document_selected in
     let sub_pane_width =
@@ -237,7 +237,7 @@ end
 
 module Bottom_pane = struct
   let status_bar
-      ~(document_info_s : Document_store.value array)
+      ~(document_info_s : Document_store.document_info array)
       ~(input_mode : Ui_base.input_mode)
     : Nottui.Ui.t Lwd.t =
     let$* index_of_document_selected = Lwd.get Vars.index_of_document_selected in
@@ -366,7 +366,7 @@ module Bottom_pane = struct
 end
 
 let keyboard_handler
-    ~(document_info_s : Document_store.value array)
+    ~(document_info_s : Document_store.document_info array)
     (key : Nottui.Ui.key)
   =
   let document_choice_count =

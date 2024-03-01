@@ -169,7 +169,7 @@ module Bottom_pane = struct
 end
 
 let keyboard_handler
-    ~(document_info : Document_store.value)
+    ~(document_info : Document_store.document_info)
     (key : Nottui.Ui.key)
   =
   let document, search_results = document_info in

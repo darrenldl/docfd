@@ -140,6 +140,50 @@ let debug_log_arg =
     & info [ "debug-log" ] ~doc ~docv:"FILE"
   )
 
+let start_with_search_arg =
+  let doc =
+    Fmt.str "Start interactive mode with search expression EXP."
+  in
+  Arg.(
+    value
+    & opt string ""
+    & info [ "start-with-search" ] ~doc ~docv:"EXP"
+  )
+
+let search_arg =
+  let doc =
+    Fmt.str "Search with expression EXP in non-interactive mode."
+  in
+  Arg.(
+    value
+    & opt string ""
+    & info [ "search" ] ~doc ~docv:"EXP"
+  )
+
+let search_result_count_per_document_arg_name = "search-result-count"
+
+let search_result_count_per_document_arg =
+  let doc =
+    "Number of search results per document to show in non-interactive search mode."
+  in
+  Arg.(
+    value
+    & opt int Params.default_non_interactive_search_result_count
+    & info [ search_result_count_per_document_arg_name ] ~doc ~docv:"N"
+  )
+
+let search_result_print_text_width_arg_name = "search-result-print-text-width"
+
+let search_result_print_text_width_arg =
+  let doc =
+    "Text width to use when printing search results."
+  in
+  Arg.(
+    value
+    & opt int Params.default_search_result_print_text_width
+    & info [ search_result_print_text_width_arg_name ] ~doc ~docv:"N"
+  )
+
 let list_files_recursive (dirs : string list) : string list =
   let l = ref [] in
   let add x =
@@ -356,6 +400,24 @@ let open_text_path index document_src ~editor ~path ~search_result =
   in
   Sys.command cmd |> ignore
 
+let print_newline_image ~fd =
+  Notty_unix.eol (Notty.I.void 0 1)
+  |> Notty_unix.output_image ~fd
+
+let print_search_result_images ~fd ~document (images : Notty.image list) =
+  let path_image =
+    Notty.I.string Notty.A.(fg magenta) (Document.path document)
+  in
+  Notty_unix.output_image ~fd (Notty_unix.eol path_image);
+  let images = Array.of_list images in
+  Array.iteri (fun i img ->
+      if i > 0 then (
+        print_newline_image ~fd
+      );
+      Notty_unix.eol img
+      |> Notty_unix.output_image ~fd;
+    ) images
+
 let run
     ~(env : Eio_unix.Stdenv.base)
     (debug_log : string)
@@ -369,6 +431,10 @@ let run
     (cache_size : int)
     (no_cache : bool)
     (index_only : bool)
+    (start_with_search : string)
+    (search_exp : string)
+    (search_result_count_per_document : int)
+    (search_result_print_text_width : int)
     (files : string list)
   =
   if max_depth < 1 then (
@@ -619,6 +685,36 @@ let run
   if index_only then (
     exit 0
   );
+  if String.length search_exp > 0 then (
+    let search_exp =
+      Search_exp.make
+        ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
+        search_exp
+    in
+    let document_store =
+      Document_store.update_search_exp search_exp init_document_store
+    in
+    let document_info_s =
+      Document_store.usable_documents document_store
+    in
+    Array.iteri (fun i (document, search_results) ->
+        let fd = stdout in
+        if i > 0 then (
+          print_newline_image ~fd;
+        );
+        let images =
+          Content_and_search_result_render.search_results
+            ~render_mode:(Ui_base.render_mode_of_document document)
+            ~start:0
+            ~end_exc:search_result_count_per_document
+            ~width:search_result_print_text_width
+            (Document.index document)
+            search_results
+        in
+        print_search_result_images ~fd ~document images;
+      ) document_info_s;
+    exit 0
+  );
   Lwd.set Ui_base.Vars.document_store init_document_store;
   (match init_ui_mode with
    | Ui_base.Ui_single_file -> Lwd.set Ui_base.Vars.Single_file.document_store init_document_store
@@ -724,32 +820,22 @@ let run
             );
             loop ()
           )
-        | Print_file_path_and_search_result (doc, search_result) -> (
+        | Print_file_path_and_search_result (document, search_result) -> (
             close_term ();
-            let path = Document.path doc in
-            Printf.eprintf "%s\n" path;
-            match search_result with
-            | None -> ()
-            | Some search_result -> (
-                let render_mode =
-                  if Misc_utils.path_is_pdf path then (
-                    `Page_num_only
-                  ) else (
-                    `Line_num_only
-                  )
-                in
-                let (term_width, _term_height) = Lwd.peek Ui_base.Vars.term_width_height in
-                Content_and_search_result_render.search_results
-                  ~render_mode
-                  ~start:0
-                  ~end_exc:1
-                  ~width:term_width
-                  (Document.index doc)
-                  [| search_result |]
-                |> List.hd
-                |> Notty_unix.eol
-                |> Notty_unix.output_image ~fd:stderr
-              )
+            let images =
+              match search_result with
+              | None -> []
+              | Some search_result -> (
+                  Content_and_search_result_render.search_results
+                    ~render_mode:(Ui_base.render_mode_of_document document)
+                    ~start:0
+                    ~end_exc:1
+                    ~width:search_result_print_text_width
+                    (Document.index document)
+                    [| search_result |]
+                )
+            in
+            print_search_result_images ~fd:stderr ~document images;
           )
       )
   in
@@ -802,6 +888,10 @@ let cmd ~env =
           $ cache_size_arg
           $ no_cache_arg
           $ index_only_arg
+          $ start_with_search_arg
+          $ search_arg
+          $ search_result_count_per_document_arg
+          $ search_result_print_text_width_arg
           $ files_arg)
 
 let () = Eio_main.run (fun env ->

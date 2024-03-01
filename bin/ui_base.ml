@@ -21,6 +21,13 @@ type top_level_action =
 
 let empty_text_field = ("", 0)
 
+let render_mode_of_document (doc : Document.t) =
+  if Misc_utils.path_is_pdf (Document.path doc) then (
+    `Page_num_only
+  ) else (
+    `Line_num_only
+  )
+
 module Vars = struct
   let quit = Lwd.var false
 
@@ -118,18 +125,11 @@ module Search_result_list = struct
     if result_count = 0 then (
       Lwd.return Nottui.Ui.empty
     ) else (
-      let render_mode =
-        if Misc_utils.path_is_pdf (Document.path document) then (
-          `Page_num_only
-        ) else (
-          `Line_num_only
-        )
-      in
       let images =
         Content_and_search_result_render.search_results
-          ~render_mode
+          ~render_mode:(render_mode_of_document document)
           ~start:search_result_selected
-          ~end_exc:(min (search_result_selected + height) result_count)
+          ~end_exc:(search_result_selected + height)
           ~width
           (Document.index document)
           search_results
