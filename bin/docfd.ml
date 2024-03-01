@@ -725,8 +725,16 @@ let run
   let root : Nottui.ui Lwd.t =
     let$* ui_mode : Ui_base.ui_mode = Lwd.get Ui_base.Vars.ui_mode in
     match ui_mode with
-    | Ui_multi_file -> Multi_file_view.main
-    | Ui_single_file -> Single_file_view.main
+    | Ui_multi_file -> (
+        Lwd.set Multi_file_view.Vars.search_field (start_with_search, 0);
+        Multi_file_view.update_search_phrase ();
+        Multi_file_view.main
+      )
+    | Ui_single_file -> (
+        Lwd.set Ui_base.Vars.Single_file.search_field (start_with_search, 0);
+        Single_file_view.update_search_phrase ();
+        Single_file_view.main
+      )
   in
   let get_term, close_term =
     let term_and_tty_fd = ref None in
