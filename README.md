@@ -210,7 +210,7 @@ Search results are then ranked using heuristics.
     - `Esc`, `Ctrl+C` or `Ctrl+Q`
 - Print selected search result to stderr
     - `p`
-- Print selected file path stderr
+- Print path of selected document to stderr
     - `Shift`+`P`
 
 `Search` mode
