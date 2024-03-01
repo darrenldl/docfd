@@ -102,7 +102,7 @@ module Bottom_pane = struct
       let print_items =
         [
           { label = "p"; msg = "print search result" };
-          { label = "Shift+P"; msg = "print path" };
+          { label = "Shift+P"; msg = "print document path" };
         ]
       in
       let navigate_line2 =

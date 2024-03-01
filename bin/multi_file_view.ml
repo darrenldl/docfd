@@ -291,7 +291,7 @@ module Bottom_pane = struct
           [
             { label = "Tab"; msg = "single file view" };
             { label = "p"; msg = "print search result" };
-            { label = "Shift+P"; msg = "print path" };
+            { label = "Shift+P"; msg = "print document path" };
           ];
           [
             { label = "?"; msg = "set file content reqs" };
