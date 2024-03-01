@@ -28,7 +28,7 @@ and opening it to the closest location to the selected search result via PDF vie
 
 - Multiline fuzzy search of multiple files or a single file
 
-- Swap between multi-file view and single file view on the fly
+- Swap between Multi-file View and Single File View on the fly
 
 - Content view pane that shows the snippet surrounding the search result selected
 
@@ -136,8 +136,8 @@ If any of the file ends with `.pdf`, then `pdftotext`
 is required to continue.
 
 If exactly one file is specified
-in the list of paths, then Docfd uses **Single file view**.
-Otherwise, Docfd uses **Multi-file view**.
+in the list of paths, then Docfd uses **Single File View**.
+Otherwise, Docfd uses **Multi-file View**.
 
 </details>
 
@@ -199,7 +199,25 @@ Search results are then ranked using heuristics.
 
 </details>
 
-## Multi-file view
+## Common controls between Multi-file View and Single File View
+
+`Navigation` mode
+- Switch to `Search` mode
+    - `/`
+- Clear search phrase
+    - `x`
+- Exit Docfd
+    - `Esc`, `Ctrl+C` or `Ctrl+Q`
+- Print selected search result to stderr
+    - `p`
+- Print selected file path stderr
+    - `Shift`+`P`
+
+`Search` mode
+- Search field is active in this mode
+- `Enter` to confirm search phrase and exit search mode
+
+## Multi-file View
 
 ![](screenshots/main0.png)
 
@@ -249,16 +267,6 @@ Docfd operates in modes, the initial mode is `Navigation` mode.
     - `Tab`
 - Switch to `Require content` mode
     - `?`
-- Switch to `Search` mode
-    - `/`
-- Clear search phrase
-    - `x`
-- Exit Docfd
-    - `Esc`, `Ctrl+C` or `Ctrl+Q`
-
-`Search` mode
-- Search field is active in this mode
-- `Enter` to confirm search phrase and exit the mode
 
 `Require content` mode
 - Required content field is active in this mode
@@ -330,16 +338,6 @@ namely `Shift` is optional for scrolling through search result list.
         - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
 - Switch to multi-file view
     - `Tab`
-- Switch to `Search` mode
-    - `/`
-- Clear search phrase
-    - `x`
-- Exit Docfd
-    - `Esc`, `Ctrl+C` or `Ctrl+Q`
-
-`Search` mode
-- Search field is active in this mode
-- `Enter` to confirm search phrase and exit search mode
 
 </details>
 
