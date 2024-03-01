@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.3.0
+## 3.0.0
 
 - Fixed crash from search result snippet being bigger the content view pane
 
@@ -12,6 +12,19 @@
     - `Shift+P`: exit and print file path to stderr
 
 - Changed `--debug-log -` to use stderr instead of stdout
+
+- Added non-interactive search mode where search results are printed to stdout
+
+    - `--search EXP` invokes non-interactive search mode with search expression `EXP`
+    - `--search-result-count-per-document` sets the number of top search results printed per document
+    - `--search-result-print-text-width`  sets the text width to use when printing
+
+- Added `--start-with-search` to prefill the search field in interactive mode
+
+- Removed content requirement expression from multi-file view
+
+    - Originally designed for file filtering, but I have almost never used
+      it since its addition in 1.0.0
 
 ## 2.2.0
 
