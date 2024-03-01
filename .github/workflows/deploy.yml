@@ -3,7 +3,8 @@ name: Deploy on release
 on:
   push:
     tags:
-      - "*"
+      - "[0-9]*"
+      - "test*"
 
 jobs:
   build:
