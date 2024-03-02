@@ -28,7 +28,7 @@ and opening it to the closest location to the selected search result via PDF vie
 
 - Multiline fuzzy search of multiple files or a single file
 
-- Swap between Multi-file View and Single File View on the fly
+- Swap between multi-file view and single file view on the fly
 
 - Content view pane that shows the snippet surrounding the search result selected
 
@@ -103,7 +103,7 @@ external tools at run time for full functionality:
 command | docfd
 ```
 
-Docfd uses **Single file view**
+Docfd uses single file view
 when source of document is piped stdin.
 
 Files specified as arguments to docfd are ignored
@@ -136,8 +136,8 @@ If any of the file ends with `.pdf`, then `pdftotext`
 is required to continue.
 
 If exactly one file is specified
-in the list of paths, then Docfd uses **Single File View**.
-Otherwise, Docfd uses **Multi-file View**.
+in the list of paths, then Docfd uses single file view.
+Otherwise, Docfd uses multi-file view.
 
 </details>
 
@@ -199,7 +199,7 @@ Search results are then ranked using heuristics.
 
 </details>
 
-## Common controls between Multi-file View and Single File View
+## Common controls between multi-file view and single file view
 
 `Navigation` mode
 - Switch to `Search` mode
@@ -217,7 +217,7 @@ Search results are then ranked using heuristics.
 - Search field is active in this mode
 - `Enter` to confirm search phrase and exit search mode
 
-## Multi-file View
+## Multi-file view
 
 ![](screenshots/main0.png)
 
