@@ -6,8 +6,6 @@ type document_info = Document.t * Search_result.t array
 
 type t = {
   all_documents : Document.t String_map.t;
-  filtered_documents : Document.t String_map.t;
-  content_reqs : Content_req_exp.t;
   search_exp : Search_exp.t;
   search_results : Search_result.t array String_map.t;
 }
@@ -18,18 +16,14 @@ let size (t : t) =
 let empty : t =
   {
     all_documents = String_map.empty;
-    filtered_documents = String_map.empty;
-    content_reqs = Content_req_exp.empty;
     search_exp = Search_exp.empty;
     search_results = String_map.empty;
   }
 
-let content_reqs (t : t) = t.content_reqs
-
 let search_exp (t : t) = t.search_exp
 
 let single_out ~path (t : t) =
-  match String_map.find_opt path t.filtered_documents with
+  match String_map.find_opt path t.all_documents with
   | None -> None
   | Some doc ->
     let search_results = String_map.find path t.search_results in
@@ -37,8 +31,6 @@ let single_out ~path (t : t) =
     Some
       {
         all_documents;
-        filtered_documents = all_documents;
-        content_reqs = t.content_reqs;
         search_exp = t.search_exp;
         search_results = String_map.(add path search_results empty);
       }
@@ -53,51 +45,12 @@ let min_binding (t : t) =
       Some (path, (doc, search_results))
     )
 
-let update_content_reqs
-    (content_reqs : Content_req_exp.t)
-    (t : t)
-  : t =
-  if Content_req_exp.equal content_reqs t.content_reqs then (
-    t
-  ) else (
-    let filtered_documents =
-      if Content_req_exp.is_empty content_reqs then (
-        t.all_documents
-      ) else (
-        t.all_documents
-        |> String_map.to_list
-        |> Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size
-          (fun (path, doc) ->
-             if Index.fulfills_content_reqs content_reqs (Document.index doc) then
-               Some (path, doc)
-             else
-               None
-          )
-        |> String_map.of_list
-      )
-    in
-    let search_results =
-      filtered_documents
-      |> String_map.to_list
-      |> Eio.Fiber.List.map ~max_fibers:Task_pool.size
-        (fun (path, doc) ->
-           (path, Index.search t.search_exp (Document.index doc))
-        )
-      |> String_map.of_list
-    in
-    { t with
-      content_reqs;
-      filtered_documents;
-      search_results;
-    }
-  )
-
 let update_search_exp search_exp (t : t) : t =
   if Search_exp.equal search_exp t.search_exp then (
     t
   ) else (
     let search_results =
-      t.filtered_documents
+      t.all_documents
       |> String_map.to_list
       |> Eio.Fiber.List.map ~max_fibers:Task_pool.size
         (fun (path, doc) ->
@@ -112,12 +65,6 @@ let update_search_exp search_exp (t : t) : t =
   )
 
 let add_document (doc : Document.t) (t : t) : t =
-  let filtered_documents =
-    if Index.fulfills_content_reqs t.content_reqs (Document.index doc) then
-      String_map.add (Document.path doc) doc t.filtered_documents
-    else
-      t.filtered_documents
-  in
   let search_results =
     String_map.add
       (Document.path doc)
@@ -130,7 +77,6 @@ let add_document (doc : Document.t) (t : t) : t =
         (Document.path doc)
         doc
         t.all_documents;
-    filtered_documents;
     search_results;
   }
 
@@ -143,13 +89,13 @@ let of_seq (s : Document.t Seq.t) =
 
 let usable_documents (t : t) : (Document.t * Search_result.t array) array =
   if Search_exp.is_empty t.search_exp then (
-    t.filtered_documents
+    t.all_documents
     |> String_map.to_seq
     |> Seq.map (fun (_path, doc) -> (doc, [||]))
     |> Array.of_seq
   ) else (
     let arr =
-      t.filtered_documents
+      t.all_documents
       |> String_map.to_seq
       |> Seq.filter_map (fun (path, doc) ->
           let search_results = String_map.find path t.search_results in

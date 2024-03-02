@@ -48,8 +48,6 @@ val line_count_of_page_num : int -> t -> int
 
 val search : Search_exp.t -> t -> Search_result.t array
 
-val fulfills_content_reqs : Content_req_exp.t -> t -> bool
-
 val global_line_count : t -> int
 
 val page_count : t -> int

@@ -62,18 +62,6 @@ let update_search_phrase () =
   in
   Lwd.set Ui_base.Vars.document_store document_store
 
-let update_content_reqs () =
-  reset_document_selected ();
-  let content_reqs =
-    Content_req_exp.parse (fst @@ Lwd.peek Vars.require_field)
-  in
-  let document_store =
-    Lwd.peek Ui_base.Vars.document_store
-    |> Document_store.update_content_reqs
-      content_reqs
-  in
-  Lwd.set Ui_base.Vars.document_store document_store
-
 module Top_pane = struct
   module Document_list = struct
     let render_document_preview
@@ -294,7 +282,6 @@ module Bottom_pane = struct
             { label = "Shift+P"; msg = "print document path" };
           ];
           [
-            { label = "?"; msg = "set file content reqs" };
             { label = "r"; msg = "reload document selected" };
             { label = "Shift+R"; msg = "rescan for documents" };
           ];
@@ -342,12 +329,6 @@ module Bottom_pane = struct
       Ui_base.Key_binding_info.main ~grid_lookup ~input_mode
   end
 
-  let require_bar ~input_mode =
-    Ui_base.Required_content_bar.main ~input_mode
-      ~edit_field:Vars.require_field
-      ~focus_handle:Vars.require_field_focus_handle
-      ~f:update_content_reqs
-
   let search_bar ~input_mode =
     Ui_base.Search_bar.main ~input_mode
       ~edit_field:Vars.search_field
@@ -360,7 +341,6 @@ module Bottom_pane = struct
       [
         status_bar ~document_info_s ~input_mode;
         Key_binding_info.main ~input_mode;
-        require_bar ~input_mode;
         search_bar ~padding:10 ~input_mode;
       ]
 end

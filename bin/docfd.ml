@@ -788,11 +788,9 @@ let run
         | Ui_base.Recompute_document_src -> (
             let document_src = compute_document_src () in
             let old_document_store = Lwd.peek Ui_base.Vars.document_store in
-            let content_reqs = Document_store.content_reqs old_document_store in
             let search_exp = Document_store.search_exp old_document_store in
             let document_store =
               document_store_of_document_src document_src
-              |> Document_store.update_content_reqs content_reqs
               |> Document_store.update_search_exp search_exp
             in
             Lwd.set Ui_base.Vars.document_store document_store;

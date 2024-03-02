@@ -640,23 +640,6 @@ module Search = struct
     |> Seq.fold_left Search_result_heap.merge Search_result_heap.empty
 end
 
-let fulfills_content_reqs
-    (e : Content_req_exp.t)
-    (t : t)
-  : bool =
-  let rec aux (e : Content_req_exp.t) =
-    let open Content_req_exp in
-    match e with
-    | Phrase phrase ->
-      not (Search_result_heap.is_empty (Search.search_single ~consider_edit_dist:false phrase t))
-    | Binary_op (op, e1, e2) -> (
-        match op with
-        | And -> aux e1 && aux e2
-        | Or -> aux e1 || aux e2
-      )
-  in
-  Content_req_exp.is_empty e || aux e
-
 let search
     (exp : Search_exp.t)
     (t : t)

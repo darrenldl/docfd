@@ -6,8 +6,6 @@ module Search_phrase = Search_phrase
 
 module Search_exp = Search_exp
 
-module Content_req_exp = Content_req_exp
-
 module Word_db = Word_db
 
 module Tokenize = Tokenize
