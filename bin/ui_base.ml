@@ -3,7 +3,6 @@ open Lwd_infix
 
 type input_mode =
   | Navigate
-  | Require_content
   | Search
 
 type ui_mode =
@@ -181,7 +180,6 @@ module Status_bar = struct
   let input_mode_images =
     let l =
       [ (Navigate, "NAVIGATE")
-      ; (Require_content, "REQUIRE CONTENT")
       ; (Search, "SEARCH")
       ]
     in
@@ -274,37 +272,6 @@ module Key_binding_info = struct
 
   let main ~(grid_lookup : grid_lookup) ~(input_mode : input_mode) =
     List.assoc { input_mode; init_ui_mode = !Vars.init_ui_mode } grid_lookup
-end
-
-module Required_content_bar = struct
-  let search_label ~(input_mode : input_mode) =
-    let attr =
-      match input_mode with
-      | Require_content -> Notty.A.(st bold)
-      | _ -> Notty.A.empty
-    in
-    (Notty.I.string attr "Required content: ")
-    |> Nottui.Ui.atom
-    |> Lwd.return
-
-  let main
-      ~input_mode
-      ~(edit_field : (string * int) Lwd.var)
-      ~focus_handle
-      ~f
-    : Nottui.ui Lwd.t =
-    Nottui_widgets.hbox
-      [
-        search_label ~input_mode;
-        Nottui_widgets.edit_field (Lwd.get edit_field)
-          ~focus:focus_handle
-          ~on_change:(fun (text, x) -> Lwd.set edit_field (text, x))
-          ~on_submit:(fun _ ->
-              f ();
-              Nottui.Focus.release focus_handle;
-              Lwd.set Vars.input_mode Navigate
-            );
-      ]
 end
 
 module Search_bar = struct

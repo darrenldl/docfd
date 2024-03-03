@@ -314,15 +314,6 @@ module Bottom_pane = struct
           ];
         ]
       in
-      let require_content_grid =
-        [
-          [
-            { label = "Enter"; msg = "confirm file content requirements and exit" };
-          ];
-          empty_row;
-          empty_row;
-        ]
-      in
       let search_grid =
         [
           [
@@ -345,9 +336,6 @@ module Bottom_pane = struct
         ({ input_mode = Search; init_ui_mode = Ui_single_file },
          search_grid
         );
-        ({ input_mode = Require_content; init_ui_mode = Ui_multi_file },
-         require_content_grid
-        );
       ]
 
     let grid_lookup = Ui_base.Key_binding_info.make_grid_lookup grid_contents
@@ -368,7 +356,7 @@ module Bottom_pane = struct
       [
         status_bar ~document_info_s ~input_mode;
         Key_binding_info.main ~input_mode;
-        search_bar ~padding:10 ~input_mode;
+        search_bar ~padding:0 ~input_mode;
       ]
 end
 
@@ -462,11 +450,6 @@ let keyboard_handler
           set_document_selected
             ~choice_count:document_choice_count
             (document_current_choice-1);
-          `Handled
-        )
-      | (`ASCII '?', []) -> (
-          Nottui.Focus.request Vars.require_field_focus_handle;
-          Lwd.set Ui_base.Vars.input_mode Require_content;
           `Handled
         )
       | (`ASCII '/', []) -> (
