@@ -141,7 +141,7 @@ module Top_pane = struct
         Option.value ~default:"" (Document.title doc)
         |> Tokenize.f ~drop_spaces:false
         |> List.of_seq
-        |> Word_grid_render.of_words ~width:(width - 2) ~attr
+        |> Word_grid_render.of_words ~attr ~width
       in
       title
       <->
