@@ -28,6 +28,9 @@
 
 - Added word based line wrapping to document path render in multi-file view
 
+- Added sub-word breaking in word based line wrapping logic so all of the original characters
+  are displayed even when terminal width is very small
+
 ## 2.2.0
 
 - Restored behaviour of skipping file extension checks for top-level

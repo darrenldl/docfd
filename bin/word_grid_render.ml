@@ -1,3 +1,16 @@
+let hchunk_rev ~width (img : Notty.image) : Notty.image list =
+  let open Notty in
+  let rec aux acc img =
+    let img_width = I.width img in
+    if img_width <= width then (
+      img :: acc
+    ) else (
+      let acc = (I.hcrop 0 (img_width - width) img) :: acc in
+      aux acc (I.hcrop width 0 img)
+    )
+  in
+  aux [] img
+
 let of_images ~width (words : Notty.image list) : Notty.image =
   let open Notty in
   let grid : Notty.image list list =
@@ -9,16 +22,15 @@ let of_images ~width (words : Notty.image list) : Notty.image =
          | [] -> (new_len, [ [ word ] ])
          | line :: rest -> (
              if new_len > width then (
-               (* If the (terminal) width is really small,
-                  then this new line may still overflow visually.
-                  But since we still need to put this one word somewhere eventually,
-                  it might as well be here as a line with a single
-                  word.
-
-                  Otherwise we just get an infinite loop where we keep trying
-                  to find a non-existent sufficiently spacious line to put the word.
-               *)
-               (word_len, [ word ] :: acc)
+               if word_len > width then (
+                 let lines =
+                   hchunk_rev ~width word
+                   |> List.map (fun x -> [ x ])
+                 in
+                 (0, [] :: (lines @ acc))
+               ) else (
+                 (word_len, [ word ] :: acc)
+               )
              ) else (
                (new_len, (word :: line) :: rest)
              )
