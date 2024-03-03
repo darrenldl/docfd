@@ -131,13 +131,19 @@ module Top_pane = struct
           (Timedesc.to_string ~format:Params.last_scan_format_string (Document.last_scan doc))
       in
       let title =
+        let attr =
+          if selected then (
+            A.(fg lightblue ++ st bold)
+          ) else (
+            A.(fg lightblue)
+          )
+        in
         Option.value ~default:"" (Document.title doc)
+        |> Tokenize.f ~drop_spaces:false
+        |> List.of_seq
+        |> Word_grid_render.of_words ~width:(width - 2) ~attr
       in
-      (if selected then (
-          I.string A.(fg lightblue ++ st bold) title
-        ) else (
-         I.string A.(fg lightblue) title
-       ))
+      title
       <->
       (sub_item_base_left_padding
        <|>

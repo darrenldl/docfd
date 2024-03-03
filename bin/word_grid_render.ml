@@ -13,6 +13,9 @@ let hchunk_rev ~width (img : Notty.image) : Notty.image list =
 
 let of_images ~width (words : Notty.image list) : Notty.image =
   let open Notty in
+  if width = 0 then (
+    invalid_arg "width must be > 0"
+  );
   let grid : Notty.image list list =
     List.fold_left
       (fun ((cur_len, acc) : int * Notty.image list list) word ->
@@ -45,6 +48,6 @@ let of_images ~width (words : Notty.image list) : Notty.image =
   |> List.map I.hcat
   |> I.vcat
 
-let of_words ~width words =
-  List.map (Notty.I.string Notty.A.empty) words
+let of_words ?(attr = Notty.A.empty) ~width words =
+  List.map (Notty.I.string attr) words
   |> of_images ~width
