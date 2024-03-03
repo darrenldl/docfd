@@ -722,17 +722,23 @@ let run
   );
   Ui_base.Vars.eio_env := Some env;
   Lwd.set Ui_base.Vars.ui_mode init_ui_mode;
+  (match init_ui_mode with
+   | Ui_base.Ui_multi_file -> (
+       Lwd.set Multi_file_view.Vars.search_field (start_with_search, 0);
+       Multi_file_view.update_search_phrase ();
+     )
+   | Ui_single_file -> (
+       Lwd.set Ui_base.Vars.Single_file.search_field (start_with_search, 0);
+       Single_file_view.update_search_phrase ();
+     )
+  );
   let root : Nottui.ui Lwd.t =
     let$* ui_mode : Ui_base.ui_mode = Lwd.get Ui_base.Vars.ui_mode in
     match ui_mode with
     | Ui_multi_file -> (
-        Lwd.set Multi_file_view.Vars.search_field (start_with_search, 0);
-        Multi_file_view.update_search_phrase ();
         Multi_file_view.main
       )
     | Ui_single_file -> (
-        Lwd.set Ui_base.Vars.Single_file.search_field (start_with_search, 0);
-        Single_file_view.update_search_phrase ();
         Single_file_view.main
       )
   in
