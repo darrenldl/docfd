@@ -121,8 +121,7 @@ module Top_pane = struct
         (Document.path doc
          |> Tokenize.f ~drop_spaces:false
          |> List.of_seq
-         |> Word_grid_render.of_words
-           ~width:sub_item_width
+         |> Word_grid_render.of_words ~width:sub_item_width
         )
       in
       let last_scan_image =
