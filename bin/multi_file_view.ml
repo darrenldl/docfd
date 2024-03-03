@@ -72,7 +72,6 @@ module Top_pane = struct
       let open Notty in
       let open Notty.Infix in
       let (doc, search_results) = document_info in
-      let sub_item_left_padding = I.string A.empty "    " in
       let search_result_score_image =
         if Option.is_some !Params.debug_output then (
           if Array.length search_results = 0 then
@@ -85,32 +84,45 @@ module Top_pane = struct
           I.empty
         )
       in
+      let sub_item_base_left_padding = I.string A.empty "    " in
+      let sub_item_width = width - I.width sub_item_base_left_padding - 2 in
+      let preview_left_padding_per_line =
+        I.string A.(bg lightgreen) " "
+        <|>
+        I.string A.empty " "
+      in
       let preview_line_images =
         let line_count =
           min Params.preview_line_count (Index.global_line_count (Document.index doc))
         in
         OSeq.(0 --^ line_count)
         |> Seq.map (fun global_line_num ->
-            Index.line_of_global_line_num global_line_num (Document.index doc))
-        |> Seq.map (fun line ->
-            (I.string A.(bg lightgreen) " ")
-            <|>
-            (I.strf " %s" line)
+            Index.words_of_global_line_num global_line_num (Document.index doc)
+            |> List.of_seq
+            |> Word_grid_render.of_words ~width:sub_item_width
+          )
+        |> Seq.map (fun img ->
+            let left_padding =
+              OSeq.(0 --^ I.height img)
+              |> Seq.map (fun _ -> preview_left_padding_per_line)
+              |> List.of_seq
+              |> I.vcat
+            in
+            left_padding <|> img
           )
         |> List.of_seq
       in
       let preview_image =
         I.vcat preview_line_images
       in
-      let path_image_preamble = I.string A.(fg lightgreen) "@ " in
       let path_image =
-        path_image_preamble
+        (I.string A.(fg lightgreen) "@ ")
         <|>
         (Document.path doc
          |> Tokenize.f ~drop_spaces:false
          |> List.of_seq
          |> Word_grid_render.of_words
-           ~width:(width - I.width sub_item_left_padding - I.width path_image_preamble)
+           ~width:sub_item_width
         )
       in
       let last_scan_image =
@@ -128,7 +140,7 @@ module Top_pane = struct
          I.string A.(fg lightblue) title
        ))
       <->
-      (sub_item_left_padding
+      (sub_item_base_left_padding
        <|>
        I.vcat
          [ search_result_score_image;
