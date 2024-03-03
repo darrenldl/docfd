@@ -26,7 +26,11 @@
     - Originally designed for file filtering, but I have almost never used
       it since its addition in 1.0.0
 
-- Added word based line wrapping to document path render in multi-file view
+- Added word based line wrapping to following components of document list in multi-file view
+
+    - Document title
+    - Document path
+    - Document content preview
 
 - Added sub-word breaking in word based line wrapping logic so all of the original characters
   are displayed even when the terminal width is very small or when a word/token is very long
