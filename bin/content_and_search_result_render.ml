@@ -127,12 +127,7 @@ let render_grid
             )
         in
         let content_width = max 1 (width - I.width left_column_label) in
-        let word_grid = Word_grid.of_images ~width:content_width words in
-        let content =
-          word_grid
-          |> List.map I.hcat
-          |> I.vcat
-        in
+        let content = Word_grid_render.of_images ~width:content_width words in
         I.hcat [ left_column_label; content ]
       )
   in
