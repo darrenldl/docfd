@@ -110,7 +110,7 @@ module Top_pane = struct
          |> Tokenize.f ~drop_spaces:false
          |> List.of_seq
          |> Word_grid_render.of_words
-         ~width:(width - I.width sub_item_left_padding - I.width path_image_preamble)
+           ~width:(width - I.width sub_item_left_padding - I.width path_image_preamble)
         )
       in
       let last_scan_image =
