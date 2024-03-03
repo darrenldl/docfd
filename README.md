@@ -201,8 +201,8 @@ Search results are then ranked using heuristics.
 
 ## Common controls between multi-file view and single file view
 
-`Navigation` mode
-- Switch to `Search` mode
+Navigation mode
+- Switch to search mode
     - `/`
 - Clear search phrase
     - `x`
@@ -213,7 +213,7 @@ Search results are then ranked using heuristics.
 - Print path of selected document to stderr
     - `Shift`+`P`
 
-`Search` mode
+Search mode
 - Search field is active in this mode
 - `Enter` to confirm search phrase and exit search mode
 
@@ -237,9 +237,9 @@ The default TUI is divided into four sections:
 
 <details>
 
-Docfd operates in modes, the initial mode is `Navigation` mode.
+Docfd operates in modes, the initial mode is navigation mode.
 
-`Navigation` mode
+Navigation mode
 - Scroll down the document list
     - `j`
     - Down arrow
@@ -265,12 +265,6 @@ Docfd operates in modes, the initial mode is `Navigation` mode.
         - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
 - Switch to single file view
     - `Tab`
-- Switch to `Require content` mode
-    - `?`
-
-`Require content` mode
-- Required content field is active in this mode
-- `Enter` to confirm file content requirements and exit the mode
 
 </details>
 
@@ -316,7 +310,7 @@ In this view, the TUI is divided into only two sections:
 The controls are simplified in single file view,
 namely `Shift` is optional for scrolling through search result list.
 
-`Navigation` mode
+Navigation mode
 - Scroll down the search result list
     - `j`
     - Down arrow
