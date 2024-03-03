@@ -65,12 +65,14 @@ let update_search_phrase () =
 module Top_pane = struct
   module Document_list = struct
     let render_document_preview
+        ~width
         ~(document_info : Document_store.document_info)
         ~selected
       : Notty.image =
       let open Notty in
       let open Notty.Infix in
       let (doc, search_results) = document_info in
+      let sub_item_left_padding = I.string A.empty "    " in
       let search_result_score_image =
         if Option.is_some !Params.debug_output then (
           if Array.length search_results = 0 then
@@ -100,10 +102,16 @@ module Top_pane = struct
       let preview_image =
         I.vcat preview_line_images
       in
+      let path_image_preamble = I.string A.(fg lightgreen) "@ " in
       let path_image =
-        I.string A.(fg lightgreen) "@ "
+        path_image_preamble
         <|>
-        I.string A.empty (Document.path doc)
+        (Document.path doc
+         |> Tokenize.f ~drop_spaces:false
+         |> List.of_seq
+         |> Word_grid_render.of_words
+         ~width:(width - I.width sub_item_left_padding - I.width path_image_preamble)
+        )
       in
       let last_scan_image =
         I.string A.(fg lightgreen) "Last scan: "
@@ -120,7 +128,7 @@ module Top_pane = struct
          I.string A.(fg lightblue) title
        ))
       <->
-      (I.string A.empty "    "
+      (sub_item_left_padding
        <|>
        I.vcat
          [ search_result_score_image;
@@ -131,6 +139,7 @@ module Top_pane = struct
       )
 
     let main
+        ~width
         ~height
         ~(document_info_s : Document_store.document_info array)
         ~(document_selected : int)
@@ -146,7 +155,7 @@ module Top_pane = struct
           |> CCList.of_iter
           |> List.map (fun j ->
               let selected = Int.equal document_selected j in
-              render_document_preview ~document_info:document_info_s.(j) ~selected
+              render_document_preview ~width ~document_info:document_info_s.(j) ~selected
             )
           |> List.map Nottui.Ui.atom
           |> Nottui.Ui.vcat
@@ -213,6 +222,7 @@ module Top_pane = struct
     in
     Nottui_widgets.h_pane
       (Document_list.main
+         ~width:sub_pane_width
          ~height:sub_pane_height
          ~document_info_s
          ~document_selected)

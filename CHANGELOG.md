@@ -26,6 +26,8 @@
     - Originally designed for file filtering, but I have almost never used
       it since its addition in 1.0.0
 
+- Added word based line wrapping to document path render in multi-file view
+
 ## 2.2.0
 
 - Restored behaviour of skipping file extension checks for top-level
