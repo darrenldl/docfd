@@ -153,8 +153,8 @@ let render_grid
       let target_region_start =
         max 0 (focal_point_offset - (Misc_utils.div_round_to_closest height 2))
       in
-      let target_region_end_inc = target_region_start + height in
-      I.vcrop target_region_start (img_height - target_region_end_inc) img
+      let target_region_end_exc = target_region_start + height in
+      I.vcrop target_region_start (img_height - target_region_end_exc) img
     )
 
 let content_snippet
@@ -163,14 +163,15 @@ let content_snippet
     ~(height : int)
     (index : Index.t)
   : Notty.image =
-  let max_line_num = Index.global_line_count index in
-  assert (max_line_num > 0);
+  let max_line_num = Index.global_line_count index - 1 in
+  assert (max_line_num >= 0);
+  assert (height > 0);
   match search_result with
   | None -> (
       let grid =
         word_image_grid_of_index
           ~start_global_line_num:0
-          ~end_inc_global_line_num:(min max_line_num height)
+          ~end_inc_global_line_num:(min max_line_num (height - 1))
           index
       in
       render_grid ~render_mode:`None ~target_row:0 ~width ~height grid index
@@ -181,7 +182,7 @@ let content_snippet
       in
       let avg = (relevant_start_line + relevant_end_inc_line) / 2 in
       let start_global_line_num = max 0 (avg - (Misc_utils.div_round_to_closest height 2)) in
-      let end_inc_global_line_num = min max_line_num (start_global_line_num + height) in
+      let end_inc_global_line_num = min max_line_num (start_global_line_num + height - 1) in
       let grid =
         word_image_grid_of_index
           ~start_global_line_num
