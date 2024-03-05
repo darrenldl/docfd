@@ -184,6 +184,17 @@ let search_result_print_text_width_arg =
     & info [ search_result_print_text_width_arg_name ] ~doc ~docv:"N"
   )
 
+let paths_from_arg =
+  let doc =
+    Fmt.str "Read list of paths from FILE
+and add to the final list of paths to be scanned."
+  in
+  Arg.(
+    value
+    & opt string ""
+    & info [ "paths-from" ] ~doc ~docv:"FILE"
+  )
+
 let list_files_recursive (dirs : string list) : string list =
   let l = ref [] in
   let add x =
@@ -435,7 +446,8 @@ let run
     (search_exp : string)
     (search_result_count_per_document : int)
     (search_result_print_text_width : int)
-    (files : string list)
+    (paths_from : string)
+    (paths : string list)
   =
   if max_depth < 1 then (
     Fmt.pr "Error: Invalid %s: cannot be < 1\n" max_depth_arg_name;
@@ -517,21 +529,34 @@ let run
    | _ -> ()
   );
   Params.recognized_exts := recognized_exts;
-  let question_marks, files =
-    List.partition (fun s -> CCString.trim s = "?") files
+  let question_marks, paths =
+    List.partition (fun s -> CCString.trim s = "?") paths
   in
-  let files = match files with
-    | [] -> [ "." ]
-    | _ -> files
+  let paths_from_file =
+    if paths_from = "" then (
+      []
+    ) else (
+      try
+        CCIO.with_in paths_from CCIO.read_lines_l
+      with
+      | _ -> (
+          Fmt.pr "Error: Failed to read list of paths from %s\n" paths_from;
+          exit 1
+        )
+    )
   in
-  List.iter (fun file ->
-      if not (Sys.file_exists file) then (
-        Fmt.pr "Error: File \"%s\" does not exist\n" file;
+  let paths = match paths, paths_from_file with
+    | [], [] -> [ "." ]
+    | _, _ -> paths @ paths_from_file
+  in
+  List.iter (fun path ->
+      if not (Sys.file_exists path) then (
+        Fmt.pr "Error: Path \"%s\" does not exist\n" path;
         exit 1
       )
     )
-    files;
-  let files = list_files_recursive files in
+    paths;
+  let files = list_files_recursive paths in
   let files =
     match question_marks with
     | [] -> files
@@ -873,14 +898,15 @@ let run
      )
   )
 
-let files_arg =
+let paths_arg =
   let doc =
     "PATH can be either file or directory.
 Directories are scanned for files with matching extensions.
 If any PATH is \"?\", then the list of files is passed onto fzf for user selection.
 Multiple \"?\" are treated the same as one \"?\".
 If no paths are provided or only \"?\" is provided,
-then Docfd defaults to scanning the current working directory."
+then Docfd defaults to scanning the current working directory
+unless --paths-from=FILE is used."
   in
   Arg.(value & pos_all string [] & info [] ~doc ~docv:"PATH")
 
@@ -904,7 +930,8 @@ let cmd ~env =
           $ search_arg
           $ search_result_count_per_document_arg
           $ search_result_print_text_width_arg
-          $ files_arg)
+          $ paths_from_arg
+          $ paths_arg)
 
 let () = Eio_main.run (fun env ->
     exit (Cmd.eval (cmd ~env))
