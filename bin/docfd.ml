@@ -906,7 +906,7 @@ If any PATH is \"?\", then the list of files is passed onto fzf for user selecti
 Multiple \"?\" are treated the same as one \"?\".
 If no paths are provided or only \"?\" is provided,
 then Docfd defaults to scanning the current working directory
-unless --paths-from=FILE is used."
+unless --paths-from is used."
   in
   Arg.(value & pos_all string [] & info [] ~doc ~docv:"PATH")
 
