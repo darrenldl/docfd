@@ -747,13 +747,14 @@ let run
   );
   Ui_base.Vars.eio_env := Some env;
   Lwd.set Ui_base.Vars.ui_mode init_ui_mode;
-  (match init_ui_mode with
+  (let start_with_search_len = String.length start_with_search in
+   match init_ui_mode with
    | Ui_base.Ui_multi_file -> (
-       Lwd.set Multi_file_view.Vars.search_field (start_with_search, 0);
+       Lwd.set Multi_file_view.Vars.search_field (start_with_search, start_with_search_len);
        Multi_file_view.update_search_phrase ();
      )
    | Ui_single_file -> (
-       Lwd.set Ui_base.Vars.Single_file.search_field (start_with_search, 0);
+       Lwd.set Ui_base.Vars.Single_file.search_field (start_with_search, start_with_search_len);
        Single_file_view.update_search_phrase ();
      )
   );
