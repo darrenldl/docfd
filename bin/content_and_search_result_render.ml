@@ -28,14 +28,14 @@ module Text_block_render = struct
     in
     aux [] img
 
-  let of_cells ?attr ~width (cells : cell list) : Notty.image * int list =
-    let open Notty in
+  let of_cells ?attr ~width (cells : cell list) : Notty.image * Int_set.t =
     assert (width > 0);
-    let lines_with_search_result_words = ref [] in
+    let rendered_lines_with_search_result_words = ref Int_set.empty in
     let grid : Notty.image list list =
       List.fold_left
         (fun ((cur_len, acc) : int * Notty.image list list) (cell : cell) ->
-           let attr = match attr with
+           let attr =
+             match attr with
              | Some attr -> attr
              | None -> (match cell.typ with
                  | `Plain -> A.empty
@@ -67,8 +67,8 @@ module Text_block_render = struct
            (match cell.typ with
             | `Plain -> ()
             | `Search_result -> (
-                lines_with_search_result_words :=
-                  (List.length acc - 1) :: !lines_with_search_result_words
+                rendered_lines_with_search_result_words :=
+                  Int_set.add (List.length acc - 1) !rendered_lines_with_search_result_words
               ));
            (cur_len, acc)
         )
@@ -82,7 +82,7 @@ module Text_block_render = struct
       |> List.map I.hcat
       |> I.vcat
     in
-    (img, !lines_with_search_result_words)
+    (img, !rendered_lines_with_search_result_words)
 
   let of_words ?attr ~width (words : string list) : Notty.image =
     of_cells ?attr ~width (List.map (fun word -> { word; typ = `Plain }) words)
@@ -170,72 +170,78 @@ type render_mode = [
 
 let render_grid
     ~(render_mode : render_mode)
-    ~target_row
     ~width
     ?(height : int option)
     (grid : word_grid)
     (index : Index.t)
   : Notty.image =
-  let images =
+  let (_rendered_line_count, rendered_lines_with_search_result_words), images =
     grid.data
     |> Array.to_list
-    |> List.mapi (fun i cells ->
-        let cells = Array.to_list cells in
-        let global_line_num = grid.start_global_line_num + i in
-        let line_loc = Index.line_loc_of_global_line_num global_line_num index in
-        let display_line_num = Index.Line_loc.line_num_in_page line_loc + 1 in
-        let display_page_num = Index.Line_loc.page_num line_loc + 1 in
-        let left_column_label =
-          match render_mode with
-          | `Page_num_only -> (
-              I.hcat
-                [ I.strf ~attr:A.(fg lightyellow) "Page %d" display_page_num
-                ; I.strf ": " ]
-            )
-          | `Line_num_only -> (
-              I.hcat
-                [ I.strf ~attr:A.(fg lightyellow) "%d" display_line_num
-                ; I.strf ": " ]
-            )
-          | `Page_and_line_num -> (
-              I.hcat
-                [ I.strf ~attr:A.(fg lightyellow) "Page %d, %d"
-                    display_page_num
-                    display_line_num
-                ; I.strf ": " ]
-            )
-          | `None -> (
-              I.void 0 1
-            )
-        in
-        let content_width = max 1 (width - I.width left_column_label) in
-        let content, search_result_lines = Text_block_render.of_cells ~width:content_width cells in
-        I.hcat [ left_column_label; content ]
+    |> CCList.fold_map_i
+      (fun (rendered_line_count, rendered_lines_with_search_result_words_acc) i cells ->
+         let cells = Array.to_list cells in
+         let global_line_num = grid.start_global_line_num + i in
+         let line_loc = Index.line_loc_of_global_line_num global_line_num index in
+         let display_line_num = Index.Line_loc.line_num_in_page line_loc + 1 in
+         let display_page_num = Index.Line_loc.page_num line_loc + 1 in
+         let left_column_label =
+           match render_mode with
+           | `Page_num_only -> (
+               I.hcat
+                 [ I.strf ~attr:A.(fg lightyellow) "Page %d" display_page_num
+                 ; I.strf ": " ]
+             )
+           | `Line_num_only -> (
+               I.hcat
+                 [ I.strf ~attr:A.(fg lightyellow) "%d" display_line_num
+                 ; I.strf ": " ]
+             )
+           | `Page_and_line_num -> (
+               I.hcat
+                 [ I.strf ~attr:A.(fg lightyellow) "Page %d, %d"
+                     display_page_num
+                     display_line_num
+                 ; I.strf ": " ]
+             )
+           | `None -> (
+               I.void 0 1
+             )
+         in
+         let content_width = max 1 (width - I.width left_column_label) in
+         let content, rendered_lines_with_search_result_words =
+           Text_block_render.of_cells ~width:content_width cells
+         in
+         ((rendered_line_count + I.height content,
+           rendered_lines_with_search_result_words
+           |> Int_set.map (fun x -> x + rendered_line_count)
+           |> Int_set.union rendered_lines_with_search_result_words_acc
+          ),
+          I.hcat [ left_column_label; content ])
       )
+      (0, Int_set.empty)
   in
   let img = I.vcat images in
   match height with
   | None -> img
   | Some height -> (
       let focal_point_offset =
-        CCList.foldi (fun focal_point_offset i img ->
-            let img_height = I.height img in
-            if i < target_row then (
-              focal_point_offset + img_height
-            ) else if i = target_row then (
-              focal_point_offset + (Misc_utils.div_round_to_closest img_height 2)
-            ) else (
-              focal_point_offset
-            )
+        match
+          Int_set.min_elt_opt rendered_lines_with_search_result_words,
+          Int_set.max_elt_opt rendered_lines_with_search_result_words
+        with
+        | Some start_rendered_line_num, Some end_inc_rendered_line_num -> (
+            Misc_utils.div_round_to_closest
+              (start_rendered_line_num + end_inc_rendered_line_num)
+              2
           )
-          0
-          images
+        | _, _ -> 0
       in
-      let img_height = I.height img in
       let target_region_start =
         max 0 (focal_point_offset - (Misc_utils.div_round_to_closest height 2))
       in
       let target_region_end_exc = target_region_start + height in
+      let img_height = I.height img in
       I.vcrop target_region_start (img_height - target_region_end_exc) img
     )
 
@@ -256,7 +262,7 @@ let content_snippet
           ~end_inc_global_line_num:(min max_line_num (height - 1))
           index
       in
-      render_grid ~render_mode:`None ~target_row:0 ~width ~height grid index
+      render_grid ~render_mode:`None ~width ~height grid index
     )
   | Some search_result -> (
       let (relevant_start_line, relevant_end_inc_line) =
@@ -274,7 +280,6 @@ let content_snippet
       mark_search_result_in_word_grid grid index search_result;
       render_grid
         ~render_mode:`None
-        ~target_row:(relevant_start_line - start_global_line_num)
         ~width
         ~height
         grid
@@ -311,7 +316,7 @@ let search_results
           index
       in
       mark_search_result_in_word_grid grid index search_result;
-      let img = render_grid ~render_mode ~target_row:0 ~width grid index in
+      let img = render_grid ~render_mode ~width grid index in
       if Option.is_some !Params.debug_output then (
         let score = Search_result.score search_result in
         I.strf "(Score: %f)" score

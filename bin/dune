@@ -5,6 +5,12 @@
   )
 
 (rule
+  (targets int_set.ml)
+  (deps ../lib/int_set.ml)
+  (action (copy %{deps} %{targets}))
+  )
+
+(rule
   (targets string_map.ml)
   (deps ../lib/string_map.ml)
   (action (copy %{deps} %{targets}))
