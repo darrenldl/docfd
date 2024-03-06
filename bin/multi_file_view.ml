@@ -99,7 +99,7 @@ module Top_pane = struct
         |> Seq.map (fun global_line_num ->
             Index.words_of_global_line_num global_line_num (Document.index doc)
             |> List.of_seq
-            |> Word_grid_render.of_words ~width:sub_item_width
+            |> Content_and_search_result_render.Text_block_render.of_words ~width:sub_item_width
           )
         |> Seq.map (fun img ->
             let left_padding =
@@ -121,7 +121,7 @@ module Top_pane = struct
         (Document.path doc
          |> Tokenize.f ~drop_spaces:false
          |> List.of_seq
-         |> Word_grid_render.of_words ~width:sub_item_width
+         |> Content_and_search_result_render.Text_block_render.of_words ~width:sub_item_width
         )
       in
       let last_scan_image =
@@ -141,7 +141,7 @@ module Top_pane = struct
         Option.value ~default:"" (Document.title doc)
         |> Tokenize.f ~drop_spaces:false
         |> List.of_seq
-        |> Word_grid_render.of_words ~attr ~width
+        |> Content_and_search_result_render.Text_block_render.of_words ~attr ~width
       in
       title
       <->

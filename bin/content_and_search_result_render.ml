@@ -4,9 +4,94 @@ module I = Notty.I
 
 module A = Notty.A
 
-type word_image_grid = {
+type cell_typ = [
+  | `Plain
+  | `Search_result
+]
+
+type cell = {
+  word : string;
+  typ : cell_typ;
+}
+
+module Text_block_render = struct
+  let hchunk_rev ~width (img : Notty.image) : Notty.image list =
+    let open Notty in
+    let rec aux acc img =
+      let img_width = I.width img in
+      if img_width <= width then (
+        img :: acc
+      ) else (
+        let acc = (I.hcrop 0 (img_width - width) img) :: acc in
+        aux acc (I.hcrop width 0 img)
+      )
+    in
+    aux [] img
+
+  let of_cells ?attr ~width (cells : cell list) : Notty.image * int list =
+    let open Notty in
+    assert (width > 0);
+    let lines_with_search_result_words = ref [] in
+    let grid : Notty.image list list =
+      List.fold_left
+        (fun ((cur_len, acc) : int * Notty.image list list) (cell : cell) ->
+           let attr = match attr with
+             | Some attr -> attr
+             | None -> (match cell.typ with
+                 | `Plain -> A.empty
+                 | `Search_result -> A.(fg black ++ bg lightyellow)
+               )
+           in
+           let word = I.string attr cell.word in
+           let word_len = I.width word in
+           let new_len = cur_len + word_len in
+           let cur_len, acc =
+             match acc with
+             | [] -> (new_len, [ [ word ] ])
+             | line :: rest -> (
+                 if new_len > width then (
+                   if word_len > width then (
+                     let lines =
+                       hchunk_rev ~width word
+                       |> List.map (fun x -> [ x ])
+                     in
+                     (0, [] :: (lines @ acc))
+                   ) else (
+                     (word_len, [ word ] :: acc)
+                   )
+                 ) else (
+                   (new_len, (word :: line) :: rest)
+                 )
+               )
+           in
+           (match cell.typ with
+            | `Plain -> ()
+            | `Search_result -> (
+                lines_with_search_result_words :=
+                  (List.length acc - 1) :: !lines_with_search_result_words
+              ));
+           (cur_len, acc)
+        )
+        (0, [])
+        cells
+      |> snd
+      |> List.rev_map List.rev
+    in
+    let img =
+      grid
+      |> List.map I.hcat
+      |> I.vcat
+    in
+    (img, !lines_with_search_result_words)
+
+  let of_words ?attr ~width (words : string list) : Notty.image =
+    of_cells ?attr ~width (List.map (fun word -> { word; typ = `Plain }) words)
+    |> fst
+end
+
+type word_grid = {
   start_global_line_num : int;
-  data : Notty.image array array;
+  data : cell array array;
 }
 
 let start_and_end_inc_global_line_num_of_search_result
@@ -30,11 +115,11 @@ let start_and_end_inc_global_line_num_of_search_result
       |> Option.get
     )
 
-let word_image_grid_of_index
+let word_grid_of_index
     ~start_global_line_num
     ~end_inc_global_line_num
     (index : Index.t)
-  : word_image_grid =
+  : word_grid =
   let global_line_count = Index.global_line_count index in
   if global_line_count = 0 then
     { start_global_line_num = 0; data = [||] }
@@ -45,7 +130,7 @@ let word_image_grid_of_index
       |> Seq.map (fun global_line_num ->
           let data =
             Index.words_of_global_line_num global_line_num index
-            |> Seq.map (fun word -> I.string A.empty word)
+            |> Seq.map (fun word -> { word; typ = `Plain })
             |> Array.of_seq
           in
           data
@@ -55,13 +140,13 @@ let word_image_grid_of_index
     { start_global_line_num; data }
   )
 
-let color_word_image_grid
-    (grid : word_image_grid)
+let mark_search_result_in_word_grid
+    (grid : word_grid)
     (index : Index.t)
     (search_result : Search_result.t)
   : unit =
   let grid_end_inc_global_line_num = grid.start_global_line_num + Array.length grid.data - 1 in
-  List.iter (fun Search_result.{ found_word_pos = pos; found_word = word; _ } ->
+  List.iter (fun Search_result.{ found_word_pos = pos; _ } ->
       let loc = Index.loc_of_pos pos index in
       let line_loc = Index.Loc.line_loc loc in
       let global_line_num = Index.Line_loc.global_line_num line_loc in
@@ -69,8 +154,9 @@ let color_word_image_grid
       && global_line_num <= grid_end_inc_global_line_num
       then (
         let pos_in_line = Index.Loc.pos_in_line loc in
-        grid.data.(global_line_num - grid.start_global_line_num).(pos_in_line) <-
-          I.string A.(fg black ++ bg lightyellow) word
+        let row = global_line_num - grid.start_global_line_num in
+        let cell = grid.data.(row).(pos_in_line) in
+        grid.data.(row).(pos_in_line) <- { cell with typ = `Search_result }
       )
     )
     (Search_result.found_phrase search_result)
@@ -87,18 +173,14 @@ let render_grid
     ~target_row
     ~width
     ?(height : int option)
-    (grid : word_image_grid)
+    (grid : word_grid)
     (index : Index.t)
   : Notty.image =
   let images =
     grid.data
     |> Array.to_list
-    |> List.mapi (fun i words ->
-        let words =
-          match Array.to_list words with
-          | [] -> [ I.void 0 1 ]
-          | l -> l
-        in
+    |> List.mapi (fun i cells ->
+        let cells = Array.to_list cells in
         let global_line_num = grid.start_global_line_num + i in
         let line_loc = Index.line_loc_of_global_line_num global_line_num index in
         let display_line_num = Index.Line_loc.line_num_in_page line_loc + 1 in
@@ -123,11 +205,11 @@ let render_grid
                 ; I.strf ": " ]
             )
           | `None -> (
-              I.strf ""
+              I.void 0 1
             )
         in
         let content_width = max 1 (width - I.width left_column_label) in
-        let content = Word_grid_render.of_images ~width:content_width words in
+        let content, search_result_lines = Text_block_render.of_cells ~width:content_width cells in
         I.hcat [ left_column_label; content ]
       )
   in
@@ -169,7 +251,7 @@ let content_snippet
   match search_result with
   | None -> (
       let grid =
-        word_image_grid_of_index
+        word_grid_of_index
           ~start_global_line_num:0
           ~end_inc_global_line_num:(min max_line_num (height - 1))
           index
@@ -184,12 +266,12 @@ let content_snippet
       let start_global_line_num = max 0 (avg - (Misc_utils.div_round_to_closest height 2)) in
       let end_inc_global_line_num = min max_line_num (start_global_line_num + height - 1) in
       let grid =
-        word_image_grid_of_index
+        word_grid_of_index
           ~start_global_line_num
           ~end_inc_global_line_num
           index
       in
-      color_word_image_grid grid index search_result;
+      mark_search_result_in_word_grid grid index search_result;
       render_grid
         ~render_mode:`None
         ~target_row:(relevant_start_line - start_global_line_num)
@@ -223,12 +305,12 @@ let search_results
         start_and_end_inc_global_line_num_of_search_result index search_result
       in
       let grid =
-        word_image_grid_of_index
+        word_grid_of_index
           ~start_global_line_num
           ~end_inc_global_line_num
           index
       in
-      color_word_image_grid grid index search_result;
+      mark_search_result_in_word_grid grid index search_result;
       let img = render_grid ~render_mode ~target_row:0 ~width grid index in
       if Option.is_some !Params.debug_output then (
         let score = Search_result.score search_result in
