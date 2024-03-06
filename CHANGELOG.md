@@ -37,6 +37,8 @@
 
 - Added `--paths-from` to specify a file containing list of paths to (also) be scanned
 
+- Fixed search result centering in presence of line wrapping
+
 ## 2.2.0
 
 - Restored behaviour of skipping file extension checks for top-level
