@@ -32,7 +32,7 @@
     - Document path
     - Document content preview
 
-- Added sub-word breaking in word based line wrapping logic so all of the original characters
+- Added word breaking in word based line wrapping logic so all of the original characters
   are displayed even when the terminal width is very small or when a word/token is very long
 
 - Added `--paths-from` to specify a file containing list of paths to (also) be scanned
