@@ -9,6 +9,9 @@ let stdin_is_atty () =
 let stdout_is_atty () =
   Unix.isatty Unix.stdout
 
+let stderr_is_atty () =
+  Unix.isatty Unix.stderr
+
 let max_depth_arg_name = "max-depth"
 
 let max_depth_arg =
@@ -411,18 +414,36 @@ let open_text_path index document_src ~editor ~path ~search_result =
   in
   Sys.command cmd |> ignore
 
-let print_newline_image ~oc =
-  Notty_unix.eol (Notty.I.void 0 1)
-  |> Notty_unix.output_image ~fd:oc
+type print_output = [ `Stdout | `Stderr ]
 
-let print_search_result_images ~oc ~document (images : Notty.image list) =
-  let formatter = Format.formatter_of_out_channel oc in
-  Ocolor_format.prettify_formatter formatter;
-  Fmt.pf formatter "@[<h>@{<magenta>%s@}@]@." (Document.path document);
+let out_channel_of_print_output (out : print_output) : out_channel =
+  match out with
+  | `Stdout -> stdout
+  | `Stderr -> stderr
+
+let print_output_is_atty (out : print_output) =
+  match out with
+  | `Stdout -> stdout_is_atty ()
+  | `Stderr -> stderr_is_atty ()
+
+let print_newline_image ~(out : print_output) =
+  Notty_unix.eol (Notty.I.void 0 1)
+  |> Notty_unix.output_image ~fd:(out_channel_of_print_output out)
+
+let print_search_result_images ~(out : print_output) ~document (images : Notty.image list) =
+  let path = Document.path document in
+  let oc = out_channel_of_print_output out in
+  if print_output_is_atty out then (
+    let formatter = Format.formatter_of_out_channel oc in
+    Ocolor_format.prettify_formatter formatter;
+    Fmt.pf formatter "@[<h>@{<magenta>%s@}@]@." path;
+  ) else (
+    Printf.fprintf oc "%s\n" path;
+  );
   let images = Array.of_list images in
   Array.iteri (fun i img ->
       if i > 0 then (
-        print_newline_image ~oc
+        print_newline_image ~out
       );
       Notty_unix.eol img
       |> Notty_unix.output_image ~fd:oc;
@@ -730,9 +751,9 @@ let run
       Document_store.usable_documents document_store
     in
     Array.iteri (fun i (document, search_results) ->
-        let oc = stdout in
+        let out = `Stdout in
         if i > 0 then (
-          print_newline_image ~oc;
+          print_newline_image ~out;
         );
         let images =
           Content_and_search_result_render.search_results
@@ -743,7 +764,7 @@ let run
             (Document.index document)
             search_results
         in
-        print_search_result_images ~oc ~document images;
+        print_search_result_images ~out ~document images;
       ) document_info_s;
     exit 0
   );
@@ -879,7 +900,7 @@ let run
                   ]
                 )
             in
-            print_search_result_images ~oc:stderr ~document images;
+            print_search_result_images ~out:`Stderr ~document images;
           )
       )
   in
