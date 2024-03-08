@@ -791,14 +791,31 @@ let run
      )
   );
   let root : Nottui.ui Lwd.t =
-    let$* ui_mode : Ui_base.ui_mode = Lwd.get Ui_base.Vars.ui_mode in
-    match ui_mode with
-    | Ui_multi_file -> (
-        Multi_file_view.main
-      )
-    | Ui_single_file -> (
-        Single_file_view.main
-      )
+    let$* (term_width, term_height) = Lwd.get Ui_base.Vars.term_width_height in
+    if term_width <= 40 || term_height <= 20 then (
+      let msg = Nottui.Ui.atom (Notty.I.strf "Terminal size too small") in
+      let keyboard_handler (key : Nottui.Ui.key) =
+        match key with
+        | (`Escape, [])
+        | (`ASCII 'Q', [`Ctrl])
+        | (`ASCII 'C', [`Ctrl]) -> (
+            Lwd.set Ui_base.Vars.quit true;
+            Ui_base.Vars.action := None;
+            `Handled
+          )
+        | _ -> `Unhandled
+      in
+      Lwd.return (Nottui.Ui.keyboard_area keyboard_handler msg)
+    ) else (
+      let$* ui_mode : Ui_base.ui_mode = Lwd.get Ui_base.Vars.ui_mode in
+      match ui_mode with
+      | Ui_multi_file -> (
+          Multi_file_view.main
+        )
+      | Ui_single_file -> (
+          Single_file_view.main
+        )
+    )
   in
   let get_term, close_term =
     let term_and_tty_fd = ref None in
