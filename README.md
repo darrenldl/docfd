@@ -109,10 +109,10 @@ when source of document is piped stdin.
 Files specified as arguments to docfd are ignored
 in this case.
 
-#### Read from files
+#### Scan for files
 
 ```
-docfd [PATH...]
+docfd [PATH ...]
 ```
 
 The list of paths can contain directories.
@@ -141,10 +141,10 @@ Otherwise, Docfd uses multi-file view.
 
 </details>
 
-#### Read from files selected with fzf
+#### Scan for files then select with fzf
 
 ```
-docfd [PATH...] ?
+docfd [PATH ...] ?
 ```
 
 The `?` can be in any position in the path list.
@@ -152,6 +152,19 @@ If any of the path is `?`, then file selection
 of the discovered files
 via `fzf`
 is invoked.
+
+#### Use list of paths from file
+
+```
+docfd [PATH ...] --paths-from paths.txt
+```
+
+The final list of paths used is then the concatenation
+of `PATH ...` and paths listed in `paths.txt`, which
+has one path per line.
+
+`PATH ...` does not default to `.` when
+`--paths-from` is used.
 
 ## Searching
 
