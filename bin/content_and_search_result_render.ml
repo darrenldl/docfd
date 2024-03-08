@@ -286,6 +286,34 @@ let content_snippet
         index
     )
 
+let search_result
+    ~render_mode
+    ~width
+    (index : Index.t)
+    (search_result : Search_result.t)
+  : Notty.image =
+  let open Notty in
+  let open Notty.Infix in
+  let (start_global_line_num, end_inc_global_line_num) =
+    start_and_end_inc_global_line_num_of_search_result index search_result
+  in
+  let grid =
+    word_grid_of_index
+      ~start_global_line_num
+      ~end_inc_global_line_num
+      index
+  in
+  mark_search_result_in_word_grid grid index search_result;
+  let img = render_grid ~render_mode ~width grid index in
+  if Option.is_some !Params.debug_output then (
+    let score = Search_result.score search_result in
+    I.strf "(Score: %f)" score
+    <->
+    img
+  ) else (
+    img
+  )
+
 let search_results
     ~render_mode
     ~start
@@ -294,35 +322,11 @@ let search_results
     (index : Index.t)
     (results : Search_result.t array)
   : Notty.image list =
-  let open Notty in
-  let open Notty.Infix in
   let result_count = Array.length results in
   let end_exc = min end_exc result_count in
   let results =
-    Array.sub results
-      start
-      (end_exc - start)
+    Array.sub results start (end_exc - start)
   in
   results
   |> Array.to_list
-  |> List.map (fun (search_result : Search_result.t) ->
-      let (start_global_line_num, end_inc_global_line_num) =
-        start_and_end_inc_global_line_num_of_search_result index search_result
-      in
-      let grid =
-        word_grid_of_index
-          ~start_global_line_num
-          ~end_inc_global_line_num
-          index
-      in
-      mark_search_result_in_word_grid grid index search_result;
-      let img = render_grid ~render_mode ~width grid index in
-      if Option.is_some !Params.debug_output then (
-        let score = Search_result.score search_result in
-        I.strf "(Score: %f)" score
-        <->
-        img
-      ) else (
-        img
-      )
-    )
+  |> List.map (search_result ~render_mode ~width index)

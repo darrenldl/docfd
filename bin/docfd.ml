@@ -864,13 +864,12 @@ let run
               match search_result with
               | None -> []
               | Some search_result -> (
-                  Content_and_search_result_render.search_results
-                    ~render_mode:(Ui_base.render_mode_of_document document)
-                    ~start:0
-                    ~end_exc:1
-                    ~width:search_result_print_text_width
-                    (Document.index document)
-                    [| search_result |]
+                  [ Content_and_search_result_render.search_result
+                      ~render_mode:(Ui_base.render_mode_of_document document)
+                      ~width:search_result_print_text_width
+                      (Document.index document)
+                      search_result
+                  ]
                 )
             in
             print_search_result_images ~fd:stderr ~document images;
