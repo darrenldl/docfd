@@ -112,7 +112,7 @@ in this case.
 #### Scan for files
 
 ```
-docfd [PATH ...]
+docfd [PATH]...
 ```
 
 The list of paths can contain directories.
@@ -126,7 +126,7 @@ files with one of the following extensions by default:
 You can change the file extensions to use via `--exts`,
 or add onto the list of extensions via `--add-exts`.
 
-If the list of paths is empty,
+If the list `PATH`s is empty,
 then Docfd defaults to scanning the
 current directory `.`.
 
@@ -144,7 +144,7 @@ Otherwise, Docfd uses multi-file view.
 #### Scan for files then select with fzf
 
 ```
-docfd [PATH ...] ?
+docfd [PATH]... ?
 ```
 
 The `?` can be in any position in the path list.
@@ -156,14 +156,14 @@ is invoked.
 #### Use list of paths from file
 
 ```
-docfd [PATH ...] --paths-from paths.txt
+docfd [PATH]... --paths-from paths.txt
 ```
 
 The final list of paths used is then the concatenation
-of `PATH ...` and paths listed in `paths.txt`, which
+of `PATH`s and paths listed in `paths.txt`, which
 has one path per line.
 
-`PATH ...` does not default to `.` when
+The list `PATH`s does not default to `.` when
 `--paths-from` is used.
 
 ## Searching
