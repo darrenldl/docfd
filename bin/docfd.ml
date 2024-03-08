@@ -45,7 +45,7 @@ let add_exts_arg =
     & info [ add_exts_arg_name ] ~doc ~docv:"EXTS"
   )
 
-let max_fuzzy_edit_dist_arg_name = "max-fuzzy-edit"
+let max_fuzzy_edit_dist_arg_name = "max-fuzzy-edit-dist"
 
 let max_fuzzy_edit_dist_arg =
   let doc =

@@ -39,6 +39,8 @@
 
 - Fixed search result centering in presence of line wrapping
 
+- Renamed `--max-fuzzy-edit` to `--max-fuzzy-edit-dist` for consistency
+
 ## 2.2.0
 
 - Restored behaviour of skipping file extension checks for top-level
