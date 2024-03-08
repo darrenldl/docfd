@@ -411,22 +411,21 @@ let open_text_path index document_src ~editor ~path ~search_result =
   in
   Sys.command cmd |> ignore
 
-let print_newline_image ~fd =
+let print_newline_image ~oc =
   Notty_unix.eol (Notty.I.void 0 1)
-  |> Notty_unix.output_image ~fd
+  |> Notty_unix.output_image ~fd:oc
 
-let print_search_result_images ~fd ~document (images : Notty.image list) =
-  let path_image =
-    Notty.I.string Notty.A.(fg magenta) (Document.path document)
-  in
-  Notty_unix.output_image ~fd (Notty_unix.eol path_image);
+let print_search_result_images ~oc ~document (images : Notty.image list) =
+  let formatter = Format.formatter_of_out_channel oc in
+  Ocolor_format.prettify_formatter formatter;
+  Fmt.pf formatter "@[<h>@{<magenta>%s@}@]@." (Document.path document);
   let images = Array.of_list images in
   Array.iteri (fun i img ->
       if i > 0 then (
-        print_newline_image ~fd
+        print_newline_image ~oc
       );
       Notty_unix.eol img
-      |> Notty_unix.output_image ~fd;
+      |> Notty_unix.output_image ~fd:oc;
     ) images
 
 let run
@@ -731,9 +730,9 @@ let run
       Document_store.usable_documents document_store
     in
     Array.iteri (fun i (document, search_results) ->
-        let fd = stdout in
+        let oc = stdout in
         if i > 0 then (
-          print_newline_image ~fd;
+          print_newline_image ~oc;
         );
         let images =
           Content_and_search_result_render.search_results
@@ -744,7 +743,7 @@ let run
             (Document.index document)
             search_results
         in
-        print_search_result_images ~fd ~document images;
+        print_search_result_images ~oc ~document images;
       ) document_info_s;
     exit 0
   );
@@ -880,7 +879,7 @@ let run
                   ]
                 )
             in
-            print_search_result_images ~fd:stderr ~document images;
+            print_search_result_images ~oc:stderr ~document images;
           )
       )
   in

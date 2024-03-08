@@ -49,6 +49,7 @@ Features:
    notty
    (nottui (= "0.3"))
    lwd
+   ocolor
    (cmdliner (>= "1.1.0"))
    (eio (>= "0.10"))
    (domainslib (>= "0.5.0"))
