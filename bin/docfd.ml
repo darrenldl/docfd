@@ -160,16 +160,16 @@ let search_arg =
     & info [ "search" ] ~doc ~docv:"EXP"
   )
 
-let search_result_count_per_document_arg_name = "search-result-count-per-document"
+let search_result_count_per_doc_arg_name = "search-result-count-per-doc"
 
-let search_result_count_per_document_arg =
+let search_result_count_per_doc_arg =
   let doc =
     "Number of search results per document to show in non-interactive search mode."
   in
   Arg.(
     value
     & opt int Params.default_non_interactive_search_result_count
-    & info [ search_result_count_per_document_arg_name ] ~doc ~docv:"N"
+    & info [ search_result_count_per_doc_arg_name ] ~doc ~docv:"N"
   )
 
 let search_result_print_text_width_arg_name = "search-result-print-text-width"
@@ -444,7 +444,7 @@ let run
     (index_only : bool)
     (start_with_search : string)
     (search_exp : string)
-    (search_result_count_per_document : int)
+    (search_result_count_per_doc : int)
     (search_result_print_text_width : int)
     (paths_from : string)
     (paths : string list)
@@ -469,8 +469,8 @@ let run
     Fmt.pr "Error: Invalid %s: cannot be < 1\n" cache_size_arg_name;
     exit 1
   );
-  if search_result_count_per_document < 1 then (
-    Fmt.pr "Error: Invalid %s: cannot be < 1\n" search_result_count_per_document_arg_name;
+  if search_result_count_per_doc < 1 then (
+    Fmt.pr "Error: Invalid %s: cannot be < 1\n" search_result_count_per_doc_arg_name;
     exit 1
   );
   if search_result_print_text_width < 1 then (
@@ -739,7 +739,7 @@ let run
           Content_and_search_result_render.search_results
             ~render_mode:(Ui_base.render_mode_of_document document)
             ~start:0
-            ~end_exc:search_result_count_per_document
+            ~end_exc:search_result_count_per_doc
             ~width:search_result_print_text_width
             (Document.index document)
             search_results
@@ -936,7 +936,7 @@ let cmd ~env =
           $ index_only_arg
           $ start_with_search_arg
           $ search_arg
-          $ search_result_count_per_document_arg
+          $ search_result_count_per_doc_arg
           $ search_result_print_text_width_arg
           $ paths_from_arg
           $ paths_arg)
