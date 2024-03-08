@@ -46,23 +46,23 @@ module Text_block_render = struct
            let word_len = I.width word in
            let new_len = cur_len + word_len in
            let cur_len, acc =
-             match acc with
-             | [] -> (new_len, [ [ word ] ])
-             | line :: rest -> (
-                 if new_len > width then (
-                   if word_len > width then (
-                     let lines =
-                       hchunk_rev ~width word
-                       |> List.map (fun x -> [ x ])
-                     in
-                     (0, [] :: (lines @ acc))
-                   ) else (
-                     (word_len, [ word ] :: acc)
-                   )
-                 ) else (
+             if new_len <= width then (
+               match acc with
+               | [] -> (new_len, [ [ word ] ])
+               | line :: rest -> (
                    (new_len, (word :: line) :: rest)
                  )
+             ) else (
+               if word_len <= width then (
+                 (word_len, [ word ] :: acc)
+               ) else (
+                 let lines =
+                   hchunk_rev ~width word
+                   |> List.map (fun x -> [ x ])
+                 in
+                 (0, [] :: (lines @ acc))
                )
+             )
            in
            (match cell.typ with
             | `Plain -> ()
