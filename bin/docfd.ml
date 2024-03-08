@@ -469,6 +469,14 @@ let run
     Fmt.pr "Error: Invalid %s: cannot be < 1\n" cache_size_arg_name;
     exit 1
   );
+  if search_result_count_per_document < 1 then (
+    Fmt.pr "Error: Invalid %s: cannot be < 1\n" search_result_count_per_document_arg_name;
+    exit 1
+  );
+  if search_result_print_text_width < 1 then (
+    Fmt.pr "Error: Invalid %s: cannot be < 1\n" search_result_print_text_width_arg_name;
+    exit 1
+  );
   Params.debug_output := (match debug_log with
       | "" -> None
       | "-" -> Some stderr
