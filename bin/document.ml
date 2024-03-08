@@ -154,7 +154,7 @@ let of_text_path ~env path : (t, string) result =
          Ok (parse_lines ~path lines)
       )
   with
-  | _ -> Error (Printf.sprintf "Failed to read file: %s" path)
+  | _ -> Error (Printf.sprintf "Failed to read file: %S" path)
 
 let of_pdf_path ~env path : (t, string) result =
   let proc_mgr = Eio.Stdenv.process_mgr env in
@@ -172,7 +172,7 @@ let of_pdf_path ~env path : (t, string) result =
   try
     Ok (aux [] 1)
   with
-  | _ -> Error (Printf.sprintf "Failed to read file: %s" path)
+  | _ -> Error (Printf.sprintf "Failed to read file: %S" path)
 
 let of_path ~(env : Eio_unix.Stdenv.base) path : (t, string) result =
   let* hash = BLAKE2B.hash_of_file ~env ~path in
