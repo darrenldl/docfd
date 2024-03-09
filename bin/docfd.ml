@@ -269,7 +269,8 @@ let mkdir_recursive (dir : string) : unit =
   in
   aux "" (CCString.split ~by:Filename.dir_sep dir)
 
-let open_pdf_path index ~path ~search_result =
+module Open_path = struct
+let pdf index ~path ~search_result =
   let path = Filename.quote path in
   let fallback = Fmt.str "xdg-open %s" path in
   let cmd =
@@ -378,7 +379,7 @@ let open_pdf_path index ~path ~search_result =
   in
   Proc_utils.run_in_background cmd |> ignore
 
-let open_text_path index document_src ~editor ~path ~search_result =
+let text index document_src ~editor ~path ~search_result =
   let path = Filename.quote path in
   let fallback = Fmt.str "%s %s" editor path in
   let cmd =
@@ -417,6 +418,7 @@ let open_text_path index document_src ~editor ~path ~search_result =
     | _ -> cmd
   in
   Sys.command cmd |> ignore
+end
 
 type print_output = [ `Stdout | `Stderr ]
 
@@ -880,13 +882,13 @@ let run
             let path = Document.path doc in
             let old_stats = Unix.stat path in
             if Misc_utils.path_is_pdf path then (
-              open_pdf_path
+              Open_path.pdf
                 index
                 ~path
                 ~search_result
             ) else (
               close_term ();
-              open_text_path
+              Open_path.text
                 index
                 init_document_src
                 ~editor:!Params.text_editor
