@@ -41,6 +41,9 @@
 
 - Renamed `--max-fuzzy-edit` to `--max-fuzzy-edit-dist` for consistency
 
+- Changed error messages to not be capitalized to follow Rust's and Go's
+  guidelines on error messages
+
 ## 2.2.0
 
 - Restored behaviour of skipping file extension checks for top-level

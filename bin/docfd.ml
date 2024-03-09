@@ -13,7 +13,7 @@ let stderr_is_atty () =
   Unix.isatty Unix.stderr
 
 let exit_with_error_msg (msg : string) =
-  Printf.printf "%s\n" msg;
+  Printf.printf "error: %s\n" msg;
   exit 1
 
 let max_depth_arg_name = "max-depth"
@@ -98,7 +98,7 @@ let cache_dir_arg =
     match Sys.getenv_opt "HOME" with
     | None -> (
         exit_with_error_msg
-          (Fmt.str "Error: Environment variable HOME is not set");
+          (Fmt.str "environment variable HOME is not set");
       )
     | Some home -> home
   in
@@ -249,18 +249,18 @@ let mkdir_recursive (dir : string) : unit =
         | true -> aux acc xs
         | false -> (
             exit_with_error_msg
-              (Fmt.str "Error: %S is not a directory" acc)
+              (Fmt.str "%s is not a directory" (Filename.quote acc))
           )
         | exception (Sys_error _) -> (
             do_if_debug (fun oc ->
-                Printf.fprintf oc "Creating directory: %S\n" acc
+                Printf.fprintf oc "Creating directory: %s\n" (Filename.quote acc)
               );
             (try
                Sys.mkdir acc 0o755
              with
              | _ -> (
                  exit_with_error_msg
-                   (Fmt.str "Error: Failed to create directory: %S" acc)
+                   (Fmt.str "failed to create directory: %s" (Filename.quote acc))
                )
             );
             aux acc xs
@@ -475,31 +475,31 @@ let run
   =
   if max_depth < 1 then (
     exit_with_error_msg
-      (Fmt.str "Error: Invalid %s: cannot be < 1" max_depth_arg_name)
+      (Fmt.str "invalid %s: cannot be < 1" max_depth_arg_name)
   );
   if max_fuzzy_edit_dist < 0 then (
     exit_with_error_msg
-      (Fmt.str "Error: Invalid %s: cannot be < 0" max_fuzzy_edit_dist_arg_name)
+      (Fmt.str "invalid %s: cannot be < 0" max_fuzzy_edit_dist_arg_name)
   );
   if max_word_search_dist < 1 then (
     exit_with_error_msg
-      (Fmt.str "Error: Invalid %s: cannot be < 1" max_word_search_dist_arg_name)
+      (Fmt.str "invalid %s: cannot be < 1" max_word_search_dist_arg_name)
   );
   if index_chunk_word_count < 1 then (
     exit_with_error_msg
-      (Fmt.str "Error: Invalid %s: cannot be < 1" index_chunk_word_count_arg_name)
+      (Fmt.str "invalid %s: cannot be < 1" index_chunk_word_count_arg_name)
   );
   if cache_size < 1 then (
     exit_with_error_msg
-      (Fmt.str "Error: Invalid %s: cannot be < 1" cache_size_arg_name)
+      (Fmt.str "invalid %s: cannot be < 1" cache_size_arg_name)
   );
   if search_result_count_per_doc < 1 then (
     exit_with_error_msg
-      (Fmt.str "Error: Invalid %s: cannot be < 1" search_result_count_per_doc_arg_name)
+      (Fmt.str "invalid %s: cannot be < 1" search_result_count_per_doc_arg_name)
   );
   if search_result_print_text_width < 1 then (
     exit_with_error_msg
-      (Fmt.str "Error: Invalid %s: cannot be < 1" search_result_print_text_width_arg_name)
+      (Fmt.str "invalid %s: cannot be < 1" search_result_print_text_width_arg_name)
   );
   Params.debug_output := (match debug_log with
       | "" -> None
@@ -515,7 +515,7 @@ let run
           with
           | _ -> (
               exit_with_error_msg
-                (Fmt.str "Error: Failed to open debug log file %S" debug_log)
+                (Fmt.str "failed to open debug log file %s" (Filename.quote debug_log))
             )
         )
     );
@@ -535,7 +535,7 @@ let run
   (match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
    | None, None -> (
        exit_with_error_msg
-         (Fmt.str "Error: Environment variable VISUAL or EDITOR needs to be set")
+         (Fmt.str "environment variable VISUAL or EDITOR needs to be set")
      )
    | Some editor, _
    | None, Some editor -> (
@@ -556,7 +556,7 @@ let run
   (match recognized_exts with
    | [] -> (
        exit_with_error_msg
-         (Fmt.str "Error: No usable file extensions")
+         (Fmt.str "no usable file extensions")
      )
    | _ -> ()
   );
@@ -573,7 +573,7 @@ let run
       with
       | _ -> (
           exit_with_error_msg
-            (Fmt.str "Error: Failed to read list of paths from %S" paths_from)
+            (Fmt.str "failed to read list of paths from %s" (Filename.quote paths_from))
         )
     )
   in
@@ -584,7 +584,7 @@ let run
   List.iter (fun path ->
       if not (Sys.file_exists path) then (
         exit_with_error_msg
-          (Fmt.str "Error: Path %S does not exist" path)
+          (Fmt.str "path %s does not exist" (Filename.quote path))
       )
     )
     paths;
@@ -595,7 +595,7 @@ let run
     | _ -> (
         if not (Proc_utils.command_exists "fzf") then (
           exit_with_error_msg
-            (Fmt.str "Error: Command fzf not found")
+            (Fmt.str "command fzf not found")
         );
         let stdin_for_fzf, write_to_fzf = Unix.pipe ~cloexec:true () in
         let read_from_fzf, stdout_for_fzf = Unix.pipe ~cloexec:true () in
@@ -643,8 +643,7 @@ let run
                 Ui_base.(Ui_single_file, Stdin tmp_file)
               )
             | Error msg -> (
-                exit_with_error_msg
-                  (Fmt.str "Error: %s" msg)
+                exit_with_error_msg msg
               )
           )
         | Some tmp_file -> (
@@ -676,7 +675,7 @@ let run
       | Files files -> (
           Printf.fprintf oc "Document source: files\n";
           List.iter (fun file ->
-              Printf.fprintf oc "File: %S\n" file;
+              Printf.fprintf oc "File: %s\n" (Filename.quote file);
             )
             files
         )
@@ -687,7 +686,7 @@ let run
        if List.exists Misc_utils.path_is_pdf files then (
          if not (Proc_utils.command_exists "pdftotext") then (
            exit_with_error_msg
-             (Fmt.str "Error: Command pdftotext not found")
+             (Fmt.str "command pdftotext not found")
          )
        );
        let file_count = List.length files in
@@ -708,19 +707,18 @@ let run
           match Document.of_path ~env path with
           | Ok x -> [ x ]
           | Error msg ->  (
-              exit_with_error_msg
-                (Fmt.str "Error: %s" msg)
+              exit_with_error_msg msg
             )
         )
       | Files files -> (
           Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size (fun path ->
               do_if_debug (fun oc ->
-                  Printf.fprintf oc "Loading document: %S\n" path;
+                  Printf.fprintf oc "Loading document: %s\n" (Filename.quote path);
                 );
               match Document.of_path ~env path with
               | Ok x -> (
                   do_if_debug (fun oc ->
-                      Printf.fprintf oc "Document %S loaded successfully\n" path;
+                      Printf.fprintf oc "Document %s loaded successfully\n" (Filename.quote path);
                     );
                   Some x
                 )

@@ -7,5 +7,5 @@ let read_in_channel_to_tmp_file (ic : in_channel) : (string, string) result =
     Ok file
   with
   | _ -> (
-      Error (Fmt.str "Failed to write stdin to \"%s\"" file)
+      Error (Fmt.str "failed to write stdin to %s" (Filename.quote file))
     )

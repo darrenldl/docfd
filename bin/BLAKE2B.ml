@@ -25,4 +25,4 @@ let hash_of_file ~env ~path =
          | Error (`Msg msg) -> Error msg
       )
   with
-  | _ -> Error (Printf.sprintf "Failed to hash file: %s" path)
+  | _ -> Error (Printf.sprintf "failed to hash file: %s" (Filename.quote path))
