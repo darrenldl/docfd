@@ -147,33 +147,33 @@ let find_index ~env ~hash : Index.t option =
     )
 
 module Of_path = struct
-let text ~env path : (t, string) result =
-  let fs = Eio.Stdenv.fs env in
-  try
-    Eio.Path.(with_lines (fs / path))
-      (fun lines ->
-         Ok (parse_lines ~path lines)
-      )
-  with
-  | _ -> Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
+  let text ~env path : (t, string) result =
+    let fs = Eio.Stdenv.fs env in
+    try
+      Eio.Path.(with_lines (fs / path))
+        (fun lines ->
+           Ok (parse_lines ~path lines)
+        )
+    with
+    | _ -> Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
 
-let pdf ~env path : (t, string) result =
-  let proc_mgr = Eio.Stdenv.process_mgr env in
-  let rec aux acc page_num =
-    let page_num_string = Int.to_string page_num in
-    let cmd = [ "pdftotext"; "-f"; page_num_string; "-l"; page_num_string; path; "-" ] in
-    match Proc_utils.run_return_stdout ~proc_mgr cmd with
-    | None -> (
-        parse_pages ~path (acc |> List.rev |> List.to_seq)
-      )
-    | Some page -> (
-        aux (page :: acc) (page_num + 1)
-      )
-  in
-  try
-    Ok (aux [] 1)
-  with
-  | _ -> Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
+  let pdf ~env path : (t, string) result =
+    let proc_mgr = Eio.Stdenv.process_mgr env in
+    let rec aux acc page_num =
+      let page_num_string = Int.to_string page_num in
+      let cmd = [ "pdftotext"; "-f"; page_num_string; "-l"; page_num_string; path; "-" ] in
+      match Proc_utils.run_return_stdout ~proc_mgr cmd with
+      | None -> (
+          parse_pages ~path (acc |> List.rev |> List.to_seq)
+        )
+      | Some page -> (
+          aux (page :: acc) (page_num + 1)
+        )
+    in
+    try
+      Ok (aux [] 1)
+    with
+    | _ -> Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
 end
 
 let of_path ~(env : Eio_unix.Stdenv.base) path : (t, string) result =
