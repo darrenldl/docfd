@@ -174,6 +174,16 @@ module Of_path = struct
       Ok (aux [] 1)
     with
     | _ -> Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
+
+  (*let docx ~env path : (t, string) result =
+    let proc_mgr = Eio.Stdenv.process_mgr env in
+    let out_dir = Filename.temp_dir "docfd-" "" in
+    let args = [ "--convert-to"; "pdf"; "--outdir"; out_dir; path ]
+    let cmd =
+    in
+    Proc_utils.run ~proc_mgr cmd;
+    pdf ~env path
+    |> Result.map (fun doc -> { doc with path }) *)
 end
 
 let of_path ~(env : Eio_unix.Stdenv.base) path : (t, string) result =
@@ -190,7 +200,7 @@ let of_path ~(env : Eio_unix.Stdenv.base) path : (t, string) result =
     )
   | None -> (
       let* t =
-        if Misc_utils.path_is_pdf path then
+        if Misc_utils.path_is `PDF path then
           Of_path.pdf ~env path
         else
           Of_path.text ~env path

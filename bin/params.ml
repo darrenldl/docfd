@@ -44,3 +44,5 @@ let last_scan_format_string =
   (match Timedesc.Time_zone.local () with
    | None -> "Z"
    | Some _ -> "")
+
+let libreoffice_cmd : string list ref = ref []

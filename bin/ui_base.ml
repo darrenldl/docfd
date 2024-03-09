@@ -21,7 +21,7 @@ type top_level_action =
 let empty_text_field = ("", 0)
 
 let render_mode_of_document (doc : Document.t) =
-  if Misc_utils.path_is_pdf (Document.path doc) then (
+  if Misc_utils.path_is `PDF (Document.path doc) then (
     `Page_num_only
   ) else (
     `Line_num_only

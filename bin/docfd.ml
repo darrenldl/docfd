@@ -342,7 +342,7 @@ module Open_path = struct
             |> (fun (word, page_num, _freq) ->
                 (word.found_word, page_num))
           in
-          match Xdg_utils.default_pdf_viewer_desktop_file_path () with
+          match Xdg_utils.default_desktop_file_path `PDF with
           | None -> fallback
           | Some viewer_desktop_file_path -> (
               let flatpak_package_name =
@@ -690,7 +690,15 @@ let run
   (match init_document_src with
    | Stdin _ -> ()
    | Files files -> (
-       if List.exists Misc_utils.path_is_pdf files then (
+       if List.exists (Misc_utils.path_is `PDF) files then (
+         if not (Proc_utils.command_exists "pdftotext") then (
+           exit_with_error_msg
+             (Fmt.str "command pdftotext not found")
+         )
+       );
+       if List.exists (Misc_utils.path_is `ODT) files
+       || List.exists (Misc_utils.path_is `DOCX) files
+       then (
          if not (Proc_utils.command_exists "pdftotext") then (
            exit_with_error_msg
              (Fmt.str "command pdftotext not found")
@@ -886,12 +894,12 @@ let run
             let index = Document.index doc in
             let path = Document.path doc in
             let old_stats = Unix.stat path in
-            if Misc_utils.path_is_pdf path then (
+            if Misc_utils.path_is `PDF path then (
               Open_path.pdf
                 index
                 ~path
                 ~search_result
-            ) else if Misc_utils.path_is_docx path then (
+            ) else if Misc_utils.path_is `DOCX path then (
               Open_path.docx ~path
             ) else (
               close_term ();

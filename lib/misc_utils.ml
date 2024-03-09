@@ -57,11 +57,14 @@ let list_and_length_of_seq (s : 'a Seq.t) : int * 'a list =
   in
   (len, List.rev acc)
 
-let path_is_pdf (s : string) =
-  Filename.extension s = ".pdf"
-
-let path_is_docx (s : string) =
-  Filename.extension s = ".docx"
+let path_is (typ : [ `PDF | `ODT | `DOCX ]) (s : string) =
+  let ext =
+    match typ with
+    | `PDF -> ".pdf"
+    | `ODT -> ".odt"
+    | `DOCX -> ".docx"
+  in
+  Filename.extension (String.lowercase_ascii s) = ext
 
 let remove_leading_dots (s : string) =
   let str_len = String.length s in
