@@ -146,7 +146,8 @@ let find_index ~env ~hash : Index.t option =
       | _ -> None
     )
 
-let of_text_path ~env path : (t, string) result =
+module Of_path = struct
+let text ~env path : (t, string) result =
   let fs = Eio.Stdenv.fs env in
   try
     Eio.Path.(with_lines (fs / path))
@@ -156,7 +157,7 @@ let of_text_path ~env path : (t, string) result =
   with
   | _ -> Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
 
-let of_pdf_path ~env path : (t, string) result =
+let pdf ~env path : (t, string) result =
   let proc_mgr = Eio.Stdenv.process_mgr env in
   let rec aux acc page_num =
     let page_num_string = Int.to_string page_num in
@@ -173,6 +174,7 @@ let of_pdf_path ~env path : (t, string) result =
     Ok (aux [] 1)
   with
   | _ -> Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
+end
 
 let of_path ~(env : Eio_unix.Stdenv.base) path : (t, string) result =
   let* hash = BLAKE2B.hash_of_file ~env ~path in
@@ -189,9 +191,9 @@ let of_path ~(env : Eio_unix.Stdenv.base) path : (t, string) result =
   | None -> (
       let* t =
         if Misc_utils.path_is_pdf path then
-          of_pdf_path ~env path
+          Of_path.pdf ~env path
         else
-          of_text_path ~env path
+          Of_path.text ~env path
       in
       let+ () = save_index ~env ~hash t.index in
       t

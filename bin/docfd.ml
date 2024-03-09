@@ -270,6 +270,11 @@ let mkdir_recursive (dir : string) : unit =
   aux "" (CCString.split ~by:Filename.dir_sep dir)
 
 module Open_path = struct
+  let docx ~path =
+    let path = Filename.quote path in
+    let cmd = Fmt.str "xdg-open %s" path in
+    Proc_utils.run_in_background cmd |> ignore
+
   let pdf index ~path ~search_result =
     let path = Filename.quote path in
     let fallback = Fmt.str "xdg-open %s" path in
@@ -886,6 +891,8 @@ let run
                 index
                 ~path
                 ~search_result
+            ) else if Misc_utils.path_is_docx path then (
+              Open_path.docx ~path
             ) else (
               close_term ();
               Open_path.text

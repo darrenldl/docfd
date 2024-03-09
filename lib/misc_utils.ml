@@ -60,6 +60,9 @@ let list_and_length_of_seq (s : 'a Seq.t) : int * 'a list =
 let path_is_pdf (s : string) =
   Filename.extension s = ".pdf"
 
+let path_is_docx (s : string) =
+  Filename.extension s = ".docx"
+
 let remove_leading_dots (s : string) =
   let str_len = String.length s in
   if str_len = 0 then (
