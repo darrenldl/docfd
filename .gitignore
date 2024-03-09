@@ -11,6 +11,7 @@ fuzz-logs/
 test*.md
 test*.txt
 test*.pdf
+test*.docx
 *.tar.gz
 /statically-linked/
 perf.data*
