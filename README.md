@@ -1,7 +1,7 @@
 # Docfd
 TUI multiline fuzzy document finder
 
-Think interactive grep for both text files and PDFs,
+Think interactive grep for text files, PDFs, DOCXs, etc,
 but word/token based instead of regex and line based,
 so you can search across lines easily.
 
@@ -92,8 +92,8 @@ packaging from source), Docfd also requires the following
 external tools at run time for full functionality:
 
 - `pdftotext` from `poppler-utils` for PDF support
-
-- `fzf` for file selection menu if user requests it
+- `pandoc` for support of `.epub`, `.odt`, `.docx`, `.fb2`, `.ipynb`, `.html`, and `.htm` files
+- `fzf` for file selection menu
 
 ## Launching
 
@@ -379,3 +379,4 @@ Navigation mode
 ## Acknowledgement
 
 - Demo gifs are made using [vhs](https://github.com/charmbracelet/vhs).
+- [rga](https://github.com/phiresky/ripgrep-all) for text extraction software choices
