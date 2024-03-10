@@ -223,7 +223,7 @@ let list_files_recursive (dirs : string list) : string list =
               )
               next_choices
           ) else (
-            let ext = Filename.extension path in
+            let ext = Misc_utils.extension_of_file path in
             (* We skip file extension checks for top-level user specified files. *)
             if depth = 0 || List.mem ext !Params.recognized_exts then (
               add path

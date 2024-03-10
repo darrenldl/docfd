@@ -3,8 +3,12 @@ include Lib_misc_utils
 let bound_selection ~choice_count (x : int) : int =
   max 0 (min (choice_count - 1) x)
 
+let extension_of_file (s : string) =
+  Filename.extension s
+  |> String.lowercase_ascii
+
 let format_of_file (s : string) : [ `PDF | `Pandoc_supported_format | `Text ] =
-  let ext = Filename.extension (String.lowercase_ascii s) in
+  let ext = extension_of_file s in
   if ext = ".pdf" then (
     `PDF
   ) else if List.mem ext Params.pandoc_supported_exts then (

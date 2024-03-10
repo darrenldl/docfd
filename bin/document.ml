@@ -89,7 +89,7 @@ let clean_up_cache_dir ~cache_dir =
     |> List.map (fun x ->
         Filename.concat cache_dir x)
     |> List.filter (fun x ->
-        not (Sys.is_directory x) && Filename.extension x = Params.index_file_ext)
+        not (Sys.is_directory x) && Misc_utils.extension_of_file x = Params.index_file_ext)
   in
   let all_files_arr =
     all_files
@@ -177,8 +177,7 @@ module Of_path = struct
 
   let pandoc_supported_format ~env path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
-    let from_format = Filename.extension path
-                      |> String.lowercase_ascii
+    let from_format = Misc_utils.extension_of_file path
                       |> String_utils.remove_leading_dots
     in
     let cmd = [ "pandoc"
