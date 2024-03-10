@@ -589,9 +589,10 @@ let run
         )
     )
   in
-  let paths = match paths, paths_from_file with
-    | [], [] -> [ "." ]
-    | _, _ -> paths @ paths_from_file
+  let paths, paths_were_originally_specified_by_user =
+    match paths, paths_from_file with
+    | [], [] -> ([ "." ], false)
+    | _, _ -> (paths @ paths_from_file, true)
   in
   List.iter (fun path ->
       if not (Sys.file_exists path) then (
@@ -646,7 +647,20 @@ let run
   let compute_init_ui_mode_and_document_src : unit -> Ui_base.ui_mode * Ui_base.document_src =
     let stdin_tmp_file = ref None in
     fun () ->
-      if not (stdin_is_atty ()) then (
+      if paths_were_originally_specified_by_user
+      || (stdin_is_atty ())
+      then (
+        match files with
+        | [] -> (
+            Ui_base.(Ui_multi_file, Files [])
+          )
+        | [ f ] -> (
+            Ui_base.(Ui_single_file, Files [ f ])
+          )
+        | _ -> (
+            Ui_base.(Ui_multi_file, Files files)
+          )
+      ) else (
         match !stdin_tmp_file with
         | None -> (
             match File_utils.read_in_channel_to_tmp_file stdin with
@@ -660,15 +674,6 @@ let run
           )
         | Some tmp_file -> (
             Ui_base.(Ui_single_file, Stdin tmp_file)
-          )
-      ) else (
-        match files with
-        | [] -> Ui_base.(Ui_multi_file, Files [])
-        | [ f ] -> (
-            Ui_base.(Ui_single_file, Files [ f ])
-          )
-        | _ -> (
-            Ui_base.(Ui_multi_file, Files files)
           )
       )
   in
