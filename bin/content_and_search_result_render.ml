@@ -42,7 +42,13 @@ module Text_block_render = struct
                  | `Search_result -> A.(fg black ++ bg lightyellow)
                )
            in
-           let word = I.string attr cell.word in
+           let word =
+             match I.string attr cell.word with
+             | s -> s
+             | exception _ -> (
+                 I.string A.(fg lightred) (String.make (String.length cell.word) '?')
+               )
+           in
            let word_len = I.width word in
            let new_len = cur_len + word_len in
            let cur_len, acc =
