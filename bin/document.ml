@@ -177,7 +177,10 @@ module Of_path = struct
 
   let pandoc_supported_format ~env path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
-    let from_format = Filename.extension path |> Misc_utils.remove_leading_dots in
+    let from_format = Filename.extension path
+                      |> String.lowercase_ascii
+                      |> Misc_utils.remove_leading_dots
+    in
     let cmd = [ "pandoc"
               ; "--from"
               ; from_format
