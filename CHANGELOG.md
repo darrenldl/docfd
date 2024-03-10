@@ -44,6 +44,9 @@
 - Changed error messages to not be capitalized to follow Rust's and Go's
   guidelines on error messages
 
+- Added fallback rendering text so Docfd does not crash from trying
+  to render invalid text.
+
 ## 2.2.0
 
 - Restored behaviour of skipping file extension checks for top-level
