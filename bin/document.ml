@@ -219,10 +219,13 @@ let of_path ~(env : Eio_unix.Stdenv.base) path : (t, string) result =
     )
   | None -> (
       let* t =
-        if Misc_utils.path_is `PDF path then
+        if Misc_utils.path_is `PDF path then (
           Of_path.pdf ~env path
-        else
+        ) else if Misc_utils.path_is `Pandoc_supported_format path then (
+          Of_path.pandoc_supported_format ~env path
+        ) else (
           Of_path.text ~env path
+        )
       in
       let+ () = save_index ~env ~hash t.index in
       t
