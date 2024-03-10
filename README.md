@@ -106,8 +106,8 @@ command | docfd
 Docfd uses single file view
 when source of document is piped stdin.
 
-Files specified as arguments to docfd are ignored
-in this case.
+No paths should be supplied as arguments in this case.
+If any paths are specified, then stdin is ignored.
 
 #### Scan for files
 

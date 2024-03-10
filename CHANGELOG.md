@@ -49,6 +49,13 @@
 
 - Added pandoc integration
 
+- Changed the logic of determining when to use stdin as document source
+
+    - Now if any paths are specified, stdin is ignored
+    - This change mostly came from dune's cram test mechanism
+      not providing a tty to stdin, so previously Docfd would keep
+      trying to source from stdin even when explicit paths are provided
+
 ## 2.2.0
 
 - Restored behaviour of skipping file extension checks for top-level
