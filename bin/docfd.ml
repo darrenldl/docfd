@@ -270,14 +270,17 @@ let mkdir_recursive (dir : string) : unit =
   aux "" (CCString.split ~by:Filename.dir_sep dir)
 
 module Open_path = struct
-  let docx ~path =
+  let xdg_open_cmd ~path =
+    Fmt.str "xdg-open %s" path
+
+  let pandoc_supported_format ~path =
     let path = Filename.quote path in
-    let cmd = Fmt.str "xdg-open %s" path in
+    let cmd = xdg_open_cmd ~path in
     Proc_utils.run_in_background cmd |> ignore
 
   let pdf index ~path ~search_result =
     let path = Filename.quote path in
-    let fallback = Fmt.str "xdg-open %s" path in
+    let fallback = xdg_open_cmd ~path in
     let cmd =
       match search_result with
       | None -> fallback
@@ -695,13 +698,10 @@ let run
            exit_with_error_msg
              (Fmt.str "command pdftotext not found")
          )
-       );
-       if List.exists (Misc_utils.path_is `ODT) files
-       || List.exists (Misc_utils.path_is `DOCX) files
-       then (
-         if not (Proc_utils.command_exists "pdftotext") then (
+       ) else if List.exists (Misc_utils.path_is `Pandoc_supported_format) files then (
+         if not (Proc_utils.command_exists "pandoc") then (
            exit_with_error_msg
-             (Fmt.str "command pdftotext not found")
+             (Fmt.str "command pandoc not found")
          )
        );
        let file_count = List.length files in
@@ -899,8 +899,8 @@ let run
                 index
                 ~path
                 ~search_result
-            ) else if Misc_utils.path_is `DOCX path then (
-              Open_path.docx ~path
+            ) else if Misc_utils.path_is `Pandoc_supported_format path then (
+              Open_path.pandoc_supported_format ~path
             ) else (
               close_term ();
               Open_path.text

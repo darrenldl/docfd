@@ -175,15 +175,34 @@ module Of_path = struct
     with
     | _ -> Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
 
-  (*let docx ~env path : (t, string) result =
+  let pandoc_supported_format ~env path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
-    let out_dir = Filename.temp_dir "docfd-" "" in
-    let args = [ "--convert-to"; "pdf"; "--outdir"; out_dir; path ]
-    let cmd =
+    let from_format = Filename.extension path |> Misc_utils.remove_leading_dots in
+    let cmd = [ "pandoc"
+              ; "--from"
+              ; from_format
+              ; "--to"
+              ; "plain"
+              ; "--wrap"
+              ; "none"
+              ; "--markdown-headings"
+              ; "atx"
+              ; path
+              ]
     in
-    Proc_utils.run ~proc_mgr cmd;
-    pdf ~env path
-    |> Result.map (fun doc -> { doc with path }) *)
+    let error_msg = Fmt.str "failed to extract text from %s" (Filename.quote path) in
+    match Proc_utils.run_return_stdout ~proc_mgr cmd with
+    | None -> (
+        Error error_msg
+      )
+    | Some lines -> (
+        try
+          List.to_seq lines
+          |> parse_lines ~path
+          |> Result.ok
+        with
+        | _ -> Error error_msg
+      )
 end
 
 let of_path ~(env : Eio_unix.Stdenv.base) path : (t, string) result =

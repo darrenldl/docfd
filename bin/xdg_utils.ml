@@ -29,12 +29,12 @@ let path_of_desktop_file file =
   in
   aux (all_desktop_files ())
 
-let default_desktop_file_path (typ : [ `PDF | `ODT | `DOCX ]) =
+let default_desktop_file_path (typ : [ `PDF ]) =
   let mime_typ =
     match typ with
     | `PDF -> "application/pdf"
-    | `ODT -> "application/vnd.oasis.opendocument.text"
-    | `DOCX -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    (* | `ODT -> "application/vnd.oasis.opendocument.text"
+       | `DOCX -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document" *)
   in
   let (stdout, _, ret) = CCUnix.call "xdg-mime query default %s" mime_typ in
   if ret = 0 then (

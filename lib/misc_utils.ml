@@ -57,14 +57,21 @@ let list_and_length_of_seq (s : 'a Seq.t) : int * 'a list =
   in
   (len, List.rev acc)
 
-let path_is (typ : [ `PDF | `ODT | `DOCX ]) (s : string) =
-  let ext =
+let path_is (typ : [ `PDF | `Pandoc_supported_format ]) (s : string) =
+  let exts =
     match typ with
-    | `PDF -> ".pdf"
-    | `ODT -> ".odt"
-    | `DOCX -> ".docx"
+    | `PDF -> [ ".pdf" ]
+    | `Pandoc_supported_format ->
+      [ ".epub"
+      ; ".odt"
+      ; ".docx"
+      ; ".fb2"
+      ; ".ipynb"
+      ; ".html"
+      ; ".htm"
+      ]
   in
-  Filename.extension (String.lowercase_ascii s) = ext
+  List.mem (Filename.extension (String.lowercase_ascii s)) exts
 
 let remove_leading_dots (s : string) =
   let str_len = String.length s in
