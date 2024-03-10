@@ -553,8 +553,10 @@ let run
      )
   );
   let recognized_exts =
-    Fmt.str "%s,%s" exts additional_exts
-    |> String.split_on_char ','
+    let split_on_comma = String.split_on_char ',' in
+    ((split_on_comma exts)
+     @
+     (split_on_comma additional_exts))
     |> List.map (fun s ->
         s
         |> String_utils.remove_leading_dots
