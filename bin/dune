@@ -29,7 +29,7 @@
   )
 
 (rule
-  (targets misc_utils.ml)
+  (targets lib_misc_utils.ml)
   (deps ../lib/misc_utils.ml)
   (action (copy %{deps} %{targets}))
   )

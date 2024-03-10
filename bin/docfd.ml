@@ -557,7 +557,7 @@ let run
     |> String.split_on_char ','
     |> List.map (fun s ->
         s
-        |> Misc_utils.remove_leading_dots
+        |> String_utils.remove_leading_dots
         |> CCString.trim
       )
     |> List.filter (fun s -> s <> "")
@@ -693,16 +693,16 @@ let run
   (match init_document_src with
    | Stdin _ -> ()
    | Files files -> (
-       if List.exists (Misc_utils.path_is `PDF) files then (
-         if not (Proc_utils.command_exists "pdftotext") then (
-           exit_with_error_msg
-             (Fmt.str "command pdftotext not found")
-         )
-       ) else if List.exists (Misc_utils.path_is `Pandoc_supported_format) files then (
-         if not (Proc_utils.command_exists "pandoc") then (
-           exit_with_error_msg
-             (Fmt.str "command pandoc not found")
-         )
+       let pdftotext_exists = Proc_utils.command_exists "pdftotext" in
+       let pandoc_exists = Proc_utils.command_exists "pandoc" in
+       let formats = List.map Misc_utils.format_of_file files in
+       if not pdftotext_exists && List.mem `PDF formats then (
+         exit_with_error_msg
+           (Fmt.str "command pdftotext not found")
+       );
+       if not pandoc_exists && List.mem `Pandoc_supported_format formats then (
+         exit_with_error_msg
+           (Fmt.str "command pandoc not found")
        );
        let file_count = List.length files in
        if file_count > !Params.cache_size then (
@@ -894,22 +894,25 @@ let run
             let index = Document.index doc in
             let path = Document.path doc in
             let old_stats = Unix.stat path in
-            if Misc_utils.path_is `PDF path then (
-              Open_path.pdf
-                index
-                ~path
-                ~search_result
-            ) else if Misc_utils.path_is `Pandoc_supported_format path then (
-              Open_path.pandoc_supported_format ~path
-            ) else (
-              close_term ();
-              Open_path.text
-                index
-                init_document_src
-                ~editor:!Params.text_editor
-                ~path
-                ~search_result
-            );
+            (match Misc_utils.format_of_file path with
+             | `PDF -> (
+                 Open_path.pdf
+                   index
+                   ~path
+                   ~search_result
+               )
+             | `Pandoc_supported_format -> (
+                 Open_path.pandoc_supported_format ~path
+               )
+             | `Text -> (
+                 close_term ();
+                 Open_path.text
+                   index
+                   init_document_src
+                   ~editor:!Params.text_editor
+                   ~path
+                   ~search_result
+               ));
             let new_stats = Unix.stat path in
             if
               Float.abs

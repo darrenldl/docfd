@@ -44,9 +44,6 @@ let sanitize_string s =
   in
   aux 0
 
-let bound_selection ~choice_count (x : int) : int =
-  max 0 (min (choice_count - 1) x)
-
 let list_and_length_of_seq (s : 'a Seq.t) : int * 'a list =
   let len, acc =
     Seq.fold_left (fun (len, acc) x ->
@@ -57,54 +54,8 @@ let list_and_length_of_seq (s : 'a Seq.t) : int * 'a list =
   in
   (len, List.rev acc)
 
-let path_is (typ : [ `PDF | `Pandoc_supported_format ]) (s : string) =
-  let exts =
-    match typ with
-    | `PDF -> [ ".pdf" ]
-    | `Pandoc_supported_format ->
-      [ ".epub"
-      ; ".odt"
-      ; ".docx"
-      ; ".fb2"
-      ; ".ipynb"
-      ; ".html"
-      ; ".htm"
-      ]
-  in
-  List.mem (Filename.extension (String.lowercase_ascii s)) exts
-
-let remove_leading_dots (s : string) =
-  let str_len = String.length s in
-  if str_len = 0 then (
-    ""
-  ) else (
-    let rec aux pos =
-      if pos < str_len then (
-        if String.get s pos = '.' then
-          aux (pos + 1)
-        else (
-          String.sub s pos (str_len - pos)
-        )
-      ) else (
-        ""
-      )
-    in
-    aux 0
-  )
-
 let div_round_to_closest x y =
   (x + y - 1) / y
-
-let frequencies_of_words_ci (s : string Seq.t) : int String_map.t =
-  Seq.fold_left (fun m word ->
-      let word = String.lowercase_ascii word in
-      let count = Option.value ~default:0
-          (String_map.find_opt word m)
-      in
-      String_map.add word (count + 1) m
-    )
-    String_map.empty
-    s
 
 let opening_closing_symbol_pairs (l : string list) : (int * int) list =
   let _, pairs =

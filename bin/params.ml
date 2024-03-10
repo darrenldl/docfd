@@ -12,7 +12,23 @@ let default_max_file_tree_depth = 10
 
 let max_file_tree_depth = ref default_max_file_tree_depth
 
-let default_recognized_exts = "txt,md,pdf"
+let pandoc_supported_exts =
+  [ ".epub"
+  ; ".odt"
+  ; ".docx"
+  ; ".fb2"
+  ; ".ipynb"
+  ; ".html"
+  ; ".htm"
+  ]
+
+let default_recognized_exts =
+  ([ "txt"; "md"; "pdf" ]
+   @
+   pandoc_supported_exts
+  )
+  |> List.map String_utils.remove_leading_dots
+  |> String.concat ","
 
 let recognized_exts : string list ref = ref []
 

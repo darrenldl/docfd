@@ -22,13 +22,10 @@ let empty_text_field = ("", 0)
 
 let render_mode_of_document (doc : Document.t)
   : Content_and_search_result_render.render_mode =
-  if Misc_utils.path_is `PDF (Document.path doc) then (
-    `Page_num_only
-  ) else if Misc_utils.path_is `Pandoc_supported_format (Document.path doc) then (
-    `None
-  ) else (
-    `Line_num_only
-  )
+  match Misc_utils.format_of_file (Document.path doc) with
+  | `PDF -> `Page_num_only
+  | `Pandoc_supported_format -> `None
+  | `Text -> `Line_num_only
 
 module Vars = struct
   let quit = Lwd.var false

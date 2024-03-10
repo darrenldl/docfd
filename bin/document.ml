@@ -179,7 +179,7 @@ module Of_path = struct
     let proc_mgr = Eio.Stdenv.process_mgr env in
     let from_format = Filename.extension path
                       |> String.lowercase_ascii
-                      |> Misc_utils.remove_leading_dots
+                      |> String_utils.remove_leading_dots
     in
     let cmd = [ "pandoc"
               ; "--from"
@@ -222,13 +222,16 @@ let of_path ~(env : Eio_unix.Stdenv.base) path : (t, string) result =
     )
   | None -> (
       let* t =
-        if Misc_utils.path_is `PDF path then (
-          Of_path.pdf ~env path
-        ) else if Misc_utils.path_is `Pandoc_supported_format path then (
-          Of_path.pandoc_supported_format ~env path
-        ) else (
-          Of_path.text ~env path
-        )
+        match Misc_utils.format_of_file path with
+        | `PDF -> (
+            Of_path.pdf ~env path
+          )
+        | `Pandoc_supported_format -> (
+            Of_path.pandoc_supported_format ~env path
+          )
+        | `Text -> (
+            Of_path.text ~env path
+          )
       in
       let+ () = save_index ~env ~hash t.index in
       t
