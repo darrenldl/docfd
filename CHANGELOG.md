@@ -47,6 +47,8 @@
 - Added fallback rendering text so Docfd does not crash from trying
   to render invalid text.
 
+- Added pandoc integration
+
 ## 2.2.0
 
 - Restored behaviour of skipping file extension checks for top-level
