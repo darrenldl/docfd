@@ -281,28 +281,6 @@ Navigation mode
 
 </details>
 
-#### File content requirements
-
-<details>
-
-The required content field accepts a content requirement expression.
-
-A content requirement expression is one of:
-- Search phrase
-- `(expression)`
-- `expression & expression`
-- `expression | expression`
-
-Note that the edit distance is not considered here.
-Only case-insensitive exact matches or substring matches against
-the search phrases are considered.
-
-In other words, given the same phrase,
-it is treated less fuzzily as a content requirement expression
-compared to being used as a search phrase in the search field.
-
-</details>
-
 ## Single file view
 
 If the specified path to Docfd is not a directory, then single file view
