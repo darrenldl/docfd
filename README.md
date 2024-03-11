@@ -359,4 +359,4 @@ Navigation mode
 ## Acknowledgement
 
 - Demo gifs are made using [vhs](https://github.com/charmbracelet/vhs).
-- [rga](https://github.com/phiresky/ripgrep-all) for text extraction software choices
+- [ripgrep-all](https://github.com/phiresky/ripgrep-all) for text extraction software choices
