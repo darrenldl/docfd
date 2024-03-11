@@ -28,15 +28,6 @@ release-static :
 	mkdir -p statically-linked
 	cp -f _build/default/bin/docfd.exe statically-linked/docfd
 
-.PHONY: tests
-tests :
-	OCAMLRUNPARAM=b dune exec tests/main.exe --no-buffer --force
-
-.PHONY: cram-tests
-cram-tests :
-	make
-	dune build @line-wrapping-tests
-
 .PHONY: profile
 profile :
 	OCAMLPARAM='_,ccopt=-static' dune build --release profile/main.exe
