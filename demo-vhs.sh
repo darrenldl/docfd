@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 podman run --rm -v $PWD:/vhs \
   --env 'VISUAL=nvim' \
