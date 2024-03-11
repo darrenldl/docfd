@@ -17,8 +17,14 @@ Navigating repo:
 
 ---
 
-Navigating "OCaml Programming: Correct + Efficient + Beautiful" book PDF
-and opening it to the closest location to the selected search result via PDF viewer integration:
+Quick search with non-interactive mode:
+
+![](demo-vhs-gifs/repo-non-interactive.gif)
+
+---
+
+Navigating PDF and opening it to the closest location to the selected search
+result via PDF viewer integration:
 
 ![](screenshots/pdf-viewer-integration.jpg)
 
