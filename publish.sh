@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 RETAG_CONFIRM_TEXT="retag-docfd"
 
