@@ -34,6 +34,11 @@ tests :
 	OCAMLRUNPARAM=b dune exec tests/main.exe --no-buffer --force
 	dune build @line-wrapping-tests
 
+.PHONY: demo-vhs
+demo-vhs :
+	for file in demo-vhs-tapes/*; do ./demo-vhs.sh $$file; done
+	rm dummy.gif
+
 .PHONY: profile
 profile :
 	OCAMLPARAM='_,ccopt=-static' dune build --release profile/main.exe

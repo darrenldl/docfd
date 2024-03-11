@@ -238,9 +238,7 @@ Search mode
 
 ## Multi-file view
 
-![](screenshots/main0.png)
-
-![](screenshots/main1.png)
+![](screenshots/multi-file-view0.png)
 
 The default TUI is divided into four sections:
 - Left is the list of documents which satisfy the search phrase
@@ -292,9 +290,7 @@ Navigation mode
 If the specified path to Docfd is not a directory, then single file view
 is used.
 
-![](screenshots/single-file0.png)
-
-![](screenshots/single-file1.png)
+![](screenshots/single-file-view0.png)
 
 In this view, the TUI is divided into only two sections:
 - Top is ranked search result list

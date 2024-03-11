@@ -1,4 +1,5 @@
 Output demo-vhs-gifs/repo.gif
+
 Set Padding 0
 Set Framerate 10
 
