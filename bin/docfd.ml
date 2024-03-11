@@ -32,7 +32,7 @@ let exts_arg_name = "exts"
 
 let exts_arg =
   let doc =
-    "File extensions to use, comma separated. Leading dots are removed."
+    "File extensions to use, comma separated. Leading dots of any extension are removed."
   in
   Arg.(
     value
