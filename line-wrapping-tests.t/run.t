@@ -571,3 +571,161 @@ Word breaking
       3
       4
       5
+
+Line wrapping and word breaking
+  $ docfd sentences.txt --search "lorem" --search-result-print-text-width 80
+  sentences.txt
+  1:     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod 
+     tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, 
+     quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo 
+     consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse 
+     cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
+      proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+  $ docfd sentences.txt --search "lorem" --search-result-print-text-width 20
+  sentences.txt
+  1:     Lorem ipsum 
+     dolor sit amet, 
+     consectetur 
+     adipiscing elit, 
+     sed do eiusmod 
+     tempor incididunt
+      ut labore et 
+     dolore magna 
+     aliqua. Ut enim 
+     ad minim veniam, 
+     quis nostrud 
+     exercitation 
+     ullamco laboris 
+     nisi ut aliquip 
+     ex ea commodo 
+     consequat. Duis 
+     aute irure dolor 
+     in reprehenderit 
+     in voluptate 
+     velit esse cillum
+      dolore eu fugiat
+      nulla pariatur. 
+     Excepteur sint 
+     occaecat 
+     cupidatat non 
+     proident, sunt in
+      culpa qui 
+     officia deserunt 
+     mollit anim id 
+     est laborum.
+  $ docfd sentences.txt --search "lorem" --search-result-print-text-width 10
+  sentences.txt
+  1:     
+     Lorem 
+     ipsum 
+     dolor 
+     sit 
+     amet, 
+     consect
+     etur
+      
+     adipisc
+     ing
+      elit, 
+     sed do 
+     eiusmod
+      tempor
+      
+     incidid
+     unt
+      ut 
+     labore 
+     et 
+     dolore 
+     magna 
+     aliqua.
+      Ut 
+     enim ad
+      minim 
+     veniam,
+      quis 
+     nostrud
+      
+     exercit
+     ation
+      
+     ullamco
+      
+     laboris
+      nisi 
+     ut 
+     aliquip
+      ex ea 
+     commodo
+      
+     consequ
+     at
+     . Duis 
+     aute 
+     irure 
+     dolor 
+     in 
+     reprehe
+     nderit
+      in 
+     volupta
+     te
+      velit 
+     esse 
+     cillum 
+     dolore 
+     eu 
+     fugiat 
+     nulla 
+     pariatu
+     r
+     . 
+     Excepte
+     ur
+      sint 
+     occaeca
+     t
+      
+     cupidat
+     at
+      non 
+     proiden
+     t
+     , sunt 
+     in 
+     culpa 
+     qui 
+     officia
+      
+     deserun
+     t
+      mollit
+      anim 
+     id est 
+     laborum
+     .
+  $ docfd sentences.txt --search "laborum 0" --search-result-print-text-width 80
+  sentences.txt
+  1:     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod 
+     tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, 
+     quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo 
+     consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse 
+     cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
+      proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+  2: 0 12 abcd efghi jkl mnopqrst uvwx yz 0123456 789012345
+  
+  1:     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod 
+     tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, 
+     quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo 
+     consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse 
+     cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
+      proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+  2: 0 12 abcd efghi jkl mnopqrst uvwx yz 0123456 789012345
+  
+  1:     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod 
+     tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, 
+     quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo 
+     consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse 
+     cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
+      proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+  2: 0 12 abcd efghi jkl mnopqrst uvwx yz 0123456 789012345
