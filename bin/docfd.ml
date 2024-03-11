@@ -175,7 +175,7 @@ let search_result_count_per_doc_arg =
   in
   Arg.(
     value
-    & opt int Params.default_non_interactive_search_result_count
+    & opt int Params.default_non_interactive_search_result_count_per_document
     & info [ search_result_count_per_doc_arg_name ] ~doc ~docv:"N"
   )
 
