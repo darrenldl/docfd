@@ -30,11 +30,8 @@ release-static :
 
 .PHONY: tests
 tests :
-	OCAMLRUNPARAM=b dune exec tests/main.exe --no-buffer --force
-
-.PHONY: cram-tests
-cram-tests :
 	make
+	OCAMLRUNPARAM=b dune exec tests/main.exe --no-buffer --force
 	dune build @line-wrapping-tests
 
 .PHONY: profile
