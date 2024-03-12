@@ -842,20 +842,18 @@ let run
     ((fun () ->
         match !term_and_tty_fd with
         | None -> (
-            match init_document_src with
-            | Stdin _ -> (
-                let input =
-                  Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
-                in
-                let term = Notty_unix.Term.create ~input () in
-                term_and_tty_fd := Some (term, Some input);
-                term
-              )
-            | Files _ -> (
-                let term = Notty_unix.Term.create () in
-                term_and_tty_fd := Some (term, None);
-                term
-              )
+            if stdin_is_atty () then (
+              let term = Notty_unix.Term.create () in
+              term_and_tty_fd := Some (term, None);
+              term
+            ) else (
+              let input =
+                Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
+              in
+              let term = Notty_unix.Term.create ~input () in
+              term_and_tty_fd := Some (term, Some input);
+              term
+            )
           )
         | Some (term, _tty_fd) -> term
       ),
