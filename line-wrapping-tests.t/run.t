@@ -1,4 +1,4 @@
-Word breaking
+Word breaking:
   $ docfd long-words.txt --search "01 ab" --search-result-print-text-width 80
   long-words.txt
   1: 01234567890123456789012345678901234567890123456789012345678901234567890123456
@@ -368,7 +368,7 @@ Word breaking
       4
       5
 
-Line wrapping and word breaking
+Line wrapping and word breaking:
   $ docfd sentences.txt --search "lorem" --search-result-print-text-width 80
   sentences.txt
   1:     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod 

@@ -33,6 +33,7 @@ tests :
 	make
 	OCAMLRUNPARAM=b dune exec tests/main.exe --no-buffer --force
 	dune build @line-wrapping-tests
+	dune build @misc-behavior-tests
 
 .PHONY: demo-vhs
 demo-vhs :
