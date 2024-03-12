@@ -341,7 +341,7 @@ let make ~search_phrase ~found_phrase ~found_phrase_opening_closing_symbol_match
   if len = 0 then (
     invalid_arg "Search_result.make search_phrase is empty"
   ) else if len <> List.length found_phrase then (
-    invalid_arg "Length of found_phrase does not match length of search_phrase"
+    invalid_arg "length of found_phrase does not match length of search_phrase"
   ) else (
     let score = Score.f ~search_phrase ~found_phrase ~found_phrase_opening_closing_symbol_match_count in
     { score; search_phrase; found_phrase }
