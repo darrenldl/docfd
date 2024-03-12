@@ -680,6 +680,16 @@ let run
   let compute_document_src () =
     snd (compute_init_ui_mode_and_document_src ())
   in
+  let clean_up () =
+    match init_document_src with
+    | Stdin tmp_file -> (
+        try
+          Sys.remove tmp_file
+        with
+        | _ -> ()
+      )
+    | Files _ -> ()
+  in
   let init_ui_mode, init_document_src =
     compute_init_ui_mode_and_document_src ()
   in
@@ -760,6 +770,7 @@ let run
   Ui_base.Vars.init_ui_mode := init_ui_mode;
   let init_document_store = document_store_of_document_src init_document_src in
   if index_only then (
+    clean_up ();
     exit 0
   );
   if String.length search_exp > 0 then (
@@ -790,6 +801,7 @@ let run
         in
         print_search_result_images ~out ~document images;
       ) document_info_s;
+    clean_up ();
     exit 0
   );
   Lwd.set Ui_base.Vars.document_store init_document_store;
@@ -950,15 +962,7 @@ let run
   in
   loop ();
   close_term ();
-  (match init_document_src with
-   | Stdin tmp_file -> (
-       try
-         Sys.remove tmp_file
-       with
-       | _ -> ()
-     )
-   | Files _ -> ()
-  );
+  clean_up ();
   (match debug_log with
    | "-" -> ()
    | _ -> (
