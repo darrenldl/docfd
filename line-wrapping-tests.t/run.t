@@ -631,3 +631,310 @@ Line wrapping and word breaking
      jkl mnopqrst uvwx
       yz 0123456 
      789012345
+  $ docfd sentences.txt --search "laborum 0" --search-result-print-text-width 10
+  sentences.txt
+  1:     
+     Lorem 
+     ipsum 
+     dolor 
+     sit 
+     amet, 
+     consect
+     etur
+      
+     adipisc
+     ing
+      elit, 
+     sed do 
+     eiusmod
+      tempor
+      
+     incidid
+     unt
+      ut 
+     labore 
+     et 
+     dolore 
+     magna 
+     aliqua.
+      Ut 
+     enim ad
+      minim 
+     veniam,
+      quis 
+     nostrud
+      
+     exercit
+     ation
+      
+     ullamco
+      
+     laboris
+      nisi 
+     ut 
+     aliquip
+      ex ea 
+     commodo
+      
+     consequ
+     at
+     . Duis 
+     aute 
+     irure 
+     dolor 
+     in 
+     reprehe
+     nderit
+      in 
+     volupta
+     te
+      velit 
+     esse 
+     cillum 
+     dolore 
+     eu 
+     fugiat 
+     nulla 
+     pariatu
+     r
+     . 
+     Excepte
+     ur
+      sint 
+     occaeca
+     t
+      
+     cupidat
+     at
+      non 
+     proiden
+     t
+     , sunt 
+     in 
+     culpa 
+     qui 
+     officia
+      
+     deserun
+     t
+      mollit
+      anim 
+     id est 
+     laborum
+     .
+  2: 0 12 
+     abcd 
+     efghi 
+     jkl 
+     mnopqrs
+     t
+      uvwx 
+     yz 
+     0123456
+      
+     7890123
+     45
+  
+  1:     
+     Lorem 
+     ipsum 
+     dolor 
+     sit 
+     amet, 
+     consect
+     etur
+      
+     adipisc
+     ing
+      elit, 
+     sed do 
+     eiusmod
+      tempor
+      
+     incidid
+     unt
+      ut 
+     labore 
+     et 
+     dolore 
+     magna 
+     aliqua.
+      Ut 
+     enim ad
+      minim 
+     veniam,
+      quis 
+     nostrud
+      
+     exercit
+     ation
+      
+     ullamco
+      
+     laboris
+      nisi 
+     ut 
+     aliquip
+      ex ea 
+     commodo
+      
+     consequ
+     at
+     . Duis 
+     aute 
+     irure 
+     dolor 
+     in 
+     reprehe
+     nderit
+      in 
+     volupta
+     te
+      velit 
+     esse 
+     cillum 
+     dolore 
+     eu 
+     fugiat 
+     nulla 
+     pariatu
+     r
+     . 
+     Excepte
+     ur
+      sint 
+     occaeca
+     t
+      
+     cupidat
+     at
+      non 
+     proiden
+     t
+     , sunt 
+     in 
+     culpa 
+     qui 
+     officia
+      
+     deserun
+     t
+      mollit
+      anim 
+     id est 
+     laborum
+     .
+  2: 0 12 
+     abcd 
+     efghi 
+     jkl 
+     mnopqrs
+     t
+      uvwx 
+     yz 
+     0123456
+      
+     7890123
+     45
+  
+  1:     
+     Lorem 
+     ipsum 
+     dolor 
+     sit 
+     amet, 
+     consect
+     etur
+      
+     adipisc
+     ing
+      elit, 
+     sed do 
+     eiusmod
+      tempor
+      
+     incidid
+     unt
+      ut 
+     labore 
+     et 
+     dolore 
+     magna 
+     aliqua.
+      Ut 
+     enim ad
+      minim 
+     veniam,
+      quis 
+     nostrud
+      
+     exercit
+     ation
+      
+     ullamco
+      
+     laboris
+      nisi 
+     ut 
+     aliquip
+      ex ea 
+     commodo
+      
+     consequ
+     at
+     . Duis 
+     aute 
+     irure 
+     dolor 
+     in 
+     reprehe
+     nderit
+      in 
+     volupta
+     te
+      velit 
+     esse 
+     cillum 
+     dolore 
+     eu 
+     fugiat 
+     nulla 
+     pariatu
+     r
+     . 
+     Excepte
+     ur
+      sint 
+     occaeca
+     t
+      
+     cupidat
+     at
+      non 
+     proiden
+     t
+     , sunt 
+     in 
+     culpa 
+     qui 
+     officia
+      
+     deserun
+     t
+      mollit
+      anim 
+     id est 
+     laborum
+     .
+  2: 0 12 
+     abcd 
+     efghi 
+     jkl 
+     mnopqrs
+     t
+      uvwx 
+     yz 
+     0123456
+      
+     7890123
+     45
