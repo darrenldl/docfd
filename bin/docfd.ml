@@ -680,6 +680,9 @@ let run
   let compute_document_src () =
     snd (compute_init_ui_mode_and_document_src ())
   in
+  let init_ui_mode, init_document_src =
+    compute_init_ui_mode_and_document_src ()
+  in
   let clean_up () =
     match init_document_src with
     | Stdin tmp_file -> (
@@ -689,9 +692,6 @@ let run
         | _ -> ()
       )
     | Files _ -> ()
-  in
-  let init_ui_mode, init_document_src =
-    compute_init_ui_mode_and_document_src ()
   in
   do_if_debug (fun oc ->
       Printf.fprintf oc "Scanning completed\n"
