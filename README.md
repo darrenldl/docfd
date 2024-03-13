@@ -247,7 +247,6 @@ The default TUI is divided into four sections:
 - Bottom pane consists of:
     - Status bar
     - Key binding info
-    - File content requirement field
     - Search field
 
 #### Controls
@@ -292,9 +291,11 @@ is used.
 
 ![](screenshots/single-file-view0.png)
 
-In this view, the TUI is divided into only two sections:
-- Top is ranked search result list
-- Bottom is the search interface
+In this view, the TUI is divided into only three sections:
+- Top is content view
+- Middle is ranked search result list
+- Bottom pane is the same as the one displayed in multi-file view,
+  but with different key binding info
 
 #### Controls
 
