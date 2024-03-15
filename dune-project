@@ -17,7 +17,7 @@
  (name docfd)
  (synopsis "TUI multiline fuzzy document finder")
  (description "
-Think interactive grep for both text files and PDFs,
+Think interactive grep for text files, PDFs, DOCXs, etc,
 but word/token based instead of regex and line based,
 so you can search across lines easily.
 
