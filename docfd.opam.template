@@ -1,3 +1,16 @@
+build: [
+  ["dune" "subst"] {dev}
+  [
+    "dune"
+    "build"
+    "-p"
+    name
+    "-j"
+    jobs
+    "@install"
+    "@doc" {with-doc}
+  ]
+]
 pin-depends: [
   [ "nottui.0.3" "git+https://github.com/let-def/lwd.git#a337a778001e6c1dbaed7e758c9e05f300abd388" ]
 ]
