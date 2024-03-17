@@ -28,10 +28,22 @@ let render_mode_of_document (doc : Document.t)
   | `Text -> `Line_num_only
 
 module Search_exp_queue = struct
-  let queue : (Search_exp.t * Document_store.t Lwd.var) Eio.Stream.t =
+  type status = [
+    | `Idle
+    | `Searching
+  ]
+
+  let status : status Lwd.var = Lwd.var `Idle
+
+  let status_mailbox : status Eio.Stream.t = Eio.Stream.create 1
+
+  let ingress_queue : (Search_exp.t * Document_store.t Lwd.var) Eio.Stream.t =
     Eio.Stream.create 128
 
-  let get_newest () =
+  let egress_queue : (Document_store.t * Document_store.t Lwd.var) Eio.Stream.t =
+    Eio.Stream.create 1
+
+  let get_newest queue =
     let rec aux item =
       match Eio.Stream.take_nonblocking queue with
       | None -> (
@@ -43,20 +55,34 @@ module Search_exp_queue = struct
     in
     aux None
 
-  let fiber () =
+  let manager_fiber () =
+    Eio.Fiber.both
+      (fun () ->
+         while true do
+           Lwd.set status (Eio.Stream.take status_mailbox)
+         done)
+      (fun () ->
+         while true do
+           let (document_store, document_store_var) = get_newest egress_queue in
+           Lwd.set document_store_var document_store;
+           Lwd.set status `Idle;
+         done)
+
+  let search_fiber () =
     let rec aux () =
-      let (search_exp, document_store_var) = get_newest () in
+      let (search_exp, document_store_var) = get_newest ingress_queue in
+      Eio.Stream.add status_mailbox `Searching;
       let document_store =
         Lwd.peek document_store_var
         |> Document_store.update_search_exp search_exp
       in
-      Lwd.set document_store_var document_store;
+      Eio.Stream.add egress_queue (document_store, document_store_var);
       aux ()
     in
     aux ()
 
   let add (exp : Search_exp.t) (store : Document_store.t Lwd.var) =
-    Eio.Stream.add queue (exp, store)
+    Eio.Stream.add ingress_queue (exp, store)
 end
 
 module Vars = struct
@@ -307,19 +333,29 @@ module Key_binding_info = struct
 end
 
 module Search_bar = struct
-  let search_label ~padding ~(input_mode : input_mode) =
+  let search_label ~(input_mode : input_mode) =
     let attr =
       match input_mode with
       | Search -> Notty.A.(st bold)
       | _ -> Notty.A.empty
     in
-    let padding = String.make padding ' ' in
-    (Notty.I.string attr (Fmt.str "Search: %s" padding))
+    (Notty.I.string attr "Search")
+    |> Nottui.Ui.atom
+    |> Lwd.return
+
+  let search_status =
+    let$* status = Lwd.get Search_exp_queue.status in
+    (match status with
+     | `Idle -> (
+         Notty.I.strf "  OK: "
+       )
+     | `Searching -> (
+         Notty.I.strf " ...: "
+       ))
     |> Nottui.Ui.atom
     |> Lwd.return
 
   let main
-      ~padding
       ~input_mode
       ~(edit_field : (string * int) Lwd.var)
       ~focus_handle
@@ -327,7 +363,8 @@ module Search_bar = struct
     : Nottui.ui Lwd.t =
     Nottui_widgets.hbox
       [
-        search_label ~padding ~input_mode;
+        search_label ~input_mode;
+        search_status;
         Nottui_widgets.edit_field (Lwd.get edit_field)
           ~focus:focus_handle
           ~on_change:(fun (text, x) ->

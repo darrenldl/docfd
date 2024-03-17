@@ -960,10 +960,12 @@ let run
           )
       )
   in
-  Eio.Fiber.first
+  Eio.Fiber.any [
     (fun () ->
-       Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env) Ui_base.Search_exp_queue.fiber)
+       Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env) Ui_base.Search_exp_queue.search_fiber);
+    Ui_base.Search_exp_queue.manager_fiber;
     loop;
+  ];
   close_term ();
   clean_up ();
   (match debug_log with

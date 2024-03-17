@@ -353,7 +353,7 @@ module Bottom_pane = struct
       [
         status_bar ~document_info_s ~input_mode;
         Key_binding_info.main ~input_mode;
-        search_bar ~padding:0 ~input_mode;
+        search_bar ~input_mode;
       ]
 end
 
