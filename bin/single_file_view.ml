@@ -14,16 +14,13 @@ let reset_search_result_selected () =
 
 let update_search_phrase () =
   reset_search_result_selected ();
+  let s = fst @@ Lwd.peek Ui_base.Vars.Single_file.search_field in
   let search_exp =
     Search_exp.make
       ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
-      (fst @@ Lwd.peek Ui_base.Vars.Single_file.search_field)
+      s
   in
-  let document_store =
-    Lwd.peek Ui_base.Vars.Single_file.document_store
-    |> Document_store.update_search_exp search_exp
-  in
-  Lwd.set Ui_base.Vars.Single_file.document_store document_store
+  Ui_base.Search_exp_queue.add search_exp Ui_base.Vars.Single_file.document_store
 
 let reload_document (doc : Document.t) : unit =
   match Document.of_path ~env:(Ui_base.eio_env ()) (Document.path doc) with

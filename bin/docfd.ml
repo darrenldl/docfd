@@ -960,7 +960,10 @@ let run
           )
       )
   in
-  loop ();
+  Eio.Fiber.first
+    (fun () ->
+       Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env) Ui_base.Search_exp_queue.fiber)
+    loop;
   close_term ();
   clean_up ();
   (match debug_log with

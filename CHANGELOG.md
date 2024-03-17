@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.1.0
+
+- Made document search asynchronous to search field input, so UI remains
+  smooth even if search is slow
+
 ## 3.0.0
 
 - Fixed crash from search result snippet being bigger the content view pane

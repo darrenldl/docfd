@@ -27,6 +27,38 @@ let render_mode_of_document (doc : Document.t)
   | `Pandoc_supported_format -> `None
   | `Text -> `Line_num_only
 
+module Search_exp_queue = struct
+  let queue : (Search_exp.t * Document_store.t Lwd.var) Eio.Stream.t =
+    Eio.Stream.create 128
+
+  let get_newest () =
+    let rec aux item =
+      match Eio.Stream.take_nonblocking queue with
+      | None -> (
+          match item with
+          | None -> Eio.Stream.take queue
+          | Some x -> x
+        )
+      | Some x -> aux (Some x)
+    in
+    aux None
+
+  let fiber () =
+    let rec aux () =
+      let (search_exp, document_store_var) = get_newest () in
+      let document_store =
+        Lwd.peek document_store_var
+        |> Document_store.update_search_exp search_exp
+      in
+      Lwd.set document_store_var document_store;
+      aux ()
+    in
+    aux ()
+
+  let add (exp : Search_exp.t) (store : Document_store.t Lwd.var) =
+    Eio.Stream.add queue (exp, store)
+end
+
 module Vars = struct
   let quit = Lwd.var false
 
