@@ -8,12 +8,14 @@ type status = [
 
 let status : status Lwd.var = Lwd.var `Idle
 
-let status_mailbox : status Eio.Stream.t = Eio.Stream.create 1
+let internal_status_mailbox : status Eio.Stream.t = Eio.Stream.create 1
+
+let ui_status_mailbox : status Eio.Stream.t = Eio.Stream.create 1
 
 let ingress_queue : (string * Document_store.t Lwd.var) Eio.Stream.t =
-  Eio.Stream.create 128
+  Eio.Stream.create 100
 
-let egress_queue : (Document_store.t * Document_store.t Lwd.var) Eio.Stream.t =
+let egress_mailbox : (Document_store.t * Document_store.t Lwd.var) Eio.Stream.t =
   Eio.Stream.create 1
 
 let cancel_mailbox : unit Eio.Stream.t = Eio.Stream.create 1
@@ -34,13 +36,20 @@ let manager_fiber () =
   Eio.Fiber.both
     (fun () ->
        while true do
-         Lwd.set status (Eio.Stream.take status_mailbox)
+         Lwd.set status (Eio.Stream.take ui_status_mailbox)
        done)
     (fun () ->
        while true do
-         let (document_store, document_store_var) = Eio.Stream.take egress_queue in
-         Lwd.set document_store_var document_store;
-         Lwd.set status `Idle;
+         let status = Eio.Stream.take internal_status_mailbox in
+         match status with
+         | `Searching | `Parse_error -> (
+             Eio.Stream.add ui_status_mailbox status;
+           )
+         | `Idle -> (
+             let (document_store, document_store_var) = Eio.Stream.take egress_mailbox in
+             Lwd.set document_store_var document_store;
+             Eio.Stream.add ui_status_mailbox `Idle;
+           )
        done)
 
 let search_fiber () =
@@ -52,20 +61,21 @@ let search_fiber () =
          s
      with
      | None -> (
-         Eio.Stream.add status_mailbox `Parse_error
+         Eio.Stream.add internal_status_mailbox `Parse_error
        )
      | Some search_exp -> (
+         Eio.Stream.add internal_status_mailbox `Searching;
          Eio.Fiber.first
            (fun () ->
               Eio.Stream.take cancel_mailbox
            )
            (fun () ->
-              Eio.Stream.add status_mailbox `Searching;
               let document_store =
                 Lwd.peek document_store_var
                 |> Document_store.update_search_exp search_exp
               in
-              Eio.Stream.add egress_queue (document_store, document_store_var))
+              Eio.Stream.add internal_status_mailbox `Idle;
+              Eio.Stream.add egress_mailbox (document_store, document_store_var))
        )
     );
     aux ()
