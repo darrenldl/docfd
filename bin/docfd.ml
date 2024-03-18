@@ -815,17 +815,6 @@ let run
   );
   Ui_base.Vars.eio_env := Some env;
   Lwd.set Ui_base.Vars.ui_mode init_ui_mode;
-  (let start_with_search_len = String.length start_with_search in
-   match init_ui_mode with
-   | Ui_base.Ui_multi_file -> (
-       Lwd.set Multi_file_view.Vars.search_field (start_with_search, start_with_search_len);
-       Multi_file_view.update_search_phrase ();
-     )
-   | Ui_single_file -> (
-       Lwd.set Ui_base.Vars.Single_file.search_field (start_with_search, start_with_search_len);
-       Single_file_view.update_search_phrase ();
-     )
-  );
   let root : Nottui.ui Lwd.t =
     let$* (term_width, term_height) = Lwd.get Ui_base.Vars.term_width_height in
     if term_width <= 40 || term_height <= 20 then (
@@ -968,7 +957,19 @@ let run
     (fun () ->
        Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env) Search_manager.search_fiber);
     Search_manager.manager_fiber;
-    loop;
+    (fun () ->
+       let start_with_search_len = String.length start_with_search in
+       (match init_ui_mode with
+        | Ui_base.Ui_multi_file -> (
+            Lwd.set Multi_file_view.Vars.search_field (start_with_search, start_with_search_len);
+            Multi_file_view.update_search_phrase ();
+          )
+        | Ui_single_file -> (
+            Lwd.set Ui_base.Vars.Single_file.search_field (start_with_search, start_with_search_len);
+            Single_file_view.update_search_phrase ();
+          )
+       );
+       loop ());
   ];
   close_term ();
   clean_up ();

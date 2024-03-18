@@ -18,7 +18,9 @@ let ingress_queue : (string * Document_store.t Lwd.var) Eio.Stream.t =
 let egress_mailbox : (Document_store.t * Document_store.t Lwd.var) Eio.Stream.t =
   Eio.Stream.create 1
 
-let cancel_mailbox : unit Eio.Stream.t = Eio.Stream.create 1
+let cancel_req : unit Eio.Stream.t = Eio.Stream.create 0
+
+let cancel_ack : unit Eio.Stream.t = Eio.Stream.create 0
 
 let get_newest queue =
   let rec aux item =
@@ -54,33 +56,43 @@ let manager_fiber () =
 
 let search_fiber () =
   let rec aux () =
-    let (s, document_store_var) = get_newest ingress_queue in
-    (match
-       Search_exp.make
-         ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
-         s
-     with
-     | None -> (
-         Eio.Stream.add internal_status_mailbox `Parse_error
-       )
-     | Some search_exp -> (
-         Eio.Stream.add internal_status_mailbox `Searching;
-         Eio.Fiber.first
-           (fun () ->
-              Eio.Stream.take cancel_mailbox
-           )
-           (fun () ->
-              let document_store =
-                Lwd.peek document_store_var
-                |> Document_store.update_search_exp search_exp
-              in
-              Eio.Stream.add internal_status_mailbox `Idle;
-              Eio.Stream.add egress_mailbox (document_store, document_store_var))
-       )
+    let canceled =
+      Eio.Fiber.first
+        (fun () ->
+           Eio.Stream.take cancel_req;
+           true
+        )
+        (fun () ->
+           let (s, document_store_var) = get_newest ingress_queue in
+           (match
+              Search_exp.make
+                ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
+                s
+            with
+            | None -> (
+                Eio.Stream.add internal_status_mailbox `Parse_error
+              )
+            | Some search_exp -> (
+                Eio.Stream.add internal_status_mailbox `Searching;
+                let document_store =
+                  Lwd.peek document_store_var
+                  |> Document_store.update_search_exp search_exp
+                in
+                Eio.Stream.add internal_status_mailbox `Idle;
+                Eio.Stream.add egress_mailbox (document_store, document_store_var)
+              )
+           );
+           false
+        )
+    in
+    if canceled then (
+      Eio.Stream.add cancel_ack ()
     );
     aux ()
   in
   aux ()
 
 let submit_search_req (s : string) (store : Document_store.t Lwd.var) =
+  Eio.Stream.add cancel_req ();
+  Eio.Stream.take cancel_ack;
   Eio.Stream.add ingress_queue (s, store)
