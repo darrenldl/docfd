@@ -132,12 +132,16 @@ let flatten ~fuzzy_max_edit_distance (exp : exp) : Search_phrase.t list =
   |> List.sort_uniq Search_phrase.compare
 
 let make ~fuzzy_max_edit_distance s =
-  let exp =
+  if String.length s = 0 || String.for_all (fun c -> c = ' ') s then (
+    Some empty
+  ) else (
     match Angstrom.(parse_string ~consume:Consume.All) Parsers.p s with
-    | Ok exp -> exp
-    | Error _ -> `List []
-  in
-  { fuzzy_max_edit_distance;
-    exp;
-    flattened = flatten ~fuzzy_max_edit_distance exp;
-  }
+    | Ok exp -> (
+        Some
+          { fuzzy_max_edit_distance;
+            exp;
+            flattened = flatten ~fuzzy_max_edit_distance exp;
+          }
+      )
+    | Error _ -> None
+  )
