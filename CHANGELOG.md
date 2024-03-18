@@ -5,6 +5,14 @@
 - Made document search asynchronous to search field input, so UI remains
   smooth even if search is slow
 
+- Added status to search bar:
+
+    - `OK` means Docfd is idling
+    - `...` means Docfd is searching
+    - `ERR` means Docfd failed to parse search expression
+
+- Added search cancellation. Triggered by editing or clearing search field.
+
 ## 3.0.0
 
 - Fixed crash from search result snippet being bigger the content view pane
