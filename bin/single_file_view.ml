@@ -1,4 +1,3 @@
-open Docfd_lib
 open Lwd_infix
 
 module Vars = struct
@@ -15,12 +14,7 @@ let reset_search_result_selected () =
 let update_search_phrase () =
   reset_search_result_selected ();
   let s = fst @@ Lwd.peek Ui_base.Vars.Single_file.search_field in
-  let search_exp =
-    Search_exp.make
-      ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
-      s
-  in
-  Ui_base.Search_exp_queue.add search_exp Ui_base.Vars.Single_file.document_store
+  Search_manager.submit_search_req s Ui_base.Vars.Single_file.document_store
 
 let reload_document (doc : Document.t) : unit =
   match Document.of_path ~env:(Ui_base.eio_env ()) (Document.path doc) with

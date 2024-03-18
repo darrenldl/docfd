@@ -52,12 +52,7 @@ let reload_document_selected
 let update_search_phrase () =
   reset_document_selected ();
   let s = fst @@ Lwd.peek Vars.search_field in
-  let search_exp =
-    Search_exp.make
-      ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
-      s
-  in
-  Ui_base.Search_exp_queue.add search_exp Ui_base.Vars.document_store
+  Search_manager.submit_search_req s Ui_base.Vars.document_store
 
 module Top_pane = struct
   module Document_list = struct

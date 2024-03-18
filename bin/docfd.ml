@@ -97,8 +97,7 @@ let cache_dir_arg =
   let home_dir =
     match Sys.getenv_opt "HOME" with
     | None -> (
-        exit_with_error_msg
-          (Fmt.str "environment variable HOME is not set");
+        exit_with_error_msg "environment variable HOME is not set";
       )
     | Some home -> home
   in
@@ -774,35 +773,40 @@ let run
     exit 0
   );
   if String.length search_exp > 0 then (
-    let search_exp =
+    match
       Search_exp.make
         ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
         search_exp
-    in
-    let document_store =
-      Document_store.update_search_exp search_exp init_document_store
-    in
-    let document_info_s =
-      Document_store.usable_documents document_store
-    in
-    Array.iteri (fun i (document, search_results) ->
-        let out = `Stdout in
-        if i > 0 then (
-          print_newline_image ~out;
-        );
-        let images =
-          Content_and_search_result_render.search_results
-            ~render_mode:(Ui_base.render_mode_of_document document)
-            ~start:0
-            ~end_exc:search_result_count_per_doc
-            ~width:search_result_print_text_width
-            (Document.index document)
-            search_results
+    with
+    | None -> (
+        exit_with_error_msg "failed to parse search exp"
+      )
+    | Some search_exp -> (
+        let document_store =
+          Document_store.update_search_exp search_exp init_document_store
         in
-        print_search_result_images ~out ~document images;
-      ) document_info_s;
-    clean_up ();
-    exit 0
+        let document_info_s =
+          Document_store.usable_documents document_store
+        in
+        Array.iteri (fun i (document, search_results) ->
+            let out = `Stdout in
+            if i > 0 then (
+              print_newline_image ~out;
+            );
+            let images =
+              Content_and_search_result_render.search_results
+                ~render_mode:(Ui_base.render_mode_of_document document)
+                ~start:0
+                ~end_exc:search_result_count_per_doc
+                ~width:search_result_print_text_width
+                (Document.index document)
+                search_results
+            in
+            print_search_result_images ~out ~document images;
+          ) document_info_s;
+        clean_up ();
+        exit 0
+      )
   );
   Lwd.set Ui_base.Vars.document_store init_document_store;
   (match init_ui_mode with
@@ -962,8 +966,8 @@ let run
   in
   Eio.Fiber.any [
     (fun () ->
-       Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env) Ui_base.Search_exp_queue.search_fiber);
-    Ui_base.Search_exp_queue.manager_fiber;
+       Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env) Search_manager.search_fiber);
+    Search_manager.manager_fiber;
     loop;
   ];
   close_term ();

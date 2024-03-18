@@ -27,64 +27,6 @@ let render_mode_of_document (doc : Document.t)
   | `Pandoc_supported_format -> `None
   | `Text -> `Line_num_only
 
-module Search_exp_queue = struct
-  type status = [
-    | `Idle
-    | `Searching
-  ]
-
-  let status : status Lwd.var = Lwd.var `Idle
-
-  let status_mailbox : status Eio.Stream.t = Eio.Stream.create 1
-
-  let ingress_queue : (Search_exp.t * Document_store.t Lwd.var) Eio.Stream.t =
-    Eio.Stream.create 128
-
-  let egress_queue : (Document_store.t * Document_store.t Lwd.var) Eio.Stream.t =
-    Eio.Stream.create 1
-
-  let get_newest queue =
-    let rec aux item =
-      match Eio.Stream.take_nonblocking queue with
-      | None -> (
-          match item with
-          | None -> Eio.Stream.take queue
-          | Some x -> x
-        )
-      | Some x -> aux (Some x)
-    in
-    aux None
-
-  let manager_fiber () =
-    Eio.Fiber.both
-      (fun () ->
-         while true do
-           Lwd.set status (Eio.Stream.take status_mailbox)
-         done)
-      (fun () ->
-         while true do
-           let (document_store, document_store_var) = get_newest egress_queue in
-           Lwd.set document_store_var document_store;
-           Lwd.set status `Idle;
-         done)
-
-  let search_fiber () =
-    let rec aux () =
-      let (search_exp, document_store_var) = get_newest ingress_queue in
-      Eio.Stream.add status_mailbox `Searching;
-      let document_store =
-        Lwd.peek document_store_var
-        |> Document_store.update_search_exp search_exp
-      in
-      Eio.Stream.add egress_queue (document_store, document_store_var);
-      aux ()
-    in
-    aux ()
-
-  let add (exp : Search_exp.t) (store : Document_store.t Lwd.var) =
-    Eio.Stream.add ingress_queue (exp, store)
-end
-
 module Vars = struct
   let quit = Lwd.var false
 
@@ -344,14 +286,21 @@ module Search_bar = struct
     |> Lwd.return
 
   let search_status =
-    let$* status = Lwd.get Search_exp_queue.status in
+    let$* status = Lwd.get Search_manager.status in
     (match status with
      | `Idle -> (
-         Notty.I.strf "  OK: "
+         Notty.I.string Notty.A.(fg lightgreen)
+           "  OK"
        )
      | `Searching -> (
-         Notty.I.strf " ...: "
-       ))
+         Notty.I.string Notty.A.(fg lightyellow)
+           " ..."
+       )
+     | `Parse_error -> (
+         Notty.I.string Notty.A.(fg lightred)
+           " ERR"
+       )
+    )
     |> Nottui.Ui.atom
     |> Lwd.return
 
@@ -365,6 +314,7 @@ module Search_bar = struct
       [
         search_label ~input_mode;
         search_status;
+        Lwd.return (Nottui.Ui.atom (Notty.I.strf ": "));
         Nottui_widgets.edit_field (Lwd.get edit_field)
           ~focus:focus_handle
           ~on_change:(fun (text, x) ->
