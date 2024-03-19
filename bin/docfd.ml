@@ -2,271 +2,7 @@ open Cmdliner
 open Lwd_infix
 open Docfd_lib
 open Debug_utils
-
-let stdin_is_atty () =
-  Unix.isatty Unix.stdin
-
-let stdout_is_atty () =
-  Unix.isatty Unix.stdout
-
-let stderr_is_atty () =
-  Unix.isatty Unix.stderr
-
-let exit_with_error_msg (msg : string) =
-  Printf.printf "error: %s\n" msg;
-  exit 1
-
-let max_depth_arg_name = "max-depth"
-
-let max_depth_arg =
-  let doc =
-    "Scan up to N levels in the file tree."
-  in
-  Arg.(
-    value
-    & opt int Params.default_max_file_tree_depth
-    & info [ max_depth_arg_name ] ~doc ~docv:"N"
-  )
-
-let exts_arg_name = "exts"
-
-let exts_arg =
-  let doc =
-    "File extensions to use, comma separated. Leading dots of any extension are removed."
-  in
-  Arg.(
-    value
-    & opt string Params.default_recognized_exts
-    & info [ exts_arg_name ] ~doc ~docv:"EXTS"
-  )
-
-let add_exts_arg_name = "add-exts"
-
-let add_exts_arg =
-  let doc =
-    "Additional file extensions to use, comma separated."
-  in
-  Arg.(
-    value
-    & opt string ""
-    & info [ add_exts_arg_name ] ~doc ~docv:"EXTS"
-  )
-
-let max_fuzzy_edit_dist_arg_name = "max-fuzzy-edit-dist"
-
-let max_fuzzy_edit_dist_arg =
-  let doc =
-    "Maximum edit distance for fuzzy matches."
-  in
-  Arg.(
-    value
-    & opt int Params.default_max_fuzzy_edit_distance
-    & info [ max_fuzzy_edit_dist_arg_name ] ~doc ~docv:"N"
-  )
-
-let max_word_search_dist_arg_name = "max-word-search-dist"
-
-let max_word_search_dist_arg =
-  let doc =
-    "Maximum distance to look for the next matching word/symbol in search phrase.
-If two words are adjacent words, then they are 1 distance away from each other.
-Note that contiguous spaces count as one word/symbol as well."
-  in
-  Arg.(
-    value
-    & opt int Params.default_max_word_search_distance
-    & info [ max_word_search_dist_arg_name ] ~doc ~docv:"N"
-  )
-
-let index_chunk_word_count_arg_name = "index-chunk-word-count"
-
-let index_chunk_word_count_arg =
-  let doc =
-    "Number of words to send as a task unit to the thread pool for indexing."
-  in
-  Arg.(
-    value
-    & opt int Params.default_index_chunk_word_count
-    & info [ index_chunk_word_count_arg_name ] ~doc ~docv:"N"
-  )
-
-let cache_dir_arg =
-  let doc =
-    "Index cache directory."
-  in
-  let home_dir =
-    match Sys.getenv_opt "HOME" with
-    | None -> (
-        exit_with_error_msg "environment variable HOME is not set";
-      )
-    | Some home -> home
-  in
-  let cache_home =
-    match Sys.getenv_opt "XDG_CACHE_HOME" with
-    | None -> Filename.concat home_dir ".cache"
-    | Some x -> x
-  in
-  Arg.(
-    value
-    & opt string (Filename.concat cache_home "docfd")
-    & info [ "cache-dir" ] ~doc ~docv:"DIR"
-  )
-
-let cache_size_arg_name = "cache-size"
-
-let cache_size_arg =
-  let doc =
-    "Maximum number of indices to cache. One index corresponds to one file."
-  in
-  Arg.(
-    value
-    & opt int Params.default_cache_size
-    & info [ cache_size_arg_name ] ~doc ~docv:"N"
-  )
-
-let no_cache_arg =
-  let doc =
-    Fmt.str "Disable caching."
-  in
-  Arg.(value & flag & info [ "no-cache" ] ~doc)
-
-let index_only_arg =
-  let doc =
-    Fmt.str "Exit after indexing."
-  in
-  Arg.(value & flag & info [ "index-only" ] ~doc)
-
-let debug_log_arg =
-  let doc =
-    Fmt.str "Specify debug log file to use and enable debug mode where additional info is displayed on UI. If FILE is -, then debug log is printed to stderr instead. Otherwise FILE is opened in append mode for log writing."
-  in
-  Arg.(
-    value
-    & opt string ""
-    & info [ "debug-log" ] ~doc ~docv:"FILE"
-  )
-
-let start_with_search_arg =
-  let doc =
-    Fmt.str "Start interactive mode with search expression EXP."
-  in
-  Arg.(
-    value
-    & opt string ""
-    & info [ "start-with-search" ] ~doc ~docv:"EXP"
-  )
-
-let search_arg =
-  let doc =
-    Fmt.str "Search with expression EXP in non-interactive mode."
-  in
-  Arg.(
-    value
-    & opt string ""
-    & info [ "search" ] ~doc ~docv:"EXP"
-  )
-
-let search_result_count_per_doc_arg_name = "search-result-count-per-doc"
-
-let search_result_count_per_doc_arg =
-  let doc =
-    "Number of search results per document to show in non-interactive search mode."
-  in
-  Arg.(
-    value
-    & opt int Params.default_non_interactive_search_result_count_per_document
-    & info [ search_result_count_per_doc_arg_name ] ~doc ~docv:"N"
-  )
-
-let search_result_print_text_width_arg_name = "search-result-print-text-width"
-
-let search_result_print_text_width_arg =
-  let doc =
-    "Text width to use when printing search results."
-  in
-  Arg.(
-    value
-    & opt int Params.default_search_result_print_text_width
-    & info [ search_result_print_text_width_arg_name ] ~doc ~docv:"N"
-  )
-
-let paths_from_arg =
-  let doc =
-    Fmt.str "Read list of paths from FILE
-and add to the final list of paths to be scanned."
-  in
-  Arg.(
-    value
-    & opt string ""
-    & info [ "paths-from" ] ~doc ~docv:"FILE"
-  )
-
-let list_files_recursive (dirs : string list) : string list =
-  let l = ref [] in
-  let add x =
-    l := x :: !l
-  in
-  let rec aux depth path =
-    if depth <= !Params.max_file_tree_depth then (
-      match Sys.is_directory path with
-      | is_dir -> (
-          if is_dir then (
-            let next_choices =
-              try
-                Sys.readdir path
-              with
-              | _ -> [||]
-            in
-            Array.iter (fun f ->
-                aux (depth + 1) (Filename.concat path f)
-              )
-              next_choices
-          ) else (
-            let ext = Misc_utils.extension_of_file path in
-            (* We skip file extension checks for top-level user specified files. *)
-            if depth = 0 || List.mem ext !Params.recognized_exts then (
-              add path
-            )
-          )
-        )
-      | exception _ -> ()
-    ) else ()
-  in
-  List.iter (fun x -> aux 0 x) dirs;
-  List.sort_uniq String.compare !l
-
-let mkdir_recursive (dir : string) : unit =
-  let rec aux acc parts =
-    match parts with
-    | [] -> ()
-    | "" :: xs -> (
-        aux Filename.dir_sep xs
-      )
-    | x :: xs -> (
-        let acc = Filename.concat acc x in
-        match Sys.is_directory acc with
-        | true -> aux acc xs
-        | false -> (
-            exit_with_error_msg
-              (Fmt.str "%s is not a directory" (Filename.quote acc))
-          )
-        | exception (Sys_error _) -> (
-            do_if_debug (fun oc ->
-                Printf.fprintf oc "Creating directory: %s\n" (Filename.quote acc)
-              );
-            (try
-               Sys.mkdir acc 0o755
-             with
-             | _ -> (
-                 exit_with_error_msg
-                   (Fmt.str "failed to create directory: %s" (Filename.quote acc))
-               )
-            );
-            aux acc xs
-          )
-      )
-  in
-  aux "" (CCString.split ~by:Filename.dir_sep dir)
+open Misc_utils
 
 module Open_path = struct
   let xdg_open_cmd ~path =
@@ -484,31 +220,31 @@ let run
   =
   if max_depth < 1 then (
     exit_with_error_msg
-      (Fmt.str "invalid %s: cannot be < 1" max_depth_arg_name)
+      (Fmt.str "invalid %s: cannot be < 1" Args.max_depth_arg_name)
   );
   if max_fuzzy_edit_dist < 0 then (
     exit_with_error_msg
-      (Fmt.str "invalid %s: cannot be < 0" max_fuzzy_edit_dist_arg_name)
+      (Fmt.str "invalid %s: cannot be < 0" Args.max_fuzzy_edit_dist_arg_name)
   );
   if max_word_search_dist < 1 then (
     exit_with_error_msg
-      (Fmt.str "invalid %s: cannot be < 1" max_word_search_dist_arg_name)
+      (Fmt.str "invalid %s: cannot be < 1" Args.max_word_search_dist_arg_name)
   );
   if index_chunk_word_count < 1 then (
     exit_with_error_msg
-      (Fmt.str "invalid %s: cannot be < 1" index_chunk_word_count_arg_name)
+      (Fmt.str "invalid %s: cannot be < 1" Args.index_chunk_word_count_arg_name)
   );
   if cache_size < 1 then (
     exit_with_error_msg
-      (Fmt.str "invalid %s: cannot be < 1" cache_size_arg_name)
+      (Fmt.str "invalid %s: cannot be < 1" Args.cache_size_arg_name)
   );
   if search_result_count_per_doc < 1 then (
     exit_with_error_msg
-      (Fmt.str "invalid %s: cannot be < 1" search_result_count_per_doc_arg_name)
+      (Fmt.str "invalid %s: cannot be < 1" Args.search_result_count_per_doc_arg_name)
   );
   if search_result_print_text_width < 1 then (
     exit_with_error_msg
-      (Fmt.str "invalid %s: cannot be < 1" search_result_print_text_width_arg_name)
+      (Fmt.str "invalid %s: cannot be < 1" Args.search_result_print_text_width_arg_name)
   );
   Params.debug_output := (match debug_log with
       | "" -> None
@@ -997,10 +733,12 @@ unless --paths-from is used."
   Arg.(value & pos_all string [] & info [] ~doc ~docv:"PATH")
 
 let cmd ~env =
+let open Term in
+let open Args in
   let doc = "TUI multiline fuzzy document finder" in
   let version = Version_string.s in
   Cmd.v (Cmd.info "docfd" ~version ~doc)
-    Term.(const (run ~env)
+    (const (run ~env)
           $ debug_log_arg
           $ max_depth_arg
           $ max_fuzzy_edit_dist_arg
