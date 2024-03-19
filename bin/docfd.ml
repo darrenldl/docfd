@@ -4,41 +4,6 @@ open Docfd_lib
 open Debug_utils
 open Misc_utils
 
-type print_output = [ `Stdout | `Stderr ]
-
-let out_channel_of_print_output (out : print_output) : out_channel =
-  match out with
-  | `Stdout -> stdout
-  | `Stderr -> stderr
-
-let print_output_is_atty (out : print_output) =
-  match out with
-  | `Stdout -> stdout_is_atty ()
-  | `Stderr -> stderr_is_atty ()
-
-let print_newline_image ~(out : print_output) =
-  Notty_unix.eol (Notty.I.void 0 1)
-  |> Notty_unix.output_image ~fd:(out_channel_of_print_output out)
-
-let print_search_result_images ~(out : print_output) ~document (images : Notty.image list) =
-  let path = Document.path document in
-  let oc = out_channel_of_print_output out in
-  if print_output_is_atty out then (
-    let formatter = Format.formatter_of_out_channel oc in
-    Ocolor_format.prettify_formatter formatter;
-    Fmt.pf formatter "@[<h>@{<magenta>%s@}@]@." path;
-  ) else (
-    Printf.fprintf oc "%s\n" path;
-  );
-  let images = Array.of_list images in
-  Array.iteri (fun i img ->
-      if i > 0 then (
-        print_newline_image ~out
-      );
-      Notty_unix.eol img
-      |> Notty_unix.output_image ~fd:oc;
-    ) images
-
 let run
     ~(env : Eio_unix.Stdenv.base)
     (debug_log : string)
@@ -348,7 +313,7 @@ let run
         Array.iteri (fun i (document, search_results) ->
             let out = `Stdout in
             if i > 0 then (
-              print_newline_image ~out;
+              Search_result_print.newline_image ~out;
             );
             let images =
               Content_and_search_result_render.search_results
@@ -359,7 +324,7 @@ let run
                 (Document.index document)
                 search_results
             in
-            print_search_result_images ~out ~document images;
+            Search_result_print.search_result_images ~out ~document images;
           ) document_info_s;
         clean_up ();
         exit 0
@@ -463,17 +428,17 @@ let run
             let old_stats = Unix.stat path in
             (match Misc_utils.format_of_file path with
              | `PDF -> (
-                 Open_path.pdf
+                 Path_open.pdf
                    index
                    ~path
                    ~search_result
                )
              | `Pandoc_supported_format -> (
-                 Open_path.pandoc_supported_format ~path
+                 Path_open.pandoc_supported_format ~path
                )
              | `Text -> (
                  close_term ();
-                 Open_path.text
+                 Path_open.text
                    index
                    init_document_src
                    ~editor:!Params.text_editor
@@ -506,7 +471,7 @@ let run
                   ]
                 )
             in
-            print_search_result_images ~out:`Stderr ~document images;
+            Search_result_print.search_result_images ~out:`Stderr ~document images;
           )
       )
   in
