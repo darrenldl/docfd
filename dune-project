@@ -52,7 +52,6 @@ Features:
    ocolor
    (cmdliner (>= "1.1.0"))
    (eio (>= "0.14"))
-   (domainslib (>= "0.5.0"))
    digestif
    (yojson (>= "2.0.2"))
    eio_main
