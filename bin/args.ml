@@ -187,13 +187,13 @@ and add to the final list of paths to be scanned."
   )
 
 let check
-~max_depth
-~max_fuzzy_edit_dist
-~max_word_search_dist
-~index_chunk_word_count
-~cache_size
-~search_result_count_per_doc
-~search_result_print_text_width =
+    ~max_depth
+    ~max_fuzzy_edit_dist
+    ~max_word_search_dist
+    ~index_chunk_word_count
+    ~cache_size
+    ~search_result_count_per_doc
+    ~search_result_print_text_width =
   if max_depth < 1 then (
     exit_with_error_msg
       (Fmt.str "invalid %s: cannot be < 1" max_depth_arg_name)

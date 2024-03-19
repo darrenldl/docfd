@@ -24,14 +24,14 @@ let run
     (paths_from : string)
     (paths : string list)
   =
-    Args.check
-~max_depth
-~max_fuzzy_edit_dist
-~max_word_search_dist
-~index_chunk_word_count
-~cache_size
-~search_result_count_per_doc
-~search_result_print_text_width;
+  Args.check
+    ~max_depth
+    ~max_fuzzy_edit_dist
+    ~max_word_search_dist
+    ~index_chunk_word_count
+    ~cache_size
+    ~search_result_count_per_doc
+    ~search_result_print_text_width;
   Params.debug_output := (match debug_log with
       | "" -> None
       | "-" -> Some stderr
@@ -519,29 +519,29 @@ unless --paths-from is used."
   Arg.(value & pos_all string [] & info [] ~doc ~docv:"PATH")
 
 let cmd ~env =
-let open Term in
-let open Args in
+  let open Term in
+  let open Args in
   let doc = "TUI multiline fuzzy document finder" in
   let version = Version_string.s in
   Cmd.v (Cmd.info "docfd" ~version ~doc)
     (const (run ~env)
-          $ debug_log_arg
-          $ max_depth_arg
-          $ max_fuzzy_edit_dist_arg
-          $ max_word_search_dist_arg
-          $ index_chunk_word_count_arg
-          $ exts_arg
-          $ add_exts_arg
-          $ cache_dir_arg
-          $ cache_size_arg
-          $ no_cache_arg
-          $ index_only_arg
-          $ start_with_search_arg
-          $ search_arg
-          $ search_result_count_per_doc_arg
-          $ search_result_print_text_width_arg
-          $ paths_from_arg
-          $ paths_arg)
+     $ debug_log_arg
+     $ max_depth_arg
+     $ max_fuzzy_edit_dist_arg
+     $ max_word_search_dist_arg
+     $ index_chunk_word_count_arg
+     $ exts_arg
+     $ add_exts_arg
+     $ cache_dir_arg
+     $ cache_size_arg
+     $ no_cache_arg
+     $ index_only_arg
+     $ start_with_search_arg
+     $ search_arg
+     $ search_result_count_per_doc_arg
+     $ search_result_print_text_width_arg
+     $ paths_from_arg
+     $ paths_arg)
 
 let () = Eio_main.run (fun env ->
     exit (Cmd.eval (cmd ~env))
