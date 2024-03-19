@@ -4,40 +4,40 @@ open Docfd_lib
 open Debug_utils
 open Misc_utils
 
-  let document_store_of_document_src ~env document_src =
-    let all_documents =
-      match document_src with
-      | Ui_base.Stdin path -> (
-          match Document.of_path ~env path with
-          | Ok x -> [ x ]
-          | Error msg ->  (
-              exit_with_error_msg msg
-            )
-        )
-      | Files files -> (
-          Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size (fun path ->
-              do_if_debug (fun oc ->
-                  Printf.fprintf oc "Loading document: %s\n" (Filename.quote path);
-                );
-              match Document.of_path ~env path with
-              | Ok x -> (
-                  do_if_debug (fun oc ->
-                      Printf.fprintf oc "Document %s loaded successfully\n" (Filename.quote path);
-                    );
-                  Some x
-                )
-              | Error msg -> (
-                  do_if_debug (fun oc ->
-                      Printf.fprintf oc "%s\n" msg
-                    );
-                  None
-                )
-            ) files
-        )
-    in
-    all_documents
-    |> List.to_seq
-    |> Document_store.of_seq
+let document_store_of_document_src ~env document_src =
+  let all_documents =
+    match document_src with
+    | Ui_base.Stdin path -> (
+        match Document.of_path ~env path with
+        | Ok x -> [ x ]
+        | Error msg ->  (
+            exit_with_error_msg msg
+          )
+      )
+    | Files files -> (
+        Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size (fun path ->
+            do_if_debug (fun oc ->
+                Printf.fprintf oc "Loading document: %s\n" (Filename.quote path);
+              );
+            match Document.of_path ~env path with
+            | Ok x -> (
+                do_if_debug (fun oc ->
+                    Printf.fprintf oc "Document %s loaded successfully\n" (Filename.quote path);
+                  );
+                Some x
+              )
+            | Error msg -> (
+                do_if_debug (fun oc ->
+                    Printf.fprintf oc "%s\n" msg
+                  );
+                None
+              )
+          ) files
+      )
+  in
+  all_documents
+  |> List.to_seq
+  |> Document_store.of_seq
 
 let run
     ~(env : Eio_unix.Stdenv.base)
