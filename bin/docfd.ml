@@ -294,7 +294,8 @@ let run
     clean_up ();
     exit 0
   );
-  if String.length search_exp > 0 then (
+  let non_interactive_mode = String.length search_exp > 0 in
+  if non_interactive_mode then (
     match
       Search_exp.make
         ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
