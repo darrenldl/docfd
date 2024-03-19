@@ -185,3 +185,40 @@ and add to the final list of paths to be scanned."
     & opt string ""
     & info [ "paths-from" ] ~doc ~docv:"FILE"
   )
+
+let check
+~max_depth
+~max_fuzzy_edit_dist
+~max_word_search_dist
+~index_chunk_word_count
+~cache_size
+~search_result_count_per_doc
+~search_result_print_text_width =
+  if max_depth < 1 then (
+    exit_with_error_msg
+      (Fmt.str "invalid %s: cannot be < 1" max_depth_arg_name)
+  );
+  if max_fuzzy_edit_dist < 0 then (
+    exit_with_error_msg
+      (Fmt.str "invalid %s: cannot be < 0" max_fuzzy_edit_dist_arg_name)
+  );
+  if max_word_search_dist < 1 then (
+    exit_with_error_msg
+      (Fmt.str "invalid %s: cannot be < 1" max_word_search_dist_arg_name)
+  );
+  if index_chunk_word_count < 1 then (
+    exit_with_error_msg
+      (Fmt.str "invalid %s: cannot be < 1" index_chunk_word_count_arg_name)
+  );
+  if cache_size < 1 then (
+    exit_with_error_msg
+      (Fmt.str "invalid %s: cannot be < 1" cache_size_arg_name)
+  );
+  if search_result_count_per_doc < 1 then (
+    exit_with_error_msg
+      (Fmt.str "invalid %s: cannot be < 1" search_result_count_per_doc_arg_name)
+  );
+  if search_result_print_text_width < 1 then (
+    exit_with_error_msg
+      (Fmt.str "invalid %s: cannot be < 1" search_result_print_text_width_arg_name)
+  )
