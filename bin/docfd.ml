@@ -4,11 +4,11 @@ open Docfd_lib
 open Debug_utils
 open Misc_utils
 
-let document_store_of_document_src ~env document_src =
-  let all_documents =
+let document_store_of_document_src ~env pool document_src =
+  let all_documents : Document.t list =
     match document_src with
     | Ui_base.Stdin path -> (
-        match Document.of_path ~env path with
+        match Document.of_path ~env pool path with
         | Ok x -> [ x ]
         | Error msg ->  (
             exit_with_error_msg msg
@@ -19,7 +19,7 @@ let document_store_of_document_src ~env document_src =
             do_if_debug (fun oc ->
                 Printf.fprintf oc "Loading document: %s\n" (Filename.quote path);
               );
-            match Document.of_path ~env path with
+            match Document.of_path ~env pool path with
             | Ok x -> (
                 do_if_debug (fun oc ->
                     Printf.fprintf oc "Document %s loaded successfully\n" (Filename.quote path);
@@ -37,10 +37,11 @@ let document_store_of_document_src ~env document_src =
   in
   all_documents
   |> List.to_seq
-  |> Document_store.of_seq
+  |> Document_store.of_seq pool
 
 let run
     ~(env : Eio_unix.Stdenv.base)
+    ~sw
     (debug_log : string)
     (max_depth : int)
     (max_fuzzy_edit_dist : int)
@@ -197,6 +198,8 @@ let run
         selection
       )
   in
+  let pool = Task_pool.make ~sw (Eio.Stdenv.domain_mgr env) in
+  Ui_base.Vars.pool := Some pool;
   do_if_debug (fun oc ->
       Printf.fprintf oc "Scanning for documents\n"
     );
@@ -289,7 +292,7 @@ let run
      )
   );
   Ui_base.Vars.init_ui_mode := init_ui_mode;
-  let init_document_store = document_store_of_document_src ~env init_document_src in
+  let init_document_store = document_store_of_document_src ~env pool init_document_src in
   if index_only then (
     clean_up ();
     exit 0
@@ -306,7 +309,7 @@ let run
       )
     | Some search_exp -> (
         let document_store =
-          Document_store.update_search_exp search_exp init_document_store
+          Document_store.update_search_exp pool search_exp init_document_store
         in
         let document_info_s =
           Document_store.usable_documents document_store
@@ -417,8 +420,8 @@ let run
             let old_document_store = Lwd.peek Ui_base.Vars.document_store in
             let search_exp = Document_store.search_exp old_document_store in
             let document_store =
-              document_store_of_document_src ~env document_src
-              |> Document_store.update_search_exp search_exp
+              document_store_of_document_src ~env pool document_src
+              |> Document_store.update_search_exp pool search_exp
             in
             Lwd.set Ui_base.Vars.document_store document_store;
             loop ()
@@ -478,7 +481,8 @@ let run
   in
   Eio.Fiber.any [
     (fun () ->
-       Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env) Search_manager.search_fiber);
+       Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env)
+       (fun () -> Search_manager.search_fiber pool));
     Search_manager.manager_fiber;
     (fun () ->
        let start_with_search_len = String.length start_with_search in
@@ -507,13 +511,13 @@ let run
      )
   )
 
-let cmd ~env =
+let cmd ~env ~sw =
   let open Term in
   let open Args in
   let doc = "TUI multiline fuzzy document finder" in
   let version = Version_string.s in
   Cmd.v (Cmd.info "docfd" ~version ~doc)
-    (const (run ~env)
+    (const (run ~env ~sw)
      $ debug_log_arg
      $ max_depth_arg
      $ max_fuzzy_edit_dist_arg
@@ -533,5 +537,6 @@ let cmd ~env =
      $ paths_arg)
 
 let () = Eio_main.run (fun env ->
-    exit (Cmd.eval (cmd ~env))
-  )
+  Eio.Switch.run (fun sw ->
+    exit (Cmd.eval (cmd ~env ~sw))
+  ))

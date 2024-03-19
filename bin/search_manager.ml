@@ -54,7 +54,7 @@ let manager_fiber () =
            )
        done)
 
-let search_fiber () =
+let search_fiber pool =
   let rec aux () =
     let canceled =
       Eio.Fiber.first
@@ -76,7 +76,7 @@ let search_fiber () =
                 Eio.Stream.add internal_status_mailbox `Searching;
                 let document_store =
                   Lwd.peek document_store_var
-                  |> Document_store.update_search_exp search_exp
+                  |> Document_store.update_search_exp pool search_exp
                 in
                 Eio.Stream.add internal_status_mailbox `Idle;
                 Eio.Stream.add egress_mailbox (document_store, document_store_var)

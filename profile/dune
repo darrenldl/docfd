@@ -24,7 +24,6 @@
             oseq
             eio
             eio_main
-            domainslib
             digestif.ocaml
             digestif
  )

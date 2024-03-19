@@ -28,11 +28,11 @@ type work_stage =
   | Title
   | Content
 
-let parse_lines ~path (s : string Seq.t) : t =
+let parse_lines pool ~path (s : string Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
     | Content -> (
-        let index = Index.of_lines s in
+        let index = Index.of_lines pool s in
         let empty = make ~path in
         {
           empty with
@@ -50,11 +50,11 @@ let parse_lines ~path (s : string Seq.t) : t =
   in
   aux Title None s
 
-let parse_pages ~path (s : string list Seq.t) : t =
+let parse_pages pool ~path (s : string list Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
     | Content -> (
-        let index = Index.of_pages s in
+        let index = Index.of_pages pool s in
         let empty = make ~path in
         {
           empty with
@@ -147,24 +147,24 @@ let find_index ~env ~hash : Index.t option =
     )
 
 module Of_path = struct
-  let text ~env path : (t, string) result =
+  let text ~env pool path : (t, string) result =
     let fs = Eio.Stdenv.fs env in
     try
       Eio.Path.(with_lines (fs / path))
         (fun lines ->
-           Ok (parse_lines ~path lines)
+           Ok (parse_lines pool ~path lines)
         )
     with
     | _ -> Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
 
-  let pdf ~env path : (t, string) result =
+  let pdf ~env pool path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
     let rec aux acc page_num =
       let page_num_string = Int.to_string page_num in
       let cmd = [ "pdftotext"; "-f"; page_num_string; "-l"; page_num_string; path; "-" ] in
       match Proc_utils.run_return_stdout ~proc_mgr cmd with
       | None -> (
-          parse_pages ~path (acc |> List.rev |> List.to_seq)
+          parse_pages pool ~path (acc |> List.rev |> List.to_seq)
         )
       | Some page -> (
           aux (page :: acc) (page_num + 1)
@@ -175,7 +175,7 @@ module Of_path = struct
     with
     | _ -> Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
 
-  let pandoc_supported_format ~env path : (t, string) result =
+  let pandoc_supported_format ~env pool path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
     let from_format = Misc_utils.extension_of_file path
                       |> String_utils.remove_leading_dots
@@ -200,14 +200,14 @@ module Of_path = struct
     | Some lines -> (
         try
           List.to_seq lines
-          |> parse_lines ~path
+          |> parse_lines pool ~path
           |> Result.ok
         with
         | _ -> Error error_msg
       )
 end
 
-let of_path ~(env : Eio_unix.Stdenv.base) path : (t, string) result =
+let of_path ~(env : Eio_unix.Stdenv.base) pool path : (t, string) result =
   let* hash = BLAKE2B.hash_of_file ~env ~path in
   match find_index ~env ~hash with
   | Some index -> (
@@ -223,13 +223,13 @@ let of_path ~(env : Eio_unix.Stdenv.base) path : (t, string) result =
       let* t =
         match Misc_utils.format_of_file path with
         | `PDF -> (
-            Of_path.pdf ~env path
+            Of_path.pdf ~env pool path
           )
         | `Pandoc_supported_format -> (
-            Of_path.pandoc_supported_format ~env path
+            Of_path.pandoc_supported_format ~env pool path
           )
         | `Text -> (
-            Of_path.text ~env path
+            Of_path.text ~env pool path
           )
       in
       let+ () = save_index ~env ~hash t.index in

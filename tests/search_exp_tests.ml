@@ -8,7 +8,7 @@ module Alco = struct
       "true"
       true
       (Search_exp.is_empty
-         (Search_exp.make ~fuzzy_max_edit_distance s))
+         (Search_exp.make ~fuzzy_max_edit_distance s |> Option.get))
 
   let test_exp (s : string) (l : string list) =
     let fuzzy_max_edit_distance = 0 in
@@ -17,6 +17,7 @@ module Alco = struct
       (List.map (Search_phrase.make ~fuzzy_max_edit_distance) l
        |> List.sort Search_phrase.compare)
       (Search_exp.make ~fuzzy_max_edit_distance s
+      |> Option.get
        |> Search_exp.flattened
        |> List.sort Search_phrase.compare
       )

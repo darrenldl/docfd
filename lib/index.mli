@@ -24,9 +24,9 @@ type t
 
 val make : unit -> t
 
-val of_lines : string Seq.t -> t
+val of_lines : Task_pool.t -> string Seq.t -> t
 
-val of_pages : string list Seq.t -> t
+val of_pages : Task_pool.t -> string list Seq.t -> t
 
 val word_ci_of_pos : int -> t -> string
 
@@ -46,7 +46,7 @@ val words_of_page_num : int -> t -> string Seq.t
 
 val line_count_of_page_num : int -> t -> int
 
-val search : Search_exp.t -> t -> Search_result.t array
+val search : Task_pool.t -> Search_exp.t -> t -> Search_result.t array
 
 val global_line_count : t -> int
 

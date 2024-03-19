@@ -44,7 +44,7 @@ let sanitize_string s =
   in
   aux 0
 
-let list_and_length_of_seq (s : 'a Seq.t) : int * 'a list =
+let length_and_list_of_seq (s : 'a Seq.t) : int * 'a list =
   let len, acc =
     Seq.fold_left (fun (len, acc) x ->
         (len + 1, x :: acc)

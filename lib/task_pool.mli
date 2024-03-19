@@ -1,9 +1,13 @@
+type t
+
 val size : int
 
-val run : (unit -> 'a) -> 'a
+val make : sw:Eio.Switch.t -> _ Eio.Domain_manager.t -> t
 
-val map_list : ('a -> 'b) -> 'a list -> 'b list
+val run : t -> (unit -> 'a) -> 'a
 
-val filter_list : ('a -> bool) -> 'a list -> 'a list
+val map_list : t -> ('a -> 'b) -> 'a list -> 'b list
 
-val filter_map_list : ('a -> 'b option) -> 'a list -> 'b list
+val filter_list : t -> ('a -> bool) -> 'a list -> 'a list
+
+val filter_map_list : t -> ('a -> 'b option) -> 'a list -> 'b list

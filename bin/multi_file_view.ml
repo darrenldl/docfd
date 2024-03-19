@@ -29,12 +29,13 @@ let set_search_result_selected ~choice_count n =
   Lwd.set Vars.index_of_search_result_selected n
 
 let reload_document (doc : Document.t) =
-  match Document.of_path ~env:(Ui_base.eio_env ()) (Document.path doc) with
+  let pool = Ui_base.task_pool () in
+  match Document.of_path ~env:(Ui_base.eio_env ()) pool (Document.path doc) with
   | Ok doc -> (
       reset_document_selected ();
       let document_store =
         Lwd.peek Ui_base.Vars.document_store
-        |> Document_store.add_document doc
+        |> Document_store.add_document pool doc
       in
       Lwd.set Ui_base.Vars.document_store document_store;
     )

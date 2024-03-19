@@ -30,6 +30,8 @@ let render_mode_of_document (doc : Document.t)
 module Vars = struct
   let quit = Lwd.var false
 
+  let pool : Task_pool.t option ref = ref None
+
   let action : top_level_action option ref = ref None
 
   let eio_env : Eio_unix.Stdenv.base option ref = ref None
@@ -57,6 +59,9 @@ module Vars = struct
     let document_store : Document_store.t Lwd.var = Lwd.var Document_store.empty
   end
 end
+
+    let task_pool () =
+      Option.get !Vars.pool
 
 let eio_env () =
   Option.get !Vars.eio_env

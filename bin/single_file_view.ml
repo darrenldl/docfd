@@ -17,17 +17,18 @@ let update_search_phrase () =
   Search_manager.submit_search_req s Ui_base.Vars.Single_file.document_store
 
 let reload_document (doc : Document.t) : unit =
-  match Document.of_path ~env:(Ui_base.eio_env ()) (Document.path doc) with
+  let pool = Ui_base.task_pool () in
+  match Document.of_path ~env:(Ui_base.eio_env ()) pool (Document.path doc) with
   | Ok doc -> (
       reset_search_result_selected ();
       let global_document_store =
         Lwd.peek Ui_base.Vars.document_store
-        |> Document_store.add_document doc
+        |> Document_store.add_document pool doc
       in
       Lwd.set Ui_base.Vars.document_store global_document_store;
       let document_store =
         Lwd.peek Ui_base.Vars.Single_file.document_store
-        |> Document_store.add_document doc
+        |> Document_store.add_document pool doc
       in
       Lwd.set Ui_base.Vars.Single_file.document_store document_store;
     )

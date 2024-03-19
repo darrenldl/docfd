@@ -1,37 +1,33 @@
+type t = Eio.Executor_pool.t
+
 let size = max 1 (Domain.recommended_domain_count () - 1)
 
-let pool =
-  Domainslib.Task.setup_pool ~num_domains:size ()
+let make ~sw mgr =
+  Eio.Executor_pool.create ~sw ~domain_count:size mgr
 
-let run (f : unit -> 'a) : 'a =
-  let p, r = Eio.Promise.create () in
-  let _ : unit Domainslib.Task.promise =
-    Domainslib.Task.async pool (fun () ->
-        Eio.Promise.resolve r (f ())
-      )
-  in
-  Eio.Promise.await p
+let run (t : t) (f : unit -> 'a) : 'a =
+  Eio.Executor_pool.submit_exn t ~weight:1.0 f
 
-let map_list : 'a 'b . ('a -> 'b) -> 'a list -> 'b list =
-  fun f l ->
+let map_list : 'a 'b . t -> ('a -> 'b) -> 'a list -> 'b list =
+  fun t f l ->
   Eio.Fiber.List.map ~max_fibers:size
     (fun x ->
-       Eio.Fiber.yield ();
-       run (fun () -> f x))
+          Eio.Fiber.yield ();
+       run t (fun () -> f x))
     l
 
-let filter_list : 'a 'b . ('a -> bool) -> 'a list -> 'a list =
-  fun f l ->
+let filter_list : 'a 'b . t -> ('a -> bool) -> 'a list -> 'a list =
+  fun t f l ->
   Eio.Fiber.List.filter ~max_fibers:size
     (fun x ->
-       Eio.Fiber.yield ();
-       run (fun () -> f x))
+          Eio.Fiber.yield ();
+       run t (fun () -> f x))
     l
 
-let filter_map_list : 'a 'b . ('a -> 'b option) -> 'a list -> 'b list =
-  fun f l ->
+let filter_map_list : 'a 'b . t -> ('a -> 'b option) -> 'a list -> 'b list =
+  fun t f l ->
   Eio.Fiber.List.filter_map ~max_fibers:size
     (fun x ->
-       Eio.Fiber.yield ();
-       run (fun () -> f x))
+          Eio.Fiber.yield ();
+       run t (fun () -> f x))
     l

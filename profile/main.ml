@@ -59,10 +59,12 @@ let bench ~name ~cycle (f : unit -> 'a) =
   Printf.printf "%s: time per cycle: %6fs\n" name
     ((end_time -. start_time) /. (float_of_int cycle))
 
-let main _env =
-  let index = Index.of_lines (List.to_seq lines) in
+let main env =
+  Eio.Switch.run @@ fun sw ->
+  let pool = Task_pool.make ~sw (Eio.Stdenv.domain_mgr env) in
+  let index = Index.of_lines pool (List.to_seq lines) in
   let fuzzy_max_edit_distance = 3 in
-  let search_exp = Search_exp.make ~fuzzy_max_edit_distance "vestibul rutru" in
+  let search_exp = Search_exp.make ~fuzzy_max_edit_distance "vestibul rutru" |> Option.get in
   let s = "PellentesquePellentesque" in
   for len=1 to 20 do
     let limit = 2 in
@@ -75,7 +77,7 @@ let main _env =
         Spelll.of_string ~limit:1 (String.sub s 0 len))
   done;
   bench ~name:"Index.search" ~cycle:1000 (fun () ->
-      Index.search search_exp index);
+      Index.search pool search_exp index);
   ()
 
 let () = Eio_main.run main

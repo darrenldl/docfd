@@ -12,4 +12,4 @@ val index : t -> Index.t
 
 val last_scan : t -> Timedesc.t
 
-val of_path : env:Eio_unix.Stdenv.base -> string -> (t, string) result
+val of_path : env:Eio_unix.Stdenv.base -> Task_pool.t -> string -> (t, string) result

@@ -10,13 +10,13 @@ val size : t -> int
 
 val empty : t
 
-val update_search_exp : Search_exp.t -> t -> t
+val update_search_exp : Task_pool.t -> Search_exp.t -> t -> t
 
 val search_exp : t -> Search_exp.t
 
-val add_document : Document.t -> t -> t
+val add_document : Task_pool.t -> Document.t -> t -> t
 
-val of_seq : Document.t Seq.t -> t
+val of_seq : Task_pool.t -> Document.t Seq.t -> t
 
 val usable_documents : t -> document_info array
 

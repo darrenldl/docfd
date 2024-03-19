@@ -230,7 +230,7 @@ module Raw = struct
   let chunks_of_words (s : multi_indexed_word Seq.t) : chunk Seq.t =
     OSeq.chunks !Params.index_chunk_word_count s
 
-  let of_seq (s : (Line_loc.t * string) Seq.t) : t =
+  let of_seq pool (s : (Line_loc.t * string) Seq.t) : t =
     let shared_word_db : shared_word_db =
       { lock = Mutex.create ();
         word_db = Word_db.make ();
@@ -242,7 +242,7 @@ module Raw = struct
       |> words_of_lines
       |> chunks_of_words
       |> List.of_seq
-      |> Task_pool.map_list (fun chunk ->
+      |> Task_pool.map_list pool (fun chunk ->
           of_chunk shared_word_db chunk)
     in
     let res =
@@ -254,14 +254,14 @@ module Raw = struct
     in
     { res with word_db = shared_word_db.word_db }
 
-  let of_lines (s : string Seq.t) : t =
+  let of_lines pool (s : string Seq.t) : t =
     s
     |> Seq.mapi (fun global_line_num line ->
         ({ Line_loc.page_num = 0; line_num_in_page = global_line_num; global_line_num }, line)
       )
-    |> of_seq
+    |> of_seq pool
 
-  let of_pages (s : string list Seq.t) : t =
+  let of_pages pool (s : string list Seq.t) : t =
     s
     |> Seq.mapi (fun page_num page ->
         (page_num, page)
@@ -282,7 +282,7 @@ module Raw = struct
     |> Seq.mapi (fun global_line_num ((line_loc : Line_loc.t), line) ->
         ({ line_loc with global_line_num }, line)
       )
-    |> of_seq
+    |> of_seq pool
 end
 
 type t = {
@@ -359,12 +359,12 @@ let of_raw (raw : Raw.t) : t =
     global_line_count;
   }
 
-let of_lines s =
-  Raw.of_lines s
+let of_lines pool s =
+  Raw.of_lines pool s
   |> of_raw
 
-let of_pages s =
-  Raw.of_pages s
+let of_pages pool s =
+  Raw.of_pages pool s
   |> of_raw
 
 let word_ci_of_pos pos (t : t) : string =
@@ -450,11 +450,11 @@ let line_count_of_page_num page t : int =
 module Search = struct
   let usable_positions
       ?around_pos
-      ~eio_yield
       ~(consider_edit_dist : bool)
       ((search_word, dfa) : (string * Spelll.automaton))
       (t : t)
     : int Seq.t =
+    Eio.Fiber.yield ();
     let word_ci_and_positions_to_consider =
       match around_pos with
       | None -> word_ci_and_pos_s t
@@ -468,9 +468,7 @@ module Search = struct
     in
     word_ci_and_positions_to_consider
     |> Seq.filter (fun (indexed_word, _pos_s) ->
-        if eio_yield then (
-          Eio.Fiber.yield ();
-        );
+        Eio.Fiber.yield ();
         (String.length indexed_word > 0)
         && (not (Parser_components.is_space indexed_word.[0]))
       )
@@ -502,7 +500,6 @@ module Search = struct
       | (search_word, dfa) :: rest -> (
           usable_positions
             ~around_pos
-            ~eio_yield:false
             ~consider_edit_dist
             (search_word, dfa)
             t
@@ -512,13 +509,21 @@ module Search = struct
             )
         )
     in
+    Eio.Fiber.yield ();
     aux around_pos l
 
+let search_result_heap_merge_with_yield x y =
+          Eio.Fiber.yield ();
+          Search_result_heap.merge x y
+
+
   let search_single
+  pool
       ~consider_edit_dist
       (phrase : Search_phrase.t)
       (t : t)
     : Search_result_heap.t =
+          Eio.Fiber.yield ();
     if Search_phrase.is_empty phrase then (
       Search_result_heap.empty
     ) else (
@@ -527,8 +532,8 @@ module Search = struct
       | first_word :: rest -> (
           Eio.Fiber.yield ();
           let possible_start_count, possible_starts =
-            usable_positions ~eio_yield:true ~consider_edit_dist first_word t
-            |> Misc_utils.list_and_length_of_seq
+            usable_positions ~consider_edit_dist first_word t
+            |> Misc_utils.length_and_list_of_seq
           in
           if possible_start_count = 0 then
             Search_result_heap.empty
@@ -545,9 +550,11 @@ module Search = struct
             in
             possible_starts
             |> CCList.chunks search_chunk_size
-            |> Task_pool.map_list (fun (pos_list : int list) : Search_result_heap.t ->
+            |> Task_pool.map_list pool (fun (pos_list : int list) : Search_result_heap.t ->
+          Eio.Fiber.yield ();
                 pos_list
                 |> List.map (fun pos ->
+          Eio.Fiber.yield ();
                     search_around_pos ~consider_edit_dist pos rest t
                     |> Seq.map (fun l -> pos :: l)
                     |> Seq.map (fun (l : int list) ->
@@ -612,6 +619,7 @@ module Search = struct
                           ~found_phrase_opening_closing_symbol_match_count
                       )
                     |> Seq.fold_left (fun best_results r ->
+          Eio.Fiber.yield ();
                         let best_results = Search_result_heap.add best_results r in
                         if Search_result_heap.size best_results <= search_limit_per_start then (
                           best_results
@@ -622,30 +630,32 @@ module Search = struct
                       )
                       Search_result_heap.empty
                   )
-                |> List.fold_left Search_result_heap.merge Search_result_heap.empty
+                |> List.fold_left search_result_heap_merge_with_yield Search_result_heap.empty
               )
-            |> List.fold_left Search_result_heap.merge Search_result_heap.empty
+            |> List.fold_left search_result_heap_merge_with_yield Search_result_heap.empty
           )
         )
     )
 
   let search
+  pool
       ~consider_edit_dist
       (exp : Search_exp.t)
       (t : t)
     : Search_result_heap.t =
     Search_exp.flattened exp
     |> List.to_seq
-    |> Seq.map (fun phrase -> search_single ~consider_edit_dist phrase t)
-    |> Seq.fold_left Search_result_heap.merge Search_result_heap.empty
+    |> Seq.map (fun phrase -> search_single pool ~consider_edit_dist phrase t)
+    |> Seq.fold_left search_result_heap_merge_with_yield Search_result_heap.empty
 end
 
 let search
+pool
     (exp : Search_exp.t)
     (t : t)
   : Search_result.t array =
   let arr =
-    Search.search ~consider_edit_dist:true exp t
+    Search.search pool ~consider_edit_dist:true exp t
     |> Search_result_heap.to_seq
     |> Array.of_seq
   in
