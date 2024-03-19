@@ -186,6 +186,18 @@ and add to the final list of paths to be scanned."
     & info [ "paths-from" ] ~doc ~docv:"FILE"
   )
 
+let paths_arg =
+  let doc =
+    "PATH can be either file or directory.
+Directories are scanned for files with matching extensions.
+If any PATH is \"?\", then the list of files is passed onto fzf for user selection.
+Multiple \"?\" are treated the same as one \"?\".
+If no paths are provided or only \"?\" is provided,
+then Docfd defaults to scanning the current working directory
+unless --paths-from is used."
+  in
+  Arg.(value & pos_all string [] & info [] ~doc ~docv:"PATH")
+
 let check
     ~max_depth
     ~max_fuzzy_edit_dist

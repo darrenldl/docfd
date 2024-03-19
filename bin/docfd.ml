@@ -4,6 +4,41 @@ open Docfd_lib
 open Debug_utils
 open Misc_utils
 
+  let document_store_of_document_src ~env document_src =
+    let all_documents =
+      match document_src with
+      | Ui_base.Stdin path -> (
+          match Document.of_path ~env path with
+          | Ok x -> [ x ]
+          | Error msg ->  (
+              exit_with_error_msg msg
+            )
+        )
+      | Files files -> (
+          Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size (fun path ->
+              do_if_debug (fun oc ->
+                  Printf.fprintf oc "Loading document: %s\n" (Filename.quote path);
+                );
+              match Document.of_path ~env path with
+              | Ok x -> (
+                  do_if_debug (fun oc ->
+                      Printf.fprintf oc "Document %s loaded successfully\n" (Filename.quote path);
+                    );
+                  Some x
+                )
+              | Error msg -> (
+                  do_if_debug (fun oc ->
+                      Printf.fprintf oc "%s\n" msg
+                    );
+                  None
+                )
+            ) files
+        )
+    in
+    all_documents
+    |> List.to_seq
+    |> Document_store.of_seq
+
 let run
     ~(env : Eio_unix.Stdenv.base)
     (debug_log : string)
@@ -59,7 +94,7 @@ let run
     if no_cache then (
       None
     ) else (
-      mkdir_recursive cache_dir;
+      File_utils.mkdir_recursive cache_dir;
       Some cache_dir
     )
   );
@@ -122,7 +157,7 @@ let run
       )
     )
     paths;
-  let files = list_files_recursive paths in
+  let files = File_utils.list_files_recursive paths in
   let files =
     match question_marks with
     | [] -> files
@@ -253,43 +288,8 @@ let run
        )
      )
   );
-  let document_store_of_document_src document_src =
-    let all_documents =
-      match document_src with
-      | Ui_base.Stdin path -> (
-          match Document.of_path ~env path with
-          | Ok x -> [ x ]
-          | Error msg ->  (
-              exit_with_error_msg msg
-            )
-        )
-      | Files files -> (
-          Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size (fun path ->
-              do_if_debug (fun oc ->
-                  Printf.fprintf oc "Loading document: %s\n" (Filename.quote path);
-                );
-              match Document.of_path ~env path with
-              | Ok x -> (
-                  do_if_debug (fun oc ->
-                      Printf.fprintf oc "Document %s loaded successfully\n" (Filename.quote path);
-                    );
-                  Some x
-                )
-              | Error msg -> (
-                  do_if_debug (fun oc ->
-                      Printf.fprintf oc "%s\n" msg
-                    );
-                  None
-                )
-            ) files
-        )
-    in
-    all_documents
-    |> List.to_seq
-    |> Document_store.of_seq
-  in
   Ui_base.Vars.init_ui_mode := init_ui_mode;
-  let init_document_store = document_store_of_document_src init_document_src in
+  let init_document_store = document_store_of_document_src ~env init_document_src in
   if index_only then (
     clean_up ();
     exit 0
@@ -416,7 +416,7 @@ let run
             let old_document_store = Lwd.peek Ui_base.Vars.document_store in
             let search_exp = Document_store.search_exp old_document_store in
             let document_store =
-              document_store_of_document_src document_src
+              document_store_of_document_src ~env document_src
               |> Document_store.update_search_exp search_exp
             in
             Lwd.set Ui_base.Vars.document_store document_store;
@@ -505,18 +505,6 @@ let run
          )
      )
   )
-
-let paths_arg =
-  let doc =
-    "PATH can be either file or directory.
-Directories are scanned for files with matching extensions.
-If any PATH is \"?\", then the list of files is passed onto fzf for user selection.
-Multiple \"?\" are treated the same as one \"?\".
-If no paths are provided or only \"?\" is provided,
-then Docfd defaults to scanning the current working directory
-unless --paths-from is used."
-  in
-  Arg.(value & pos_all string [] & info [] ~doc ~docv:"PATH")
 
 let cmd ~env =
   let open Term in
