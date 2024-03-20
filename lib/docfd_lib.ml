@@ -13,3 +13,5 @@ module Tokenize = Tokenize
 module Params' = Params
 
 module Task_pool = Task_pool
+
+module Stop_signal = Stop_signal

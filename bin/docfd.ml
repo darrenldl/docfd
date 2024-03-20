@@ -309,7 +309,7 @@ let run
       )
     | Some search_exp -> (
         let document_store =
-          Document_store.update_search_exp pool search_exp init_document_store
+          Document_store.update_search_exp pool (Stop_signal.make ()) search_exp init_document_store
         in
         let document_info_s =
           Document_store.usable_documents document_store
@@ -421,7 +421,7 @@ let run
             let search_exp = Document_store.search_exp old_document_store in
             let document_store =
               document_store_of_document_src ~env pool document_src
-              |> Document_store.update_search_exp pool search_exp
+              |> Document_store.update_search_exp pool (Stop_signal.make ()) search_exp
             in
             Lwd.set Ui_base.Vars.document_store document_store;
             loop ()
@@ -482,7 +482,7 @@ let run
   Eio.Fiber.any [
     (fun () ->
        Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env)
-       (fun () -> Search_manager.search_fiber pool));
+         (fun () -> Search_manager.search_fiber pool));
     Search_manager.manager_fiber;
     (fun () ->
        let start_with_search_len = String.length start_with_search in
@@ -537,6 +537,6 @@ let cmd ~env ~sw =
      $ paths_arg)
 
 let () = Eio_main.run (fun env ->
-  Eio.Switch.run (fun sw ->
-    exit (Cmd.eval (cmd ~env ~sw))
-  ))
+    Eio.Switch.run (fun sw ->
+        exit (Cmd.eval (cmd ~env ~sw))
+      ))

@@ -45,7 +45,7 @@ let min_binding (t : t) =
       Some (path, (doc, search_results))
     )
 
-let update_search_exp pool search_exp (t : t) : t =
+let update_search_exp pool stop_signal search_exp (t : t) : t =
   if Search_exp.equal search_exp t.search_exp then (
     t
   ) else (
@@ -54,7 +54,7 @@ let update_search_exp pool search_exp (t : t) : t =
       |> String_map.to_list
       |> Eio.Fiber.List.map ~max_fibers:Task_pool.size
         (fun (path, doc) ->
-           (path, Index.search pool search_exp (Document.index doc))
+           (path, Index.search pool stop_signal search_exp (Document.index doc))
         )
       |> String_map.of_list
     in
@@ -68,7 +68,7 @@ let add_document pool (doc : Document.t) (t : t) : t =
   let search_results =
     String_map.add
       (Document.path doc)
-      (Index.search pool t.search_exp (Document.index doc))
+      (Index.search pool (Stop_signal.make ()) t.search_exp (Document.index doc))
       t.search_results
   in
   { t with

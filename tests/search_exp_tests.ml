@@ -17,7 +17,7 @@ module Alco = struct
       (List.map (Search_phrase.make ~fuzzy_max_edit_distance) l
        |> List.sort Search_phrase.compare)
       (Search_exp.make ~fuzzy_max_edit_distance s
-      |> Option.get
+       |> Option.get
        |> Search_exp.flattened
        |> List.sort Search_phrase.compare
       )

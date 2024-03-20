@@ -60,8 +60,8 @@ module Vars = struct
   end
 end
 
-    let task_pool () =
-      Option.get !Vars.pool
+let task_pool () =
+  Option.get !Vars.pool
 
 let eio_env () =
   Option.get !Vars.eio_env
