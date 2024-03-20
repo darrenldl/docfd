@@ -185,6 +185,11 @@ one of:
 To use literal `?`, `(`, `)` or `|`, a backslash (`\`) needs to be placed in front
 of the character.
 
+Search is asynchronous. Specifically:
+- Editing of search field is not blocked by search progress
+- Updating/clearing the search expression cancels the current search
+  and starts a new search immediately
+
 <details>
 
 #### Optional operator handling specifics
@@ -247,7 +252,16 @@ The default TUI is divided into four sections:
 - Bottom pane consists of:
     - Status bar
     - Key binding info
-    - Search field
+    - Search bar
+
+Search bar consists of the search status indicator and the search field.
+The search status indicator shows one of the following values:
+- `OK`
+    - Docfd is idle/search is done
+- `...`
+    - Docfd is still searching
+- `ERR`
+    - Docfd failed to parse the search expression in the search field
 
 #### Controls
 
