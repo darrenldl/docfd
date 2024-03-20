@@ -37,6 +37,7 @@ tests :
 
 .PHONY: demo-vhs
 demo-vhs :
+	make release-static
 	for file in demo-vhs-tapes/*; do ./demo-vhs.sh $$file; done
 	rm dummy.gif
 
