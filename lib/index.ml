@@ -448,8 +448,13 @@ let line_count_of_page_num page t : int =
   CCVector.get t.line_count_of_page_num page
 
 module Search = struct
+  let word_is_search_symbol s =
+String.length s = 1
+      && String.contains Params.code_symbols (String.get s 0)
+
   let usable_positions
       ?around_pos
+      ?prev_search_word
       ~(consider_edit_dist : bool)
       ((search_word, dfa) : (string * Spelll.automaton))
       (t : t)
@@ -459,8 +464,20 @@ module Search = struct
       match around_pos with
       | None -> word_ci_and_pos_s t
       | Some around_pos -> (
-        let start = around_pos - !Params.max_word_search_distance in
-        let end_inc = around_pos + !Params.max_word_search_distance in
+        let dist =
+          match prev_search_word with
+          | None -> !Params.max_word_search_distance
+          | Some prev_search_word -> (
+  if word_is_search_symbol search_word
+  && word_is_search_symbol prev_search_word then (
+    !Params.max_consec_code_symbol_search_distance
+  ) else (
+    !Params.max_word_search_distance
+      )
+          )
+        in
+        let start = around_pos - dist in
+        let end_inc = around_pos + dist in
         word_ci_and_pos_s ~range_inc:(start, end_inc) t
       )
     in
@@ -495,26 +512,28 @@ module Search = struct
   let search_around_pos
       ~consider_edit_dist
       (around_pos : int)
+      (prev_search_word : string)
       (l : (string * Spelll.automaton) list)
       (t : t)
     : int list Seq.t =
-    let rec aux around_pos l =
+    let rec aux around_pos prev_search_word l =
       Eio.Fiber.yield ();
       match l with
       | [] -> Seq.return []
       | (search_word, dfa) :: rest -> (
           usable_positions
             ~around_pos
+            ~prev_search_word
             ~consider_edit_dist
             (search_word, dfa)
             t
           |> Seq.flat_map (fun pos ->
-              aux pos rest
+              aux pos search_word rest
               |> Seq.map (fun l -> pos :: l)
             )
         )
     in
-    aux around_pos l
+    aux around_pos prev_search_word l
 
   let search_result_heap_merge_with_yield x y =
     Eio.Fiber.yield ();
@@ -564,7 +583,7 @@ module Search = struct
                      pos_list
                      |> List.map (fun pos ->
                          Eio.Fiber.yield ();
-                         search_around_pos ~consider_edit_dist pos rest t
+                         search_around_pos ~consider_edit_dist pos (fst first_word) rest t
                          |> Seq.map (fun l -> pos :: l)
                          |> Seq.map (fun (l : int list) ->
                              Eio.Fiber.yield ();
