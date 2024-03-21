@@ -3,20 +3,20 @@ open Test_utils
 
 module Alco = struct
   let test_empty_exp (s : string) =
-    let fuzzy_max_edit_distance = 0 in
+    let fuzzy_max_edit_dist = 0 in
     Alcotest.(check bool)
       "true"
       true
       (Search_exp.is_empty
-         (Search_exp.make ~fuzzy_max_edit_distance s |> Option.get))
+         (Search_exp.make ~fuzzy_max_edit_dist s |> Option.get))
 
   let test_exp (s : string) (l : string list) =
-    let fuzzy_max_edit_distance = 0 in
+    let fuzzy_max_edit_dist = 0 in
     Alcotest.(check (list search_phrase_testable))
       (Fmt.str "case %S" s)
-      (List.map (Search_phrase.make ~fuzzy_max_edit_distance) l
+      (List.map (Search_phrase.make ~fuzzy_max_edit_dist) l
        |> List.sort Search_phrase.compare)
-      (Search_exp.make ~fuzzy_max_edit_distance s
+      (Search_exp.make ~fuzzy_max_edit_dist s
        |> Option.get
        |> Search_exp.flattened
        |> List.sort Search_phrase.compare
