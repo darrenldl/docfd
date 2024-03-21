@@ -89,9 +89,9 @@ let run
         )
     );
   Params.max_file_tree_depth := max_depth;
-  Params.max_fuzzy_edit_distance := max_fuzzy_edit_dist;
-  Params.max_word_search_distance := max_word_search_dist;
-  Params.max_consec_code_symbol_search_distance := max_consec_code_symbol_search_dist;
+  Params.max_fuzzy_edit_dist := max_fuzzy_edit_dist;
+  Params.max_word_search_dist := max_word_search_dist;
+  Params.max_consec_code_symbol_search_dist := max_consec_code_symbol_search_dist;
   Params.index_chunk_word_count := index_chunk_word_count;
   Params.cache_size := cache_size;
   Params.cache_dir := (
@@ -304,7 +304,7 @@ let run
   if non_interactive_mode then (
     match
       Search_exp.make
-        ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
+        ~fuzzy_max_edit_dist:!Params.max_fuzzy_edit_dist
         search_exp
     with
     | None -> (

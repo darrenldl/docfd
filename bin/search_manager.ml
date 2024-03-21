@@ -68,7 +68,7 @@ let search_fiber pool =
            let (s, document_store_var) = get_newest ingress_queue in
            (match
               Search_exp.make
-                ~fuzzy_max_edit_distance:!Params.max_fuzzy_edit_distance
+                ~fuzzy_max_edit_dist:!Params.max_fuzzy_edit_dist
                 s
             with
             | None -> (

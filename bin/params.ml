@@ -2,9 +2,9 @@ include Docfd_lib.Params'
 
 let debug_output : out_channel option ref = ref None
 
-let default_max_fuzzy_edit_distance = 2
+let default_max_fuzzy_edit_dist = 2
 
-let max_fuzzy_edit_distance = ref default_max_fuzzy_edit_distance
+let max_fuzzy_edit_dist = ref default_max_fuzzy_edit_dist
 
 let preview_line_count = 5
 

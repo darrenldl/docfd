@@ -306,7 +306,7 @@ module Score = struct
       if average_distance <= 1.0 then (
         1.0
       ) else (
-        1.0 -. (0.20 *. (average_distance /. (Int.to_float !Params.max_word_search_distance)))
+        1.0 -. (0.20 *. (average_distance /. (Int.to_float !Params.max_word_search_dist)))
       )
     in
     (1.0 +. (0.10 *. search_phrase_length))

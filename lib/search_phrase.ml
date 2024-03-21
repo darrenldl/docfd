@@ -38,7 +38,7 @@ let empty : t =
   }
 
 let make
-    ~fuzzy_max_edit_distance
+    ~fuzzy_max_edit_dist
     phrase
   =
   let phrase = phrase
@@ -51,7 +51,7 @@ let make
         Mutex.lock cache.mutex;
         let dfa =
           CCCache.with_cache cache.cache
-            (Spelll.of_string ~limit:fuzzy_max_edit_distance)
+            (Spelll.of_string ~limit:fuzzy_max_edit_dist)
             x
         in
         Mutex.unlock cache.mutex;

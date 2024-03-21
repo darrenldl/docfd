@@ -2,13 +2,13 @@ let search_result_max_total_per_document = 50
 
 let search_result_min_per_start = 5
 
-let default_max_word_search_distance = 50
+let default_max_word_search_dist = 50
 
-let max_word_search_distance = ref default_max_word_search_distance
+let max_word_search_dist = ref default_max_word_search_dist
 
-let default_max_consec_code_symbol_search_distance = 10
+let default_max_consec_code_symbol_search_dist = 10
 
-let max_consec_code_symbol_search_distance = ref default_max_consec_code_symbol_search_distance
+let max_consec_code_symbol_search_dist = ref default_max_consec_code_symbol_search_dist
 
 let default_index_chunk_word_count = 5000
 
