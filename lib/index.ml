@@ -449,8 +449,8 @@ let line_count_of_page_num page t : int =
 
 module Search = struct
   let word_is_search_symbol s =
-String.length s = 1
-      && String.contains Params.code_symbols (String.get s 0)
+    String.length s = 1
+    && String.contains Params.code_symbols (String.get s 0)
 
   let usable_positions
       ?around_pos
@@ -464,22 +464,22 @@ String.length s = 1
       match around_pos with
       | None -> word_ci_and_pos_s t
       | Some around_pos -> (
-        let dist =
-          match prev_search_word with
-          | None -> !Params.max_word_search_distance
-          | Some prev_search_word -> (
-  if word_is_search_symbol search_word
-  && word_is_search_symbol prev_search_word then (
-    !Params.max_consec_code_symbol_search_distance
-  ) else (
-    !Params.max_word_search_distance
-      )
-          )
-        in
-        let start = around_pos - dist in
-        let end_inc = around_pos + dist in
-        word_ci_and_pos_s ~range_inc:(start, end_inc) t
-      )
+          let dist =
+            match prev_search_word with
+            | None -> !Params.max_word_search_distance
+            | Some prev_search_word -> (
+                if word_is_search_symbol search_word
+                && word_is_search_symbol prev_search_word then (
+                  !Params.max_consec_code_symbol_search_distance
+                ) else (
+                  !Params.max_word_search_distance
+                )
+              )
+          in
+          let start = around_pos - dist in
+          let end_inc = around_pos + dist in
+          word_ci_and_pos_s ~range_inc:(start, end_inc) t
+        )
     in
     let search_word_ci =
       String.lowercase_ascii search_word
@@ -576,8 +576,8 @@ String.length s = 1
             |> Task_pool.map_list pool (fun (pos_list : int list) : Search_result_heap.t ->
                 Eio.Fiber.first
                   (fun () ->
-                    Stop_signal.await stop_signal;
-                    Search_result_heap.empty)
+                     Stop_signal.await stop_signal;
+                     Search_result_heap.empty)
                   (fun () ->
                      Eio.Fiber.yield ();
                      pos_list

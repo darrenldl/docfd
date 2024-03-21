@@ -68,9 +68,9 @@ let max_consec_code_symbol_search_dist_arg_name = "max-consec-code-symbol-search
 let max_consec_code_symbol_search_dist_arg =
   let doc =
     Fmt.str
-    {|Similar to %s but for consecutive code symbols: %s|}
-max_consec_code_symbol_search_dist_arg_name
-Params.code_symbols
+      "Similar to %s but for consecutive code symbols: %s"
+      max_consec_code_symbol_search_dist_arg_name
+      Params.code_symbols
   in
   Arg.(
     value
