@@ -6,6 +6,10 @@ let default_max_word_search_distance = 50
 
 let max_word_search_distance = ref default_max_word_search_distance
 
+let default_max_consec_code_symbol_search_distance = 10
+
+let max_consec_code_symbol_search_distance = ref default_max_consec_code_symbol_search_distance
+
 let default_index_chunk_word_count = 5000
 
 let index_chunk_word_count = ref default_index_chunk_word_count
@@ -20,3 +24,5 @@ let opening_closing_symbols = [ ('(', ')')
                               ]
 
 let opening_closing_symbols_flipped = List.map (fun (x, y) -> (y, x)) opening_closing_symbols
+
+let code_symbols = {|~`!@#$%^&*()_-=+<>?,./;':"[]{}|}

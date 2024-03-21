@@ -458,10 +458,11 @@ module Search = struct
     let word_ci_and_positions_to_consider =
       match around_pos with
       | None -> word_ci_and_pos_s t
-      | Some around_pos ->
+      | Some around_pos -> (
         let start = around_pos - !Params.max_word_search_distance in
         let end_inc = around_pos + !Params.max_word_search_distance in
         word_ci_and_pos_s ~range_inc:(start, end_inc) t
+      )
     in
     let search_word_ci =
       String.lowercase_ascii search_word
@@ -555,7 +556,9 @@ module Search = struct
             |> CCList.chunks search_chunk_size
             |> Task_pool.map_list pool (fun (pos_list : int list) : Search_result_heap.t ->
                 Eio.Fiber.first
-                  (fun () -> Stop_signal.await stop_signal; Search_result_heap.empty)
+                  (fun () ->
+                    Stop_signal.await stop_signal;
+                    Search_result_heap.empty)
                   (fun () ->
                      Eio.Fiber.yield ();
                      pos_list

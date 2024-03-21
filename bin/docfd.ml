@@ -46,6 +46,7 @@ let run
     (max_depth : int)
     (max_fuzzy_edit_dist : int)
     (max_word_search_dist : int)
+    (max_consec_code_symbol_search_dist : int)
     (index_chunk_word_count : int)
     (exts : string)
     (additional_exts : string)
@@ -64,6 +65,7 @@ let run
     ~max_depth
     ~max_fuzzy_edit_dist
     ~max_word_search_dist
+    ~max_consec_code_symbol_search_dist
     ~index_chunk_word_count
     ~cache_size
     ~search_result_count_per_doc
@@ -89,6 +91,7 @@ let run
   Params.max_file_tree_depth := max_depth;
   Params.max_fuzzy_edit_distance := max_fuzzy_edit_dist;
   Params.max_word_search_distance := max_word_search_dist;
+  Params.max_consec_code_symbol_search_distance := max_consec_code_symbol_search_dist;
   Params.index_chunk_word_count := index_chunk_word_count;
   Params.cache_size := cache_size;
   Params.cache_dir := (
@@ -522,6 +525,7 @@ let cmd ~env ~sw =
      $ max_depth_arg
      $ max_fuzzy_edit_dist_arg
      $ max_word_search_dist_arg
+     $ max_consec_code_symbol_search_dist_arg
      $ index_chunk_word_count_arg
      $ exts_arg
      $ add_exts_arg
