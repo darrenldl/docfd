@@ -45,7 +45,7 @@ let max_fuzzy_edit_dist_arg =
   in
   Arg.(
     value
-    & opt int Params.default_max_fuzzy_edit_distance
+    & opt int Params.default_max_fuzzy_edit_dist
     & info [ max_fuzzy_edit_dist_arg_name ] ~doc ~docv:"N"
   )
 
@@ -59,7 +59,7 @@ Note that contiguous spaces count as one word/symbol as well."
   in
   Arg.(
     value
-    & opt int Params.default_max_word_search_distance
+    & opt int Params.default_max_word_search_dist
     & info [ max_word_search_dist_arg_name ] ~doc ~docv:"N"
   )
 
@@ -74,8 +74,8 @@ let max_consec_code_symbol_search_dist_arg =
   in
   Arg.(
     value
-    & opt int Params.default_max_word_search_distance
-    & info [ max_word_search_dist_arg_name ] ~doc ~docv:"N"
+    & opt int Params.default_max_consec_code_symbol_search_dist
+    & info [ max_consec_code_symbol_search_dist_arg_name ] ~doc ~docv:"N"
   )
 
 let index_chunk_word_count_arg_name = "index-chunk-word-count"
