@@ -13,6 +13,9 @@
 
 - Added search cancellation. Triggered by editing or clearing search field.
 
+- Added dynamic search distance adjustment when there are consecutive
+  code symbols in the search phrase
+
 ## 3.0.0
 
 - Fixed crash from search result snippet being bigger the content view pane
