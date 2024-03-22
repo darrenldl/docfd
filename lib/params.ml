@@ -6,7 +6,7 @@ let default_max_word_search_dist = 50
 
 let max_word_search_dist = ref default_max_word_search_dist
 
-let default_max_consec_code_symbol_search_dist = 10
+let default_max_consec_code_symbol_search_dist = 15
 
 let max_consec_code_symbol_search_dist = ref default_max_consec_code_symbol_search_dist
 
