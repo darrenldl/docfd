@@ -112,7 +112,7 @@ module Top_pane = struct
         (I.string A.(fg lightgreen) "@ ")
         <|>
         (Document.path doc
-         |> Tokenize.f ~drop_spaces:false
+         |> Tokenize.tokenize ~drop_spaces:false
          |> List.of_seq
          |> Content_and_search_result_render.Text_block_render.of_words ~width:sub_item_width
         )
@@ -132,7 +132,7 @@ module Top_pane = struct
           )
         in
         Option.value ~default:"" (Document.title doc)
-        |> Tokenize.f ~drop_spaces:false
+        |> Tokenize.tokenize ~drop_spaces:false
         |> List.of_seq
         |> Content_and_search_result_render.Text_block_render.of_words ~attr ~width
       in

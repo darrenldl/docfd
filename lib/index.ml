@@ -138,7 +138,7 @@ module Raw = struct
     : multi_indexed_word Seq.t =
     s
     |> Seq.flat_map (fun (line_loc, s) ->
-        let seq = Tokenize.f_with_pos ~drop_spaces:false s in
+        let seq = Tokenize.tokenize_with_pos ~drop_spaces:false s in
         if Seq.is_empty seq then (
           let empty_word = ({ Loc.line_loc; pos_in_line = 0 }, "") in
           Seq.return empty_word
@@ -448,10 +448,6 @@ let line_count_of_page_num page t : int =
   CCVector.get t.line_count_of_page_num page
 
 module Search = struct
-  let word_is_search_symbol s =
-    String.length s = 1
-    && String.contains Params.code_symbols (String.get s 0)
-
   let usable_positions
       ?around_pos
       ~(consider_edit_dist : bool)

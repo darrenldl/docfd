@@ -52,9 +52,9 @@ let empty : t =
     fuzzy_index = [];
   }
 
-let make
+let of_tokens
     ~fuzzy_max_edit_dist
-    phrase
+    (tokens : string Seq.t)
   =
   let process_tokens
   (phrase : string Seq.t) =
@@ -71,22 +71,18 @@ let make
     in
     aux [] [] false phrase
   in
-  let phrase, has_space_before =
-    phrase
-               |> Tokenize.f ~drop_spaces:true
-               |> process_tokens
-  in
+  let phrase, has_space_before = process_tokens tokens in
   let fuzzy_index =
     phrase
     |> List.map (fun x ->
         Mutex.lock cache.mutex;
-        let dfa =
+        let automaton =
           CCCache.with_cache cache.cache
             (Spelll.of_string ~limit:fuzzy_max_edit_dist)
             x
         in
         Mutex.unlock cache.mutex;
-        dfa
+        automaton
       )
   in
   {
@@ -94,3 +90,8 @@ let make
     has_space_before;
     fuzzy_index;
   }
+
+let make ~fuzzy_max_edit_dist phrase =
+    phrase
+    |> Tokenize.tokenize ~drop_spaces:false
+    |> of_tokens ~fuzzy_max_edit_dist

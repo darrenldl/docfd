@@ -24,5 +24,3 @@ let opening_closing_symbols = [ ('(', ')')
                               ]
 
 let opening_closing_symbols_flipped = List.map (fun (x, y) -> (y, x)) opening_closing_symbols
-
-let code_symbols = {|~`!@#$%^&*()_-=+<>?,./;':"[]{}|}

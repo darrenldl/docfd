@@ -17,7 +17,7 @@ module Parsers = struct
     many token_p
 end
 
-let f_with_pos ~drop_spaces (s : string) : (int * string) Seq.t =
+let tokenize_with_pos ~drop_spaces (s : string) : (int * string) Seq.t =
   let s = Misc_utils.sanitize_string s in
   match Angstrom.(parse_string ~consume:Consume.All) Parsers.tokens_p s with
   | Ok l ->
@@ -35,6 +35,6 @@ let f_with_pos ~drop_spaces (s : string) : (int * string) Seq.t =
       )
   | Error _ -> Seq.empty
 
-let f ~drop_spaces s =
-  f_with_pos ~drop_spaces s
+let tokenize ~drop_spaces s =
+  tokenize_with_pos ~drop_spaces s
   |> Seq.map snd

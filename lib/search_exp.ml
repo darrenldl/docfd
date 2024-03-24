@@ -63,8 +63,19 @@ module Parsers = struct
     )
     >>| fun l ->
     String.concat "" l
-    |> Tokenize.f ~drop_spaces:true
+    |> Tokenize.tokenize ~drop_spaces:false
     |> List.of_seq
+    |> (fun l ->
+        match l with
+        | [] -> l
+        | x :: xs -> (
+          if Parser_components.is_space (String.get x 0) then (
+            xs
+          ) else (
+            l
+          )
+        )
+        )
 
   let or_op =
     char '|' *> spaces *> return (fun x y -> `Binary_op (Or, x, y))
@@ -102,9 +113,9 @@ module Parsers = struct
 end
 
 let flatten ~fuzzy_max_edit_dist (exp : exp) : Search_phrase.t list =
-  let rec aux (exp : exp) : string Seq.t =
+  let rec aux (exp : exp) : string list Seq.t =
     match exp with
-    | `Word s -> Seq.return s
+    | `Word s -> Seq.return [ s ]
     | `List l -> (
         match l with
         | [] -> Seq.empty
@@ -112,9 +123,7 @@ let flatten ~fuzzy_max_edit_dist (exp : exp) : Search_phrase.t list =
             List.to_seq l
             |> Seq.map aux
             |> OSeq.cartesian_product
-            |> Seq.map (fun words ->
-                String.concat " " words
-              )
+            |> Seq.map List.concat
           )
       )
     | `Binary_op (Or, x, y) -> (
@@ -123,11 +132,13 @@ let flatten ~fuzzy_max_edit_dist (exp : exp) : Search_phrase.t list =
           (aux y)
       )
     | `Optional x -> (
-        Seq.cons "" (aux x)
+      Seq.cons [] (aux x)
       )
   in
   aux exp
-  |> Seq.map (fun phrase -> Search_phrase.make ~fuzzy_max_edit_dist phrase)
+  |> Seq.map (fun l ->
+      List.to_seq l
+  |> Search_phrase.of_tokens ~fuzzy_max_edit_dist)
   |> List.of_seq
   |> List.sort_uniq Search_phrase.compare
 
