@@ -65,17 +65,6 @@ module Parsers = struct
     String.concat "" l
     |> Tokenize.tokenize ~drop_spaces:false
     |> List.of_seq
-    |> (fun l ->
-        match l with
-        | [] -> l
-        | x :: xs -> (
-            if Parser_components.is_space (String.get x 0) then (
-              xs
-            ) else (
-              l
-            )
-          )
-      )
 
   let or_op =
     char '|' *> spaces *> return (fun x y -> `Binary_op (Or, x, y))

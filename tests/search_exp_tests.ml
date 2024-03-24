@@ -27,9 +27,15 @@ module Alco = struct
     test_empty_exp "    ";
     test_exp "?hello"
       [ ""; "hello" ];
+    test_exp "? hello"
+      [ ""; "hello" ];
     test_exp "?hello world"
       [ "world"; "hello world" ];
+    test_exp "? hello world"
+      [ "world"; "hello world" ];
     test_exp "?(hello) world"
+      [ "world"; "hello world" ];
+    test_exp "? (hello) world"
       [ "world"; "hello world" ];
     test_exp "?(hello world) abcd"
       [ "abcd"; "hello world abcd" ];
