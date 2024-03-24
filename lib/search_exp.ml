@@ -69,13 +69,13 @@ module Parsers = struct
         match l with
         | [] -> l
         | x :: xs -> (
-          if Parser_components.is_space (String.get x 0) then (
-            xs
-          ) else (
-            l
+            if Parser_components.is_space (String.get x 0) then (
+              xs
+            ) else (
+              l
+            )
           )
-        )
-        )
+      )
 
   let or_op =
     char '|' *> spaces *> return (fun x y -> `Binary_op (Or, x, y))
@@ -132,13 +132,13 @@ let flatten ~fuzzy_max_edit_dist (exp : exp) : Search_phrase.t list =
           (aux y)
       )
     | `Optional x -> (
-      Seq.cons [] (aux x)
+        Seq.cons [] (aux x)
       )
   in
   aux exp
   |> Seq.map (fun l ->
       List.to_seq l
-  |> Search_phrase.of_tokens ~fuzzy_max_edit_dist)
+      |> Search_phrase.of_tokens ~fuzzy_max_edit_dist)
   |> List.of_seq
   |> List.sort_uniq Search_phrase.compare
 

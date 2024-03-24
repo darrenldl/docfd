@@ -11,11 +11,11 @@ type enriched_token = {
 }
 
 let to_enriched_tokens (t : t) : enriched_token list =
-        List.combine
-        (List.combine t.phrase t.has_space_before)
-        t.fuzzy_index
-              |> List.map (fun ((string, has_space_before), automaton) ->
-                  { string; has_space_before; automaton })
+  List.combine
+    (List.combine t.phrase t.has_space_before)
+    t.fuzzy_index
+  |> List.map (fun ((string, has_space_before), automaton) ->
+      { string; has_space_before; automaton })
 
 let pp formatter (t : t) =
   Fmt.pf formatter "%a" Fmt.(list ~sep:sp string) t.phrase
@@ -57,17 +57,17 @@ let of_tokens
     (tokens : string Seq.t)
   =
   let process_tokens
-  (phrase : string Seq.t) =
+      (phrase : string Seq.t) =
     let rec aux word_acc has_space_before_acc has_space_before phrase =
-    match phrase () with
-    | Seq.Nil -> (List.rev word_acc, List.rev has_space_before_acc)
-    | Seq.Cons (word, rest) -> (
-      if Parser_components.is_space (String.get word 0) then (
-        aux word_acc has_space_before_acc true rest
-      ) else (
-        aux (word :: word_acc) (has_space_before :: has_space_before_acc) false rest
-      )
-    )
+      match phrase () with
+      | Seq.Nil -> (List.rev word_acc, List.rev has_space_before_acc)
+      | Seq.Cons (word, rest) -> (
+          if Parser_components.is_space (String.get word 0) then (
+            aux word_acc has_space_before_acc true rest
+          ) else (
+            aux (word :: word_acc) (has_space_before :: has_space_before_acc) false rest
+          )
+        )
     in
     aux [] [] false phrase
   in
@@ -92,6 +92,6 @@ let of_tokens
   }
 
 let make ~fuzzy_max_edit_dist phrase =
-    phrase
-    |> Tokenize.tokenize ~drop_spaces:false
-    |> of_tokens ~fuzzy_max_edit_dist
+  phrase
+  |> Tokenize.tokenize ~drop_spaces:false
+  |> of_tokens ~fuzzy_max_edit_dist
