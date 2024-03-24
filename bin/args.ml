@@ -53,9 +53,9 @@ let max_word_search_dist_arg_name = "max-word-search-dist"
 
 let max_word_search_dist_arg =
   let doc =
-    "Maximum distance to look for the next matching word/symbol in search phrase.
+    "Maximum distance to look for the next matching word/token in search phrase.
 If two words are adjacent words, then they are 1 distance away from each other.
-Note that contiguous spaces count as one word/symbol as well."
+Note that contiguous spaces count as one word/token as well."
   in
   Arg.(
     value
