@@ -13,7 +13,10 @@
 
 - Added search cancellation. Triggered by editing or clearing search field.
 
-- Added dynamic search distance adjustment for linked tokens
+- Added dynamic search distance adjustment based on notion of linked tokens
+
+    - Two tokens are linked if there is no space between them,
+      e.g. `-` and `>` are linked in `->`, but not in `- >`
 
 ## 3.0.0
 
