@@ -470,7 +470,7 @@ module Search = struct
             | Some prev_search_word -> (
                 if word_is_search_symbol search_word
                 && word_is_search_symbol prev_search_word then (
-                  !Params.max_consec_code_symbol_search_dist
+                  !Params.max_linked_token_search_dist
                 ) else (
                   !Params.max_word_search_dist
                 )

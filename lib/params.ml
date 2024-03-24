@@ -6,9 +6,9 @@ let default_max_word_search_dist = 50
 
 let max_word_search_dist = ref default_max_word_search_dist
 
-let default_max_consec_code_symbol_search_dist = 15
+let default_max_linked_token_search_dist = 15
 
-let max_consec_code_symbol_search_dist = ref default_max_consec_code_symbol_search_dist
+let max_linked_token_search_dist = ref default_max_linked_token_search_dist
 
 let default_index_chunk_word_count = 5000
 

@@ -63,19 +63,20 @@ Note that contiguous spaces count as one word/symbol as well."
     & info [ max_word_search_dist_arg_name ] ~doc ~docv:"N"
   )
 
-let max_consec_code_symbol_search_dist_arg_name = "max-consec-code-symbol-search-dist"
+let max_linked_token_search_dist_arg_name = "max-linked-token-search-dist"
 
-let max_consec_code_symbol_search_dist_arg =
+let max_linked_token_search_dist_arg =
   let doc =
     Fmt.str
-      "Similar to %s but for consecutive code symbols: %s"
+      {|Similar to %s but for "linked" tokens.
+Two tokens are considered linked when there is no space between them,
+e.g. - and > are linked in "->", but not in "- >".|}
       max_word_search_dist_arg_name
-      Params.code_symbols
   in
   Arg.(
     value
-    & opt int Params.default_max_consec_code_symbol_search_dist
-    & info [ max_consec_code_symbol_search_dist_arg_name ] ~doc ~docv:"N"
+    & opt int Params.default_max_linked_token_search_dist
+    & info [ max_linked_token_search_dist_arg_name ] ~doc ~docv:"N"
   )
 
 let index_chunk_word_count_arg_name = "index-chunk-word-count"
@@ -217,7 +218,7 @@ let check
     ~max_depth
     ~max_fuzzy_edit_dist
     ~max_word_search_dist
-    ~max_consec_code_symbol_search_dist
+    ~max_linked_token_search_dist
     ~index_chunk_word_count
     ~cache_size
     ~search_result_count_per_doc
@@ -234,9 +235,9 @@ let check
     exit_with_error_msg
       (Fmt.str "invalid %s: cannot be < 1" max_word_search_dist_arg_name)
   );
-  if max_consec_code_symbol_search_dist < 1 then (
+  if max_linked_token_search_dist < 1 then (
     exit_with_error_msg
-      (Fmt.str "invalid %s: cannot be < 1" max_consec_code_symbol_search_dist_arg_name)
+      (Fmt.str "invalid %s: cannot be < 1" max_linked_token_search_dist_arg_name)
   );
   if index_chunk_word_count < 1 then (
     exit_with_error_msg
