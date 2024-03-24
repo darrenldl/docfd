@@ -13,8 +13,7 @@
 
 - Added search cancellation. Triggered by editing or clearing search field.
 
-- Added dynamic search distance adjustment when there are consecutive
-  code symbols in the search phrase
+- Added dynamic search distance adjustment for linked tokens
 
 ## 3.0.0
 
