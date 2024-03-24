@@ -18,7 +18,12 @@ let to_enriched_tokens (t : t) : enriched_token list =
       { string; has_space_before; automaton })
 
 let pp formatter (t : t) =
-  Fmt.pf formatter "%a" Fmt.(list ~sep:sp string) t.phrase
+  Fmt.pf formatter "%a"
+    Fmt.(list ~sep:sp
+           (fun formatter (token : enriched_token) ->
+              Fmt.pf formatter "%s:%b" token.string token.has_space_before
+           ))
+    (to_enriched_tokens t)
 
 type cache = {
   mutex : Mutex.t;
@@ -39,11 +44,18 @@ let is_empty (t : t) =
 let fuzzy_index t =
   t.fuzzy_index
 
-let equal (t1 : t) (t2 : t) =
-  List.equal String.equal t1.phrase t2.phrase
-
 let compare (t1 : t) (t2 : t) =
-  List.compare String.compare t1.phrase t2.phrase
+  match List.compare String.compare t1.phrase t2.phrase with
+  | 0 -> (
+      match t1.has_space_before, t2.has_space_before with
+      | [], [] -> 0
+      | _ :: xs, _ :: ys -> List.compare Bool.compare xs ys
+      | xs, ys -> List.compare Bool.compare xs ys
+    )
+  | n -> n
+
+let equal (t1 : t) (t2 : t) =
+  compare t1 t2 = 0
 
 let empty : t =
   {

@@ -10,9 +10,15 @@ module Alco = struct
       (Search_exp.is_empty
          (Search_exp.make ~fuzzy_max_edit_dist s |> Option.get))
 
-  let test_exp (s : string) (l : string list) =
+  let test_exp ?(neg = false) (s : string) (l : string list) =
     let fuzzy_max_edit_dist = 0 in
-    Alcotest.(check (list search_phrase_testable))
+    let neg' = neg in
+    Alcotest.(check
+                (if neg' then (
+                    neg (list search_phrase_testable)
+                  ) else (
+                   list search_phrase_testable
+                 )))
       (Fmt.str "case %S" s)
       (List.map (Search_phrase.make ~fuzzy_max_edit_dist) l
        |> List.sort Search_phrase.compare)
@@ -77,7 +83,33 @@ module Alco = struct
       ; "go right or up"
       ; "go right or down"
       ];
+    test_exp "and/or"
+      [ "and/or" ];
+    test_exp ~neg:true "and/or"
+      [ "and / or" ];
+    test_exp ~neg:true "and/or"
+      [ "and /or" ];
+    test_exp ~neg:true "and/or"
+      [ "and/ or" ];
+    test_exp "and / or"
+      [ "and / or" ];
+    test_exp ~neg:true "and / or"
+      [ "and/or" ];
+    test_exp ~neg:true "and / or"
+      [ "and /or" ];
+    test_exp ~neg:true "and / or"
+      [ "and/ or" ];
+    test_exp "(and)/ or"
+      [ "and / or" ];
+    test_exp ~neg:true "(and)/ or"
+      [ "and/ or" ];
     test_exp "go (left | right) and/or ( up | down )"
+      [ "go left and/or up"
+      ; "go left and/or down"
+      ; "go right and/or up"
+      ; "go right and/or down"
+      ];
+    test_exp "go (left | right) and / or ( up | down )"
       [ "go left and / or up"
       ; "go left and / or down"
       ; "go right and / or up"
@@ -123,6 +155,10 @@ module Alco = struct
       ; "go right or or up"
       ; "go right or or down"
       ];
+    test_exp "- - -"
+      [ "- - -" ];
+    test_exp "-- -"
+      [ "-- -" ];
     ()
 
   let suite =

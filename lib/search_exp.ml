@@ -1,6 +1,7 @@
 type exp = [
   | `Word of string
   | `List of exp list
+  | `Paren of exp
   | `Binary_op of binary_op * exp * exp
   | `Optional of exp
 ]
@@ -34,6 +35,7 @@ let equal (t1 : t) (t2 : t) =
     match e1, e2 with
     | `Word s1, `Word s2 -> String.equal s1 s2
     | `List l1, `List l2 -> List.equal aux l1 l2
+    | `Paren e1, `Paren e2 -> aux e1 e2
     | `Binary_op (Or, e1x, e1y), `Binary_op (Or, e2x, e2y) ->
       aux e1x e2x && aux e1y e2y
     | `Optional e1, `Optional e2 -> aux e1 e2
@@ -42,6 +44,8 @@ let equal (t1 : t) (t2 : t) =
   aux t1.exp t2.exp
 
 let as_word x : exp = `Word x
+
+let as_paren x : exp = `Paren x
 
 let as_list l : exp = `List l
 
@@ -75,7 +79,8 @@ module Parsers = struct
         let base =
           choice [
             (phrase >>| as_word_list);
-            (char '(' *> spaces *> exp <* char ')' <* spaces);
+            (char '(' *> spaces *> exp <* char ')' <* spaces
+             >>| as_paren);
           ]
         in
         let opt_base =
@@ -102,6 +107,22 @@ module Parsers = struct
 end
 
 let flatten ~fuzzy_max_edit_dist (exp : exp) : Search_phrase.t list =
+  let add_space_around (l : string list) =
+    let rec aux acc l =
+      match l with
+      | [] -> (
+          match acc with
+          | [] -> []
+          | l -> List.rev (" " :: l)
+        )
+      | x :: xs -> (
+          match acc with
+          | [] -> aux (x :: " " :: []) xs
+          | _ -> aux (x :: acc) xs
+        )
+    in
+    aux [] l
+  in
   let rec aux (exp : exp) : string list Seq.t =
     match exp with
     | `Word s -> Seq.return [ s ]
@@ -114,6 +135,10 @@ let flatten ~fuzzy_max_edit_dist (exp : exp) : Search_phrase.t list =
             |> OSeq.cartesian_product
             |> Seq.map List.concat
           )
+      )
+    | `Paren e -> (
+        aux e
+        |> Seq.map add_space_around
       )
     | `Binary_op (Or, x, y) -> (
         Seq.append
