@@ -454,27 +454,22 @@ module Search = struct
 
   let usable_positions
       ?around_pos
-      ?prev_search_word
       ~(consider_edit_dist : bool)
-      ((search_word, dfa) : (string * Spelll.automaton))
+      (token : Search_phrase.enriched_token)
       (t : t)
     : int Seq.t =
     Eio.Fiber.yield ();
+    let search_word = token.string in
     let word_ci_and_positions_to_consider =
       match around_pos with
       | None -> word_ci_and_pos_s t
       | Some around_pos -> (
           let dist =
-            match prev_search_word with
-            | None -> !Params.max_word_search_dist
-            | Some prev_search_word -> (
-                if word_is_search_symbol search_word
-                && word_is_search_symbol prev_search_word then (
-                  !Params.max_linked_token_search_dist
-                ) else (
-                  !Params.max_word_search_dist
-                )
-              )
+            if token.has_space_before then (
+              !Params.max_word_search_dist
+            ) else (
+              !Params.max_linked_token_search_dist
+            )
           in
           let start = around_pos - dist in
           let end_inc = around_pos + dist in
@@ -502,7 +497,7 @@ module Search = struct
               && CCString.find ~sub:indexed_word search_word_ci >= 0)
           || (consider_edit_dist
               && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word search_word_ci.[0]
-              && Spelll.match_with dfa indexed_word)
+              && Spelll.match_with token.automaton indexed_word)
         )
       )
     |> Seq.flat_map (fun (_indexed_word, pos_s) ->
@@ -512,28 +507,26 @@ module Search = struct
   let search_around_pos
       ~consider_edit_dist
       (around_pos : int)
-      (prev_search_word : string)
-      (l : (string * Spelll.automaton) list)
+      (l : Search_phrase.enriched_token list)
       (t : t)
     : int list Seq.t =
-    let rec aux around_pos prev_search_word l =
+    let rec aux around_pos l =
       Eio.Fiber.yield ();
       match l with
       | [] -> Seq.return []
-      | (search_word, dfa) :: rest -> (
+      | token :: rest -> (
           usable_positions
             ~around_pos
-            ~prev_search_word
             ~consider_edit_dist
-            (search_word, dfa)
+            token
             t
           |> Seq.flat_map (fun pos ->
-              aux pos search_word rest
+              aux pos rest
               |> Seq.map (fun l -> pos :: l)
             )
         )
     in
-    aux around_pos prev_search_word l
+    aux around_pos l
 
   let search_result_heap_merge_with_yield x y =
     Eio.Fiber.yield ();
@@ -550,7 +543,7 @@ module Search = struct
     if Search_phrase.is_empty phrase then (
       Search_result_heap.empty
     ) else (
-      match List.combine phrase.phrase phrase.fuzzy_index with
+      match Search_phrase.to_enriched_tokens phrase with
       | [] -> failwith "Unexpected case"
       | first_word :: rest -> (
           Eio.Fiber.yield ();
@@ -583,7 +576,7 @@ module Search = struct
                      pos_list
                      |> List.map (fun pos ->
                          Eio.Fiber.yield ();
-                         search_around_pos ~consider_edit_dist pos (fst first_word) rest t
+                         search_around_pos ~consider_edit_dist pos rest t
                          |> Seq.map (fun l -> pos :: l)
                          |> Seq.map (fun (l : int list) ->
                              Eio.Fiber.yield ();
