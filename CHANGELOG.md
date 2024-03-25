@@ -1,6 +1,6 @@
 # Changelog
 
-## 3.1.0
+## 4.0.0
 
 - Made document search asynchronous to search field input, so UI remains
   smooth even if search is slow
@@ -17,6 +17,9 @@
 
     - Two tokens are linked if there is no space between them,
       e.g. `-` and `>` are linked in `->`, but not in `- >`
+
+- Renamed `--max-word-search-dist` to `--max-token-search-dist` to be consistent with
+  `--max-linked-token-search-dist`
 
 ## 3.0.0
 
