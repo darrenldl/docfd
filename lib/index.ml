@@ -461,10 +461,10 @@ module Search = struct
       | None -> word_ci_and_pos_s t
       | Some around_pos -> (
           let dist =
-            if token.has_space_before then (
-              !Params.max_word_search_dist
-            ) else (
+            if token.is_linked_to_prev then (
               !Params.max_linked_token_search_dist
+            ) else (
+              !Params.max_word_search_dist
             )
           in
           let start = around_pos - dist in

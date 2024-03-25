@@ -107,52 +107,42 @@ module Parsers = struct
 end
 
 let flatten ~fuzzy_max_edit_dist (exp : exp) : Search_phrase.t list =
-  let add_space_around (l : string list) =
-    let rec aux acc l =
-      match l with
-      | [] -> (
-          match acc with
-          | [] -> []
-          | l -> List.rev (" " :: l)
-        )
-      | x :: xs -> (
-          match acc with
-          | [] -> aux (x :: " " :: []) xs
-          | _ -> aux (x :: acc) xs
-        )
-    in
-    aux [] l
+  let get_group_id =
+    let counter = ref 0 in
+    fun () ->
+      let x = !counter in
+      counter := x + 1;
+      x
   in
-  let rec aux (exp : exp) : string list Seq.t =
+  let rec aux group_id (exp : exp) : Search_phrase.annotated_token list Seq.t =
     match exp with
-    | `Word s -> Seq.return [ s ]
+    | `Word string -> Seq.return [ Search_phrase.{ string; group_id } ]
     | `List l -> (
         match l with
         | [] -> Seq.empty
         | _ -> (
             List.to_seq l
-            |> Seq.map aux
+            |> Seq.map (aux group_id)
             |> OSeq.cartesian_product
             |> Seq.map List.concat
           )
       )
     | `Paren e -> (
-        aux e
-        |> Seq.map add_space_around
+        aux (get_group_id ()) e
       )
     | `Binary_op (Or, x, y) -> (
         Seq.append
-          (aux x)
-          (aux y)
+          (aux group_id x)
+          (aux group_id y)
       )
     | `Optional x -> (
-        Seq.cons [] (aux x)
+        Seq.cons [] (aux (get_group_id ()) x)
       )
   in
-  aux exp
+  aux (get_group_id ()) exp
   |> Seq.map (fun l ->
       List.to_seq l
-      |> Search_phrase.of_tokens ~fuzzy_max_edit_dist)
+      |> Search_phrase.of_annotated_tokens ~fuzzy_max_edit_dist)
   |> List.of_seq
   |> List.sort_uniq Search_phrase.compare
 

@@ -1,27 +1,32 @@
 type t = {
   phrase : string list;
-  has_space_before : bool list;
+  is_linked_to_prev : bool list;
   fuzzy_index : Spelll.automaton list;
+}
+
+type annotated_token = {
+  string : string;
+  group_id : int;
 }
 
 type enriched_token = {
   string : string;
-  has_space_before : bool;
+  is_linked_to_prev : bool;
   automaton : Spelll.automaton;
 }
 
 let to_enriched_tokens (t : t) : enriched_token list =
   List.combine
-    (List.combine t.phrase t.has_space_before)
+    (List.combine t.phrase t.is_linked_to_prev)
     t.fuzzy_index
-  |> List.map (fun ((string, has_space_before), automaton) ->
-      { string; has_space_before; automaton })
+  |> List.map (fun ((string, is_linked_to_prev), automaton) ->
+      { string; is_linked_to_prev; automaton })
 
 let pp formatter (t : t) =
   Fmt.pf formatter "%a"
     Fmt.(list ~sep:sp
            (fun formatter (token : enriched_token) ->
-              Fmt.pf formatter "%s:%b" token.string token.has_space_before
+              Fmt.pf formatter "%s:%b" token.string token.is_linked_to_prev
            ))
     (to_enriched_tokens t)
 
@@ -47,7 +52,7 @@ let fuzzy_index t =
 let compare (t1 : t) (t2 : t) =
   match List.compare String.compare t1.phrase t2.phrase with
   | 0 -> (
-      match t1.has_space_before, t2.has_space_before with
+      match t1.is_linked_to_prev, t2.is_linked_to_prev with
       | [], [] -> 0
       | _ :: xs, _ :: ys -> List.compare Bool.compare xs ys
       | xs, ys -> List.compare Bool.compare xs ys
@@ -60,30 +65,59 @@ let equal (t1 : t) (t2 : t) =
 let empty : t =
   {
     phrase = [];
-    has_space_before = [];
+    is_linked_to_prev = [];
     fuzzy_index = [];
   }
 
-let of_tokens
+type token_process_ctx = {
+  prev_was_space : bool;
+  prev_group_id : int;
+}
+
+let of_annotated_tokens
     ~fuzzy_max_edit_dist
-    (tokens : string Seq.t)
+    (tokens : annotated_token Seq.t)
   =
+  let token_is_space (token : annotated_token) =
+    Parser_components.is_space (String.get token.string 0)
+  in
   let process_tokens
-      (phrase : string Seq.t) =
-    let rec aux word_acc has_space_before_acc has_space_before phrase =
+      (phrase : annotated_token Seq.t) =
+    let rec aux
+        word_acc
+        is_linked_to_prev_acc
+        (prev_token : annotated_token option)
+        (phrase : annotated_token Seq.t) =
       match phrase () with
-      | Seq.Nil -> (List.rev word_acc, List.rev has_space_before_acc)
-      | Seq.Cons (word, rest) -> (
-          if Parser_components.is_space (String.get word 0) then (
-            aux word_acc has_space_before_acc true rest
+      | Seq.Nil -> (List.rev word_acc, List.rev is_linked_to_prev_acc)
+      | Seq.Cons (token, rest) -> (
+          let is_linked_to_prev =
+            match prev_token with
+            | None -> false
+            | Some prev_token -> (
+                (prev_token.group_id = token.group_id)
+                &&
+                (not (token_is_space prev_token))
+              )
+          in
+          if token_is_space token then (
+            aux
+              word_acc
+              is_linked_to_prev_acc
+              (Some token)
+              rest
           ) else (
-            aux (word :: word_acc) (has_space_before :: has_space_before_acc) false rest
+            aux
+              (token.string :: word_acc)
+              (is_linked_to_prev :: is_linked_to_prev_acc)
+              (Some token)
+              rest
           )
         )
     in
-    aux [] [] false phrase
+    aux [] [] None phrase
   in
-  let phrase, has_space_before = process_tokens tokens in
+  let phrase, is_linked_to_prev = process_tokens tokens in
   let fuzzy_index =
     phrase
     |> List.map (fun x ->
@@ -99,9 +133,17 @@ let of_tokens
   in
   {
     phrase;
-    has_space_before;
+    is_linked_to_prev;
     fuzzy_index;
   }
+
+let of_tokens
+    ~fuzzy_max_edit_dist
+    (tokens : string Seq.t)
+  =
+  tokens
+  |> Seq.map (fun string -> { string; group_id = 0 })
+  |> of_annotated_tokens ~fuzzy_max_edit_dist
 
 let make ~fuzzy_max_edit_dist phrase =
   phrase
