@@ -49,9 +49,9 @@ let max_fuzzy_edit_dist_arg =
     & info [ max_fuzzy_edit_dist_arg_name ] ~doc ~docv:"N"
   )
 
-let max_word_search_dist_arg_name = "max-word-search-dist"
+let max_token_search_dist_arg_name = "max-token-search-dist"
 
-let max_word_search_dist_arg =
+let max_token_search_dist_arg =
   let doc =
     "Maximum distance to look for the next matching word/token in search phrase.
 If two words are adjacent words, then they are 1 distance away from each other.
@@ -59,8 +59,8 @@ Note that contiguous spaces count as one word/token as well."
   in
   Arg.(
     value
-    & opt int Params.default_max_word_search_dist
-    & info [ max_word_search_dist_arg_name ] ~doc ~docv:"N"
+    & opt int Params.default_max_token_search_dist
+    & info [ max_token_search_dist_arg_name ] ~doc ~docv:"N"
   )
 
 let max_linked_token_search_dist_arg_name = "max-linked-token-search-dist"
@@ -71,7 +71,7 @@ let max_linked_token_search_dist_arg =
       {|Similar to %s but for linked tokens.
 Two tokens are linked if there is no space between them,
 e.g. - and > are linked in "->", but not in "- >".|}
-      max_word_search_dist_arg_name
+      max_token_search_dist_arg_name
   in
   Arg.(
     value
@@ -217,7 +217,7 @@ unless --paths-from is used."
 let check
     ~max_depth
     ~max_fuzzy_edit_dist
-    ~max_word_search_dist
+    ~max_token_search_dist
     ~max_linked_token_search_dist
     ~index_chunk_word_count
     ~cache_size
@@ -231,9 +231,9 @@ let check
     exit_with_error_msg
       (Fmt.str "invalid %s: cannot be < 0" max_fuzzy_edit_dist_arg_name)
   );
-  if max_word_search_dist < 1 then (
+  if max_token_search_dist < 1 then (
     exit_with_error_msg
-      (Fmt.str "invalid %s: cannot be < 1" max_word_search_dist_arg_name)
+      (Fmt.str "invalid %s: cannot be < 1" max_token_search_dist_arg_name)
   );
   if max_linked_token_search_dist < 1 then (
     exit_with_error_msg

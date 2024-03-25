@@ -45,7 +45,7 @@ let run
     (debug_log : string)
     (max_depth : int)
     (max_fuzzy_edit_dist : int)
-    (max_word_search_dist : int)
+    (max_token_search_dist : int)
     (max_linked_token_search_dist : int)
     (index_chunk_word_count : int)
     (exts : string)
@@ -64,7 +64,7 @@ let run
   Args.check
     ~max_depth
     ~max_fuzzy_edit_dist
-    ~max_word_search_dist
+    ~max_token_search_dist
     ~max_linked_token_search_dist
     ~index_chunk_word_count
     ~cache_size
@@ -90,7 +90,7 @@ let run
     );
   Params.max_file_tree_depth := max_depth;
   Params.max_fuzzy_edit_dist := max_fuzzy_edit_dist;
-  Params.max_word_search_dist := max_word_search_dist;
+  Params.max_token_search_dist := max_token_search_dist;
   Params.max_linked_token_search_dist := max_linked_token_search_dist;
   Params.index_chunk_word_count := index_chunk_word_count;
   Params.cache_size := cache_size;
@@ -524,7 +524,7 @@ let cmd ~env ~sw =
      $ debug_log_arg
      $ max_depth_arg
      $ max_fuzzy_edit_dist_arg
-     $ max_word_search_dist_arg
+     $ max_token_search_dist_arg
      $ max_linked_token_search_dist_arg
      $ index_chunk_word_count_arg
      $ exts_arg

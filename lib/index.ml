@@ -464,7 +464,7 @@ module Search = struct
             if token.is_linked_to_prev then (
               !Params.max_linked_token_search_dist
             ) else (
-              !Params.max_word_search_dist
+              !Params.max_token_search_dist
             )
           in
           let start = around_pos - dist in
