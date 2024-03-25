@@ -15,6 +15,14 @@ type enriched_token = {
   automaton : Spelll.automaton;
 }
 
+let pp_enriched_token formatter (x : enriched_token) =
+  Fmt.pf formatter "%s:%b" x.string x.is_linked_to_prev
+
+let equal_enriched_token (x : enriched_token) (y : enriched_token) =
+  String.equal x.string y.string
+  &&
+  x.is_linked_to_prev = y.is_linked_to_prev
+
 let to_enriched_tokens (t : t) : enriched_token list =
   List.combine
     (List.combine t.phrase t.is_linked_to_prev)
@@ -24,10 +32,7 @@ let to_enriched_tokens (t : t) : enriched_token list =
 
 let pp formatter (t : t) =
   Fmt.pf formatter "%a"
-    Fmt.(list ~sep:sp
-           (fun formatter (token : enriched_token) ->
-              Fmt.pf formatter "%s:%b" token.string token.is_linked_to_prev
-           ))
+    Fmt.(list ~sep:sp pp_enriched_token)
     (to_enriched_tokens t)
 
 type cache = {
