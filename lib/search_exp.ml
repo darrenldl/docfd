@@ -147,7 +147,7 @@ let flatten ~fuzzy_max_edit_dist (exp : exp) : Search_phrase.t list =
   |> List.sort_uniq Search_phrase.compare
 
 let make ~fuzzy_max_edit_dist s =
-  if String.length s = 0 || String.for_all (fun c -> c = ' ') s then (
+  if String.length s = 0 || String.for_all Parser_components.is_space s then (
     Some empty
   ) else (
     match Angstrom.(parse_string ~consume:Consume.All) Parsers.p s with
