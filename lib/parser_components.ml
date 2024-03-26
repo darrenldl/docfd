@@ -8,9 +8,7 @@ let is_space c =
   | '\r' -> true
   | _ -> false
 
-let spaces = skip_while is_space
-
-let spaces1 = take_while1 is_space *> return ()
+let skip_spaces = skip_while is_space
 
 let any_string : string t = take_while1 (fun _ -> true)
 

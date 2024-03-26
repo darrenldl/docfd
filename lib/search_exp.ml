@@ -71,21 +71,21 @@ module Parsers = struct
     |> List.of_seq
 
   let or_op =
-    char '|' *> spaces *> return (fun x y -> `Binary_op (Or, x, y))
+    char '|' *> skip_spaces *> return (fun x y -> `Binary_op (Or, x, y))
 
   let p : exp Angstrom.t =
-    spaces *>
+    skip_spaces *>
     fix (fun (exp : exp Angstrom.t) : exp Angstrom.t ->
         let base =
           choice [
             (phrase >>| as_word_list);
-            (char '(' *> spaces *> exp <* char ')' <* spaces
+            (char '(' *> skip_spaces *> exp <* char ')' <* skip_spaces
              >>| as_paren);
           ]
         in
         let opt_base =
           choice [
-            (char '?' *> spaces *> phrase
+            (char '?' *> skip_spaces *> phrase
              >>| fun l ->
              match l with
              | [] -> `Optional (`List [])
@@ -93,7 +93,7 @@ module Parsers = struct
                  `List ((`Optional (as_word x)) :: List.map as_word xs)
                )
             );
-            (char '?' *> spaces *> base >>| fun p -> `Optional p);
+            (char '?' *> skip_spaces *> base >>| fun p -> `Optional p);
             base;
           ]
         in
@@ -103,7 +103,7 @@ module Parsers = struct
         in
         chainl1 opt_bases or_op
       )
-    <* spaces
+    <* skip_spaces
 end
 
 let flatten ~fuzzy_max_edit_dist (exp : exp) : Search_phrase.t list =
