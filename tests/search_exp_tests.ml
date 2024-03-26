@@ -4,11 +4,24 @@ open Test_utils
 module Alco = struct
   let test_empty_exp (s : string) =
     let fuzzy_max_edit_dist = 0 in
+    let phrase = Search_phrase.make ~fuzzy_max_edit_dist s in
+    let exp = Search_exp.make ~fuzzy_max_edit_dist s |> Option.get in
     Alcotest.(check bool)
       "true"
       true
-      (Search_exp.is_empty
-         (Search_exp.make ~fuzzy_max_edit_dist s |> Option.get))
+      (Search_phrase.is_empty phrase);
+    Alcotest.(check bool)
+      "true"
+      true
+      (List.is_empty (Search_phrase.to_enriched_tokens phrase));
+    Alcotest.(check bool)
+      "true"
+      true
+      (Search_exp.is_empty exp);
+    Alcotest.(check bool)
+      "true"
+      true
+      (List.is_empty (Search_exp.flattened exp))
 
   let test_exp
       ?(neg = false)
@@ -51,6 +64,12 @@ module Alco = struct
   let corpus () =
     test_empty_exp "";
     test_empty_exp "    ";
+    test_empty_exp "\r\n";
+    test_empty_exp "\t";
+    test_empty_exp "  	  ";
+    test_empty_exp "\r\n\t";
+    test_empty_exp " \r \n \t ";
+    test_empty_exp "( )";
     test_exp "?hello"
       [ ("", [])
       ; ("hello",
