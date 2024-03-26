@@ -105,7 +105,7 @@ let start_and_end_inc_global_line_num_of_search_result
     (search_result : Search_result.t)
   : (int * int) =
   match Search_result.found_phrase search_result with
-  | [] -> failwith "Unexpected case"
+  | [] -> failwith "unexpected case"
   | l -> (
       List.fold_left (fun s_e Search_result.{ found_word_pos; _ } ->
           let loc = Index.loc_of_pos found_word_pos index in

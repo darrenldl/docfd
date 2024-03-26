@@ -85,7 +85,7 @@ module Parsers = struct
             (char '?' *> skip_spaces *> phrase
              >>| fun l ->
              match l with
-             | [] -> failwith "Unexpected case"
+             | [] -> failwith "unexpected case"
              | x :: xs -> (
                  as_list [ `Optional (as_phrase [ x ]); as_phrase xs ]
                )
@@ -120,7 +120,7 @@ let flatten ~fuzzy_max_edit_dist (exp : exp) : Search_phrase.t list =
       )
     | `List l -> (
         match l with
-        | [] -> failwith "Unexpected case"
+        | [] -> failwith "unexpected case"
         | _ -> (
             List.to_seq l
             |> Seq.map (aux group_id)

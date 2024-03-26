@@ -540,7 +540,7 @@ module Search = struct
       Search_result_heap.empty
     ) else (
       match Search_phrase.to_enriched_tokens phrase with
-      | [] -> failwith "Unexpected case"
+      | [] -> failwith "unexpected case"
       | first_word :: rest -> (
           Eio.Fiber.yield ();
           let possible_start_count, possible_starts =
