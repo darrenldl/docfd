@@ -123,11 +123,17 @@ docfd [PATH]...
 
 The list of paths can contain directories.
 Each directory in the list is scanned recursively for
-files with one of the following extensions by default:
-
-- `.txt`
-- `.md`
-- `.pdf`
+files with the following extensions by default:
+`.txt`,
+`.md`,
+`.pdf`,
+`.epub`,
+`.odt`,
+`.docx`,
+`.fb2`,
+`.ipynb`,
+`.html`,
+`.htm`.
 
 You can change the file extensions to use via `--exts`,
 or add onto the list of extensions via `--add-exts`.
