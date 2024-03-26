@@ -11,25 +11,30 @@ module Alco = struct
       (Option.is_none
          (Search_exp.make ~fuzzy_max_edit_dist s))
 
-  let test_empty_exp (s : string) =
+  let test_empty_phrase (s : string) =
     let phrase = Search_phrase.make ~fuzzy_max_edit_dist s in
-    let exp = Search_exp.make ~fuzzy_max_edit_dist s |> Option.get in
     Alcotest.(check bool)
-      "true"
+      "case0"
       true
       (Search_phrase.is_empty phrase);
     Alcotest.(check bool)
-      "true"
+      "case1"
       true
-      (List.is_empty (Search_phrase.to_enriched_tokens phrase));
+      (List.is_empty (Search_phrase.to_enriched_tokens phrase))
+
+  let test_empty_exp (s : string) =
+    let exp = Search_exp.make ~fuzzy_max_edit_dist s |> Option.get in
     Alcotest.(check bool)
-      "true"
+      "case0"
       true
       (Search_exp.is_empty exp);
+    let flattened = Search_exp.flattened exp in
     Alcotest.(check bool)
-      "true"
+      "case1"
       true
-      (List.is_empty (Search_exp.flattened exp))
+      (List.is_empty flattened
+       ||
+       List.for_all Search_phrase.is_empty flattened)
 
   let test_exp
       ?(neg = false)
@@ -50,7 +55,7 @@ module Alco = struct
           Search_phrase.{ string; is_linked_to_prev; automaton }))
     in
     Alcotest.(check (list (list enriched_token_testable)))
-      (Fmt.str "case %S" s)
+      (Fmt.str "case0 of %S" s)
       enriched_token_list_list
       (phrases
        |> List.map Search_phrase.to_enriched_tokens
@@ -61,7 +66,7 @@ module Alco = struct
                   ) else (
                    list search_phrase_testable
                  )))
-      (Fmt.str "case %S" s)
+      (Fmt.str "case1 of %S" s)
       (List.sort Search_phrase.compare phrases)
       (Search_exp.make ~fuzzy_max_edit_dist s
        |> Option.get
@@ -71,18 +76,72 @@ module Alco = struct
 
   let corpus () =
     test_empty_exp "";
+    test_empty_phrase "";
     test_empty_exp "    ";
+    test_empty_phrase "    ";
     test_empty_exp "\r\n";
+    test_empty_phrase "\r\n";
     test_empty_exp "\t";
-    test_empty_exp "  	  ";
+    test_empty_phrase "\t";
     test_empty_exp "\r\n\t";
+    test_empty_phrase "\r\n\t";
     test_empty_exp " \r \n \t ";
-    test_invalid_exp "()";
-    test_invalid_exp " () ";
-    test_invalid_exp "( )";
-    test_invalid_exp " ( ) ";
-    test_invalid_exp " ( ) () ";
+    test_empty_phrase " \r \n \t ";
+    test_empty_exp "()";
+    test_empty_exp " () ";
+    test_empty_exp "( )";
+    test_empty_exp " ( ) ";
+    test_empty_exp " ( ) () ";
+    test_empty_exp " ( ( ) ) () ";
+    test_empty_exp " ( () ) (( )) ";
+    test_empty_exp " ( () ) (( () )) ";
+    test_invalid_exp " ( ) ( ";
+    test_invalid_exp " ) ( ";
+    test_invalid_exp " ( ( ) ";
+    test_invalid_exp " ( ( ) ";
+    test_invalid_exp "?";
+    test_invalid_exp "?  ";
+    test_exp "(hello)"
+      [ ("hello",
+         [ ("hello", false) ])
+      ];
+    test_exp "()hello"
+      [ ("hello",
+         [ ("hello", false) ])
+      ];
+    test_exp "hello()"
+      [ ("hello",
+         [ ("hello", false) ])
+      ];
+    test_exp "( ) hello"
+      [ ("hello",
+         [ ("hello", false) ])
+      ];
+    test_exp "hello ( )"
+      [ ("hello",
+         [ ("hello", false) ])
+      ];
     test_exp "?hello"
+      [ ("", [])
+      ; ("hello",
+         [ ("hello", false) ])
+      ];
+    test_exp "(?hello)"
+      [ ("", [])
+      ; ("hello",
+         [ ("hello", false) ])
+      ];
+    test_exp "?(hello)"
+      [ ("", [])
+      ; ("hello",
+         [ ("hello", false) ])
+      ];
+    test_exp "?hello()"
+      [ ("", [])
+      ; ("hello",
+         [ ("hello", false) ])
+      ];
+    test_exp "?hello ()"
       [ ("", [])
       ; ("hello",
          [ ("hello", false) ])
