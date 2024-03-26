@@ -2,8 +2,16 @@ open Docfd_lib
 open Test_utils
 
 module Alco = struct
+  let fuzzy_max_edit_dist = 0
+
+  let test_invalid_exp (s : string) =
+    Alcotest.(check bool)
+      "true"
+      true
+      (Option.is_none
+         (Search_exp.make ~fuzzy_max_edit_dist s))
+
   let test_empty_exp (s : string) =
-    let fuzzy_max_edit_dist = 0 in
     let phrase = Search_phrase.make ~fuzzy_max_edit_dist s in
     let exp = Search_exp.make ~fuzzy_max_edit_dist s |> Option.get in
     Alcotest.(check bool)
@@ -69,7 +77,11 @@ module Alco = struct
     test_empty_exp "  	  ";
     test_empty_exp "\r\n\t";
     test_empty_exp " \r \n \t ";
-    test_empty_exp "( )";
+    test_invalid_exp "()";
+    test_invalid_exp " () ";
+    test_invalid_exp "( )";
+    test_invalid_exp " ( ) ";
+    test_invalid_exp " ( ) () ";
     test_exp "?hello"
       [ ("", [])
       ; ("hello",
