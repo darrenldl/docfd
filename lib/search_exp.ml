@@ -1,5 +1,5 @@
 type exp = [
-  | `Word of string
+  | `Phrase of string list
   | `List of exp list
   | `Paren of exp
   | `Binary_op of binary_op * exp * exp
@@ -33,7 +33,7 @@ let is_empty (t : t) =
 let equal (t1 : t) (t2 : t) =
   let rec aux (e1 : exp) (e2 : exp) =
     match e1, e2 with
-    | `Word s1, `Word s2 -> String.equal s1 s2
+    | `Phrase p1, `Phrase p2 -> List.equal String.equal p1 p2
     | `List l1, `List l2 -> List.equal aux l1 l2
     | `Paren e1, `Paren e2 -> aux e1 e2
     | `Binary_op (Or, e1x, e1y), `Binary_op (Or, e2x, e2y) ->
@@ -43,13 +43,11 @@ let equal (t1 : t) (t2 : t) =
   in
   aux t1.exp t2.exp
 
-let as_word x : exp = `Word x
-
 let as_paren x : exp = `Paren x
 
 let as_list l : exp = `List l
 
-let as_word_list (l : string list) : exp = as_list (List.map as_word l)
+let as_phrase (l : string list) : exp = `Phrase l
 
 module Parsers = struct
   open Angstrom
@@ -74,13 +72,12 @@ module Parsers = struct
     char '|' *> skip_spaces *> return (fun x y -> `Binary_op (Or, x, y))
 
   let p : exp Angstrom.t =
-    skip_spaces *>
     fix (fun (exp : exp Angstrom.t) : exp Angstrom.t ->
         let base =
           choice [
-            (phrase >>| as_word_list);
-            (char '(' *> skip_spaces *> exp <* char ')' <* skip_spaces
-             >>| as_paren);
+            (phrase >>| as_phrase);
+            (string "()" *> return (as_phrase []));
+            (char '(' *> exp <* char ')' >>| as_paren);
           ]
         in
         let opt_base =
@@ -88,9 +85,9 @@ module Parsers = struct
             (char '?' *> skip_spaces *> phrase
              >>| fun l ->
              match l with
-             | [] -> `Optional (`List [])
+             | [] -> failwith "Unexpected case"
              | x :: xs -> (
-                 `List ((`Optional (as_word x)) :: List.map as_word xs)
+                 as_list [ `Optional (as_phrase [ x ]); as_phrase xs ]
                )
             );
             (char '?' *> skip_spaces *> base >>| fun p -> `Optional p);
@@ -116,10 +113,14 @@ let flatten ~fuzzy_max_edit_dist (exp : exp) : Search_phrase.t list =
   in
   let rec aux group_id (exp : exp) : Search_phrase.annotated_token list Seq.t =
     match exp with
-    | `Word string -> Seq.return [ Search_phrase.{ string; group_id } ]
+    | `Phrase l -> (
+        l
+        |> List.map (fun string -> Search_phrase.{ string; group_id })
+        |> Seq.return
+      )
     | `List l -> (
         match l with
-        | [] -> Seq.empty
+        | [] -> failwith "Unexpected case"
         | _ -> (
             List.to_seq l
             |> Seq.map (aux group_id)
