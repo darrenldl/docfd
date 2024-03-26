@@ -228,7 +228,7 @@ module Raw = struct
       arr
 
   let chunks_of_words (s : multi_indexed_word Seq.t) : chunk Seq.t =
-    OSeq.chunks !Params.index_chunk_word_count s
+    OSeq.chunks !Params.index_chunk_token_count s
 
   let of_seq pool (s : (Line_loc.t * string) Seq.t) : t =
     let shared_word_db : shared_word_db =

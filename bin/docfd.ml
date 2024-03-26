@@ -47,7 +47,7 @@ let run
     (max_fuzzy_edit_dist : int)
     (max_token_search_dist : int)
     (max_linked_token_search_dist : int)
-    (index_chunk_word_count : int)
+    (index_chunk_token_count : int)
     (exts : string)
     (additional_exts : string)
     (cache_dir : string)
@@ -66,7 +66,7 @@ let run
     ~max_fuzzy_edit_dist
     ~max_token_search_dist
     ~max_linked_token_search_dist
-    ~index_chunk_word_count
+    ~index_chunk_token_count
     ~cache_size
     ~search_result_count_per_doc
     ~search_result_print_text_width;
@@ -92,7 +92,7 @@ let run
   Params.max_fuzzy_edit_dist := max_fuzzy_edit_dist;
   Params.max_token_search_dist := max_token_search_dist;
   Params.max_linked_token_search_dist := max_linked_token_search_dist;
-  Params.index_chunk_word_count := index_chunk_word_count;
+  Params.index_chunk_token_count := index_chunk_token_count;
   Params.cache_size := cache_size;
   Params.cache_dir := (
     if no_cache then (
@@ -526,7 +526,7 @@ let cmd ~env ~sw =
      $ max_fuzzy_edit_dist_arg
      $ max_token_search_dist_arg
      $ max_linked_token_search_dist_arg
-     $ index_chunk_word_count_arg
+     $ index_chunk_token_count_arg
      $ exts_arg
      $ add_exts_arg
      $ cache_dir_arg

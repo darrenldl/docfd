@@ -53,9 +53,9 @@ let max_token_search_dist_arg_name = "max-token-search-dist"
 
 let max_token_search_dist_arg =
   let doc =
-    "Maximum distance to look for the next matching word/token in search phrase.
-If two words are adjacent words, then they are 1 distance away from each other.
-Note that contiguous spaces count as one word/token as well."
+    "Maximum distance to look for the next matching token in search phrase.
+If two tokens are adjacent, then they are 1 distance away from each other.
+Note that contiguous spaces count as one token as well."
   in
   Arg.(
     value
@@ -80,16 +80,16 @@ e.g. "-" and ">" are linked in "->" but not in "- >",
     & info [ max_linked_token_search_dist_arg_name ] ~doc ~docv:"N"
   )
 
-let index_chunk_word_count_arg_name = "index-chunk-word-count"
+let index_chunk_token_count_arg_name = "index-chunk-token-count"
 
-let index_chunk_word_count_arg =
+let index_chunk_token_count_arg =
   let doc =
-    "Number of words to send as a task unit to the thread pool for indexing."
+    "Number of tokens to send as a task unit to the thread pool for indexing."
   in
   Arg.(
     value
-    & opt int Params.default_index_chunk_word_count
-    & info [ index_chunk_word_count_arg_name ] ~doc ~docv:"N"
+    & opt int Params.default_index_chunk_token_count
+    & info [ index_chunk_token_count_arg_name ] ~doc ~docv:"N"
   )
 
 let cache_dir_arg =
@@ -220,7 +220,7 @@ let check
     ~max_fuzzy_edit_dist
     ~max_token_search_dist
     ~max_linked_token_search_dist
-    ~index_chunk_word_count
+    ~index_chunk_token_count
     ~cache_size
     ~search_result_count_per_doc
     ~search_result_print_text_width =
@@ -240,9 +240,9 @@ let check
     exit_with_error_msg
       (Fmt.str "invalid %s: cannot be < 1" max_linked_token_search_dist_arg_name)
   );
-  if index_chunk_word_count < 1 then (
+  if index_chunk_token_count < 1 then (
     exit_with_error_msg
-      (Fmt.str "invalid %s: cannot be < 1" index_chunk_word_count_arg_name)
+      (Fmt.str "invalid %s: cannot be < 1" index_chunk_token_count_arg_name)
   );
   if cache_size < 1 then (
     exit_with_error_msg

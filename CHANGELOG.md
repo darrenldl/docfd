@@ -18,8 +18,11 @@
     - Two tokens are linked if there is no space between them,
       e.g. `-` and `>` are linked in `->`, but not in `- >`
 
-- Renamed `--max-word-search-dist` to `--max-token-search-dist` to be consistent with
-  `--max-linked-token-search-dist`
+- Replaced `word` with `token` in the following options for consistency
+    - `--max-word-search-dist`
+    - `--index-chunk-word-count`
+
+- Replaced `word` with `token` in user-facing text
 
 ## 3.0.0
 
