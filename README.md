@@ -147,6 +147,9 @@ current directory `.`.
 If any of the file ends with `.pdf`, then `pdftotext`
 is required to continue.
 
+If any of the file ends with extension that is supported
+via `pandoc`, then `pandoc` is required to continue.
+
 If exactly one file is specified
 in the list of paths, then Docfd uses single file view.
 Otherwise, Docfd uses multi-file view.
@@ -191,9 +194,9 @@ one of:
 To use literal `?`, `(`, `)` or `|`, a backslash (`\`) needs to be placed in front
 of the character.
 
-Search is asynchronous. Specifically:
+Search is asynchronous, specifically:
 - Editing of search field is not blocked by search progress
-- Updating/clearing the search expression cancels the current search
+- Updating/clearing the search field cancels the current search
   and starts a new search immediately
 
 <details>
