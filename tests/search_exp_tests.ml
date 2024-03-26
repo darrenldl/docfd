@@ -300,6 +300,22 @@ module Alco = struct
       [ ("and/ or",
          [ ("and", false); ("/", true); ("or", false) ])
       ];
+    test_exp "and(/) or"
+      [ ("and / or",
+         [ ("and", false); ("/", false); ("or", false) ])
+      ];
+    test_exp ~neg:true "and(/) or"
+      [ ("and/ or",
+         [ ("and", false); ("/", true); ("or", false) ])
+      ];
+    test_exp "and/(or)"
+      [ ("and/ or",
+         [ ("and", false); ("/", true); ("or", false) ])
+      ];
+    test_exp ~neg:true "and/(or)"
+      [ ("and/or",
+         [ ("and", false); ("/", true); ("or", true) ])
+      ];
     test_exp "go (left | right) and/or ( up | down )"
       [ ("go left and/or up",
          [ ("go", false); ("left", false); ("and", false); ("/", true); ("or", true); ("up", false) ])
