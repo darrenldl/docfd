@@ -478,8 +478,8 @@ module Search = struct
     word_ci_and_positions_to_consider
     |> Seq.filter (fun (indexed_word, _pos_s) ->
         Eio.Fiber.yield ();
-        (String.length indexed_word > 0)
-        && (not (Parser_components.is_space indexed_word.[0]))
+        (String.length indexed_word > 0
+        && not (Parser_components.is_space indexed_word.[0]))
       )
     |> Seq.filter (fun (indexed_word, _pos_s) ->
         Eio.Fiber.yield ();
