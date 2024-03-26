@@ -110,6 +110,9 @@ module Bottom_pane = struct
           [
             { label = ""; msg = "" };
           ];
+          [
+            { label = ""; msg = "" };
+          ];
         ]
       in
       [
