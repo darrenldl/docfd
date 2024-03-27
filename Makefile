@@ -30,6 +30,9 @@ release-static :
 
 .PHONY: tests
 tests :
+	# Cleaning and rebuilding here to make sure cram tests actually use a recent binary,
+	# since Dune (as of 3.14.0) doesn't trigger rebuild of binary when
+	# invoking cram tests, even if the binary source code has changed.
 	make clean
 	make
 	OCAMLRUNPARAM=b dune exec tests/main.exe --no-buffer --force
