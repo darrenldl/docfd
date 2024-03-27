@@ -30,6 +30,7 @@ release-static :
 
 .PHONY: tests
 tests :
+	make clean
 	make
 	OCAMLRUNPARAM=b dune exec tests/main.exe --no-buffer --force
 	dune build @line-wrapping-tests
