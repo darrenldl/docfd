@@ -19,6 +19,7 @@
       e.g. `-` and `>` are linked in `->`, but not in `- >`
 
 - Replaced `word` with `token` in the following options for consistency
+
     - `--max-word-search-dist`
     - `--index-chunk-word-count`
 
