@@ -140,14 +140,14 @@ let run
     match paths_from with
     | None -> []
     | Some paths_from -> (
-      try
-        CCIO.with_in paths_from CCIO.read_lines_l
-      with
-      | _ -> (
-          exit_with_error_msg
-            (Fmt.str "failed to read list of paths from %s" (Filename.quote paths_from))
-        )
-    )
+        try
+          CCIO.with_in paths_from CCIO.read_lines_l
+        with
+        | _ -> (
+            exit_with_error_msg
+              (Fmt.str "failed to read list of paths from %s" (Filename.quote paths_from))
+          )
+      )
   in
   let paths, paths_were_originally_specified_by_user =
     match paths, paths_from_file with
@@ -301,44 +301,44 @@ let run
     exit 0
   );
   (match search_exp with
-  | None -> ()
-  | Some search_exp -> (
-    (* Non-interactive mode *)
-    match
-      Search_exp.make
-        ~fuzzy_max_edit_dist:!Params.max_fuzzy_edit_dist
-        search_exp
-    with
-    | None -> (
-        exit_with_error_msg "failed to parse search exp"
-      )
-    | Some search_exp -> (
-        let document_store =
-          Document_store.update_search_exp pool (Stop_signal.make ()) search_exp init_document_store
-        in
-        let document_info_s =
-          Document_store.usable_documents document_store
-        in
-        Array.iteri (fun i (document, search_results) ->
-            let out = `Stdout in
-            if i > 0 then (
-              Search_result_print.newline_image ~out;
-            );
-            let images =
-              Content_and_search_result_render.search_results
-                ~render_mode:(Ui_base.render_mode_of_document document)
-                ~start:0
-                ~end_exc:search_result_count_per_doc
-                ~width:search_result_print_text_width
-                (Document.index document)
-                search_results
-            in
-            Search_result_print.search_result_images ~out ~document images;
-          ) document_info_s;
-        clean_up ();
-        exit 0
-      )
-  )
+   | None -> ()
+   | Some search_exp -> (
+       (* Non-interactive mode *)
+       match
+         Search_exp.make
+           ~fuzzy_max_edit_dist:!Params.max_fuzzy_edit_dist
+           search_exp
+       with
+       | None -> (
+           exit_with_error_msg "failed to parse search exp"
+         )
+       | Some search_exp -> (
+           let document_store =
+             Document_store.update_search_exp pool (Stop_signal.make ()) search_exp init_document_store
+           in
+           let document_info_s =
+             Document_store.usable_documents document_store
+           in
+           Array.iteri (fun i (document, search_results) ->
+               let out = `Stdout in
+               if i > 0 then (
+                 Search_result_print.newline_image ~out;
+               );
+               let images =
+                 Content_and_search_result_render.search_results
+                   ~render_mode:(Ui_base.render_mode_of_document document)
+                   ~start:0
+                   ~end_exc:search_result_count_per_doc
+                   ~width:search_result_print_text_width
+                   (Document.index document)
+                   search_results
+               in
+               Search_result_print.search_result_images ~out ~document images;
+             ) document_info_s;
+           clean_up ();
+           exit 0
+         )
+     )
   );
   Lwd.set Ui_base.Vars.document_store init_document_store;
   (match init_ui_mode with
@@ -491,22 +491,22 @@ let run
          (fun () -> Search_manager.search_fiber pool));
     Search_manager.manager_fiber;
     (fun () ->
-      match start_with_search with
-      | None -> ()
-      | Some start_with_search -> (
-       let start_with_search_len = String.length start_with_search in
-       (match init_ui_mode with
-        | Ui_base.Ui_multi_file -> (
-            Lwd.set Multi_file_view.Vars.search_field (start_with_search, start_with_search_len);
-            Multi_file_view.update_search_phrase ();
-          )
-        | Ui_single_file -> (
-            Lwd.set Ui_base.Vars.Single_file.search_field (start_with_search, start_with_search_len);
-            Single_file_view.update_search_phrase ();
-          )
-       );
-       loop ()
-      ));
+       match start_with_search with
+       | None -> ()
+       | Some start_with_search -> (
+           let start_with_search_len = String.length start_with_search in
+           (match init_ui_mode with
+            | Ui_base.Ui_multi_file -> (
+                Lwd.set Multi_file_view.Vars.search_field (start_with_search, start_with_search_len);
+                Multi_file_view.update_search_phrase ();
+              )
+            | Ui_single_file -> (
+                Lwd.set Ui_base.Vars.Single_file.search_field (start_with_search, start_with_search_len);
+                Single_file_view.update_search_phrase ();
+              )
+           );
+           loop ()
+         ));
   ];
   close_term ();
   clean_up ();
