@@ -144,7 +144,7 @@ let debug_log_arg =
   in
   Arg.(
     value
-    & opt string ""
+    & opt (some string) None
     & info [ "debug-log" ] ~doc ~docv:"FILE"
   )
 
@@ -154,7 +154,7 @@ let start_with_search_arg =
   in
   Arg.(
     value
-    & opt string ""
+    & opt (some string) None
     & info [ "start-with-search" ] ~doc ~docv:"EXP"
   )
 
@@ -164,7 +164,7 @@ let search_arg =
   in
   Arg.(
     value
-    & opt string ""
+    & opt (some string) None
     & info [ "search" ] ~doc ~docv:"EXP"
   )
 
@@ -199,7 +199,7 @@ and add to the final list of paths to be scanned."
   in
   Arg.(
     value
-    & opt string ""
+    & opt (some string) None
     & info [ "paths-from" ] ~doc ~docv:"FILE"
   )
 

@@ -42,7 +42,7 @@ let document_store_of_document_src ~env pool document_src =
 let run
     ~(env : Eio_unix.Stdenv.base)
     ~sw
-    (debug_log : string)
+    (debug_log : string option)
     (max_depth : int)
     (max_fuzzy_edit_dist : int)
     (max_token_search_dist : int)
@@ -54,11 +54,11 @@ let run
     (cache_size : int)
     (no_cache : bool)
     (index_only : bool)
-    (start_with_search : string)
-    (search_exp : string)
+    (start_with_search : string option)
+    (search_exp : string option)
     (search_result_count_per_doc : int)
     (search_result_print_text_width : int)
-    (paths_from : string)
+    (paths_from : string option)
     (paths : string list)
   =
   Args.check
@@ -71,9 +71,9 @@ let run
     ~search_result_count_per_doc
     ~search_result_print_text_width;
   Params.debug_output := (match debug_log with
-      | "" -> None
-      | "-" -> Some stderr
-      | _ -> (
+      | None -> None
+      | Some "-" -> Some stderr
+      | Some debug_log -> (
           try
             Some (
               open_out_gen
@@ -137,9 +137,9 @@ let run
     List.partition (fun s -> CCString.trim s = "?") paths
   in
   let paths_from_file =
-    if paths_from = "" then (
-      []
-    ) else (
+    match paths_from with
+    | None -> []
+    | Some paths_from -> (
       try
         CCIO.with_in paths_from CCIO.read_lines_l
       with
@@ -300,8 +300,10 @@ let run
     clean_up ();
     exit 0
   );
-  let non_interactive_mode = String.length search_exp > 0 in
-  if non_interactive_mode then (
+  (match search_exp with
+  | None -> ()
+  | Some search_exp -> (
+    (* Non-interactive mode *)
     match
       Search_exp.make
         ~fuzzy_max_edit_dist:!Params.max_fuzzy_edit_dist
@@ -336,6 +338,7 @@ let run
         clean_up ();
         exit 0
       )
+  )
   );
   Lwd.set Ui_base.Vars.document_store init_document_store;
   (match init_ui_mode with
@@ -488,6 +491,9 @@ let run
          (fun () -> Search_manager.search_fiber pool));
     Search_manager.manager_fiber;
     (fun () ->
+      match start_with_search with
+      | None -> ()
+      | Some start_with_search -> (
        let start_with_search_len = String.length start_with_search in
        (match init_ui_mode with
         | Ui_base.Ui_multi_file -> (
@@ -499,12 +505,13 @@ let run
             Single_file_view.update_search_phrase ();
           )
        );
-       loop ());
+       loop ()
+      ));
   ];
   close_term ();
   clean_up ();
   (match debug_log with
-   | "-" -> ()
+   | Some "-" -> ()
    | _ -> (
        match !Params.debug_output with
        | None -> ()
