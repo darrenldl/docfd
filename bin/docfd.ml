@@ -491,11 +491,11 @@ let run
          (fun () -> Search_manager.search_fiber pool));
     Search_manager.manager_fiber;
     (fun () ->
-       match start_with_search with
-       | None -> ()
-       | Some start_with_search -> (
-           let start_with_search_len = String.length start_with_search in
-           (match init_ui_mode with
+       (match start_with_search with
+        | None -> ()
+        | Some start_with_search -> (
+            let start_with_search_len = String.length start_with_search in
+            match init_ui_mode with
             | Ui_base.Ui_multi_file -> (
                 Lwd.set Multi_file_view.Vars.search_field (start_with_search, start_with_search_len);
                 Multi_file_view.update_search_phrase ();
@@ -504,9 +504,9 @@ let run
                 Lwd.set Ui_base.Vars.Single_file.search_field (start_with_search, start_with_search_len);
                 Single_file_view.update_search_phrase ();
               )
-           );
-           loop ()
-         ));
+          ));
+       loop ()
+    );
   ];
   close_term ();
   clean_up ();
