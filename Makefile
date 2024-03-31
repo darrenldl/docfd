@@ -27,6 +27,7 @@ release-static :
 	OCAMLPARAM='_,ccopt=-static' dune build --release bin/docfd.exe
 	mkdir -p statically-linked
 	cp -f _build/default/bin/docfd.exe statically-linked/docfd
+	chmod 755 statically-linked/docfd
 
 .PHONY: tests
 tests :
