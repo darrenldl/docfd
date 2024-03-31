@@ -54,7 +54,7 @@ module Score = struct
     fuzzy_match_found_char_count = 0.0;
   }
 
-  let f
+  let score
       ~(search_phrase : string list)
       ~(found_phrase : indexed_found_word list)
       ~(found_phrase_opening_closing_symbol_match_count : int)
@@ -343,7 +343,7 @@ let make ~search_phrase ~found_phrase ~found_phrase_opening_closing_symbol_match
   ) else if len <> List.length found_phrase then (
     invalid_arg "length of found_phrase does not match length of search_phrase"
   ) else (
-    let score = Score.f ~search_phrase ~found_phrase ~found_phrase_opening_closing_symbol_match_count in
+    let score = Score.score ~search_phrase ~found_phrase ~found_phrase_opening_closing_symbol_match_count in
     { score; search_phrase; found_phrase }
   )
 
