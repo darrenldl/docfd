@@ -138,10 +138,10 @@ let run
   in
   let paths_from_file =
     match paths_from with
-    | None -> []
+    | None -> None
     | Some paths_from -> (
         try
-          CCIO.with_in paths_from CCIO.read_lines_l
+          Some (CCIO.with_in paths_from CCIO.read_lines_l)
         with
         | _ -> (
             exit_with_error_msg
@@ -151,8 +151,9 @@ let run
   in
   let paths, paths_were_originally_specified_by_user =
     match paths, paths_from_file with
-    | [], [] -> ([ "." ], false)
-    | _, _ -> (paths @ paths_from_file, true)
+    | [], None -> ([ "." ], false)
+    | _, None -> (paths, true)
+    | _, Some paths_from_file -> (paths @ paths_from_file, true)
   in
   List.iter (fun path ->
       if not (Sys.file_exists path) then (
