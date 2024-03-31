@@ -9,7 +9,7 @@
 
     - `OK` means Docfd is idling
     - `...` means Docfd is searching
-    - `ERR` means Docfd failed to parse search expression
+    - `ERR` means Docfd failed to parse the search expression
 
 - Added search cancellation. Triggered by editing or clearing search field.
 
