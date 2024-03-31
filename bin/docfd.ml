@@ -211,7 +211,7 @@ let run
     let stdin_tmp_file = ref None in
     fun () ->
       if paths_were_originally_specified_by_user
-      || (stdin_is_atty ())
+      || stdin_is_atty ()
       then (
         match files with
         | [] -> (
