@@ -9,7 +9,7 @@ Set FontSize 15
 
 Set TypingSpeed 100ms
 
-Type@10ms "docfd --cache-dir .cache --exts md"
+Type@10ms "docfd --cache-dir .cache --exts md --max-depth 1"
 Enter
 Sleep 1s
 
