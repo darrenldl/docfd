@@ -26,7 +26,7 @@ Quick search with non-interactive mode:
 Navigating PDF and opening it to the closest location to the selected search
 result via PDF viewer integration:
 
-![](screenshots/pdf-viewer-integration.jpg)
+![](screenshots/pdf-viewer-integration.png)
 
 ## Features
 
