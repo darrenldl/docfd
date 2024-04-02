@@ -228,7 +228,7 @@ into one of the following cases:
 - They are a case-insensitive substring match (token in search phrase being the substring)
 - They are within the configured case-insensitive edit distance threshold
 
-Search results are then ranked using heuristics.
+Search results are then ranked using a heuristic.
 
 </details>
 
