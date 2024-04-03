@@ -126,12 +126,12 @@ let run
     |> List.filter (fun s -> s <> "")
     |> List.map (fun s -> Printf.sprintf ".%s" s)
   in
-  (match recognized_exts with
-   | [] -> (
+  (match recognized_exts, globs with
+   | [], [] -> (
        exit_with_error_msg
-         (Fmt.str "no usable file extensions")
+         (Fmt.str "no usable file extensions or glob patterns")
      )
-   | _ -> ()
+   | _, _ -> ()
   );
   Params.recognized_exts := recognized_exts;
   let question_marks, paths =
