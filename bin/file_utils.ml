@@ -62,7 +62,13 @@ let list_files_recursive_filter_by_globs
               )
           )
         | _ -> (
-            let re = Option.get (Misc_utils.compile_glob_re x) in
+            let re =
+              match Misc_utils.compile_glob_re x with
+              | None -> (
+                  failwith (Fmt.str "expected subpath of a valid glob pattern to also be valid: \"%s\"" x)
+                )
+              | Some x -> x
+            in
             let next_choices =
               try
                 Sys.readdir path
