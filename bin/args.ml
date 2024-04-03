@@ -203,6 +203,16 @@ and add to the final list of paths to be scanned."
     & info [ "paths-from" ] ~doc ~docv:"FILE"
   )
 
+let glob_arg =
+  let doc =
+    "Add to the final list of paths to be scanned using glob pattern."
+  in
+  Arg.(
+    value
+    & opt_all string []
+    & info [ "glob" ] ~doc ~docv:"PATTERN"
+  )
+
 let paths_arg =
   let doc =
     "PATH can be either file or directory.
@@ -211,7 +221,7 @@ If any PATH is \"?\", then the list of files is passed onto fzf for user selecti
 Multiple \"?\" are treated the same as one \"?\".
 If no paths are provided or only \"?\" is provided,
 then Docfd defaults to scanning the current working directory
-unless --paths-from is used.
+unless --paths-from or --glob is used.
 To use piped stdin as input, the list of paths must be empty."
   in
   Arg.(value & pos_all string [] & info [] ~doc ~docv:"PATH")
@@ -224,7 +234,8 @@ let check
     ~index_chunk_token_count
     ~cache_size
     ~search_result_count_per_doc
-    ~search_result_print_text_width =
+    ~search_result_print_text_width
+  =
   if max_depth < 1 then (
     exit_with_error_msg
       (Fmt.str "invalid %s: cannot be < 1" max_depth_arg_name)

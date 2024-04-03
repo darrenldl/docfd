@@ -40,40 +40,42 @@ let list_files_recursive_all (path : string) : string list =
   aux path;
   List.sort_uniq String.compare !l
 
-let list_files_recursive_filter_by_glob
+let list_files_recursive_filter_by_globs
     (globs : (string * Re.re) list)
   : string list =
   let l = ref [] in
   let add x =
     l := x :: !l
   in
-  let rec aux path (glob_parts : string list) full_path_re =
+  let rec aux (path : string) (glob_parts : string list) (full_path_re : Re.re) =
     match glob_parts with
     | [] -> add path
     | x :: xs -> (
         match x with
-        | "" -> aux cwd xs path
+        | "" -> aux path xs full_path_re
         | "**" -> (
             list_files_recursive_all path
-            |> List.filter (fun path ->
-                Re.execp full_path_re path
+            |> List.iter (fun path ->
+                if Re.execp full_path_re path then (
+                  add path
+                )
               )
           )
-        | _ -> -> (
-          let re = Misc_utils.compile_glob_re x in
-          let next_choices =
-            try
-              Sys.readdir path
-            with
-            | _ -> [||]
-          in
-          Array.iter (fun f ->
-              if Re.execp re f then (
-                aux (Filename.concat path f) xs full_path_re
+        | _ -> (
+            let re = Option.get (Misc_utils.compile_glob_re x) in
+            let next_choices =
+              try
+                Sys.readdir path
+              with
+              | _ -> [||]
+            in
+            Array.iter (fun f ->
+                if Re.execp re f then (
+                  aux (Filename.concat path f) xs full_path_re
+                )
               )
-            )
-            next_choices;
-        )
+              next_choices;
+          )
       )
   in
   List.iter (fun (glob, full_path_re) ->
@@ -85,7 +87,8 @@ let list_files_recursive_filter_by_glob
       | _ -> (
           aux (Sys.getcwd ()) glob_parts full_path_re
         )
-    ) globs
+    ) globs;
+  List.sort_uniq String.compare !l
 
 let list_files_recursive_filter_by_exts (paths : string list) : string list =
   let l = ref [] in

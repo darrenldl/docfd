@@ -43,7 +43,8 @@ let stderr_is_atty () =
 
 let compile_glob_re s =
   try
-    Re.Glob.glob
+    s
+    |> Re.Glob.glob
       ~anchored:false
       ~pathname:true
       ~match_backslashes:false

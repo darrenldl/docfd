@@ -59,6 +59,7 @@ let run
     (search_result_count_per_doc : int)
     (search_result_print_text_width : int)
     (paths_from : string option)
+    (globs : string list)
     (paths : string list)
   =
   Args.check
@@ -149,11 +150,31 @@ let run
           )
       )
   in
+  let paths_from_glob =
+    match globs with
+    | [] -> None
+    | _ -> (
+        let globs =
+          List.map (fun s ->
+              match compile_glob_re s with
+              | Some re -> (s, re)
+              | None -> (
+                  exit_with_error_msg
+                    (Fmt.str "failed to parse glob pattern: \"%s\"" s)
+                )
+            ) globs
+        in
+        Some (File_utils.list_files_recursive_filter_by_globs globs)
+      )
+  in
   let paths, paths_were_originally_specified_by_user =
-    match paths, paths_from_file with
-    | [], None -> ([ "." ], false)
-    | _, None -> (paths, true)
-    | _, Some paths_from_file -> (paths @ paths_from_file, true)
+    match paths, paths_from_file, paths_from_glob with
+    | [], None, None -> ([ "." ], false)
+    | _, _, _ -> (
+        let paths_from_file = Option.value paths_from_file ~default:[] in
+        let paths_from_glob = Option.value paths_from_glob ~default:[] in
+        (List.flatten [ paths; paths_from_file; paths_from_glob ], true)
+      )
   in
   List.iter (fun path ->
       if not (Sys.file_exists path) then (
@@ -162,7 +183,7 @@ let run
       )
     )
     paths;
-  let files = File_utils.list_files_recursive paths in
+  let files = File_utils.list_files_recursive_filter_by_exts paths in
   let files =
     match question_marks with
     | [] -> files
@@ -546,6 +567,7 @@ let cmd ~env ~sw =
      $ search_result_count_per_doc_arg
      $ search_result_print_text_width_arg
      $ paths_from_arg
+     $ glob_arg
      $ paths_arg)
 
 let () = Eio_main.run (fun env ->
