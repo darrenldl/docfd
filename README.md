@@ -205,7 +205,7 @@ Search is asynchronous, specifically:
 
 For a phrase with optional operator, such as `?word0 word1 ...`,
 the first word is grouped implicitly,
-i.e. it is treated as `?(word0) word1 ...`.
+i.e. it is treated as `(?word0) word1 ...`.
 
 #### Search phrase and search procedure
 
@@ -237,7 +237,7 @@ Search results are then ranked using a heuristic.
 Navigation mode
 - Switch to search mode
     - `/`
-- Clear search phrase
+- Clear search field
     - `x`
 - Exit Docfd
     - `Esc`, `Ctrl+C` or `Ctrl+Q`
@@ -248,14 +248,14 @@ Navigation mode
 
 Search mode
 - Search field is active in this mode
-- `Enter` to confirm search phrase and exit search mode
+- `Enter` to confirm search expression and exit search mode
 
 ## Multi-file view
 
 ![](screenshots/multi-file-view0.png)
 
 The default TUI is divided into four sections:
-- Left is the list of documents which satisfy the search phrase
+- Left is the list of documents which satisfy the search expression
 - Top right is the content view of the document which tracks the search result selected
 - Bottom right is the ranked search result list
 - Bottom pane consists of:
