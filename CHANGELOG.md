@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.1.0
+
+- Added file globbing support in the form of `--glob` argument
+
 ## 4.0.0
 
 - Made document search asynchronous to search field input, so UI remains
