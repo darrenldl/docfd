@@ -56,5 +56,6 @@
             timedesc
             timedesc-tzlocal.unix
             timedesc-tzdb.full
+            re
  )
 )

@@ -40,3 +40,17 @@ let stdout_is_atty () =
 
 let stderr_is_atty () =
   Unix.isatty Unix.stderr
+
+let compile_glob_re s =
+  try
+    Re.Glob.glob
+      ~anchored:false
+      ~pathname:true
+      ~match_backslashes:false
+      ~period:true
+      ~expand_braces:false
+      ~double_asterisk:true
+    |> Re.compile
+    |> Option.some
+  with
+  | _ -> None

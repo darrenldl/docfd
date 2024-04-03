@@ -12,7 +12,82 @@ let read_in_channel_to_tmp_file (ic : in_channel) : (string, string) result =
       Error (Fmt.str "failed to write stdin to %s" (Filename.quote file))
     )
 
-let list_files_recursive (dirs : string list) : string list =
+let list_files_recursive_all (path : string) : string list =
+  let l = ref [] in
+  let add x =
+    l := x :: !l
+  in
+  let rec aux path =
+    match Sys.is_directory path with
+    | is_dir -> (
+        if is_dir then (
+          let next_choices =
+            try
+              Sys.readdir path
+            with
+            | _ -> [||]
+          in
+          Array.iter (fun f ->
+              aux (Filename.concat path f)
+            )
+            next_choices
+        ) else (
+          add path
+        )
+      )
+    | exception _ -> ()
+  in
+  aux path;
+  List.sort_uniq String.compare !l
+
+let list_files_recursive_filter_by_glob
+    (globs : (string * Re.re) list)
+  : string list =
+  let l = ref [] in
+  let add x =
+    l := x :: !l
+  in
+  let rec aux path (glob_parts : string list) full_path_re =
+    match glob_parts with
+    | [] -> add path
+    | x :: xs -> (
+        match x with
+        | "" -> aux cwd xs path
+        | "**" -> (
+            list_files_recursive_all path
+            |> List.filter (fun path ->
+                Re.execp full_path_re path
+              )
+          )
+        | _ -> -> (
+          let re = Misc_utils.compile_glob_re x in
+          let next_choices =
+            try
+              Sys.readdir path
+            with
+            | _ -> [||]
+          in
+          Array.iter (fun f ->
+              if Re.execp re f then (
+                aux (Filename.concat path f) xs full_path_re
+              )
+            )
+            next_choices;
+        )
+      )
+  in
+  List.iter (fun (glob, full_path_re) ->
+      let glob_parts = CCString.split ~by:Filename.dir_sep glob in
+      match glob_parts with
+      | "" :: rest -> (
+          aux "/" rest full_path_re
+        )
+      | _ -> (
+          aux (Sys.getcwd ()) glob_parts full_path_re
+        )
+    ) globs
+
+let list_files_recursive_filter_by_exts (paths : string list) : string list =
   let l = ref [] in
   let add x =
     l := x :: !l
@@ -43,7 +118,7 @@ let list_files_recursive (dirs : string list) : string list =
       | exception _ -> ()
     ) else ()
   in
-  List.iter (fun x -> aux 0 x) dirs;
+  List.iter (fun x -> aux 0 x) paths;
   List.sort_uniq String.compare !l
 
 let mkdir_recursive (dir : string) : unit =
