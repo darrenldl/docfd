@@ -150,7 +150,7 @@ let run
           )
       )
   in
-  let paths_from_glob =
+  let paths_from_globs =
     match globs with
     | [] -> None
     | _ -> (
@@ -167,13 +167,13 @@ let run
         Some (File_utils.list_files_recursive_filter_by_globs globs)
       )
   in
-  let paths, paths_were_originally_specified_by_user =
-    match paths, paths_from_file, paths_from_glob with
-    | [], None, None -> ([ "." ], false)
+  let paths, paths_from_globs, paths_were_originally_specified_by_user =
+    match paths, paths_from_file, paths_from_globs with
+    | [], None, None -> ([ "." ], String_set.empty, false)
     | _, _, _ -> (
         let paths_from_file = Option.value paths_from_file ~default:[] in
-        let paths_from_glob = Option.value paths_from_glob ~default:[] in
-        (List.flatten [ paths; paths_from_file; paths_from_glob ], true)
+        let paths_from_globs = Option.value paths_from_globs ~default:String_set.empty in
+        (List.flatten [ paths; paths_from_file ], paths_from_globs, true)
       )
   in
   List.iter (fun path ->
@@ -183,7 +183,12 @@ let run
       )
     )
     paths;
-  let files = File_utils.list_files_recursive_filter_by_exts paths in
+  let files =
+    String_set.union
+      (File_utils.list_files_recursive_filter_by_exts paths)
+      paths_from_globs
+    |> String_set.to_list
+  in
   let files =
     match question_marks with
     | [] -> files

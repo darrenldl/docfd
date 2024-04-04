@@ -12,10 +12,10 @@ let read_in_channel_to_tmp_file (ic : in_channel) : (string, string) result =
       Error (Fmt.str "failed to write stdin to %s" (Filename.quote file))
     )
 
-let list_files_recursive_all (path : string) : string list =
-  let l = ref [] in
+let list_files_recursive_all (path : string) : String_set.t =
+  let acc = ref String_set.empty in
   let add x =
-    l := x :: !l
+    acc := String_set.add x !acc
   in
   let rec aux path =
     match Sys.is_directory path with
@@ -38,24 +38,32 @@ let list_files_recursive_all (path : string) : string list =
     | exception _ -> ()
   in
   aux path;
-  List.sort_uniq String.compare !l
+  !acc
 
 let list_files_recursive_filter_by_globs
     (globs : (string * Re.re) list)
-  : string list =
-  let l = ref [] in
+  : String_set.t =
+  let acc = ref String_set.empty in
   let add x =
-    l := x :: !l
+    acc := String_set.add x !acc
   in
   let rec aux (path : string) (glob_parts : string list) (full_path_re : Re.re) =
     match glob_parts with
-    | [] -> add path
+    | [] -> (
+        match Sys.is_directory path with
+        | is_dir -> (
+            if not is_dir then (
+              add path
+            )
+          )
+        | exception _ -> ()
+      )
     | x :: xs -> (
         match x with
         | "" -> aux path xs full_path_re
         | "**" -> (
             list_files_recursive_all path
-            |> List.iter (fun path ->
+            |> String_set.iter (fun path ->
                 if Re.execp full_path_re path then (
                   add path
                 )
@@ -94,12 +102,12 @@ let list_files_recursive_filter_by_globs
           aux (Sys.getcwd ()) glob_parts full_path_re
         )
     ) globs;
-  List.sort_uniq String.compare !l
+  !acc
 
-let list_files_recursive_filter_by_exts (paths : string list) : string list =
-  let l = ref [] in
+let list_files_recursive_filter_by_exts (paths : string list) : String_set.t =
+  let acc = ref String_set.empty in
   let add x =
-    l := x :: !l
+    acc := String_set.add x !acc
   in
   let rec aux depth path =
     if depth <= !Params.max_file_tree_depth then (
@@ -125,10 +133,10 @@ let list_files_recursive_filter_by_exts (paths : string list) : string list =
           )
         )
       | exception _ -> ()
-    ) else ()
+    )
   in
   List.iter (fun x -> aux 0 x) paths;
-  List.sort_uniq String.compare !l
+  !acc
 
 let mkdir_recursive (dir : string) : unit =
   let rec aux acc parts =
