@@ -113,10 +113,15 @@ let list_files_recursive_filter_by_globs
       let glob_parts = CCString.split ~by:Filename.dir_sep glob in
       match glob_parts with
       | "" :: rest -> (
-          aux [ "/" ] rest
+          aux [ "" ] rest
         )
       | _ -> (
-          aux (CCString.split ~by:Filename.dir_sep (Sys.getcwd ())) glob_parts
+          let path_parts =
+            Sys.getcwd ()
+            |> CCString.split ~by:Filename.dir_sep
+            |> List.rev
+          in
+          aux path_parts glob_parts
         )
     ) globs;
   !acc
