@@ -43,6 +43,14 @@ let document_store_of_document_src ~env pool ~single_line_search_paths document_
                 !Params.default_search_mode
               )
             in
+            do_if_debug (fun oc ->
+                Printf.fprintf oc "Using %s search mode for document %s\n"
+                  (match search_mode with
+                   | `Single_line -> "single line"
+                   | `Multiline -> "multiline"
+                  )
+                  (Filename.quote path)
+              );
             match Document.of_path ~env pool search_mode path with
             | Ok x -> (
                 do_if_debug (fun oc ->
@@ -216,11 +224,15 @@ let run
     paths;
   let single_line_search_paths =
     String_set.union
-      (File_utils.list_files_recursive_filter_by_exts ~exts:!Params.recognized_single_line_exts paths)
+      (File_utils.list_files_recursive_filter_by_exts
+         ~check_top_level_files:true
+         ~exts:!Params.recognized_single_line_exts paths)
       paths_from_single_line_globs
   in
   let files =
-    File_utils.list_files_recursive_filter_by_exts ~exts:!Params.recognized_exts paths
+    File_utils.list_files_recursive_filter_by_exts
+      ~check_top_level_files:false
+      ~exts:!Params.recognized_exts paths
     |> String_set.union paths_from_globs
     |> String_set.union single_line_search_paths
     |> String_set.to_list
