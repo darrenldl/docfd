@@ -30,7 +30,9 @@ let set_search_result_selected ~choice_count n =
 
 let reload_document (doc : Document.t) =
   let pool = Ui_base.task_pool () in
-  match Document.of_path ~env:(Ui_base.eio_env ()) pool (Document.path doc) with
+  match
+    Document.of_path ~env:(Ui_base.eio_env ()) pool (Document.search_mode doc) (Document.path doc)
+  with
   | Ok doc -> (
       reset_document_selected ();
       let document_store =

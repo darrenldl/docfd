@@ -37,6 +37,10 @@ let default_recognized_single_line_exts =
 
 let recognized_exts : string list ref = ref []
 
+let recognized_single_line_exts : string list ref = ref []
+
+let default_search_mode : Search_mode.t ref = ref `Single_line
+
 let index_file_ext = ".index"
 
 let hash_chunk_size = 4096

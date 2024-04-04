@@ -104,7 +104,7 @@ let list_files_recursive_filter_by_globs
     ) globs;
   !acc
 
-let list_files_recursive_filter_by_exts (paths : string list) : String_set.t =
+let list_files_recursive_filter_by_exts ~(exts : string list) (paths : string list) : String_set.t =
   let acc = ref String_set.empty in
   let add x =
     acc := String_set.add x !acc
@@ -127,7 +127,7 @@ let list_files_recursive_filter_by_exts (paths : string list) : String_set.t =
           ) else (
             let ext = extension_of_file path in
             (* We skip file extension checks for top-level user specified files. *)
-            if depth = 0 || List.mem ext !Params.recognized_exts then (
+            if depth = 0 || List.mem ext exts then (
               add path
             )
           )

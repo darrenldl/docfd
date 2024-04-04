@@ -54,7 +54,12 @@ let update_search_exp pool stop_signal search_exp (t : t) : t =
       |> String_map.to_list
       |> Eio.Fiber.List.map ~max_fibers:Task_pool.size
         (fun (path, doc) ->
-           (path, Index.search pool stop_signal search_exp (Document.index doc))
+           let within_same_line =
+             match Document.search_mode doc with
+             | `Single_line -> true
+             | `Multiline -> false
+           in
+           (path, Index.search pool stop_signal ~within_same_line search_exp (Document.index doc))
         )
       |> String_map.of_list
     in
@@ -65,10 +70,15 @@ let update_search_exp pool stop_signal search_exp (t : t) : t =
   )
 
 let add_document pool (doc : Document.t) (t : t) : t =
+  let within_same_line =
+    match Document.search_mode doc with
+    | `Single_line -> true
+    | `Multiline -> false
+  in
   let search_results =
     String_map.add
       (Document.path doc)
-      (Index.search pool (Stop_signal.make ()) t.search_exp (Document.index doc))
+      (Index.search pool (Stop_signal.make ()) ~within_same_line t.search_exp (Document.index doc))
       t.search_results
   in
   { t with

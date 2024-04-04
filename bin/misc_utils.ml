@@ -55,3 +55,16 @@ let compile_glob_re s =
     |> Option.some
   with
   | _ -> None
+
+let compute_total_recognized_exts ~exts ~additional_exts =
+  let split_on_comma = String.split_on_char ',' in
+  ((split_on_comma exts)
+   @
+   (split_on_comma additional_exts))
+  |> List.map (fun s ->
+      s
+      |> String_utils.remove_leading_dots
+      |> CCString.trim
+    )
+  |> List.filter (fun s -> s <> "")
+  |> List.map (fun s -> Printf.sprintf ".%s" s)

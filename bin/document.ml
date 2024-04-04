@@ -1,13 +1,8 @@
 open Result_syntax
 open Docfd_lib
 
-type search_mode = [
-  | `Single_line
-  | `Multiline
-]
-
 type t = {
-  search_mode : search_mode;
+  search_mode : Search_mode.t;
   path : string;
   title : string option;
   index : Index.t;
