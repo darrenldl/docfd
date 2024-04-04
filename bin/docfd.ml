@@ -40,7 +40,7 @@ let document_store_of_document_src ~env pool ~single_line_search_paths document_
               if String_set.mem path single_line_search_paths then (
                 `Single_line
               ) else (
-                `Multiline
+                !Params.default_search_mode
               )
             in
             match Document.of_path ~env pool search_mode path with
@@ -87,6 +87,7 @@ let run
     (paths_from : string option)
     (globs : string list)
     (single_line_globs : string list)
+    (single_line_search_mode_by_default : bool)
     (paths : string list)
   =
   Args.check
@@ -128,6 +129,13 @@ let run
     ) else (
       File_utils.mkdir_recursive cache_dir;
       Some cache_dir
+    )
+  );
+  Params.default_search_mode := (
+    if single_line_search_mode_by_default then (
+      `Single_line
+    ) else (
+      `Multiline
     )
   );
   (match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
@@ -606,6 +614,7 @@ let cmd ~env ~sw =
      $ paths_from_arg
      $ glob_arg
      $ single_line_glob_arg
+     $ single_line_arg
      $ paths_arg)
 
 let () = Eio_main.run (fun env ->

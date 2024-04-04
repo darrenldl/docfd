@@ -39,7 +39,7 @@ let recognized_exts : string list ref = ref []
 
 let recognized_single_line_exts : string list ref = ref []
 
-let default_search_mode : Search_mode.t ref = ref `Single_line
+let default_search_mode : Search_mode.t ref = ref `Multiline
 
 let index_file_ext = ".index"
 

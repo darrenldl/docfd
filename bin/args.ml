@@ -267,6 +267,16 @@ then single line search mode is used."
     & info [ single_line_glob_arg_name ] ~doc ~docv:"PATTERN"
   )
 
+let single_line_arg =
+  let doc =
+    "Use single line search mode by default."
+  in
+  Arg.(
+    value
+    & flag
+    & info [ "single-line" ] ~doc
+  )
+
 let paths_arg =
   let doc =
     "PATH can be either file or directory.
