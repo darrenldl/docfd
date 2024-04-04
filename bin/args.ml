@@ -205,7 +205,10 @@ and add to the final list of paths to be scanned."
 
 let glob_arg =
   let doc =
-    "Add to the final list of paths to be scanned using glob pattern."
+    "Add to the final list of paths to be scanned using glob pattern.
+The pattern should pick up the files directly.
+Directories picked up by the pattern are not further scanned
+for files with suitable extensions."
   in
   Arg.(
     value
