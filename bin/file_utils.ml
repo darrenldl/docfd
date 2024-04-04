@@ -41,15 +41,27 @@ let list_files_recursive_all (path : string) : String_set.t =
   !acc
 
 let list_files_recursive_filter_by_globs
-    (globs : (string * Re.re) list)
+    (globs : string list)
   : String_set.t =
   let acc = ref String_set.empty in
   let add x =
     acc := String_set.add x !acc
   in
-  let rec aux (path : string) (glob_parts : string list) (full_path_re : Re.re) =
+  let path_of_parts parts =
+    List.rev parts
+    |> String.concat Filename.dir_sep
+  in
+  let compile_glob_re s =
+    match Misc_utils.compile_glob_re s with
+    | None -> (
+        failwith (Fmt.str "expected subpath of a valid glob pattern to also be valid: \"%s\"" s)
+      )
+    | Some x -> x
+  in
+  let rec aux (path_parts : string list) (glob_parts : string list) =
     match glob_parts with
     | [] -> (
+        let path = path_of_parts path_parts in
         match Sys.is_directory path with
         | is_dir -> (
             if not is_dir then (
@@ -60,23 +72,28 @@ let list_files_recursive_filter_by_globs
       )
     | x :: xs -> (
         match x with
-        | "" -> aux path xs full_path_re
+        | "" | "." -> aux path_parts xs
+        | ".." -> (
+            let path_parts =
+              match path_parts with
+              | [] -> []
+              | _ :: xs -> xs
+            in
+            aux path_parts xs
+          )
         | "**" -> (
+            let re = compile_glob_re (String.concat Filename.dir_sep glob_parts) in
+            let path = path_of_parts path_parts in
             list_files_recursive_all path
             |> String_set.iter (fun path ->
-                if Re.execp full_path_re path then (
+                if Re.execp re path then (
                   add path
                 )
               )
           )
         | _ -> (
-            let re =
-              match Misc_utils.compile_glob_re x with
-              | None -> (
-                  failwith (Fmt.str "expected subpath of a valid glob pattern to also be valid: \"%s\"" x)
-                )
-              | Some x -> x
-            in
+            let re = compile_glob_re x in
+            let path = path_of_parts path_parts in
             let next_choices =
               try
                 Sys.readdir path
@@ -85,21 +102,21 @@ let list_files_recursive_filter_by_globs
             in
             Array.iter (fun f ->
                 if Re.execp re f then (
-                  aux (Filename.concat path f) xs full_path_re
+                  aux (f :: path_parts) xs
                 )
               )
               next_choices;
           )
       )
   in
-  List.iter (fun (glob, full_path_re) ->
+  List.iter (fun glob ->
       let glob_parts = CCString.split ~by:Filename.dir_sep glob in
       match glob_parts with
       | "" :: rest -> (
-          aux "/" rest full_path_re
+          aux [ "/" ] rest
         )
       | _ -> (
-          aux (Sys.getcwd ()) glob_parts full_path_re
+          aux (CCString.split ~by:Filename.dir_sep (Sys.getcwd ())) glob_parts
         )
     ) globs;
   !acc

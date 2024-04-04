@@ -45,7 +45,7 @@ let compile_glob_re s =
   try
     s
     |> Re.Glob.glob
-      ~anchored:false
+      ~anchored:true
       ~pathname:true
       ~match_backslashes:false
       ~period:true

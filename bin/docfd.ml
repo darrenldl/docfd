@@ -8,16 +8,14 @@ let compute_paths_from_globs globs =
   match globs with
   | [] -> None
   | _ -> (
-      let globs =
-        List.map (fun s ->
-            match compile_glob_re s with
-            | Some re -> (s, re)
-            | None -> (
-                exit_with_error_msg
-                  (Fmt.str "failed to parse glob pattern: \"%s\"" s)
-              )
-          ) globs
-      in
+      List.iter (fun s ->
+          match compile_glob_re s with
+          | Some _ -> ()
+          | None -> (
+              exit_with_error_msg
+                (Fmt.str "failed to parse glob pattern: \"%s\"" s)
+            )
+        ) globs;
       Some (File_utils.list_files_recursive_filter_by_globs globs)
     )
 
