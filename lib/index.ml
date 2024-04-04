@@ -441,7 +441,7 @@ let start_end_inc_pos_of_global_line_num x t =
 
 module Search = struct
   let usable_positions
-      ?within_global_line_num
+      ?within
       ?around_pos
       ~(consider_edit_dist : bool)
       (token : Search_phrase.enriched_token)
@@ -462,18 +462,14 @@ module Search = struct
           in
           let start = around_pos - dist in
           let end_inc = around_pos + dist in
-          match within_global_line_num with
-          | None -> (
-              word_ci_and_pos_s ~range_inc:(start, end_inc) t
-            )
-          | Some line_num -> (
-              let (line_start_pos, line_end_inc_pos) =
-                start_end_inc_pos_of_global_line_num line_num t
-              in
-              let start = max line_start_pos start in
-              let end_inc = min line_end_inc_pos end_inc in
-              word_ci_and_pos_s ~range_inc:(start, end_inc) t
-            )
+          let start, end_inc =
+            match within with
+            | None -> (start, end_inc)
+            | Some (within_start_pos, within_end_inc_pos) -> (
+                (max within_start_pos start, min within_end_inc_pos end_inc)
+              )
+          in
+          word_ci_and_pos_s ~range_inc:(start, end_inc) t
         )
     in
     let search_word_ci =
@@ -506,7 +502,7 @@ module Search = struct
 
   let search_around_pos
       ~consider_edit_dist
-      ~(within_global_line_num : int option)
+      ~(within : (int * int) option)
       (around_pos : int)
       (l : Search_phrase.enriched_token list)
       (t : t)
@@ -517,7 +513,7 @@ module Search = struct
       | [] -> Seq.return []
       | token :: rest -> (
           usable_positions
-            ?within_global_line_num
+            ?within
             ~around_pos
             ~consider_edit_dist
             token
@@ -579,15 +575,15 @@ module Search = struct
                      pos_list
                      |> List.map (fun pos ->
                          Eio.Fiber.yield ();
-                         let within_global_line_num =
+                         let within =
                            if within_same_line then (
                              let loc = loc_of_pos pos t in
-                             Some loc.line_loc.global_line_num
+                             Some (start_end_inc_pos_of_global_line_num loc.line_loc.global_line_num t)
                            ) else (
                              None
                            )
                          in
-                         search_around_pos ~consider_edit_dist ~within_global_line_num pos rest t
+                         search_around_pos ~consider_edit_dist ~within pos rest t
                          |> Seq.map (fun l -> pos :: l)
                          |> Seq.map (fun (l : int list) ->
                              Eio.Fiber.yield ();
