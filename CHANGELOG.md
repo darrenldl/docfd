@@ -4,6 +4,13 @@
 
 - Added file globbing support in the form of `--glob` argument
 
+- Added single line search mode arguments
+
+    - `--single-line-exts`
+    - `--single-line-add-exts`
+    - `--single-line-glob`
+    - `--single-line`
+
 ## 4.0.0
 
 - Made document search asynchronous to search field input, so UI remains
