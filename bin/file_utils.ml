@@ -50,6 +50,7 @@ let list_files_recursive_filter_by_globs
   let path_of_parts parts =
     List.rev parts
     |> String.concat Filename.dir_sep
+    |> (fun s -> Printf.sprintf "/%s" s)
   in
   let compile_glob_re s =
     match Misc_utils.compile_glob_re s with
@@ -113,12 +114,15 @@ let list_files_recursive_filter_by_globs
       let glob_parts = CCString.split ~by:Filename.dir_sep glob in
       match glob_parts with
       | "" :: rest -> (
-          aux [ "" ] rest
+          aux [] rest
         )
       | _ -> (
           let path_parts =
             Sys.getcwd ()
             |> CCString.split ~by:Filename.dir_sep
+            |> (fun l -> match l with
+                | "" :: l -> l
+                | _ -> failwith "unexpected case")
             |> List.rev
           in
           aux path_parts glob_parts
