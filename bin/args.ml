@@ -5,7 +5,9 @@ let max_depth_arg_name = "max-depth"
 
 let max_depth_arg =
   let doc =
-    "Scan up to N levels in the file tree."
+    "Scan up to N levels in the file tree.
+This restriction does not apply to file globbing
+via --glob."
   in
   Arg.(
     value
