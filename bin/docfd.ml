@@ -4,11 +4,28 @@ open Docfd_lib
 open Debug_utils
 open Misc_utils
 
-let document_store_of_document_src ~env pool document_src =
+let compute_paths_from_globs globs =
+  match globs with
+  | [] -> None
+  | _ -> (
+      let globs =
+        List.map (fun s ->
+            match compile_glob_re s with
+            | Some re -> (s, re)
+            | None -> (
+                exit_with_error_msg
+                  (Fmt.str "failed to parse glob pattern: \"%s\"" s)
+              )
+          ) globs
+      in
+      Some (File_utils.list_files_recursive_filter_by_globs globs)
+    )
+
+let document_store_of_document_src ~env pool ~single_line_search_paths document_src =
   let all_documents : Document.t list =
     match document_src with
     | Ui_base.Stdin path -> (
-        match Document.of_path ~env pool path with
+        match Document.of_path ~env pool !Params.default_search_mode path with
         | Ok x -> [ x ]
         | Error msg ->  (
             exit_with_error_msg msg
@@ -19,7 +36,14 @@ let document_store_of_document_src ~env pool document_src =
             do_if_debug (fun oc ->
                 Printf.fprintf oc "Loading document: %s\n" (Filename.quote path);
               );
-            match Document.of_path ~env pool path with
+            let search_mode =
+              if String_set.mem path single_line_search_paths then (
+                `Single_line
+              ) else (
+                `Multiline
+              )
+            in
+            match Document.of_path ~env pool search_mode path with
             | Ok x -> (
                 do_if_debug (fun oc ->
                     Printf.fprintf oc "Document %s loaded successfully\n" (Filename.quote path);
@@ -117,26 +141,20 @@ let run
      )
   );
   let recognized_exts =
-    let split_on_comma = String.split_on_char ',' in
-    ((split_on_comma exts)
-     @
-     (split_on_comma additional_exts))
-    |> List.map (fun s ->
-        s
-        |> String_utils.remove_leading_dots
-        |> CCString.trim
-      )
-    |> List.filter (fun s -> s <> "")
-    |> List.map (fun s -> Printf.sprintf ".%s" s)
+    compute_total_recognized_exts ~exts ~additional_exts
   in
-  (match recognized_exts, globs with
-   | [], [] -> (
+  let recognized_single_line_exts =
+    compute_total_recognized_exts ~exts:single_line_exts ~additional_exts:single_line_additional_exts
+  in
+  (match recognized_exts, recognized_single_line_exts, globs with
+   | [], [], [] -> (
        exit_with_error_msg
          (Fmt.str "no usable file extensions or glob patterns")
      )
-   | _, _ -> ()
+   | _, _, _ -> ()
   );
   Params.recognized_exts := recognized_exts;
+  Params.recognized_single_line_exts := recognized_single_line_exts;
   let question_marks, paths =
     List.partition (fun s -> CCString.trim s = "?") paths
   in
@@ -153,23 +171,7 @@ let run
           )
       )
   in
-  let paths_from_globs =
-    match globs with
-    | [] -> None
-    | _ -> (
-        let globs =
-          List.map (fun s ->
-              match compile_glob_re s with
-              | Some re -> (s, re)
-              | None -> (
-                  exit_with_error_msg
-                    (Fmt.str "failed to parse glob pattern: \"%s\"" s)
-                )
-            ) globs
-        in
-        Some (File_utils.list_files_recursive_filter_by_globs globs)
-      )
-  in
+  let paths_from_globs = compute_paths_from_globs globs in
   let paths, paths_from_globs, paths_were_originally_specified_by_user =
     match paths, paths_from_file, paths_from_globs with
     | [], None, None -> ([ "." ], String_set.empty, false)
@@ -186,9 +188,12 @@ let run
       )
     )
     paths;
+  let single_line_search_paths =
+    String_set.empty
+  in
   let files =
     String_set.union
-      (File_utils.list_files_recursive_filter_by_exts paths)
+      (File_utils.list_files_recursive_filter_by_exts ~exts:!Params.recognized_exts paths)
       paths_from_globs
     |> String_set.to_list
   in
@@ -325,7 +330,13 @@ let run
      )
   );
   Ui_base.Vars.init_ui_mode := init_ui_mode;
-  let init_document_store = document_store_of_document_src ~env pool init_document_src in
+  let init_document_store =
+    document_store_of_document_src
+      ~env
+      pool
+      ~single_line_search_paths
+      init_document_src
+  in
   if index_only then (
     clean_up ();
     exit 0
@@ -456,7 +467,7 @@ let run
             let old_document_store = Lwd.peek Ui_base.Vars.document_store in
             let search_exp = Document_store.search_exp old_document_store in
             let document_store =
-              document_store_of_document_src ~env pool document_src
+              document_store_of_document_src ~env pool ~single_line_search_paths document_src
               |> Document_store.update_search_exp pool (Stop_signal.make ()) search_exp
             in
             Lwd.set Ui_base.Vars.document_store document_store;
