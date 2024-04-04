@@ -447,8 +447,16 @@ let loc_of_pos pos t : Loc.t =
 let line_count_of_page_num page t : int =
   CCVector.get t.line_count_of_page_num page
 
+let start_end_inc_pos_of_global_line_num x t =
+  if x >= global_line_count t then (
+    invalid_arg "Index.start_end_inc_pos_of_global_line_num: global_line_num out of range"
+  ) else (
+    CCVector.get t.start_end_inc_pos_of_global_line_num x
+  )
+
 module Search = struct
   let usable_positions
+      ?within_global_line_num
       ?around_pos
       ~(consider_edit_dist : bool)
       (token : Search_phrase.enriched_token)
@@ -469,7 +477,18 @@ module Search = struct
           in
           let start = around_pos - dist in
           let end_inc = around_pos + dist in
-          word_ci_and_pos_s ~range_inc:(start, end_inc) t
+          match within_global_line_num with
+          | None -> (
+              word_ci_and_pos_s ~range_inc:(start, end_inc) t
+            )
+          | Some line_num -> (
+              let (line_start_pos, line_end_inc_pos) =
+                start_end_inc_pos_of_global_line_num line_num t
+              in
+              let start = max line_start_pos start in
+              let end_inc = min line_end_inc_pos end_inc in
+              word_ci_and_pos_s ~range_inc:(start, end_inc) t
+            )
         )
     in
     let search_word_ci =
@@ -502,6 +521,7 @@ module Search = struct
 
   let search_around_pos
       ~consider_edit_dist
+      ~(within_global_line_num : int option)
       (around_pos : int)
       (l : Search_phrase.enriched_token list)
       (t : t)
@@ -512,6 +532,7 @@ module Search = struct
       | [] -> Seq.return []
       | token :: rest -> (
           usable_positions
+            ?within_global_line_num
             ~around_pos
             ~consider_edit_dist
             token
@@ -531,6 +552,7 @@ module Search = struct
   let search_single
       pool
       stop_signal
+      ~within_same_line
       ~consider_edit_dist
       (phrase : Search_phrase.t)
       (t : t)
@@ -572,7 +594,15 @@ module Search = struct
                      pos_list
                      |> List.map (fun pos ->
                          Eio.Fiber.yield ();
-                         search_around_pos ~consider_edit_dist pos rest t
+                         let within_global_line_num =
+                           if within_same_line then (
+                             let loc = loc_of_pos pos t in
+                             Some loc.line_loc.global_line_num
+                           ) else (
+                             None
+                           )
+                         in
+                         search_around_pos ~consider_edit_dist ~within_global_line_num pos rest t
                          |> Seq.map (fun l -> pos :: l)
                          |> Seq.map (fun (l : int list) ->
                              Eio.Fiber.yield ();
@@ -659,24 +689,26 @@ module Search = struct
   let search
       pool
       stop_signal
+      ~within_same_line
       ~consider_edit_dist
       (exp : Search_exp.t)
       (t : t)
     : Search_result_heap.t =
     Search_exp.flattened exp
     |> List.to_seq
-    |> Seq.map (fun phrase -> search_single pool stop_signal ~consider_edit_dist phrase t)
+    |> Seq.map (fun phrase -> search_single pool stop_signal ~within_same_line ~consider_edit_dist phrase t)
     |> Seq.fold_left search_result_heap_merge_with_yield Search_result_heap.empty
 end
 
 let search
     pool
     stop_signal
+    ~within_same_line
     (exp : Search_exp.t)
     (t : t)
   : Search_result.t array =
   let arr =
-    Search.search pool stop_signal ~consider_edit_dist:true exp t
+    Search.search pool stop_signal ~within_same_line ~consider_edit_dist:true exp t
     |> Search_result_heap.to_seq
     |> Array.of_seq
   in

@@ -46,7 +46,13 @@ val words_of_page_num : int -> t -> string Seq.t
 
 val line_count_of_page_num : int -> t -> int
 
-val search : Task_pool.t -> Stop_signal.t -> Search_exp.t -> t -> Search_result.t array
+val search :
+  Task_pool.t ->
+  Stop_signal.t ->
+  within_same_line:bool ->
+  Search_exp.t ->
+  t ->
+  Search_result.t array
 
 val global_line_count : t -> int
 
