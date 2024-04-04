@@ -24,8 +24,6 @@ module Line_loc = struct
     | _ -> None
 end
 
-module Line_loc_map = Map.Make (Line_loc)
-
 module Loc = struct
   type t = {
     line_loc : Line_loc.t;
@@ -55,7 +53,6 @@ module Raw = struct
     pos_s_of_word_ci : Int_set.t Int_map.t;
     loc_of_pos : Loc.t Int_map.t;
     line_loc_of_global_line_num : Line_loc.t Int_map.t;
-    global_line_num_of_line_loc : int Line_loc_map.t;
     start_end_inc_pos_of_global_line_num : (int * int) Int_map.t;
     start_end_inc_pos_of_page_num : (int * int) Int_map.t;
     word_ci_of_pos : int Int_map.t;
@@ -78,7 +75,6 @@ module Raw = struct
     pos_s_of_word_ci = Int_map.empty;
     loc_of_pos = Int_map.empty;
     line_loc_of_global_line_num = Int_map.empty;
-    global_line_num_of_line_loc = Line_loc_map.empty;
     start_end_inc_pos_of_global_line_num = Int_map.empty;
     start_end_inc_pos_of_page_num = Int_map.empty;
     word_ci_of_pos = Int_map.empty;
@@ -103,10 +99,6 @@ module Raw = struct
         Int_map.union (fun _k x _ -> Some x)
           x.line_loc_of_global_line_num
           y.line_loc_of_global_line_num;
-      global_line_num_of_line_loc =
-        Line_loc_map.union (fun _k x _ -> Some x)
-          x.global_line_num_of_line_loc
-          y.global_line_num_of_line_loc;
       start_end_inc_pos_of_global_line_num =
         Int_map.union (fun _k (start_x, end_inc_x) (start_y, end_inc_y) ->
             Some (min start_x start_y, max end_inc_x end_inc_y))
@@ -163,7 +155,6 @@ module Raw = struct
           pos_s_of_word_ci;
           loc_of_pos;
           line_loc_of_global_line_num;
-          global_line_num_of_line_loc;
           start_end_inc_pos_of_global_line_num;
           start_end_inc_pos_of_page_num;
           word_ci_of_pos;
@@ -200,8 +191,6 @@ module Raw = struct
           loc_of_pos = Int_map.add pos loc loc_of_pos;
           line_loc_of_global_line_num =
             Int_map.add global_line_num line_loc line_loc_of_global_line_num;
-          global_line_num_of_line_loc =
-            Line_loc_map.add line_loc global_line_num global_line_num_of_line_loc;
           start_end_inc_pos_of_global_line_num =
             Int_map.add
               global_line_num
@@ -290,7 +279,6 @@ type t = {
   pos_s_of_word_ci : Int_set.t Int_map.t;
   loc_of_pos : Loc.t CCVector.ro_vector;
   line_loc_of_global_line_num : Line_loc.t CCVector.ro_vector;
-  global_line_num_of_line_loc : int Line_loc_map.t;
   start_end_inc_pos_of_global_line_num : (int * int) CCVector.ro_vector;
   start_end_inc_pos_of_page_num : (int * int) CCVector.ro_vector;
   word_ci_of_pos : int CCVector.ro_vector;
@@ -305,7 +293,6 @@ let make () : t = {
   pos_s_of_word_ci = Int_map.empty;
   loc_of_pos = CCVector.(freeze (create ()));
   line_loc_of_global_line_num = CCVector.(freeze (create ()));
-  global_line_num_of_line_loc = Line_loc_map.empty;
   start_end_inc_pos_of_global_line_num = CCVector.(freeze (create ()));
   start_end_inc_pos_of_page_num = CCVector.(freeze (create ()));
   word_ci_of_pos = CCVector.(freeze (create ()));
@@ -348,8 +335,6 @@ let of_raw (raw : Raw.t) : t =
     loc_of_pos =
       ccvector_of_int_map raw.Raw.loc_of_pos;
     line_loc_of_global_line_num;
-    global_line_num_of_line_loc =
-      raw.Raw.global_line_num_of_line_loc;
     start_end_inc_pos_of_global_line_num;
     start_end_inc_pos_of_page_num;
     word_ci_of_pos = ccvector_of_int_map raw.Raw.word_ci_of_pos;
@@ -738,17 +723,6 @@ let to_json (t : t) : Yojson.Safe.t =
       in
       `List l
   in
-  let json_of_line_loc_map
-    : 'a . ('a -> Yojson.Safe.t) -> 'a Line_loc_map.t -> Yojson.Safe.t =
-    fun f m ->
-      let l =
-        Line_loc_map.to_seq m
-        |> Seq.map (fun (k, v) ->
-            `List [ Line_loc.to_json k; f v ])
-        |> List.of_seq
-      in
-      `List l
-  in
   let json_of_int_set (s : Int_set.t) =
     let l =
       Int_set.to_seq s
@@ -766,8 +740,6 @@ let to_json (t : t) : Yojson.Safe.t =
      json_of_ccvector Loc.to_json t.loc_of_pos);
     ("line_loc_of_global_line_num",
      json_of_ccvector Line_loc.to_json t.line_loc_of_global_line_num);
-    ("global_line_num_of_line_loc",
-     json_of_line_loc_map json_of_int t.global_line_num_of_line_loc);
     ("start_end_inc_pos_of_global_line_num",
      json_of_ccvector json_of_int_int t.start_end_inc_pos_of_global_line_num);
     ("start_end_inc_pos_of_page_num",
@@ -859,35 +831,6 @@ let of_json (json : Yojson.Safe.t) : t option =
         )
       | _ -> None
   in
-  let line_loc_map_of_json
-    : 'a . (Yojson.Safe.t -> 'a option) -> Yojson.Safe.t -> 'a Line_loc_map.t option =
-    fun f json ->
-      match json with
-      | `List l -> (
-          let exception Invalid in
-          let m : 'a Line_loc_map.t ref = ref Line_loc_map.empty in
-          try
-            List.iter (fun v ->
-                match v with
-                | `List [ line_loc; v ] -> (
-                    match Line_loc.of_json line_loc with
-                    | None -> raise Invalid
-                    | Some line_loc -> (
-                        match f v with
-                        | None -> raise Invalid
-                        | Some v -> (
-                            m := Line_loc_map.add line_loc v !m
-                          )
-                      )
-                  )
-                | _ -> raise Invalid
-              ) l;
-            Some !m
-          with
-          | Invalid -> None
-        )
-      | _ -> None
-  in
   match json with
   | `Assoc l -> (
       let* word_db =
@@ -905,10 +848,6 @@ let of_json (json : Yojson.Safe.t) : t option =
       let* line_loc_of_global_line_num =
         let* x = List.assoc_opt "line_loc_of_global_line_num" l in
         ccvector_of_json Line_loc.of_json x
-      in
-      let* global_line_num_of_line_loc =
-        let* x = List.assoc_opt "global_line_num_of_line_loc" l in
-        line_loc_map_of_json int_of_json x
       in
       let* start_end_inc_pos_of_global_line_num =
         let* x = List.assoc_opt "start_end_inc_pos_of_global_line_num" l in
@@ -943,7 +882,6 @@ let of_json (json : Yojson.Safe.t) : t option =
         pos_s_of_word_ci;
         loc_of_pos;
         line_loc_of_global_line_num;
-        global_line_num_of_line_loc;
         start_end_inc_pos_of_global_line_num;
         start_end_inc_pos_of_page_num;
         word_ci_of_pos;

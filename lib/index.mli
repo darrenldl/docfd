@@ -10,8 +10,6 @@ module Line_loc : sig
   val compare : t -> t -> int
 end
 
-module Line_loc_map : Map.S with type key = Line_loc.t
-
 module Loc : sig
   type t
 
