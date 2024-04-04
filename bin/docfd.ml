@@ -146,12 +146,12 @@ let run
   let recognized_single_line_exts =
     compute_total_recognized_exts ~exts:single_line_exts ~additional_exts:single_line_additional_exts
   in
-  (match recognized_exts, recognized_single_line_exts, globs with
-   | [], [], [] -> (
+  (match recognized_exts, recognized_single_line_exts, globs, single_line_globs with
+   | [], [], [], [] -> (
        exit_with_error_msg
          (Fmt.str "no usable file extensions or glob patterns")
      )
-   | _, _, _ -> ()
+   | _, _, _, _ -> ()
   );
   Params.recognized_exts := recognized_exts;
   Params.recognized_single_line_exts := recognized_single_line_exts;
@@ -159,26 +159,44 @@ let run
     List.partition (fun s -> CCString.trim s = "?") paths
   in
   let paths_from_file =
-    match paths_from with
-    | None -> None
-    | Some paths_from -> (
+    Option.map (fun paths_from ->
         try
-          Some (CCIO.with_in paths_from CCIO.read_lines_l)
+          CCIO.with_in paths_from CCIO.read_lines_l
         with
         | _ -> (
             exit_with_error_msg
               (Fmt.str "failed to read list of paths from %s" (Filename.quote paths_from))
           )
       )
+      paths_from
   in
   let paths_from_globs = compute_paths_from_globs globs in
-  let paths, paths_from_globs, paths_were_originally_specified_by_user =
-    match paths, paths_from_file, paths_from_globs with
-    | [], None, None -> ([ "." ], String_set.empty, false)
-    | _, _, _ -> (
+  let paths_from_single_line_globs = compute_paths_from_globs single_line_globs in
+  let
+    paths,
+    paths_from_globs,
+    paths_from_single_line_globs,
+    paths_were_originally_specified_by_user
+    =
+    match
+      paths,
+      paths_from_file,
+      paths_from_globs,
+      paths_from_single_line_globs
+    with
+    | [], None, None, None -> ([ "." ], String_set.empty, String_set.empty, false)
+    | _, _, _, _ -> (
         let paths_from_file = Option.value paths_from_file ~default:[] in
-        let paths_from_globs = Option.value paths_from_globs ~default:String_set.empty in
-        (List.flatten [ paths; paths_from_file ], paths_from_globs, true)
+        let paths_from_globs =
+          Option.value paths_from_globs ~default:String_set.empty
+        in
+        let paths_from_single_line_globs =
+          Option.value paths_from_single_line_globs ~default:String_set.empty
+        in
+        (List.flatten [ paths; paths_from_file ],
+         paths_from_globs,
+         paths_from_single_line_globs,
+         true)
       )
   in
   List.iter (fun path ->
@@ -189,12 +207,14 @@ let run
     )
     paths;
   let single_line_search_paths =
-    String_set.empty
+    String_set.union
+      (File_utils.list_files_recursive_filter_by_exts ~exts:!Params.recognized_single_line_exts paths)
+      paths_from_single_line_globs
   in
   let files =
-    String_set.union
-      (File_utils.list_files_recursive_filter_by_exts ~exts:!Params.recognized_exts paths)
-      paths_from_globs
+    File_utils.list_files_recursive_filter_by_exts ~exts:!Params.recognized_exts paths
+    |> String_set.union paths_from_globs
+    |> String_set.union single_line_search_paths
     |> String_set.to_list
   in
   let files =
@@ -331,11 +351,7 @@ let run
   );
   Ui_base.Vars.init_ui_mode := init_ui_mode;
   let init_document_store =
-    document_store_of_document_src
-      ~env
-      pool
-      ~single_line_search_paths
-      init_document_src
+    document_store_of_document_src ~env pool ~single_line_search_paths init_document_src
   in
   if index_only then (
     clean_up ();
