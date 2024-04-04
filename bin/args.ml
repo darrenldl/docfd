@@ -27,6 +27,23 @@ let exts_arg =
     & info [ exts_arg_name ] ~doc ~docv:"EXTS"
   )
 
+let single_file_exts_arg_name = Fmt.str "single-line-%s" exts_arg_name
+
+let single_line_exts_arg =
+  let doc =
+    Fmt.str "Same as --%s, but use single line search mode instead.
+If an extension appears in both --%s and --%s,
+then single line search mode is used for that extension."
+      exts_arg_name
+      exts_arg_name
+      single_file_exts_arg_name
+  in
+  Arg.(
+    value
+    & opt string Params.default_recognized_single_line_exts
+    & info [ single_file_exts_arg_name ] ~doc ~docv:"EXTS"
+  )
+
 let add_exts_arg_name = "add-exts"
 
 let add_exts_arg =
@@ -37,6 +54,18 @@ let add_exts_arg =
     value
     & opt string ""
     & info [ add_exts_arg_name ] ~doc ~docv:"EXTS"
+  )
+
+let single_line_add_exts_arg_name = Fmt.str "single-line-%s" add_exts_arg_name
+
+let single_line_add_exts_arg =
+  let doc =
+    Fmt.str "Same as --%s, but use single line search mode instead." add_exts_arg_name
+  in
+  Arg.(
+    value
+    & opt string ""
+    & info [ single_line_add_exts_arg_name ] ~doc ~docv:"EXTS"
   )
 
 let max_fuzzy_edit_dist_arg_name = "max-fuzzy-edit-dist"
@@ -205,6 +234,8 @@ and add to the final list of paths to be scanned."
     & info [ "paths-from" ] ~doc ~docv:"FILE"
   )
 
+let glob_arg_name = "glob"
+
 let glob_arg =
   let doc =
     "Add to the final list of paths to be scanned using glob pattern.
@@ -215,7 +246,25 @@ for files with suitable extensions."
   Arg.(
     value
     & opt_all string []
-    & info [ "glob" ] ~doc ~docv:"PATTERN"
+    & info [ glob_arg_name ] ~doc ~docv:"PATTERN"
+  )
+
+let single_line_glob_arg_name = Fmt.str "single-line-%s" glob_arg_name
+
+let single_line_glob_arg =
+  let doc =
+    Fmt.str
+      "Same as --%s, but use single line search mode instead.
+If the file are picked up by both patterns from --%s and --%s,
+then single line search mode is used."
+      glob_arg_name
+      glob_arg_name
+      single_line_glob_arg_name
+  in
+  Arg.(
+    value
+    & opt_all string []
+    & info [ single_line_glob_arg_name ] ~doc ~docv:"PATTERN"
   )
 
 let paths_arg =

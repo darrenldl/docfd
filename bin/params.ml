@@ -30,6 +30,11 @@ let default_recognized_exts =
   |> List.map String_utils.remove_leading_dots
   |> String.concat ","
 
+let default_recognized_single_line_exts =
+  [ "log"; "csv"; "tsv" ]
+  |> List.map String_utils.remove_leading_dots
+  |> String.concat ","
+
 let recognized_exts : string list ref = ref []
 
 let index_file_ext = ".index"

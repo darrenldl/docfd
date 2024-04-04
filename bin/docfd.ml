@@ -49,7 +49,9 @@ let run
     (max_linked_token_search_dist : int)
     (index_chunk_token_count : int)
     (exts : string)
+    (single_line_exts : string)
     (additional_exts : string)
+    (single_line_additional_exts : string)
     (cache_dir : string)
     (cache_size : int)
     (no_cache : bool)
@@ -60,6 +62,7 @@ let run
     (search_result_print_text_width : int)
     (paths_from : string option)
     (globs : string list)
+    (single_line_globs : string list)
     (paths : string list)
   =
   Args.check
@@ -562,7 +565,9 @@ let cmd ~env ~sw =
      $ max_linked_token_search_dist_arg
      $ index_chunk_token_count_arg
      $ exts_arg
+     $ single_line_exts_arg
      $ add_exts_arg
+     $ single_line_add_exts_arg
      $ cache_dir_arg
      $ cache_size_arg
      $ no_cache_arg
@@ -573,6 +578,7 @@ let cmd ~env ~sw =
      $ search_result_print_text_width_arg
      $ paths_from_arg
      $ glob_arg
+     $ single_line_glob_arg
      $ paths_arg)
 
 let () = Eio_main.run (fun env ->
