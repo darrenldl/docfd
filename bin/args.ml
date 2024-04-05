@@ -223,6 +223,8 @@ let search_result_print_text_width_arg =
     & info [ search_result_print_text_width_arg_name ] ~doc ~docv:"N"
   )
 
+let paths_from_arg_name = "paths-from"
+
 let paths_from_arg =
   let doc =
     Fmt.str "Read list of paths from FILE
@@ -231,7 +233,7 @@ and add to the final list of paths to be scanned."
   Arg.(
     value
     & opt (some string) None
-    & info [ "paths-from" ] ~doc ~docv:"FILE"
+    & info [ paths_from_arg_name ] ~doc ~docv:"FILE"
   )
 
 let glob_arg_name = "glob"
@@ -279,14 +281,17 @@ let single_line_arg =
 
 let paths_arg =
   let doc =
-    "PATH can be either file or directory.
+    Fmt.str
+      "PATH can be either file or directory.
 Directories are scanned for files with matching extensions.
 If any PATH is \"?\", then the list of files is passed onto fzf for user selection.
 Multiple \"?\" are treated the same as one \"?\".
 If no paths are provided or only \"?\" is provided,
 then Docfd defaults to scanning the current working directory
-unless --paths-from or --glob is used.
+unless any of the following is used: %a.
 To use piped stdin as input, the list of paths must be empty."
+      Fmt.(list ~sep:comma (fun formatter s -> Fmt.pf formatter "--%s" s))
+      [ paths_from_arg_name; glob_arg_name; single_line_glob_arg_name ]
   in
   Arg.(value & pos_all string [] & info [] ~doc ~docv:"PATH")
 
