@@ -20,9 +20,9 @@ let search_result_images ~(out : print_output) ~document (images : Notty.image l
   let path = Document.path document in
   let oc = out_channel_of_print_output out in
   if print_output_is_atty out then (
-    let formatter = Format.formatter_of_out_channel oc in
-    Ocolor_format.prettify_formatter formatter;
-    Fmt.pf formatter "@[<h>@{<magenta>%s@}@]@." path;
+    let fmt = Format.formatter_of_out_channel oc in
+    Ocolor_format.prettify_formatter fmt;
+    Fmt.pf fmt "@[<h>@{<magenta>%s@}@]@." path;
   ) else (
     Printf.fprintf oc "%s\n" path;
   );

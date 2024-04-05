@@ -290,7 +290,7 @@ If no paths are provided or only \"?\" is provided,
 then Docfd defaults to scanning the current working directory
 unless any of the following is used: %a.
 To use piped stdin as input, the list of paths must be empty."
-      Fmt.(list ~sep:comma (fun formatter s -> Fmt.pf formatter "--%s" s))
+      Fmt.(list ~sep:comma (fun fmt s -> Fmt.pf fmt "--%s" s))
       [ paths_from_arg_name; glob_arg_name; single_line_glob_arg_name ]
   in
   Arg.(value & pos_all string [] & info [] ~doc ~docv:"PATH")
