@@ -1,6 +1,6 @@
 # Changelog
 
-## 4.1.0
+## 5.0.0
 
 - Added file globbing support in the form of `--glob` argument
 
@@ -10,6 +10,8 @@
     - `--single-line-add-exts`
     - `--single-line-glob`
     - `--single-line`
+
+- Removed `--max-depths` argument
 
 ## 4.0.0
 
