@@ -140,31 +140,29 @@ let list_files_recursive_filter_by_exts
     acc := String_set.add x !acc
   in
   let rec aux depth path =
-    if depth <= !Params.max_file_tree_depth then (
-      match Sys.is_directory path with
-      | is_dir -> (
-          if is_dir then (
-            let next_choices =
-              try
-                Sys.readdir path
-              with
-              | _ -> [||]
-            in
-            Array.iter (fun f ->
-                aux (depth + 1) (Filename.concat path f)
-              )
-              next_choices
-          ) else (
-            let ext = extension_of_file path in
-            if (not check_top_level_files && depth = 0)
-            || List.mem ext exts
-            then (
-              add path
+    match Sys.is_directory path with
+    | is_dir -> (
+        if is_dir then (
+          let next_choices =
+            try
+              Sys.readdir path
+            with
+            | _ -> [||]
+          in
+          Array.iter (fun f ->
+              aux (depth + 1) (Filename.concat path f)
             )
+            next_choices
+        ) else (
+          let ext = extension_of_file path in
+          if (not check_top_level_files && depth = 0)
+          || List.mem ext exts
+          then (
+            add path
           )
         )
-      | exception _ -> ()
-    )
+      )
+    | exception _ -> ()
   in
   List.iter (fun x -> aux 0 x) paths;
   !acc

@@ -8,10 +8,6 @@ let max_fuzzy_edit_dist = ref default_max_fuzzy_edit_dist
 
 let preview_line_count = 5
 
-let default_max_file_tree_depth = 10
-
-let max_file_tree_depth = ref default_max_file_tree_depth
-
 let pandoc_supported_exts =
   [ ".epub"
   ; ".odt"
