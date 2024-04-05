@@ -217,17 +217,24 @@ let run
       )
     )
     paths;
+  let all_paths_by_exts =
+    File_utils.list_files_recursive_filter_by_exts
+      ~check_top_level_files:false
+      ~exts:(!Params.recognized_exts @ !Params.recognized_single_line_exts)
+      paths
+  in
+  let single_line_paths_by_exts, remaining_paths_by_exts =
+    String_set.partition (fun s ->
+        List.mem (Filename.extension s) !Params.recognized_single_line_exts
+      ) all_paths_by_exts
+  in
   let single_line_search_paths =
     String_set.union
-      (File_utils.list_files_recursive_filter_by_exts
-         ~check_top_level_files:true
-         ~exts:!Params.recognized_single_line_exts paths)
+      single_line_paths_by_exts
       paths_from_single_line_globs
   in
   let files =
-    File_utils.list_files_recursive_filter_by_exts
-      ~check_top_level_files:false
-      ~exts:!Params.recognized_exts paths
+    remaining_paths_by_exts
     |> String_set.union paths_from_globs
     |> String_set.union single_line_search_paths
     |> String_set.to_list
