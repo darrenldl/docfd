@@ -9,7 +9,7 @@ Set FontSize 15
 
 Set TypingSpeed 100ms
 
-Type@50ms "docfd --cache-dir .cache --exts md --max-depth 1 # Using a local cache for demo."
+Type@50ms "docfd --cache-dir .cache *.md # Using a local cache for demo."
 Sleep 1s
 Enter
 
