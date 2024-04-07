@@ -58,7 +58,7 @@ let document_store_of_document_src ~env pool ~single_line_search_paths document_
               )
             | Error msg -> (
                 do_if_debug (fun oc ->
-                    Printf.fprintf oc "%s\n" msg
+                    Printf.fprintf oc "Error: %s\n" msg
                   );
                 None
               )
