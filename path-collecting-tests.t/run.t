@@ -14,7 +14,13 @@ Default path is not picked if any of the following is used: --paths-from, --glob
 --single-line-exts and --glob do not overwrite each other:
   $ docfd --debug-log - --index-only --single-line-exts md --glob "*.log" .
 
-Paths from --exts, --single-line-exts, --glob, --single-line-glob are combined correctly:
+--exts and --single-line-glob do not overwrite each other:
+  $ docfd --debug-log - --index-only --exts md --single-line-glob "*.log" .
+
+--single-line-exts and --single-line-glob do not overwrite each other:
+  $ docfd --debug-log - --index-only --single-line-exts md --single-line-glob "*.log" .
+
+Paths from --exts, --single-line-exts, --glob, --single-line-glob, --paths-from are combined correctly:
   $ docfd --debug-log - --index-only --exts md --single-line-exts log .
 
 --add-exts:
@@ -25,22 +31,49 @@ Paths from --exts, --single-line-exts, --glob, --single-line-glob are combined c
   $ docfd --debug-log - --index-only --single-line-add-exts md .
   $ docfd --debug-log - --index-only --single-line-add-exts ext0 .
 
---exts does not intefere with --single-line-glob:
-
---single-line-exts does not intefere with --single-line-glob:
-
 Picking via multiple --glob and --single-line-glob:
+  $ docfd --debug-log - --index-only --glob "*.txt"
+  $ docfd --debug-log - --index-only --glob "*.txt" --glob "*.md"
+  $ docfd --debug-log - --index-only --glob "*.txt" --glob "*.md" --glob "*.log"
+  $ docfd --debug-log - --index-only --single-line-glob "*.txt"
+  $ docfd --debug-log - --index-only --single-line-glob "*.txt" --single-line-glob "*.md"
+  $ docfd --debug-log - --index-only --single-line-glob "*.txt" --single-line-glob "*.md" --single-line-glob "*.log"
+  $ docfd --debug-log - --index-only --single-line-glob "*.txt" --glob "*.md" --glob "*.log"
+  $ docfd --debug-log - --index-only --glob "*.txt" --single-line-glob "*.md" --glob "*.log"
+  $ docfd --debug-log - --index-only --glob "*.txt" --glob "*.md" --single-line-glob "*.log"
+  $ docfd --debug-log - --index-only --glob "*.txt" --single-line-glob "*.md" --single-line-glob "*.log"
+  $ docfd --debug-log - --index-only --single-line-glob "*.txt" --glob "*.md" --single-line-glob "*.log"
+  $ docfd --debug-log - --index-only --single-line-glob "*.txt" --single-line-glob "*.md" --glob "*.log"
 
---single-line-glob takes precedence over --glob:
+--single-line-glob takes precedence over --glob and --exts:
+  $ docfd --debug-log - --index-only --single-line-glob "*.txt" --glob "*.txt" --exts md .
+  $ docfd --debug-log - --index-only --single-line-glob "*.md" --glob "*.txt" --exts md .
+  $ docfd --debug-log - --index-only --single-line-glob "*.md" --single-line-glob "*.txt" --glob "*.txt" --exts md .
 
---single-line-exts takes precedence over --exts:
+--single-line-exts takes precedence over --glob and --exts:
+  $ docfd --debug-log - --index-only --single-line-exts txt --glob "*.txt" --exts md .
+  $ docfd --debug-log - --index-only --single-line-exts md --glob "*.txt" --exts md .
+  $ docfd --debug-log - --index-only --single-line-exts txt,md --glob "*.txt" --exts md .
 
---exts apply to paths from FILE in --paths-from FILE
+--exts apply to directories in FILE in --paths-from FILE:
+  $ docfd --debug-log - --index-only --paths-from paths --exts txt
+  $ docfd --debug-log - --index-only --paths-from paths --exts md
 
---single-line-exts apply to paths from FILE in --paths-from FILE
+--single-line-exts apply to directories in FILE in --paths-from FILE:
+  $ docfd --debug-log - --index-only --paths-from paths --single-line-exts txt
+  $ docfd --debug-log - --index-only --paths-from paths --single-line-exts md
 
 Top-level files do not fall into singe line search group but into the default search group:
+  $ docfd --debug-log - --index-only test.txt --single-line-exts txt
+  $ docfd --debug-log - --index-only test.txt --single-line-glob "*.txt"
 
-Top-level files with non-recognized extensions are still picked:
+Top-level files with unrecognized extensions are still picked:
+  $ docfd --debug-log - --index-only --exts md .
+  $ docfd --debug-log - --index-only --exts md test.txt .
 
 Top-level files without extensions are still picked:
+  $ docfd --debug-log - --index-only --exts md .
+  $ docfd --debug-log - --index-only --exts md no-ext .
+
+Double asterisk glob:
+  $ docfd --debug-log - --index-only --glob "**/*.txt"
