@@ -316,4 +316,39 @@ Top-level files without extensions are still picked:
   File: 'no-ext'
 
 Double asterisk glob:
-  $ docfd --debug-log - --index-only --glob '**/*.txt' 2>&1 | grep '^Using .* search mode' | sort
+  $ docfd --debug-log - --index-only --glob '**/*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
+  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test.txt
+  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test/abcd.txt
+  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test/abcd/defg.txt
+  Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test/abcd.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test/abcd/defg.txt'
+  $ docfd --debug-log - --index-only --glob '**/**/*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
+  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test.txt
+  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test/abcd.txt
+  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test/abcd/defg.txt
+  Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test/abcd.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test/abcd/defg.txt'
+  $ docfd --debug-log - --index-only --glob "$(pwd)/**/*.txt" 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
+  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test.txt
+  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test/abcd.txt
+  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test/abcd/defg.txt
+  Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test/abcd.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test/abcd/defg.txt'
+  $ docfd --debug-log - --index-only --glob "$(pwd)/**/**/*.txt" 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
+  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test.txt
+  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test/abcd.txt
+  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test/abcd/defg.txt
+  Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test/abcd.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test/abcd/defg.txt'
