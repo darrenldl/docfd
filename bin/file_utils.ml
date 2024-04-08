@@ -1,4 +1,5 @@
 open Misc_utils
+open Debug_utils
 
 let read_in_channel_to_tmp_file (ic : in_channel) : (string, string) result =
   let file = Filename.temp_file "docfd-" ".txt" in
@@ -83,11 +84,18 @@ let list_files_recursive_filter_by_globs
             aux path_parts xs
           )
         | "**" -> (
-            let re = compile_glob_re (String.concat Filename.dir_sep glob_parts) in
             let path = path_of_parts path_parts in
+            let re_string = String.concat Filename.dir_sep (path :: glob_parts) in
+            do_if_debug (fun oc ->
+                Printf.fprintf oc "Compiling glob regex using pattern: %s\n" re_string
+              );
+            let re = compile_glob_re re_string in
             list_files_recursive_all path
             |> String_set.iter (fun path ->
                 if Re.execp re path then (
+                  do_if_debug (fun oc ->
+                      Printf.fprintf oc "Glob regex %s matches path %s\n" re_string path
+                    );
                   add path
                 )
               )
@@ -183,7 +191,7 @@ let mkdir_recursive (dir : string) : unit =
               (Fmt.str "%s is not a directory" (Filename.quote acc))
           )
         | exception (Sys_error _) -> (
-            Debug_utils.do_if_debug (fun oc ->
+            do_if_debug (fun oc ->
                 Printf.fprintf oc "Creating directory: %s\n" (Filename.quote acc)
               );
             (try
