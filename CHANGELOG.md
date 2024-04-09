@@ -13,6 +13,11 @@
 
 - Removed `--max-depths` argument
 
+- Fixed crash on empty file
+
+   - This was due to assertion failure of `max_line_num` in
+     `Content_and_search_result_render.content_snippet`
+
 ## 4.0.0
 
 - Made document search asynchronous to search field input, so UI remains
