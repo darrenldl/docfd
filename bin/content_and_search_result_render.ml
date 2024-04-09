@@ -257,8 +257,7 @@ let content_snippet
     ~(height : int)
     (index : Index.t)
   : Notty.image =
-  let max_line_num = Index.global_line_count index - 1 in
-  assert (max_line_num >= 0);
+  let max_line_num = max 0 (Index.global_line_count index - 1) in
   assert (height > 0);
   match search_result with
   | None -> (
