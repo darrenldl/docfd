@@ -67,31 +67,32 @@ let files_satisfying_constraints (cons : file_constraints) : Document_src.file_c
   let single_line_mode_applies file =
     List.mem (extension_of_file file) cons.single_line_exts
   in
-  let all_paths_by_exts =
+  let single_line_paths_by_exts, multiline_paths_by_exts =
     File_utils.list_files_recursive_filter_by_exts
       ~check_top_level_files:false
       ~exts:(cons.exts @ cons.single_line_exts)
       (String_set.to_seq cons.directly_specified_paths)
+    |> String_set.partition single_line_mode_applies
   in
-  let paths_from_globs =
+  let single_line_paths_from_globs, multiline_paths_from_globs =
     compute_paths_from_globs (String_set.to_seq cons.globs)
+    |> String_set.partition single_line_mode_applies
   in
   let paths_from_single_line_globs =
     compute_paths_from_globs (String_set.to_seq cons.single_line_globs)
   in
-  let single_line_files =
-    String_set.filter single_line_mode_applies all_paths_by_exts
+  let single_line_search_mode_files =
+    single_line_paths_by_exts
+    |> String_set.union single_line_paths_from_globs
     |> String_set.union paths_from_single_line_globs
-    |> String_set.union (String_set.filter single_line_mode_applies paths_from_globs)
   in
-  let all_files =
-    all_paths_by_exts
-    |> String_set.union paths_from_globs
-    |> String_set.union paths_from_single_line_globs
+  let default_search_mode_files =
+    multiline_paths_by_exts
+    |> String_set.union multiline_paths_from_globs
   in
   {
-    all_files;
-    single_line_files;
+    default_search_mode_files;
+    single_line_search_mode_files;
   }
 
 let document_store_of_document_src ~env pool (document_src : Document_src.t) =
@@ -104,20 +105,17 @@ let document_store_of_document_src ~env pool (document_src : Document_src.t) =
             exit_with_error_msg msg
           )
       )
-    | Files { all_files; single_line_files } -> (
-        all_files
-        |> String_set.to_list
-        |> Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size (fun path ->
+    | Files { default_search_mode_files; single_line_search_mode_files } -> (
+        Seq.append
+          (Seq.map (fun path -> (!Params.default_search_mode, path))
+             (String_set.to_seq default_search_mode_files))
+          (Seq.map (fun path -> (`Single_line, path))
+             (String_set.to_seq single_line_search_mode_files))
+        |> List.of_seq
+        |> Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size (fun (search_mode, path) ->
             do_if_debug (fun oc ->
                 Printf.fprintf oc "Loading document: %s\n" (Filename.quote path);
               );
-            let search_mode =
-              if String_set.mem path single_line_files then (
-                `Single_line
-              ) else (
-                !Params.default_search_mode
-              )
-            in
             do_if_debug (fun oc ->
                 Printf.fprintf oc "Using %s search mode for document %s\n"
                   (match search_mode with
@@ -285,21 +283,28 @@ let run
          match question_marks with
          | [] -> file_collection
          | _ -> (
-           let selection =
-             String_set.to_seq file_collection.all_files
-             |> Proc_utils.pipe_to_fzf_for_selection
-             |> String_set.of_list
-           in
-           { file_collection with all_files = selection }
+             let selection =
+               Document_src.seq_of_file_collection file_collection
+               |> Proc_utils.pipe_to_fzf_for_selection
+               |> String_set.of_list
+             in
+             let default_search_mode_files =
+               String_set.inter selection file_collection.default_search_mode_files
+             in
+             let single_line_search_mode_files =
+               String_set.inter selection file_collection.single_line_search_mode_files
+             in
+             { default_search_mode_files;
+               single_line_search_mode_files;
+             }
            )
        in
        if file_constraints.paths_were_originally_specified_by_user
        || stdin_is_atty ()
        then (
-         let file_count = String_set.cardinal file_collection.all_files in
          let ui_mode =
            let open Ui_base in
-           match file_count with
+           match Document_src.file_collection_size file_collection with
            | 0 -> Ui_multi_file
            | 1 -> Ui_single_file
            | _ -> Ui_multi_file
@@ -345,20 +350,20 @@ let run
   do_if_debug (fun oc ->
       match init_document_src with
       | Stdin _ -> Printf.fprintf oc "Document source: stdin\n"
-      | Files { all_files; single_line_files = _ } -> (
+      | Files file_collection -> (
           Printf.fprintf oc "Document source: files\n";
-          String_set.iter (fun file ->
+          Document_src.seq_of_file_collection file_collection
+          |> Seq.iter (fun file ->
               Printf.fprintf oc "File: %s\n" (Filename.quote file);
             )
-            all_files
         )
     );
   (match init_document_src with
    | Stdin _ -> ()
-   | Files { all_files; _ } -> (
+   | Files file_collection -> (
        let pdftotext_exists = Proc_utils.command_exists "pdftotext" in
        let pandoc_exists = Proc_utils.command_exists "pandoc" in
-       let formats = String_set.to_seq all_files
+       let formats = Document_src.seq_of_file_collection file_collection
                      |> Seq.map Misc_utils.format_of_file
                      |> Seq.fold_left (fun acc x -> File_format_set.add x acc) File_format_set.empty
        in
@@ -370,7 +375,7 @@ let run
          exit_with_error_msg
            (Fmt.str "command pandoc not found")
        );
-       let file_count = String_set.cardinal all_files in
+       let file_count = Document_src.file_collection_size file_collection in
        if file_count > !Params.cache_size then (
          do_if_debug (fun oc ->
              Printf.fprintf oc "File count %d exceeds cache size %d, caching disabled\n"
