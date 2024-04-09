@@ -39,7 +39,7 @@ tests :
 	OCAMLRUNPARAM=b dune exec tests/main.exe --no-buffer --force
 	dune build @line-wrapping-tests
 	dune build @misc-behavior-tests
-	dune build @path-collecting-tests
+	dune build @file-collecting-tests
 
 .PHONY: demo-vhs
 demo-vhs :
