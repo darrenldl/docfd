@@ -42,7 +42,7 @@ let list_files_recursive_all (path : string) : String_set.t =
   !acc
 
 let list_files_recursive_filter_by_globs
-    (globs : string list)
+    (globs : string Seq.t)
   : String_set.t =
   let acc = ref String_set.empty in
   let add x =
@@ -118,7 +118,7 @@ let list_files_recursive_filter_by_globs
           )
       )
   in
-  List.iter (fun glob ->
+  Seq.iter (fun glob ->
       let glob_parts = CCString.split ~by:Filename.dir_sep glob in
       match glob_parts with
       | "" :: rest -> (
@@ -141,7 +141,7 @@ let list_files_recursive_filter_by_globs
 let list_files_recursive_filter_by_exts
     ~check_top_level_files
     ~(exts : string list)
-    (paths : string list)
+    (paths : string Seq.t)
   : String_set.t =
   let acc = ref String_set.empty in
   let add x =
@@ -172,7 +172,7 @@ let list_files_recursive_filter_by_exts
       )
     | exception _ -> ()
   in
-  List.iter (fun x -> aux 0 x) paths;
+  Seq.iter (fun x -> aux 0 x) paths;
   !acc
 
 let mkdir_recursive (dir : string) : unit =

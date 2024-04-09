@@ -31,10 +31,6 @@ let default_recognized_single_line_exts =
   |> List.map String_utils.remove_leading_dots
   |> String.concat ","
 
-let recognized_exts : string list ref = ref []
-
-let recognized_single_line_exts : string list ref = ref []
-
 let default_search_mode : Search_mode.t ref = ref `Multiline
 
 let index_file_ext = ".index"

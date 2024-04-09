@@ -5,21 +5,101 @@ open Debug_utils
 open Misc_utils
 
 let compute_paths_from_globs globs =
-  match globs with
-  | [] -> None
-  | _ -> (
-      List.iter (fun s ->
-          match compile_glob_re s with
-          | Some _ -> ()
-          | None -> (
-              exit_with_error_msg
-                (Fmt.str "failed to parse glob pattern: \"%s\"" s)
-            )
-        ) globs;
-      Some (File_utils.list_files_recursive_filter_by_globs globs)
+  Seq.iter (fun s ->
+      match compile_glob_re s with
+      | Some _ -> ()
+      | None -> (
+          exit_with_error_msg
+            (Fmt.str "failed to parse glob pattern: \"%s\"" s)
+        )
+    ) globs;
+  File_utils.list_files_recursive_filter_by_globs globs
+
+type file_constraints = {
+  paths_were_originally_specified_by_user : bool;
+  exts : string list;
+  single_line_exts : string list;
+  directly_specified_paths : String_set.t;
+  globs : String_set.t;
+  single_line_globs : String_set.t;
+}
+
+let make_file_constraints
+    ~(exts : string list)
+    ~(single_line_exts : string list)
+    ~(paths : string list)
+    ~(paths_from_file : string list option)
+    ~(globs : string list)
+    ~(single_line_globs : string list)
+  : file_constraints =
+  match
+    paths,
+    paths_from_file,
+    globs,
+    single_line_globs
+  with
+  | [], None, [], [] -> (
+      {
+        paths_were_originally_specified_by_user = false;
+        exts;
+        single_line_exts;
+        directly_specified_paths = String_set.of_list [ "." ];
+        globs = String_set.empty;
+        single_line_globs = String_set.empty;
+      }
+    )
+  | _, _, _, _ -> (
+      let paths_from_file = Option.value ~default:[] paths_from_file in
+      let directly_specified_paths = String_set.of_list (paths @ paths_from_file) in
+      let globs = String_set.of_list globs in
+      let single_line_globs = String_set.of_list single_line_globs in
+      {
+        paths_were_originally_specified_by_user = true;
+        exts;
+        single_line_exts;
+        directly_specified_paths;
+        globs;
+        single_line_globs;
+      }
     )
 
-let document_store_of_document_src ~env pool ~single_line_search_paths document_src =
+type file_collection = {
+  files : String_set.t;
+  single_line_files : String_set.t;
+}
+
+let files_satisfying_constraints (cons : file_constraints) : file_collection =
+  let single_line_mode_applies file =
+    List.mem (extension_of_file file) cons.single_line_exts
+  in
+  let all_paths_by_exts =
+    File_utils.list_files_recursive_filter_by_exts
+      ~check_top_level_files:false
+      ~exts:(cons.exts @ cons.single_line_exts)
+      (String_set.to_seq cons.directly_specified_paths)
+  in
+  let paths_from_globs =
+    compute_paths_from_globs (String_set.to_seq cons.globs)
+  in
+  let paths_from_single_line_globs =
+    compute_paths_from_globs (String_set.to_seq cons.single_line_globs)
+  in
+  let single_line_files =
+    String_set.filter single_line_mode_applies all_paths_by_exts
+    |> String_set.union paths_from_single_line_globs
+    |> String_set.union (String_set.filter single_line_mode_applies paths_from_globs)
+  in
+  let files =
+    all_paths_by_exts
+    |> String_set.union paths_from_single_line_globs
+    |> String_set.union paths_from_globs
+  in
+  {
+    files;
+    single_line_files;
+  }
+
+let document_store_of_document_src ~env pool (collection : file_collection) document_src =
   let all_documents : Document.t list =
     match document_src with
     | Ui_base.Stdin path -> (
@@ -35,7 +115,7 @@ let document_store_of_document_src ~env pool ~single_line_search_paths document_
                 Printf.fprintf oc "Loading document: %s\n" (Filename.quote path);
               );
             let search_mode =
-              if String_set.mem path single_line_search_paths then (
+              if String_set.mem path collection.single_line_files then (
                 `Single_line
               ) else (
                 !Params.default_search_mode
@@ -164,8 +244,6 @@ let run
      )
    | _, _, _, _ -> ()
   );
-  Params.recognized_exts := recognized_exts;
-  Params.recognized_single_line_exts := recognized_single_line_exts;
   let question_marks, paths =
     List.partition (fun s -> CCString.trim s = "?") paths
   in
@@ -181,67 +259,25 @@ let run
       )
       paths_from
   in
-  let paths_from_globs = compute_paths_from_globs globs in
-  let paths_from_single_line_globs = compute_paths_from_globs single_line_globs in
-  let
-    paths,
-    paths_from_globs,
-    paths_from_single_line_globs,
-    paths_were_originally_specified_by_user
-    =
-    match
-      paths,
-      paths_from_file,
-      paths_from_globs,
-      paths_from_single_line_globs
-    with
-    | [], None, None, None -> ([ "." ], String_set.empty, String_set.empty, false)
-    | _, _, _, _ -> (
-        let paths_from_file = Option.value paths_from_file ~default:[] in
-        let paths_from_globs =
-          Option.value paths_from_globs ~default:String_set.empty
-        in
-        let paths_from_single_line_globs =
-          Option.value paths_from_single_line_globs ~default:String_set.empty
-        in
-        (List.flatten [ paths; paths_from_file ],
-         paths_from_globs,
-         paths_from_single_line_globs,
-         true)
-      )
+  let file_constraints = make_file_constraints
+      ~exts:recognized_exts
+      ~single_line_exts:recognized_single_line_exts
+      ~paths
+      ~paths_from_file
+      ~globs
+      ~single_line_globs
   in
-  List.iter (fun path ->
+  String_set.iter (fun path ->
       if not (Sys.file_exists path) then (
         exit_with_error_msg
           (Fmt.str "path %s does not exist" (Filename.quote path))
       )
     )
-    paths;
-  let all_paths_by_exts =
-    File_utils.list_files_recursive_filter_by_exts
-      ~check_top_level_files:false
-      ~exts:(!Params.recognized_exts @ !Params.recognized_single_line_exts)
-      paths
-  in
-  let single_line_paths_by_exts, remaining_paths_by_exts =
-    String_set.partition (fun s ->
-        List.mem (Filename.extension s) !Params.recognized_single_line_exts
-      ) all_paths_by_exts
-  in
-  let single_line_search_paths =
-    String_set.union
-      single_line_paths_by_exts
-      paths_from_single_line_globs
-  in
-  let files =
-    remaining_paths_by_exts
-    |> String_set.union paths_from_globs
-    |> String_set.union single_line_search_paths
-    |> String_set.to_list
-  in
+    file_constraints.directly_specified_paths;
+  let file_collection = files_satisfying_constraints file_constraints in
   let files =
     match question_marks with
-    | [] -> files
+    | [] -> file_collection.files
     | _ -> (
         if not (Proc_utils.command_exists "fzf") then (
           exit_with_error_msg
@@ -251,10 +287,10 @@ let run
         let read_from_fzf, stdout_for_fzf = Unix.pipe ~cloexec:true () in
         let write_to_fzf_oc = Unix.out_channel_of_descr write_to_fzf in
         let read_from_fzf_ic = Unix.in_channel_of_descr read_from_fzf in
-        List.iter (fun file ->
+        String_set.iter (fun file ->
             output_string write_to_fzf_oc file;
             output_string write_to_fzf_oc "\n";
-          ) files;
+          ) file_collection.files;
         Out_channel.close write_to_fzf_oc;
         let pid =
           Unix.create_process "fzf" [| "fzf"; "--multi" |]
@@ -275,7 +311,7 @@ let run
              exit 1
            )
         );
-        selection
+        String_set.of_list selection
       )
   in
   let pool = Task_pool.make ~sw (Eio.Stdenv.domain_mgr env) in
@@ -286,19 +322,18 @@ let run
   let compute_init_ui_mode_and_document_src : unit -> Ui_base.ui_mode * Ui_base.document_src =
     let stdin_tmp_file = ref None in
     fun () ->
-      if paths_were_originally_specified_by_user
+      if file_constraints.paths_were_originally_specified_by_user
       || stdin_is_atty ()
       then (
-        match files with
-        | [] -> (
-            Ui_base.(Ui_multi_file, Files [])
-          )
-        | [ f ] -> (
-            Ui_base.(Ui_single_file, Files [ f ])
-          )
-        | _ -> (
-            Ui_base.(Ui_multi_file, Files files)
-          )
+        let file_count = String_set.cardinal files in
+        let ui_mode =
+          let open Ui_base in
+          match file_count with
+          | 0 -> Ui_multi_file
+          | 1 -> Ui_single_file
+          | _ -> Ui_multi_file
+        in
+        (ui_mode, Files (String_set.to_list files))
       ) else (
         match !stdin_tmp_file with
         | None -> (
@@ -373,7 +408,7 @@ let run
   );
   Ui_base.Vars.init_ui_mode := init_ui_mode;
   let init_document_store =
-    document_store_of_document_src ~env pool ~single_line_search_paths init_document_src
+    document_store_of_document_src ~env pool file_collection init_document_src
   in
   if index_only then (
     clean_up ();
@@ -505,7 +540,7 @@ let run
             let old_document_store = Lwd.peek Ui_base.Vars.document_store in
             let search_exp = Document_store.search_exp old_document_store in
             let document_store =
-              document_store_of_document_src ~env pool ~single_line_search_paths document_src
+              document_store_of_document_src ~env pool file_collection document_src
               |> Document_store.update_search_exp pool (Stop_signal.make ()) search_exp
             in
             Lwd.set Ui_base.Vars.document_store document_store;
