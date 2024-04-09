@@ -9,10 +9,6 @@ type ui_mode =
   | Ui_single_file
   | Ui_multi_file
 
-type document_src =
-  | Stdin of string
-  | Files of string list
-
 type top_level_action =
   | Recompute_document_src
   | Open_file_and_search_result of Document.t * Search_result.t option
@@ -42,7 +38,7 @@ module Vars = struct
 
   let ui_mode : ui_mode Lwd.var = Lwd.var Ui_multi_file
 
-  let document_src : document_src ref = ref (Files [])
+  let document_src : Document_src.t ref = ref (Document_src.(Files empty_file_collection))
 
   let term : Notty_unix.Term.t option ref = ref None
 

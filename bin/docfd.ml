@@ -63,12 +63,7 @@ let make_file_constraints
       }
     )
 
-type file_collection = {
-  files : String_set.t;
-  single_line_files : String_set.t;
-}
-
-let files_satisfying_constraints (cons : file_constraints) : file_collection =
+let files_satisfying_constraints (cons : file_constraints) : Document_src.file_collection =
   let single_line_mode_applies file =
     List.mem (extension_of_file file) cons.single_line_exts
   in
@@ -89,33 +84,35 @@ let files_satisfying_constraints (cons : file_constraints) : file_collection =
     |> String_set.union paths_from_single_line_globs
     |> String_set.union (String_set.filter single_line_mode_applies paths_from_globs)
   in
-  let files =
+  let all_files =
     all_paths_by_exts
-    |> String_set.union paths_from_single_line_globs
     |> String_set.union paths_from_globs
+    |> String_set.union paths_from_single_line_globs
   in
   {
-    files;
+    all_files;
     single_line_files;
   }
 
-let document_store_of_document_src ~env pool (collection : file_collection) document_src =
+let document_store_of_document_src ~env pool (document_src : Document_src.t) =
   let all_documents : Document.t list =
     match document_src with
-    | Ui_base.Stdin path -> (
+    | Document_src.Stdin path -> (
         match Document.of_path ~env pool !Params.default_search_mode path with
         | Ok x -> [ x ]
         | Error msg ->  (
             exit_with_error_msg msg
           )
       )
-    | Files files -> (
-        Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size (fun path ->
+    | Files { all_files; single_line_files } -> (
+        all_files
+        |> String_set.to_list
+        |> Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size (fun path ->
             do_if_debug (fun oc ->
                 Printf.fprintf oc "Loading document: %s\n" (Filename.quote path);
               );
             let search_mode =
-              if String_set.mem path collection.single_line_files then (
+              if String_set.mem path single_line_files then (
                 `Single_line
               ) else (
                 !Params.default_search_mode
@@ -142,7 +139,7 @@ let document_store_of_document_src ~env pool (collection : file_collection) docu
                   );
                 None
               )
-          ) files
+          )
       )
   in
   all_documents
@@ -259,7 +256,8 @@ let run
       )
       paths_from
   in
-  let file_constraints = make_file_constraints
+  let file_constraints =
+    make_file_constraints
       ~exts:recognized_exts
       ~single_line_exts:recognized_single_line_exts
       ~paths
@@ -267,89 +265,60 @@ let run
       ~globs
       ~single_line_globs
   in
-  String_set.iter (fun path ->
-      if not (Sys.file_exists path) then (
-        exit_with_error_msg
-          (Fmt.str "path %s does not exist" (Filename.quote path))
-      )
-    )
-    file_constraints.directly_specified_paths;
-  let file_collection = files_satisfying_constraints file_constraints in
-  let files =
-    match question_marks with
-    | [] -> file_collection.files
-    | _ -> (
-        if not (Proc_utils.command_exists "fzf") then (
-          exit_with_error_msg
-            (Fmt.str "command fzf not found")
-        );
-        let stdin_for_fzf, write_to_fzf = Unix.pipe ~cloexec:true () in
-        let read_from_fzf, stdout_for_fzf = Unix.pipe ~cloexec:true () in
-        let write_to_fzf_oc = Unix.out_channel_of_descr write_to_fzf in
-        let read_from_fzf_ic = Unix.in_channel_of_descr read_from_fzf in
-        String_set.iter (fun file ->
-            output_string write_to_fzf_oc file;
-            output_string write_to_fzf_oc "\n";
-          ) file_collection.files;
-        Out_channel.close write_to_fzf_oc;
-        let pid =
-          Unix.create_process "fzf" [| "fzf"; "--multi" |]
-            stdin_for_fzf stdout_for_fzf Unix.stderr
-        in
-        let _, process_status = Unix.waitpid [] pid in
-        Unix.close stdin_for_fzf;
-        Unix.close stdout_for_fzf;
-        let selection = CCIO.read_lines_l (Unix.in_channel_of_descr read_from_fzf) in
-        In_channel.close read_from_fzf_ic;
-        (match process_status with
-         | WEXITED n -> (
-             if n <> 0 then (
-               exit n
-             )
-           )
-         | WSIGNALED _ | WSTOPPED _ -> (
-             exit 1
-           )
-        );
-        String_set.of_list selection
-      )
-  in
   let pool = Task_pool.make ~sw (Eio.Stdenv.domain_mgr env) in
   Ui_base.Vars.pool := Some pool;
   do_if_debug (fun oc ->
       Printf.fprintf oc "Scanning for documents\n"
     );
-  let compute_init_ui_mode_and_document_src : unit -> Ui_base.ui_mode * Ui_base.document_src =
+  let compute_init_ui_mode_and_document_src : unit -> Ui_base.ui_mode * Document_src.t =
     let stdin_tmp_file = ref None in
-    fun () ->
-      if file_constraints.paths_were_originally_specified_by_user
-      || stdin_is_atty ()
-      then (
-        let file_count = String_set.cardinal files in
-        let ui_mode =
-          let open Ui_base in
-          match file_count with
-          | 0 -> Ui_multi_file
-          | 1 -> Ui_single_file
-          | _ -> Ui_multi_file
-        in
-        (ui_mode, Files (String_set.to_list files))
-      ) else (
-        match !stdin_tmp_file with
-        | None -> (
-            match File_utils.read_in_channel_to_tmp_file stdin with
-            | Ok tmp_file -> (
-                stdin_tmp_file := Some tmp_file;
-                Ui_base.(Ui_single_file, Stdin tmp_file)
-              )
-            | Error msg -> (
-                exit_with_error_msg msg
-              )
-          )
-        | Some tmp_file -> (
-            Ui_base.(Ui_single_file, Stdin tmp_file)
-          )
-      )
+    (fun () ->
+       String_set.iter (fun path ->
+           if not (Sys.file_exists path) then (
+             exit_with_error_msg
+               (Fmt.str "path %s does not exist" (Filename.quote path))
+           )
+         )
+         file_constraints.directly_specified_paths;
+       let file_collection = files_satisfying_constraints file_constraints in
+       let files =
+         match question_marks with
+         | [] -> file_collection.all_files
+         | _ -> (
+             String_set.to_seq file_collection.all_files
+             |> Proc_utils.pipe_to_fzf_for_selection
+             |> String_set.of_list
+           )
+       in
+       if file_constraints.paths_were_originally_specified_by_user
+       || stdin_is_atty ()
+       then (
+         let file_count = String_set.cardinal files in
+         let ui_mode =
+           let open Ui_base in
+           match file_count with
+           | 0 -> Ui_multi_file
+           | 1 -> Ui_single_file
+           | _ -> Ui_multi_file
+         in
+         (ui_mode, Files file_collection)
+       ) else (
+         match !stdin_tmp_file with
+         | None -> (
+             match File_utils.read_in_channel_to_tmp_file stdin with
+             | Ok tmp_file -> (
+                 stdin_tmp_file := Some tmp_file;
+                 Ui_base.(Ui_single_file, Stdin tmp_file)
+               )
+             | Error msg -> (
+                 exit_with_error_msg msg
+               )
+           )
+         | Some tmp_file -> (
+             Ui_base.(Ui_single_file, Stdin tmp_file)
+           )
+       )
+    )
   in
   let compute_document_src () =
     snd (compute_init_ui_mode_and_document_src ())
@@ -373,29 +342,32 @@ let run
   do_if_debug (fun oc ->
       match init_document_src with
       | Stdin _ -> Printf.fprintf oc "Document source: stdin\n"
-      | Files files -> (
+      | Files { all_files; single_line_files = _ } -> (
           Printf.fprintf oc "Document source: files\n";
-          List.iter (fun file ->
+          String_set.iter (fun file ->
               Printf.fprintf oc "File: %s\n" (Filename.quote file);
             )
-            files
+            all_files
         )
     );
   (match init_document_src with
    | Stdin _ -> ()
-   | Files files -> (
+   | Files { all_files; _ } -> (
        let pdftotext_exists = Proc_utils.command_exists "pdftotext" in
        let pandoc_exists = Proc_utils.command_exists "pandoc" in
-       let formats = List.map Misc_utils.format_of_file files in
-       if not pdftotext_exists && List.mem `PDF formats then (
+       let formats = String_set.to_seq all_files
+                     |> Seq.map Misc_utils.format_of_file
+                     |> Seq.fold_left (fun acc x -> File_format_set.add x acc) File_format_set.empty
+       in
+       if not pdftotext_exists && File_format_set.mem `PDF formats then (
          exit_with_error_msg
            (Fmt.str "command pdftotext not found")
        );
-       if not pandoc_exists && List.mem `Pandoc_supported_format formats then (
+       if not pandoc_exists && File_format_set.mem `Pandoc_supported_format formats then (
          exit_with_error_msg
            (Fmt.str "command pandoc not found")
        );
-       let file_count = List.length files in
+       let file_count = String_set.cardinal all_files in
        if file_count > !Params.cache_size then (
          do_if_debug (fun oc ->
              Printf.fprintf oc "File count %d exceeds cache size %d, caching disabled\n"
@@ -408,7 +380,7 @@ let run
   );
   Ui_base.Vars.init_ui_mode := init_ui_mode;
   let init_document_store =
-    document_store_of_document_src ~env pool file_collection init_document_src
+    document_store_of_document_src ~env pool init_document_src
   in
   if index_only then (
     clean_up ();
@@ -540,7 +512,7 @@ let run
             let old_document_store = Lwd.peek Ui_base.Vars.document_store in
             let search_exp = Document_store.search_exp old_document_store in
             let document_store =
-              document_store_of_document_src ~env pool file_collection document_src
+              document_store_of_document_src ~env pool document_src
               |> Document_store.update_search_exp pool (Stop_signal.make ()) search_exp
             in
             Lwd.set Ui_base.Vars.document_store document_store;

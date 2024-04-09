@@ -7,7 +7,15 @@ let extension_of_file (s : string) =
   Filename.extension s
   |> String.lowercase_ascii
 
-let format_of_file (s : string) : [ `PDF | `Pandoc_supported_format | `Text ] =
+type file_format = [ `PDF | `Pandoc_supported_format | `Text ] [@@deriving ord]
+
+module File_format_set = CCSet.Make (struct
+    type t = file_format
+
+    let compare = compare_file_format
+  end)
+
+let format_of_file (s : string) : file_format =
   let ext = extension_of_file s in
   if ext = ".pdf" then (
     `PDF

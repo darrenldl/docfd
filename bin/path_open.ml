@@ -152,7 +152,7 @@ let text index document_src ~editor ~path ~search_result =
   in
   let cmd =
     match document_src with
-    | Ui_base.Stdin _ -> Fmt.str "</dev/tty %s" cmd
+    | Document_src.Stdin _ -> Fmt.str "</dev/tty %s" cmd
     | _ -> cmd
   in
   Sys.command cmd |> ignore
