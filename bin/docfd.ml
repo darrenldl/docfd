@@ -281,19 +281,22 @@ let run
          )
          file_constraints.directly_specified_paths;
        let file_collection = files_satisfying_constraints file_constraints in
-       let files =
+       let file_collection =
          match question_marks with
-         | [] -> file_collection.all_files
+         | [] -> file_collection
          | _ -> (
+           let selection =
              String_set.to_seq file_collection.all_files
              |> Proc_utils.pipe_to_fzf_for_selection
              |> String_set.of_list
+           in
+           { file_collection with all_files = selection }
            )
        in
        if file_constraints.paths_were_originally_specified_by_user
        || stdin_is_atty ()
        then (
-         let file_count = String_set.cardinal files in
+         let file_count = String_set.cardinal file_collection.all_files in
          let ui_mode =
            let open Ui_base in
            match file_count with
