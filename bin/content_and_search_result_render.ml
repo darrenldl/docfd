@@ -130,9 +130,9 @@ let word_grid_of_index
     (index : Index.t)
   : word_grid =
   let global_line_count = Index.global_line_count index in
-  if global_line_count = 0 then
+  if global_line_count = 0 then (
     { start_global_line_num = 0; data = [||] }
-  else (
+  ) else (
     let end_inc_global_line_num = min (global_line_count - 1) end_inc_global_line_num in
     let data =
       OSeq.(start_global_line_num -- end_inc_global_line_num)
