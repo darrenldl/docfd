@@ -562,7 +562,6 @@ let run
             loop ()
           )
         | Print_file_path_and_search_result (document, search_result) -> (
-            close_term ();
             let images =
               match search_result with
               | None -> []
@@ -576,6 +575,7 @@ let run
                 )
             in
             Search_result_print.search_result_images ~out:`Stderr ~document images;
+            loop ()
           )
       )
   in
