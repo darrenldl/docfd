@@ -145,9 +145,9 @@ Picking via multiple --glob and --single-line-glob:
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   $ docfd --debug-log - --index-only --glob '*.txt' --glob '*.md' --glob '*.log' 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test.log'
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/test.log'
   $ docfd --debug-log - --index-only --single-line-glob '*.txt' 2>&1 | grep '^Using .* search mode' | sort
   Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test.txt'
@@ -161,14 +161,14 @@ Picking via multiple --glob and --single-line-glob:
   Using single line search mode for document '$TESTCASE_ROOT/test.md'
   Using single line search mode for document '$TESTCASE_ROOT/test.txt'
   $ docfd --debug-log - --index-only --single-line-glob '*.txt' --glob '*.md' --glob '*.log' 2>&1 | grep '^Using .* search mode' | sort
-  Using multiline search mode for document '$TESTCASE_ROOT/test.log'
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
   Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/test.log'
   Using single line search mode for document '$TESTCASE_ROOT/test.txt'
   $ docfd --debug-log - --index-only --glob '*.txt' --single-line-glob '*.md' --glob '*.log' 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test.log'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/test.log'
   Using single line search mode for document '$TESTCASE_ROOT/test.md'
   $ docfd --debug-log - --index-only --glob '*.txt' --glob '*.md' --single-line-glob '*.log' 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
@@ -186,8 +186,8 @@ Picking via multiple --glob and --single-line-glob:
   Using single line search mode for document '$TESTCASE_ROOT/test.log'
   Using single line search mode for document '$TESTCASE_ROOT/test.txt'
   $ docfd --debug-log - --index-only --single-line-glob '*.txt' --single-line-glob '*.md' --glob '*.log' 2>&1 | grep '^Using .* search mode' | sort
-  Using multiline search mode for document '$TESTCASE_ROOT/test.log'
   Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/test.log'
   Using single line search mode for document '$TESTCASE_ROOT/test.md'
   Using single line search mode for document '$TESTCASE_ROOT/test.txt'
 
@@ -197,6 +197,8 @@ Picking via multiple --glob and --single-line-glob:
   Using multiline search mode for document './test/1234.md'
   Using multiline search mode for document './test/abcd.md'
   Using multiline search mode for document './test/abcd/defg.md'
+  Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   Using single line search mode for document './test.log'
   Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test.txt'
@@ -214,6 +216,8 @@ Picking via multiple --glob and --single-line-glob:
   Using multiline search mode for document './test/1234.md'
   Using multiline search mode for document './test/abcd.md'
   Using multiline search mode for document './test/abcd/defg.md'
+  Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   Using single line search mode for document './test.log'
   Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test.md'
@@ -225,12 +229,12 @@ Picking via multiple --glob and --single-line-glob:
   Using multiline search mode for document './test/1234.md'
   Using multiline search mode for document './test/abcd.md'
   Using multiline search mode for document './test/abcd/defg.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   Using single line search mode for document './empty-paths.txt'
   Using single line search mode for document './test.txt'
   Using single line search mode for document './test/abcd.txt'
   Using single line search mode for document './test/abcd/defg.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/test.txt'
   $ docfd --debug-log - --index-only --single-line-exts md --glob '*.txt' --exts md . 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
@@ -239,8 +243,6 @@ Picking via multiple --glob and --single-line-glob:
   Using single line search mode for document './test/abcd.md'
   Using single line search mode for document './test/abcd/defg.md'
   $ docfd --debug-log - --index-only --single-line-exts txt,md --glob '*.txt' --exts md . 2>&1 | grep '^Using .* search mode' | sort
-  Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   Using single line search mode for document './empty-paths.txt'
   Using single line search mode for document './test.md'
   Using single line search mode for document './test.txt'
@@ -249,6 +251,8 @@ Picking via multiple --glob and --single-line-glob:
   Using single line search mode for document './test/abcd.txt'
   Using single line search mode for document './test/abcd/defg.md'
   Using single line search mode for document './test/abcd/defg.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/test.txt'
 
 --exts apply to directories in FILE in --paths-from FILE:
   $ docfd --debug-log - --index-only --paths-from paths --exts txt 2>&1 | grep '^Using .* search mode' | sort
