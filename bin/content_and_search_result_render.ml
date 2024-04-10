@@ -112,9 +112,12 @@ let start_and_end_inc_global_line_num_of_search_result
           let line_loc = Index.Loc.line_loc loc in
           let global_line_num = Index.Line_loc.global_line_num line_loc in
           match s_e with
-          | None -> Some (global_line_num, global_line_num)
-          | Some (s, e) ->
-            Some (min s global_line_num, max global_line_num e)
+          | None -> (
+              Some (global_line_num, global_line_num)
+            )
+          | Some (s, e) -> (
+              Some (min s global_line_num, max global_line_num e)
+            )
         )
         None
         l
