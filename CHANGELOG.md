@@ -18,6 +18,9 @@
    - This was due to assertion failure of `max_line_num` in
      `Content_and_search_result_render.content_snippet`
 
+- Changed search result printing via `Shift+P` and `p` within TUI to not exit
+  after printing, allowing printing of more results
+
 ## 4.0.0
 
 - Made document search asynchronous to search field input, so UI remains
