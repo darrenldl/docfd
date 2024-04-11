@@ -218,6 +218,29 @@ module Key_binding_info = struct
 
   type grid_lookup = (grid_key * Nottui.ui Lwd.t) list
 
+  let grid_lights : (string, bool Lwd.var list) Hashtbl.t = Hashtbl.create 100
+
+  let lock = Eio.Mutex.create ()
+
+  let grid_light_req : string Eio.Stream.t = Eio.Stream.create 100
+
+  let blink label =
+    Eio.Stream.add grid_light_req label
+
+  let grid_light_fiber () =
+    while true do
+      let label = Eio.Stream.take grid_light_req in
+      Eio.Mutex.use_ro lock (fun () ->
+          match Hashtbl.find_opt grid_lights label with
+          | None -> failwith "unexpected case"
+          | Some l -> (
+              List.iter (fun x -> Lwd.set x true) l;
+              Eio_unix.sleep Params.blink_on_duration_s;
+              List.iter (fun x -> Lwd.set x false) l;
+            )
+        )
+    done
+
   let make_grid_lookup grid_contents : grid_lookup =
     let max_label_msg_len_lookup =
       grid_contents
@@ -237,11 +260,26 @@ module Key_binding_info = struct
           (mode, (max_label_len, max_msg_len))
         )
     in
-    let label_msg_pair modes { label; msg } : Nottui.ui Lwd.t =
+    let label_msg_pair mode_comb { label; msg } : Nottui.ui Lwd.t =
       let (max_label_len, max_msg_len) =
-        List.assoc modes max_label_msg_len_lookup
+        List.assoc mode_comb max_label_msg_len_lookup
       in
-      let label_attr = Notty.A.(fg lightyellow ++ st bold) in
+      let light_on_var = Lwd.var false in
+      Eio.Mutex.use_rw lock ~protect:false (fun () ->
+          let l =
+            match Hashtbl.find_opt grid_lights label with
+            | None -> [ light_on_var ]
+            | Some l -> (light_on_var :: l)
+          in
+          Hashtbl.replace grid_lights label l
+        );
+      let$ light_on = Lwd.get light_on_var in
+      let label_attr =
+        if light_on then
+          Notty.A.(fg black ++ bg lightyellow ++ st bold)
+        else
+          Notty.A.(fg lightyellow ++ st bold)
+      in
       let msg_attr = Notty.A.empty in
       let msg = String.capitalize_ascii msg in
       let label_background = Notty.I.void max_label_len 1 in
@@ -257,13 +295,12 @@ module Key_binding_info = struct
       in
       Notty.I.(content </> full_background)
       |> Nottui.Ui.atom
-      |> Lwd.return
     in
-    List.map (fun (mode, grid_contents) ->
-        (mode,
+    List.map (fun (mode_comb, grid_contents) ->
+        (mode_comb,
          grid_contents
          |> List.map (fun l ->
-             List.map (label_msg_pair mode) l
+             List.map (label_msg_pair mode_comb) l
            )
          |> Nottui_widgets.grid
            ~pad:(Nottui.Gravity.make ~h:`Negative ~v:`Negative)

@@ -584,6 +584,7 @@ let run
        Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env)
          (fun () -> Search_manager.search_fiber pool));
     Search_manager.manager_fiber;
+    Ui_base.Key_binding_info.grid_light_fiber;
     (fun () ->
        (match start_with_search with
         | None -> ()

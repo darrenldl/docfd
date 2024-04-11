@@ -462,6 +462,7 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'P', []) -> (
+          Ui_base.Key_binding_info.blink_grid_light "Shift+P";
           Option.iter (fun (doc, _search_results) ->
               Lwd.set Ui_base.Vars.quit true;
               Ui_base.Vars.action :=

@@ -61,3 +61,5 @@ let last_scan_format_string =
   (match Timedesc.Time_zone.local () with
    | None -> "Z"
    | Some _ -> "")
+
+let blink_on_duration_s = 0.1
