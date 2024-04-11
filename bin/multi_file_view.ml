@@ -157,24 +157,28 @@ module Top_pane = struct
         ~(document_selected : int)
       : Nottui.ui Lwd.t =
       let document_count = Array.length document_info_s in
-      let pane =
+      let render_pane () =
+        let rec aux index height_filled acc =
+          if index < document_count
+          && height_filled < height
+          then (
+            let selected = Int.equal document_selected index in
+            let img = render_document_preview ~width ~document_info:document_info_s.(index) ~selected in
+            aux (index + 1) (height_filled + Notty.I.height img) (img :: acc)
+          ) else (
+            List.rev acc
+            |> List.map Nottui.Ui.atom
+            |> Nottui.Ui.vcat
+          )
+        in
         if document_count = 0 then (
           Nottui.Ui.empty
         ) else (
-          CCInt.range'
-            document_selected
-            (min (document_selected + height) document_count)
-          |> CCList.of_iter
-          |> List.map (fun j ->
-              let selected = Int.equal document_selected j in
-              render_document_preview ~width ~document_info:document_info_s.(j) ~selected
-            )
-          |> List.map Nottui.Ui.atom
-          |> Nottui.Ui.vcat
+          aux document_selected 0 []
         )
       in
       let$ background = Ui_base.full_term_sized_background in
-      Nottui.Ui.join_z background pane
+      Nottui.Ui.join_z background (render_pane ())
       |> Nottui.Ui.mouse_area
         (Ui_base.mouse_handler
            ~f:(fun direction ->
@@ -205,15 +209,18 @@ module Top_pane = struct
       else (
         let$* search_result_selected = Lwd.get Vars.index_of_search_result_selected in
         let document_info = document_info_s.(document_selected) in
+        let sub_pane_height =
+          height / 2
+        in
         Nottui_widgets.v_pane
           (Ui_base.Content_view.main
              ~width
-             ~height
+             ~height:sub_pane_height
              ~document_info
              ~search_result_selected)
           (Ui_base.Search_result_list.main
              ~width
-             ~height
+             ~height:sub_pane_height
              ~document_info
              ~index_of_search_result_selected:Vars.index_of_search_result_selected)
       )
@@ -229,18 +236,15 @@ module Top_pane = struct
       (* Minus 1 for pane separator bar. *)
       width / 2 - 1 - Params.line_wrap_underestimate_offset
     in
-    let sub_pane_height =
-      height / 2
-    in
     Nottui_widgets.h_pane
       (Document_list.main
          ~width:sub_pane_width
-         ~height:sub_pane_height
+         ~height
          ~document_info_s
          ~document_selected)
       (Right_pane.main
          ~width:sub_pane_width
-         ~height:sub_pane_height
+         ~height
          ~document_info_s
          ~document_selected)
 end
