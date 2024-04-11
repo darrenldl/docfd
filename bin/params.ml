@@ -62,4 +62,4 @@ let last_scan_format_string =
    | None -> "Z"
    | Some _ -> "")
 
-let blink_on_duration_s = 0.1
+let blink_on_duration_s = 0.14
