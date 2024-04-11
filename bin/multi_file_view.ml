@@ -394,12 +394,14 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'R', []) -> (
-          Lwd.set Ui_base.Vars.quit true;
+          Ui_base.Key_binding_info.blink "Shift+R";
           reset_document_selected ();
+          Lwd.set Ui_base.Vars.quit true;
           Ui_base.Vars.action := Some Ui_base.Recompute_document_src;
           `Handled
         )
       | (`ASCII 'r', []) -> (
+          Ui_base.Key_binding_info.blink "r";
           reload_document_selected ~document_info_s;
           `Handled
         )
@@ -457,12 +459,13 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'x', []) -> (
+          Ui_base.Key_binding_info.blink "x";
           Lwd.set Vars.search_field Ui_base.empty_text_field;
           update_search_phrase ();
           `Handled
         )
       | (`ASCII 'P', []) -> (
-          Ui_base.Key_binding_info.blink_grid_light "Shift+P";
+          Ui_base.Key_binding_info.blink "Shift+P";
           Option.iter (fun (doc, _search_results) ->
               Lwd.set Ui_base.Vars.quit true;
               Ui_base.Vars.action :=
@@ -472,14 +475,15 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'p', []) -> (
+          Ui_base.Key_binding_info.blink "p";
           Option.iter (fun (doc, search_results) ->
-              Lwd.set Ui_base.Vars.quit true;
               let search_result =
                 if search_result_current_choice < Array.length search_results then
                   Some search_results.(search_result_current_choice)
                 else
                   None
               in
+              Lwd.set Ui_base.Vars.quit true;
               Ui_base.Vars.action :=
                 Some (Ui_base.Print_file_path_and_search_result (doc, search_result));
             )
@@ -488,13 +492,13 @@ let keyboard_handler
         )
       | (`Enter, []) -> (
           Option.iter (fun (doc, search_results) ->
-              Lwd.set Ui_base.Vars.quit true;
               let search_result =
                 if search_result_current_choice < Array.length search_results then
                   Some search_results.(search_result_current_choice)
                 else
                   None
               in
+              Lwd.set Ui_base.Vars.quit true;
               Ui_base.Vars.action :=
                 Some (Ui_base.Open_file_and_search_result (doc, search_result));
             )

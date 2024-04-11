@@ -187,6 +187,7 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'r', []) -> (
+          Ui_base.Key_binding_info.blink "r";
           reload_document document;
           `Handled
         )
@@ -226,36 +227,39 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'x', []) -> (
+          Ui_base.Key_binding_info.blink "x";
           Lwd.set Ui_base.Vars.Single_file.search_field Ui_base.empty_text_field;
           update_search_phrase ();
           `Handled
         )
       | (`ASCII 'P', []) -> (
+          Ui_base.Key_binding_info.blink "Shift+P";
           Lwd.set Ui_base.Vars.quit true;
           Ui_base.Vars.action :=
             Some (Ui_base.Print_file_path_and_search_result (document, None));
           `Handled
         )
       | (`ASCII 'p', []) -> (
-          Lwd.set Ui_base.Vars.quit true;
+          Ui_base.Key_binding_info.blink "p";
           let search_result =
             if search_result_current_choice < Array.length search_results then
               Some search_results.(search_result_current_choice)
             else
               None
           in
+          Lwd.set Ui_base.Vars.quit true;
           Ui_base.Vars.action :=
             Some (Ui_base.Print_file_path_and_search_result (document, search_result));
           `Handled
         )
       | (`Enter, []) -> (
-          Lwd.set Ui_base.Vars.quit true;
           let search_result =
             if search_result_current_choice < Array.length search_results then
               Some search_results.(search_result_current_choice)
             else
               None
           in
+          Lwd.set Ui_base.Vars.quit true;
           Ui_base.Vars.action :=
             Some (Ui_base.Open_file_and_search_result (document, search_result));
           `Handled
