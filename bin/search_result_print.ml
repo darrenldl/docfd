@@ -7,11 +7,6 @@ let out_channel_of_print_output (out : print_output) : out_channel =
   | `Stdout -> stdout
   | `Stderr -> stderr
 
-let formatter_of_print_output (out : print_output) : Format.formatter =
-  match out with
-  | `Stdout -> Format.get_std_formatter ()
-  | `Stderr -> Format.get_err_formatter ()
-
 let print_output_is_atty (out : print_output) =
   match out with
   | `Stdout -> stdout_is_atty ()
@@ -25,9 +20,11 @@ let search_result_images ~(out : print_output) ~document (images : Notty.image l
   let path = Document.path document in
   let oc = out_channel_of_print_output out in
   if print_output_is_atty out then (
-    let fmt = formatter_of_print_output out in
+    let buf = Buffer.create (String.length path) in
+    let fmt = Format.formatter_of_buffer buf in
     Ocolor_format.prettify_formatter fmt;
-    Fmt.pf fmt "@[<h>@{<magenta>%s@}@]@\n" path;
+    Fmt.pf fmt "@[<h>@{<magenta>%s@}@]%a" path Format.pp_print_flush ();
+    Printf.fprintf oc "%s\n" (Buffer.contents buf);
   ) else (
     Printf.fprintf oc "%s\n" path;
   );
