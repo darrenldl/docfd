@@ -554,17 +554,6 @@ let run
             );
             loop ()
           )
-        | Print_file_path_and_search_result (document, search_result) -> (
-            let search_results =
-              match search_result with
-              | None -> Seq.empty
-              | Some search_result -> (
-                  Seq.return search_result
-                )
-            in
-            Search_result_print.submit_print_req `Stderr document search_results;
-            loop ()
-          )
       )
   in
   Eio.Fiber.any [

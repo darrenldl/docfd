@@ -467,9 +467,7 @@ let keyboard_handler
       | (`ASCII 'P', []) -> (
           Ui_base.Key_binding_info.blink "Shift+P";
           Option.iter (fun (doc, _search_results) ->
-              Lwd.set Ui_base.Vars.quit true;
-              Ui_base.Vars.action :=
-                Some (Ui_base.Print_file_path_and_search_result (doc, None));
+              Search_result_print.submit_print_req `Stderr doc Seq.empty;
             )
             document_info;
           `Handled
@@ -477,15 +475,13 @@ let keyboard_handler
       | (`ASCII 'p', []) -> (
           Ui_base.Key_binding_info.blink "p";
           Option.iter (fun (doc, search_results) ->
-              let search_result =
+              let search_results =
                 if search_result_current_choice < Array.length search_results then
-                  Some search_results.(search_result_current_choice)
+                  Seq.return search_results.(search_result_current_choice)
                 else
-                  None
+                  Seq.empty
               in
-              Lwd.set Ui_base.Vars.quit true;
-              Ui_base.Vars.action :=
-                Some (Ui_base.Print_file_path_and_search_result (doc, search_result));
+              Search_result_print.submit_print_req `Stderr doc search_results;
             )
             document_info;
           `Handled

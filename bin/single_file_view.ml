@@ -234,22 +234,18 @@ let keyboard_handler
         )
       | (`ASCII 'P', []) -> (
           Ui_base.Key_binding_info.blink "Shift+P";
-          Lwd.set Ui_base.Vars.quit true;
-          Ui_base.Vars.action :=
-            Some (Ui_base.Print_file_path_and_search_result (document, None));
+          Search_result_print.submit_print_req `Stderr document Seq.empty;
           `Handled
         )
       | (`ASCII 'p', []) -> (
           Ui_base.Key_binding_info.blink "p";
-          let search_result =
+          let search_results =
             if search_result_current_choice < Array.length search_results then
-              Some search_results.(search_result_current_choice)
+              Seq.return search_results.(search_result_current_choice)
             else
-              None
+              Seq.empty
           in
-          Lwd.set Ui_base.Vars.quit true;
-          Ui_base.Vars.action :=
-            Some (Ui_base.Print_file_path_and_search_result (document, search_result));
+          Search_result_print.submit_print_req `Stderr document search_results;
           `Handled
         )
       | (`Enter, []) -> (
