@@ -283,9 +283,8 @@ module Key_binding_info = struct
       in
       let msg_attr = Notty.A.empty in
       let msg = String.capitalize_ascii msg in
-      let label_background = Notty.I.void max_label_len 1 in
       let content = Notty.(I.hcat
-                             [ I.(string label_attr label </> label_background)
+                             [ I.(string label_attr (CCString.pad ~side:`Right ~c:' ' max_label_len label))
                              ; I.string A.empty "  "
                              ; I.string msg_attr msg
                              ]
