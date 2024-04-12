@@ -76,3 +76,16 @@ let compute_total_recognized_exts ~exts ~additional_exts =
     )
   |> List.filter (fun s -> s <> "")
   |> List.map (fun s -> Printf.sprintf ".%s" s)
+
+let array_sub_seq : 'a. start:int -> end_exc:int -> 'a array -> 'a Seq.t =
+  fun ~start ~end_exc arr ->
+  let count = Array.length arr in
+  let end_exc = min count end_exc in
+  let rec aux start =
+    if start < end_exc then (
+      Seq.cons arr.(start) (aux (start + 1))
+    ) else (
+      Seq.empty
+    )
+  in
+  aux start

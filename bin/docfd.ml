@@ -201,6 +201,7 @@ let run
   Params.max_linked_token_search_dist := max_linked_token_search_dist;
   Params.index_chunk_token_count := index_chunk_token_count;
   Params.cache_size := cache_size;
+  Params.search_result_print_text_width := search_result_print_text_width;
   Params.cache_dir := (
     if no_cache then (
       None
@@ -413,21 +414,13 @@ let run
            let document_info_s =
              Document_store.usable_documents document_store
            in
+           let out = `Stdout in
            Array.iteri (fun i (document, search_results) ->
-               let out = `Stdout in
                if i > 0 then (
-                 Search_result_print.newline_image ~out;
+                 Search_result_print.newline_image out;
                );
-               let images =
-                 Content_and_search_result_render.search_results
-                   ~render_mode:(Ui_base.render_mode_of_document document)
-                   ~start:0
-                   ~end_exc:search_result_count_per_doc
-                   ~width:search_result_print_text_width
-                   (Document.index document)
-                   search_results
-               in
-               Search_result_print.search_result_images ~out ~document images;
+               array_sub_seq ~start:0 ~end_exc:search_result_count_per_doc search_results
+               |> Search_result_print.search_results out document
              ) document_info_s;
            clean_up ();
            exit 0
@@ -562,19 +555,14 @@ let run
             loop ()
           )
         | Print_file_path_and_search_result (document, search_result) -> (
-            let images =
+            let search_results =
               match search_result with
-              | None -> []
+              | None -> Seq.empty
               | Some search_result -> (
-                  [ Content_and_search_result_render.search_result
-                      ~render_mode:(Ui_base.render_mode_of_document document)
-                      ~width:search_result_print_text_width
-                      (Document.index document)
-                      search_result
-                  ]
+                  Seq.return search_result
                 )
             in
-            Search_result_print.search_result_images ~out:`Stderr ~document images;
+            Search_result_print.submit_print_req `Stderr document search_results;
             loop ()
           )
       )
@@ -585,6 +573,7 @@ let run
          (fun () -> Search_manager.search_fiber pool));
     Search_manager.manager_fiber;
     Ui_base.Key_binding_info.grid_light_fiber;
+    Search_result_print.fiber;
     (fun () ->
        (match start_with_search with
         | None -> ()

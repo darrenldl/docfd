@@ -321,20 +321,3 @@ let search_result
   ) else (
     img
   )
-
-let search_results
-    ~render_mode
-    ~start
-    ~end_exc
-    ~width
-    (index : Index.t)
-    (results : Search_result.t array)
-  : Notty.image list =
-  let result_count = Array.length results in
-  let end_exc = min end_exc result_count in
-  let results =
-    Array.sub results start (end_exc - start)
-  in
-  results
-  |> Array.to_list
-  |> List.map (search_result ~render_mode ~width index)

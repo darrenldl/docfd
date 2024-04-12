@@ -126,13 +126,15 @@ module Search_result_list = struct
       Lwd.return Nottui.Ui.empty
     ) else (
       let images =
-        Content_and_search_result_render.search_results
-          ~render_mode:(render_mode_of_document document)
-          ~start:search_result_selected
-          ~end_exc:(search_result_selected + height)
-          ~width
-          (Document.index document)
+        Misc_utils.array_sub_seq
+          ~start: search_result_selected
+          ~end_exc:(min result_count (search_result_selected + height))
           search_results
+        |> Seq.map (Content_and_search_result_render.search_result
+                      ~render_mode:(render_mode_of_document document)
+                      ~width
+                      (Document.index document))
+        |> List.of_seq
       in
       let pane =
         images

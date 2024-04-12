@@ -45,6 +45,8 @@ let default_non_interactive_search_result_count_per_document = 5
 
 let default_search_result_print_text_width = 80
 
+let search_result_print_text_width = ref default_search_result_print_text_width
+
 let default_cache_size = 100
 
 let cache_size = ref default_cache_size
