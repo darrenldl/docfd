@@ -219,28 +219,52 @@ module Key_binding_info = struct
 
   type grid_lookup = (grid_key * Nottui.ui Lwd.t) list
 
-  let grid_lights : (string, bool Lwd.var list) Hashtbl.t = Hashtbl.create 100
+  let grid_lights : (string, Mtime.t ref * bool Lwd.var list) Hashtbl.t = Hashtbl.create 100
 
   let lock = Eio.Mutex.create ()
 
-  let grid_light_req : string Eio.Stream.t = Eio.Stream.create 100
+  let grid_light_on_req : string Eio.Stream.t = Eio.Stream.create 100
+
+  let grid_light_off_req : (Mtime.t * Mtime.t * string) Eio.Stream.t = Eio.Stream.create 100
 
   let blink label =
-    Eio.Stream.add grid_light_req label
+    Eio.Stream.add grid_light_on_req label
 
   let grid_light_fiber () =
-    while true do
-      let label = Eio.Stream.take grid_light_req in
-      Eio.Mutex.use_ro lock (fun () ->
-          match Hashtbl.find_opt grid_lights label with
-          | None -> failwith "unexpected case"
-          | Some l -> (
-              List.iter (fun x -> Lwd.set x true) l;
-              Eio_unix.sleep Params.blink_on_duration_s;
-              List.iter (fun x -> Lwd.set x false) l;
-            )
-        )
-    done
+    let clock = Eio.Stdenv.mono_clock (eio_env ()) in
+    Eio.Fiber.both
+      (fun () ->
+         while true do
+           let label = Eio.Stream.take grid_light_on_req in
+           let ts_now = Eio.Time.Mono.now clock in
+           Eio.Mutex.use_rw lock ~protect:false (fun () ->
+               match Hashtbl.find_opt grid_lights label with
+               | None -> failwith "unexpected case"
+               | Some (ts, l) -> (
+                   ts := ts_now;
+                   List.iter (fun x -> Lwd.set x true) l;
+                   Eio.Stream.add
+                     grid_light_off_req
+                     (ts_now, Option.get (Mtime.(add_span ts_now Params.blink_on_duration)), label);
+                 )
+             )
+         done
+      )
+      (fun () ->
+         while true do
+           let ts_req_time, ts_target_time, label = Eio.Stream.take grid_light_off_req in
+           Eio.Time.Mono.sleep_until clock ts_target_time;
+           Eio.Mutex.use_rw lock ~protect:false (fun () ->
+               match Hashtbl.find_opt grid_lights label with
+               | None -> failwith "unexpected case"
+               | Some (ts_last_update, l) -> (
+                   if Mtime.equal !ts_last_update ts_req_time then (
+                     List.iter (fun x -> Lwd.set x false) l;
+                   )
+                 )
+             )
+         done
+      )
 
   let make_grid_lookup grid_contents : grid_lookup =
     let max_label_msg_len_lookup =
@@ -267,12 +291,12 @@ module Key_binding_info = struct
       in
       let light_on_var = Lwd.var false in
       Eio.Mutex.use_rw lock ~protect:false (fun () ->
-          let l =
+          let x =
             match Hashtbl.find_opt grid_lights label with
-            | None -> [ light_on_var ]
-            | Some l -> (light_on_var :: l)
+            | None -> (ref Mtime.min_stamp, [ light_on_var ])
+            | Some (x, l) -> (x, light_on_var :: l)
           in
-          Hashtbl.replace grid_lights label l
+          Hashtbl.replace grid_lights label x
         );
       let$ light_on = Lwd.get light_on_var in
       let label_attr =

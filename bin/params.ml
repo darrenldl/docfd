@@ -64,4 +64,4 @@ let last_scan_format_string =
    | None -> "Z"
    | Some _ -> "")
 
-let blink_on_duration_s = 0.14
+let blink_on_duration : Mtime.span = Mtime.Span.(140 * ms)
