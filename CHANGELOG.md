@@ -21,6 +21,9 @@
 - Changed search result printing via `Shift+P` and `p` within TUI to not exit
   after printing, allowing printing of more results
 
+- Added blinking to key binding info grid to give better visual feedback,
+  especially for the new behavior of search result printing
+
 ## 4.0.0
 
 - Made document search asynchronous to search field input, so UI remains
