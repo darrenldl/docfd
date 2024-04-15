@@ -1,6 +1,12 @@
 open Misc_utils
 open Debug_utils
 
+let normalize_path_to_absolute path =
+  if Filename.is_relative path then
+    Filename.concat (Sys.getcwd ()) path
+  else
+    path
+
 let read_in_channel_to_tmp_file (ic : in_channel) : (string, string) result =
   let file = Filename.temp_file "docfd-" ".txt" in
   try
@@ -38,10 +44,7 @@ let list_files_recursive_all (path : string) : String_set.t =
       )
     | exception _ -> ()
   in
-  (match Unix.realpath path with
-   | path -> aux path
-   | exception _ -> ()
-  );
+  aux (normalize_path_to_absolute path);
   !acc
 
 let list_files_recursive_filter_by_globs
@@ -177,7 +180,7 @@ let list_files_recursive_filter_by_exts
     | exception _ -> ()
   in
   paths
-  |> Seq.filter_map (fun x -> try Some (Unix.realpath x) with _ -> None)
+  |> Seq.filter_map normalize_path_to_absolute
   |> Seq.iter (fun x -> aux 0 x);
   !acc
 
