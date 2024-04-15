@@ -180,7 +180,7 @@ let list_files_recursive_filter_by_exts
     | exception _ -> ()
   in
   paths
-  |> Seq.filter_map normalize_path_to_absolute
+  |> Seq.map normalize_path_to_absolute
   |> Seq.iter (fun x -> aux 0 x);
   !acc
 
