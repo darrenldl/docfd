@@ -38,7 +38,10 @@ let list_files_recursive_all (path : string) : String_set.t =
       )
     | exception _ -> ()
   in
-  aux path;
+  (match Unix.realpath path with
+   | path -> aux path
+   | exception _ -> ()
+  );
   !acc
 
 let list_files_recursive_filter_by_globs
@@ -122,6 +125,7 @@ let list_files_recursive_filter_by_globs
       let glob_parts = CCString.split ~by:Filename.dir_sep glob in
       match glob_parts with
       | "" :: rest -> (
+          (* Absolute path *)
           aux [] rest
         )
       | _ -> (
@@ -172,7 +176,9 @@ let list_files_recursive_filter_by_exts
       )
     | exception _ -> ()
   in
-  Seq.iter (fun x -> aux 0 x) paths;
+  paths
+  |> Seq.filter_map (fun x -> try Some (Unix.realpath x) with _ -> None)
+  |> Seq.iter (fun x -> aux 0 x);
   !acc
 
 let mkdir_recursive (dir : string) : unit =
