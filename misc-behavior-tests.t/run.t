@@ -8,5 +8,5 @@ Stdin temp file cleanup:
 Stdin and path both specified:
   $ echo "0123" | docfd abcd.txt --search "01" # Should not print anything since stdin should be ignored.
   $ echo "0123" | docfd abcd.txt --search "ab"
-  abcd.txt
+  $TESTCASE_ROOT/abcd.txt
   1: abcd

@@ -1,6 +1,6 @@
 Word breaking:
   $ docfd long-words.txt --search "01 ab" --search-result-print-text-width 80
-  long-words.txt
+  $TESTCASE_ROOT/long-words.txt
   1: 01234567890123456789012345678901234567890123456789012345678901234567890123456
      78901234567890123456789
   2: 
@@ -61,7 +61,7 @@ Word breaking:
      4567890123456789012345678901234567890123456789
   5: abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz
   $ docfd long-words.txt --search "01 ab" --search-result-print-text-width 20
-  long-words.txt
+  $TESTCASE_ROOT/long-words.txt
   1: 01234567890123456
      78901234567890123
      45678901234567890
@@ -191,7 +191,7 @@ Word breaking:
      ijklmnopqrstuvwxy
      z
   $ docfd words.txt --search "01 ab" --search-result-print-text-width 5
-  words.txt
+  $TESTCASE_ROOT/words.txt
   1: 01
      23
      45
@@ -272,7 +272,7 @@ Word breaking:
       4
       5
   $ docfd words.txt --search "01 ab" --search-result-print-text-width 1
-  words.txt
+  $TESTCASE_ROOT/words.txt
   1: 0
      1
      2
@@ -370,7 +370,7 @@ Word breaking:
 
 Line wrapping and word breaking:
   $ docfd sentences.txt --search "lorem" --search-result-print-text-width 80
-  sentences.txt
+  $TESTCASE_ROOT/sentences.txt
   1:     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod 
      tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, 
      quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo 
@@ -378,7 +378,7 @@ Line wrapping and word breaking:
      cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
       proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
   $ docfd sentences.txt --search "lorem" --search-result-print-text-width 20
-  sentences.txt
+  $TESTCASE_ROOT/sentences.txt
   1:     Lorem ipsum 
      dolor sit amet, 
      consectetur 
@@ -410,7 +410,7 @@ Line wrapping and word breaking:
      mollit anim id 
      est laborum.
   $ docfd sentences.txt --search "lorem" --search-result-print-text-width 10
-  sentences.txt
+  $TESTCASE_ROOT/sentences.txt
   1:     
      Lorem 
      ipsum 
@@ -501,7 +501,7 @@ Line wrapping and word breaking:
      laborum
      .
   $ docfd sentences.txt --search "laborum 0" --search-result-print-text-width 80
-  sentences.txt
+  $TESTCASE_ROOT/sentences.txt
   1:     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod 
      tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, 
      quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo 
@@ -526,7 +526,7 @@ Line wrapping and word breaking:
       proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
   2: 0 12 abcd efghi jkl mnopqrst uvwx yz 0123456 789012345
   $ docfd sentences.txt --search "laborum 0" --search-result-print-text-width 20
-  sentences.txt
+  $TESTCASE_ROOT/sentences.txt
   1:     Lorem ipsum 
      dolor sit amet, 
      consectetur 
@@ -632,7 +632,7 @@ Line wrapping and word breaking:
       yz 0123456 
      789012345
   $ docfd sentences.txt --search "laborum 0" --search-result-print-text-width 10
-  sentences.txt
+  $TESTCASE_ROOT/sentences.txt
   1:     
      Lorem 
      ipsum 
