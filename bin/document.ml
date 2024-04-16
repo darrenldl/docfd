@@ -93,7 +93,10 @@ let clean_up_cache_dir ~cache_dir =
     |> List.map (fun x ->
         Filename.concat cache_dir x)
     |> List.filter (fun x ->
-        not (Sys.is_directory x) && Misc_utils.extension_of_file x = Params.index_file_ext)
+        match File_utils.typ_of_path x with
+        | `File -> File_utils.extension_of_file x = Params.index_file_ext
+        | _ -> false
+      )
   in
   let all_files_arr =
     all_files
@@ -181,7 +184,7 @@ module Of_path = struct
 
   let pandoc_supported_format ~env pool search_mode path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
-    let from_format = Misc_utils.extension_of_file path
+    let from_format = File_utils.extension_of_file path
                       |> String_utils.remove_leading_dots
     in
     let cmd = [ "pandoc"
@@ -225,7 +228,7 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode path : (t, string) re
     )
   | None -> (
       let* t =
-        match Misc_utils.format_of_file path with
+        match File_utils.format_of_file path with
         | `PDF -> (
             Of_path.pdf ~env pool search_mode path
           )

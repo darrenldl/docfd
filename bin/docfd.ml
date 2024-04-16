@@ -3,6 +3,7 @@ open Lwd_infix
 open Docfd_lib
 open Debug_utils
 open Misc_utils
+open File_utils
 
 let compute_paths_from_globs globs =
   Seq.iter (fun s ->
@@ -13,7 +14,7 @@ let compute_paths_from_globs globs =
             (Fmt.str "failed to parse glob pattern: \"%s\"" s)
         )
     ) globs;
-  File_utils.list_files_recursive_filter_by_globs globs
+  list_files_recursive_filter_by_globs globs
 
 type file_constraints = {
   paths_were_originally_specified_by_user : bool;
@@ -68,7 +69,7 @@ let files_satisfying_constraints (cons : file_constraints) : Document_src.file_c
     List.mem (extension_of_file file) cons.single_line_exts
   in
   let single_line_paths_by_exts, multiline_paths_by_exts =
-    File_utils.list_files_recursive_filter_by_exts
+    list_files_recursive_filter_by_exts
       ~check_top_level_files:false
       ~exts:(cons.exts @ cons.single_line_exts)
       (String_set.to_seq cons.directly_specified_paths)
@@ -206,7 +207,7 @@ let run
     if no_cache then (
       None
     ) else (
-      File_utils.mkdir_recursive cache_dir;
+      mkdir_recursive cache_dir;
       Some cache_dir
     )
   );
@@ -314,7 +315,7 @@ let run
        ) else (
          match !stdin_tmp_file with
          | None -> (
-             match File_utils.read_in_channel_to_tmp_file stdin with
+             match read_in_channel_to_tmp_file stdin with
              | Ok tmp_file -> (
                  stdin_tmp_file := Some tmp_file;
                  Ui_base.(Ui_single_file, Stdin tmp_file)
@@ -365,7 +366,7 @@ let run
        let pdftotext_exists = Proc_utils.command_exists "pdftotext" in
        let pandoc_exists = Proc_utils.command_exists "pandoc" in
        let formats = Document_src.seq_of_file_collection file_collection
-                     |> Seq.map Misc_utils.format_of_file
+                     |> Seq.map format_of_file
                      |> Seq.fold_left (fun acc x -> File_format_set.add x acc) File_format_set.empty
        in
        if not pdftotext_exists && File_format_set.mem `PDF formats then (
@@ -523,7 +524,7 @@ let run
             let index = Document.index doc in
             let path = Document.path doc in
             let old_stats = Unix.stat path in
-            (match Misc_utils.format_of_file path with
+            (match File_utils.format_of_file path with
              | `PDF -> (
                  Path_open.pdf
                    index

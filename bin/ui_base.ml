@@ -17,7 +17,7 @@ let empty_text_field = ("", 0)
 
 let render_mode_of_document (doc : Document.t)
   : Content_and_search_result_render.render_mode =
-  match Misc_utils.format_of_file (Document.path doc) with
+  match File_utils.format_of_file (Document.path doc) with
   | `PDF -> `Page_num_only
   | `Pandoc_supported_format -> `None
   | `Text -> `Line_num_only

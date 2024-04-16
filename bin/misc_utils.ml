@@ -3,28 +3,6 @@ include Lib_misc_utils
 let bound_selection ~choice_count (x : int) : int =
   max 0 (min (choice_count - 1) x)
 
-let extension_of_file (s : string) =
-  Filename.extension s
-  |> String.lowercase_ascii
-
-type file_format = [ `PDF | `Pandoc_supported_format | `Text ] [@@deriving ord]
-
-module File_format_set = CCSet.Make (struct
-    type t = file_format
-
-    let compare = compare_file_format
-  end)
-
-let format_of_file (s : string) : file_format =
-  let ext = extension_of_file s in
-  if ext = ".pdf" then (
-    `PDF
-  ) else if List.mem ext Params.pandoc_supported_exts then (
-    `Pandoc_supported_format
-  ) else (
-    `Text
-  )
-
 let frequencies_of_words_ci (s : string Seq.t) : int String_map.t =
   Seq.fold_left (fun m word ->
       let word = String.lowercase_ascii word in

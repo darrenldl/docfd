@@ -1,6 +1,44 @@
 open Misc_utils
 open Debug_utils
 
+let extension_of_file (s : string) =
+  Filename.extension s
+  |> String.lowercase_ascii
+
+type file_format = [ `PDF | `Pandoc_supported_format | `Text ] [@@deriving ord]
+
+module File_format_set = CCSet.Make (struct
+    type t = file_format
+
+    let compare = compare_file_format
+  end)
+
+let format_of_file (s : string) : file_format =
+  let ext = extension_of_file s in
+  if ext = ".pdf" then (
+    `PDF
+  ) else if List.mem ext Params.pandoc_supported_exts then (
+    `Pandoc_supported_format
+  ) else (
+    `Text
+  )
+
+type typ = [
+  | `File
+  | `Dir
+  | `Link
+  | `Else
+]
+
+let typ_of_path (path : string) : typ =
+  let open Unix in
+  let stat = lstat path in
+  match stat.st_kind with
+  | S_REG -> `File
+  | S_DIR -> `Dir
+  | S_LNK -> `Link
+  | _ -> `Else
+
 let normalize_path_to_absolute path =
   if Filename.is_relative path then
     Filename.concat (Sys.getcwd ()) path
@@ -25,24 +63,23 @@ let list_files_recursive_all (path : string) : String_set.t =
     acc := String_set.add x !acc
   in
   let rec aux path =
-    match Sys.is_directory path with
-    | is_dir -> (
-        if is_dir then (
-          let next_choices =
-            try
-              Sys.readdir path
-            with
-            | _ -> [||]
-          in
-          Array.iter (fun f ->
-              aux (Filename.concat path f)
-            )
-            next_choices
-        ) else (
-          add path
-        )
+    match typ_of_path path with
+    | `Dir -> (
+        let next_choices =
+          try
+            Sys.readdir path
+          with
+          | _ -> [||]
+        in
+        Array.iter (fun f ->
+            aux (Filename.concat path f)
+          )
+          next_choices
       )
-    | exception _ -> ()
+    | `File -> (
+        add path
+      )
+    | _ | exception _ -> ()
   in
   aux (normalize_path_to_absolute path);
   !acc
@@ -70,13 +107,11 @@ let list_files_recursive_filter_by_globs
     match glob_parts with
     | [] -> (
         let path = path_of_parts path_parts in
-        match Sys.is_directory path with
-        | is_dir -> (
-            if not is_dir then (
-              add path
-            )
+        match typ_of_path path with
+        | `File -> (
+            add path
           )
-        | exception _ -> ()
+        | _ | exception _ -> ()
       )
     | x :: xs -> (
         match x with
@@ -155,29 +190,28 @@ let list_files_recursive_filter_by_exts
     acc := String_set.add x !acc
   in
   let rec aux depth path =
-    match Sys.is_directory path with
-    | is_dir -> (
-        if is_dir then (
-          let next_choices =
-            try
-              Sys.readdir path
-            with
-            | _ -> [||]
-          in
-          Array.iter (fun f ->
-              aux (depth + 1) (Filename.concat path f)
-            )
-            next_choices
-        ) else (
-          let ext = extension_of_file path in
-          if (not check_top_level_files && depth = 0)
-          || List.mem ext exts
-          then (
-            add path
+    match typ_of_path path with
+    | `Dir -> (
+        let next_choices =
+          try
+            Sys.readdir path
+          with
+          | _ -> [||]
+        in
+        Array.iter (fun f ->
+            aux (depth + 1) (Filename.concat path f)
           )
+          next_choices
+      )
+    | `File -> (
+        let ext = extension_of_file path in
+        if (not check_top_level_files && depth = 0)
+        || List.mem ext exts
+        then (
+          add path
         )
       )
-    | exception _ -> ()
+    | _ | exception _ -> ()
   in
   paths
   |> Seq.map normalize_path_to_absolute
