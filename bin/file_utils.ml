@@ -181,7 +181,6 @@ let list_files_recursive_filter_by_globs
   !acc
 
 let list_files_recursive_filter_by_exts
-    ~check_top_level_files
     ~(exts : string list)
     (paths : string Seq.t)
   : String_set.t =
@@ -205,9 +204,12 @@ let list_files_recursive_filter_by_exts
       )
     | `File -> (
         let ext = extension_of_file path in
-        if (not check_top_level_files && depth = 0)
-        || List.mem ext exts
-        then (
+        if depth = 0 || List.mem ext exts then (
+          add path
+        )
+      )
+    | `Link -> (
+        if depth = 0 || !Params.follow_symlink then (
           add path
         )
       )

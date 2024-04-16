@@ -70,7 +70,6 @@ let files_satisfying_constraints (cons : file_constraints) : Document_src.file_c
   in
   let single_line_paths_by_exts, multiline_paths_by_exts =
     list_files_recursive_filter_by_exts
-      ~check_top_level_files:false
       ~exts:(cons.exts @ cons.single_line_exts)
       (String_set.to_seq cons.directly_specified_paths)
     |> String_set.partition single_line_mode_applies
