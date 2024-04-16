@@ -27,7 +27,7 @@ type typ = [
   | `File
   | `Dir
   | `Link
-  | `Else
+  | `Other
 ]
 
 let typ_of_path (path : string) : typ =
@@ -37,7 +37,7 @@ let typ_of_path (path : string) : typ =
   | S_REG -> `File
   | S_DIR -> `Dir
   | S_LNK -> `Link
-  | _ -> `Else
+  | _ -> `Other
 
 let normalize_path_to_absolute path =
   if Filename.is_relative path then
