@@ -30,24 +30,15 @@ type typ = [
 
 let typ_of_path ~follow_symlinks (path : string) : typ option =
   let open Unix in
-  let x = lstat path in
-  match x.st_kind with
+  let stat =
+    if follow_symlinks then
+      stat path
+    else
+      lstat path
+  in
+  match stat.st_kind with
   | S_REG -> Some `File
   | S_DIR -> Some `Dir
-  | S_LNK -> (
-      if follow_symlinks then (
-        try
-          let x = stat path in
-          match x.st_kind with
-          | S_REG -> Some `File
-          | S_DIR -> Some `Dir
-          | _ -> None
-        with
-        | _ -> None
-      ) else (
-        None
-      )
-    )
   | _ -> None
 
 let path_of_parts parts =
