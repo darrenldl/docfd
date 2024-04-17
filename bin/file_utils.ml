@@ -26,24 +26,71 @@ let format_of_file (s : string) : file_format =
 type typ = [
   | `File
   | `Dir
-  | `Link
-  | `Other
 ]
 
-let typ_of_path (path : string) : typ =
+let typ_of_path ~follow_symlinks (path : string) : typ option =
   let open Unix in
-  let stat = lstat path in
-  match stat.st_kind with
-  | S_REG -> `File
-  | S_DIR -> `Dir
-  | S_LNK -> `Link
-  | _ -> `Other
+  let x = lstat path in
+  match x.st_kind with
+  | S_REG -> Some `File
+  | S_DIR -> Some `Dir
+  | S_LNK -> (
+      if follow_symlinks then (
+        try
+          let x = stat path in
+          match x.st_kind with
+          | S_REG -> Some `File
+          | S_DIR -> Some `Dir
+          | _ -> None
+        with
+        | _ -> None
+      ) else (
+        None
+      )
+    )
+  | _ -> None
+
+let path_of_parts parts =
+  List.rev parts
+  |> String.concat Filename.dir_sep
+  |> (fun s -> Printf.sprintf "/%s" s)
+
+let cwd_path_parts () =
+  Sys.getcwd ()
+  |> CCString.split ~by:Filename.dir_sep
+  |> (fun l -> match l with
+      | "" :: l -> l
+      | _ -> failwith "unexpected case")
+  |> List.rev
 
 let normalize_path_to_absolute path =
-  if Filename.is_relative path then
-    Filename.concat (Sys.getcwd ()) path
-  else
-    path
+  let rec aux acc path_parts =
+    match path_parts with
+    | [] -> path_of_parts acc
+    | x :: xs -> (
+        match x with
+        | "" | "." -> aux acc xs
+        | ".." -> (
+            let acc =
+              match acc with
+              | [] -> []
+              | _ :: xs -> xs
+            in
+            aux acc xs
+          )
+        | _ -> (
+            aux (x :: acc) xs
+          )
+      )
+  in
+  match CCString.split ~by:Filename.dir_sep path with
+  | "" :: l -> (
+      (* Absolute path *)
+      aux [] l
+    )
+  | l -> (
+      aux (cwd_path_parts ()) l
+    )
 
 let read_in_channel_to_tmp_file (ic : in_channel) : (string, string) result =
   let file = Filename.temp_file "docfd-" ".txt" in
@@ -63,8 +110,8 @@ let list_files_recursive_all (path : string) : String_set.t =
     acc := String_set.add x !acc
   in
   let rec aux path =
-    match typ_of_path path with
-    | `Dir -> (
+    match typ_of_path ~follow_symlinks:!Params.follow_symlinks path with
+    | Some `Dir -> (
         let next_choices =
           try
             Sys.readdir path
@@ -76,7 +123,7 @@ let list_files_recursive_all (path : string) : String_set.t =
           )
           next_choices
       )
-    | `File -> (
+    | Some `File -> (
         add path
       )
     | _ | exception _ -> ()
@@ -91,11 +138,6 @@ let list_files_recursive_filter_by_globs
   let add x =
     acc := String_set.add x !acc
   in
-  let path_of_parts parts =
-    List.rev parts
-    |> String.concat Filename.dir_sep
-    |> (fun s -> Printf.sprintf "/%s" s)
-  in
   let compile_glob_re s =
     match Misc_utils.compile_glob_re s with
     | None -> (
@@ -107,8 +149,8 @@ let list_files_recursive_filter_by_globs
     match glob_parts with
     | [] -> (
         let path = path_of_parts path_parts in
-        match typ_of_path path with
-        | `File -> (
+        match typ_of_path ~follow_symlinks:!Params.follow_symlinks path with
+        | Some `File -> (
             add path
           )
         | _ | exception _ -> ()
@@ -167,15 +209,7 @@ let list_files_recursive_filter_by_globs
           aux [] rest
         )
       | _ -> (
-          let path_parts =
-            Sys.getcwd ()
-            |> CCString.split ~by:Filename.dir_sep
-            |> (fun l -> match l with
-                | "" :: l -> l
-                | _ -> failwith "unexpected case")
-            |> List.rev
-          in
-          aux path_parts glob_parts
+          aux (cwd_path_parts ()) glob_parts
         )
     ) globs;
   !acc
@@ -189,8 +223,9 @@ let list_files_recursive_filter_by_exts
     acc := String_set.add x !acc
   in
   let rec aux depth path =
-    match typ_of_path path with
-    | `Dir -> (
+    let follow_symlinks = depth = 0 || !Params.follow_symlinks in 
+    match typ_of_path ~follow_symlinks path with
+    | Some `Dir -> (
         let next_choices =
           try
             Sys.readdir path
@@ -202,14 +237,9 @@ let list_files_recursive_filter_by_exts
           )
           next_choices
       )
-    | `File -> (
+    | Some `File -> (
         let ext = extension_of_file path in
         if depth = 0 || List.mem ext exts then (
-          add path
-        )
-      )
-    | `Link -> (
-        if depth = 0 || !Params.follow_symlink then (
           add path
         )
       )
