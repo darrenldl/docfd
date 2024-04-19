@@ -24,6 +24,10 @@
 - Added blinking to key binding info grid to give better visual feedback,
   especially for the new behavior of search result printing
 
+- Changed to not follow symlinks by default
+
+- Added `-L`, `--follow-symlinks` for following symlinks
+
 ## 4.0.0
 
 - Made document search asynchronous to search field input, so UI remains
