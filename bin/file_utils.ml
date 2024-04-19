@@ -137,16 +137,15 @@ let list_files_recursive_filter_by_globs
     | Some x -> x
   in
   let rec aux (path_parts : string list) (glob_parts : string list) =
-    match glob_parts with
-    | [] -> (
-        let path = path_of_parts path_parts in
-        match typ_of_path ~follow_symlinks:!Params.follow_symlinks path with
-        | Some `File -> (
-            add path
-          )
-        | _ | exception _ -> ()
-      )
-    | x :: xs -> (
+    let path = path_of_parts path_parts in
+    match
+    typ_of_path ~follow_symlinks:!Params.follow_symlinks path,
+    glob_parts
+    with
+    | Some `File, [] -> add path
+    | Some `File, _ -> ()
+    | Some `Dir, [] -> ()
+    | Some `Dir, x :: xs -> (
         match x with
         | "" | "." -> aux path_parts xs
         | ".." -> (
@@ -158,7 +157,6 @@ let list_files_recursive_filter_by_globs
             aux path_parts xs
           )
         | "**" -> (
-            let path = path_of_parts path_parts in
             let re_string = String.concat Filename.dir_sep (path :: glob_parts) in
             do_if_debug (fun oc ->
                 Printf.fprintf oc "Compiling glob regex using pattern: %s\n" re_string
@@ -176,7 +174,6 @@ let list_files_recursive_filter_by_globs
           )
         | _ -> (
             let re = compile_glob_re x in
-            let path = path_of_parts path_parts in
             let next_choices =
               try
                 Sys.readdir path
@@ -190,7 +187,9 @@ let list_files_recursive_filter_by_globs
               )
               next_choices;
           )
-      )
+    )
+    | None, _ -> ()
+    | exception _ -> ()
   in
   Seq.iter (fun glob ->
       let glob_parts = CCString.split ~by:Filename.dir_sep glob in
