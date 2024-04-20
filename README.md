@@ -124,19 +124,27 @@ docfd [PATH]...
 The list of paths can contain directories.
 Each directory in the list is scanned recursively for
 files with the following extensions by default:
-`.txt`,
-`.md`,
-`.pdf`,
-`.epub`,
-`.odt`,
-`.docx`,
-`.fb2`,
-`.ipynb`,
-`.html`,
-`.htm`.
 
-You can change the file extensions to use via `--exts`,
-or add onto the list of extensions via `--add-exts`.
+- For multiline search mode:
+    - `.txt`,
+      `.md`,
+      `.pdf`,
+      `.epub`,
+      `.odt`,
+      `.docx`,
+      `.fb2`,
+      `.ipynb`,
+      `.html`,
+      `.htm`.
+- For single line search mode:
+    - `.log`,
+      `.csv`,
+      `.tsv`.
+
+You can change the file extensions to use via
+`--exts` and `--single-line-exts`,
+or add onto the list of extensions via
+`--add-exts` and `--single-line-add-exts`.
 
 If the list `PATH`s is empty,
 then Docfd defaults to scanning the
