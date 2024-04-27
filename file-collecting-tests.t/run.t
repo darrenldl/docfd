@@ -31,7 +31,7 @@ Setup:
   $ ln -s ../test1/ijkl test2/ijkl
   $ tree
   .
-  |-- dune -> ../../../../default/path-collecting-tests.t/dune
+  |-- dune -> ../../../../default/file-collecting-tests.t/dune
   |-- empty-paths.txt
   |-- no-ext
   |-- paths
@@ -444,9 +444,7 @@ Picking via multiple --glob and --single-line-glob:
 
 --single-line-glob takes precedence over --glob and --exts:
   $ docfd    --debug-log - --index-only --single-line-glob '*.txt' --glob '*.txt' --exts md . 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
-  Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test0/1234.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test1/5678.md'
@@ -469,7 +467,6 @@ Picking via multiple --glob and --single-line-glob:
    Using single line search mode for document '$TESTCASE_ROOT/test.txt'
   $ docfd    --debug-log - --index-only --single-line-glob '*.md' --glob '*.txt' --exts md . 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test0/1234.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.md'
@@ -490,9 +487,6 @@ Picking via multiple --glob and --single-line-glob:
    Using single line search mode for document '$TESTCASE_ROOT/test.log'
    Using single line search mode for document '$TESTCASE_ROOT/test.md'
   $ docfd    --debug-log - --index-only --single-line-glob '*.md' --single-line-glob '*.txt' --glob '*.txt' --exts md . 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
-  Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test0/1234.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test1/5678.md'
@@ -633,7 +627,6 @@ Top-level files do not fall into singe line search group but into the default se
   $ docfd -L --debug-log - --index-only test.txt --single-line-exts txt 2>&1 | grep '^Using .* search mode' | sort > $TMP1
   $ diff $TMP0 $TMP1 | tail -n +4
   $ docfd    --debug-log - --index-only test.txt --single-line-glob '*.txt' 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
-  Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test.txt'
   $ docfd -L --debug-log - --index-only test.txt --single-line-glob '*.txt' 2>&1 | grep '^Using .* search mode' | sort > $TMP1
