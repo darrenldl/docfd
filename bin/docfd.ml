@@ -75,16 +75,16 @@ let files_satisfying_constraints (cons : file_constraints) : Document_src.file_c
       ~exts:(cons.exts @ cons.single_line_exts)
     |> String_set.partition single_line_mode_applies
   in
+  let paths_from_single_line_globs =
+    cons.single_line_globs
+    |> String_set.to_seq
+    |> compute_paths_from_globs
+  in
   let single_line_mode_paths_from_globs, default_mode_paths_from_globs =
     cons.globs
     |> String_set.to_seq
     |> compute_paths_from_globs
     |> String_set.partition single_line_mode_applies
-  in
-  let paths_from_single_line_globs =
-    cons.single_line_globs
-    |> String_set.to_seq
-    |> compute_paths_from_globs
   in
   let single_line_search_mode_files =
     single_line_mode_paths_by_exts
@@ -96,10 +96,32 @@ let files_satisfying_constraints (cons : file_constraints) : Document_src.file_c
     |> String_set.union default_mode_paths_from_globs
     |> (fun s -> String_set.diff s single_line_search_mode_files)
   in
-  assert (String_set.is_empty
-            (String_set.inter
-               single_line_search_mode_files
-               default_search_mode_files));
+  do_if_debug (fun _oc ->
+      assert (String_set.is_empty
+                (String_set.inter
+                   single_line_search_mode_files
+                   default_search_mode_files));
+      let all_files =
+        String_set.union single_line_mode_paths_by_exts default_mode_paths_by_exts
+        |> String_set.union paths_from_single_line_globs
+        |> String_set.union single_line_mode_paths_from_globs
+        |> String_set.union default_mode_paths_from_globs
+      in
+      let single_line_search_mode_files', default_search_mode_files' =
+        String_set.partition (fun s ->
+            single_line_mode_applies s
+            ||
+            String_set.mem s paths_from_single_line_globs
+          )
+          all_files
+      in
+      assert (String_set.equal
+                single_line_search_mode_files
+                single_line_search_mode_files');
+      assert (String_set.equal
+                default_search_mode_files
+                default_search_mode_files');
+    );
   {
     default_search_mode_files;
     single_line_search_mode_files;
