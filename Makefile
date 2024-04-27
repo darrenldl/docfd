@@ -37,7 +37,7 @@ tests :
 	make clean
 	make
 	OCAMLRUNPARAM=b dune exec tests/main.exe --no-buffer --force
-	dune build @file-collecting-tests
+	dune build @file-collection-tests
 	dune build @line-wrapping-tests
 	dune build @misc-behavior-tests
 
