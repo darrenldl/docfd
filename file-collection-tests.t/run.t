@@ -31,7 +31,7 @@ Setup:
   $ ln -s ../test1/ijkl test2/ijkl
   $ tree
   .
-  |-- dune -> ../../../../default/file-collecting-tests.t/dune
+  |-- dune -> ../../../../default/file-collection-tests.t/dune
   |-- empty-paths.txt
   |-- no-ext
   |-- paths
