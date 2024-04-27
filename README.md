@@ -209,7 +209,7 @@ docfd --glob 'relative/path/glob' --glob `/absolute/path/glob`
       in `docfd dir0 dir1 file0`
         - `PATH`s default to `.` only when none of `--paths-from`, `--glob`,
           `--single-line-glob` are specified
-    - Paths specified in `FILE` via `--paths-from FILE`
+    - Paths specified in `FILE` from `--paths-from FILE`
 
 - Second set of files is collected based on `--glob`
 
