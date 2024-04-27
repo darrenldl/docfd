@@ -224,8 +224,8 @@ docfd --glob 'relative/path/glob' --glob `/absolute/path/glob`
 
 - A file falls into the single line search mode category if it satisfies any of
   the following:
-    - File is in `PATH`s and the extension falls into `--single-line-exts` or
-      `--single-line-add-exts`
+    - File is in `PATH`s or in `FILE` from `--paths-from FILE` and the
+      extension falls into `--single-line-exts` or `--single-line-add-exts`
     - File is captured by `--single-line-glob`
     - File is captured by `--glob`, and the extension falls into
       `--single-line-exts` or `--single-line-add-exts`
