@@ -28,6 +28,8 @@
 
 - Added `-L`, `--follow-symlinks` for following symlinks
 
+- Changed to allow `--paths-from` to be specified multiple times
+
 ## 4.0.0
 
 - Made document search asynchronous to search field input, so UI remains
