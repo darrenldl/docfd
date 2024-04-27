@@ -68,28 +68,38 @@ let files_satisfying_constraints (cons : file_constraints) : Document_src.file_c
   let single_line_mode_applies file =
     List.mem (extension_of_file file) cons.single_line_exts
   in
-  let single_line_paths_by_exts, multiline_paths_by_exts =
-    list_files_recursive_filter_by_exts
+  let single_line_mode_paths_by_exts, default_mode_paths_by_exts =
+    cons.directly_specified_paths
+    |> String_set.to_seq 
+    |> list_files_recursive_filter_by_exts
       ~exts:(cons.exts @ cons.single_line_exts)
-      (String_set.to_seq cons.directly_specified_paths)
     |> String_set.partition single_line_mode_applies
   in
-  let single_line_paths_from_globs, multiline_paths_from_globs =
-    compute_paths_from_globs (String_set.to_seq cons.globs)
+  let single_line_mode_paths_from_globs, default_mode_paths_from_globs =
+    cons.globs
+    |> String_set.to_seq
+    |> compute_paths_from_globs
     |> String_set.partition single_line_mode_applies
   in
   let paths_from_single_line_globs =
-    compute_paths_from_globs (String_set.to_seq cons.single_line_globs)
+    cons.single_line_globs
+    |> String_set.to_seq
+    |> compute_paths_from_globs
   in
   let single_line_search_mode_files =
-    single_line_paths_by_exts
-    |> String_set.union single_line_paths_from_globs
+    single_line_mode_paths_by_exts
     |> String_set.union paths_from_single_line_globs
+    |> String_set.union single_line_mode_paths_from_globs
   in
   let default_search_mode_files =
-    multiline_paths_by_exts
-    |> String_set.union multiline_paths_from_globs
+    default_mode_paths_by_exts
+    |> String_set.union default_mode_paths_from_globs
+    |> (fun s -> String_set.diff s single_line_search_mode_files)
   in
+  assert (String_set.is_empty
+            (String_set.inter
+               single_line_search_mode_files
+               default_search_mode_files));
   {
     default_search_mode_files;
     single_line_search_mode_files;
