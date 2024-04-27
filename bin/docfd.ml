@@ -197,7 +197,7 @@ let run
     (search_result_count_per_doc : int)
     (search_result_print_text_width : int)
     (follow_symlinks : bool)
-    (paths_from : string option)
+    (paths_from : string list)
     (globs : string list)
     (single_line_globs : string list)
     (single_line_search_mode_by_default : bool)
@@ -278,16 +278,21 @@ let run
     List.partition (fun s -> CCString.trim s = "?") paths
   in
   let paths_from_file =
-    Option.map (fun paths_from ->
-        try
-          CCIO.with_in paths_from CCIO.read_lines_l
-        with
-        | _ -> (
-            exit_with_error_msg
-              (Fmt.str "failed to read list of paths from %s" (Filename.quote paths_from))
+    match paths_from with
+    | [] -> None
+    | l -> (
+        l
+        |> CCList.flat_map (fun paths_from ->
+            try
+              CCIO.with_in paths_from CCIO.read_lines_l
+            with
+            | _ -> (
+                exit_with_error_msg
+                  (Fmt.str "failed to read list of paths from %s" (Filename.quote paths_from))
+              )
           )
+        |> Option.some
       )
-      paths_from
   in
   let file_constraints =
     make_file_constraints

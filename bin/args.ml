@@ -226,7 +226,7 @@ and add to the final list of paths to be scanned."
   in
   Arg.(
     value
-    & opt (some string) None
+    & opt_all string []
     & info [ paths_from_arg_name ] ~doc ~docv:"FILE"
   )
 
