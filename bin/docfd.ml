@@ -96,11 +96,17 @@ let files_satisfying_constraints (cons : file_constraints) : Document_src.file_c
     |> String_set.union default_search_mode_paths_from_globs
     |> (fun s -> String_set.diff s single_line_search_mode_files)
   in
-  do_if_debug (fun _oc ->
-      assert (String_set.is_empty
-                (String_set.inter
-                   single_line_search_mode_files
-                   default_search_mode_files));
+  do_if_debug (fun oc ->
+      Printf.fprintf oc "Checking if single line search mode files and default search mdoe files are disjoint\n";
+      if String_set.is_empty
+          (String_set.inter
+             single_line_search_mode_files
+             default_search_mode_files)
+      then (
+        Printf.fprintf oc "Check successful\n"
+      ) else (
+        failwith "check failed"
+      );
       let all_files =
         single_line_search_mode_paths_by_exts
         |> String_set.union default_search_mode_paths_by_exts
@@ -116,12 +122,23 @@ let files_satisfying_constraints (cons : file_constraints) : Document_src.file_c
           )
           all_files
       in
-      assert (String_set.equal
-                single_line_search_mode_files
-                single_line_search_mode_files');
-      assert (String_set.equal
-                default_search_mode_files
-                default_search_mode_files');
+      Printf.fprintf oc "Checking if efficiently computed and naively computed results for single line search mode files are consistent\n";
+      if String_set.equal
+          single_line_search_mode_files
+          single_line_search_mode_files'
+      then (
+        Printf.fprintf oc "Check successful\n"
+      ) else (
+        failwith "check failed"
+      );
+      if String_set.equal
+          default_search_mode_files
+          default_search_mode_files'
+      then (
+        Printf.fprintf oc "Check successful\n"
+      ) else (
+        failwith "check failed"
+      )
     );
   {
     default_search_mode_files;
