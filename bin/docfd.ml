@@ -97,7 +97,7 @@ let files_satisfying_constraints (cons : file_constraints) : Document_src.file_c
     |> (fun s -> String_set.diff s single_line_search_mode_files)
   in
   do_if_debug (fun oc ->
-      Printf.fprintf oc "Checking if single line search mode files and default search mdoe files are disjoint\n";
+      Printf.fprintf oc "Checking if single line search mode files and default search mode files are disjoint\n";
       if String_set.is_empty
           (String_set.inter
              single_line_search_mode_files
@@ -131,6 +131,7 @@ let files_satisfying_constraints (cons : file_constraints) : Document_src.file_c
       ) else (
         failwith "check failed"
       );
+      Printf.fprintf oc "Checking if efficiently computed and naively computed results for default search mode files are consistent\n";
       if String_set.equal
           default_search_mode_files
           default_search_mode_files'
