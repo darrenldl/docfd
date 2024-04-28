@@ -207,8 +207,14 @@ Default path is not picked if any of the following is used: --paths-from, --glob
   File: '$TESTCASE_ROOT/test1/ijkl/mnop.md'
   File: '$TESTCASE_ROOT/test2/1234.md'
   File: '$TESTCASE_ROOT/test2/abcd/efgh.md'
-  $ docfd    --debug-log - --index-only --exts md --single-line-glob '*.log' . 2>&1 | grep '^File:' | sort > $TMP1
+  $ docfd -L --debug-log - --index-only --exts md --single-line-glob '*.log' . 2>&1 | grep '^File:' | sort > $TMP1
   $ diff $TMP0 $TMP1 | tail -n +4
+   File: '$TESTCASE_ROOT/test1/5678.md'
+   File: '$TESTCASE_ROOT/test1/ijkl/mnop.md'
+   File: '$TESTCASE_ROOT/test2/1234.md'
+  +File: '$TESTCASE_ROOT/test2/56.md'
+   File: '$TESTCASE_ROOT/test2/abcd/efgh.md'
+  +File: '$TESTCASE_ROOT/test2/ijkl/mnop.md'
 
 --single-line-exts and --single-line-glob do not overwrite each other:
   $ docfd    --debug-log - --index-only --single-line-exts md --single-line-glob '*.log' . 2>&1 | grep '^File:' | sort | tee $TMP0
@@ -257,7 +263,7 @@ Paths from --exts, --single-line-exts, --glob, --single-line-glob, --paths-from 
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.md'
 
 --add-exts:
-  $ docfd       --debug-log - --index-only --add-exts md . 2>&1 | grep '^File:' | sort | tee $TMP0
+  $ docfd    --debug-log - --index-only --add-exts md . 2>&1 | grep '^File:' | sort | tee $TMP0
   File: '$TESTCASE_ROOT/empty-paths.txt'
   File: '$TESTCASE_ROOT/test.log'
   File: '$TESTCASE_ROOT/test.md'
@@ -272,7 +278,7 @@ Paths from --exts, --single-line-exts, --glob, --single-line-glob, --paths-from 
   File: '$TESTCASE_ROOT/test1/ijkl/mnop.txt'
   File: '$TESTCASE_ROOT/test2/1234.md'
   File: '$TESTCASE_ROOT/test2/abcd/efgh.md'
-  $ docfd -L    --debug-log - --index-only --add-exts md . 2>&1 | grep '^File:' | sort > $TMP1
+  $ docfd -L --debug-log - --index-only --add-exts md . 2>&1 | grep '^File:' | sort > $TMP1
   $ diff $TMP0 $TMP1 | tail -n +4
    File: '$TESTCASE_ROOT/test1/ijkl/mnop.md'
    File: '$TESTCASE_ROOT/test1/ijkl/mnop.txt'
