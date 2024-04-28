@@ -135,11 +135,11 @@ files with the following extensions by default:
       `.fb2`,
       `.ipynb`,
       `.html`,
-      `.htm`.
+      `.htm`
 - For single line search mode:
     - `.log`,
       `.csv`,
-      `.tsv`.
+      `.tsv`
 
 You can change the file extensions to use via
 `--exts` and `--single-line-exts`,
@@ -148,7 +148,9 @@ or add onto the list of extensions via
 
 If the list `PATH`s is empty,
 then Docfd defaults to scanning the
-current directory `.`.
+current directory `.`
+unless any of the following
+`--paths-from`, `--glob`, `--single-line-glob` is used.
 
 <details>
 
@@ -185,9 +187,6 @@ docfd [PATH]... --paths-from paths.txt
 The final list of paths used is then the concatenation
 of `PATH`s and paths listed in `paths.txt`, which
 has one path per line.
-
-The list `PATH`s does not default to `.` when
-`--paths-from` is used.
 
 #### Globbing
 
