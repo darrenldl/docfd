@@ -149,22 +149,12 @@ or add onto the list of extensions via
 If the list `PATH`s is empty,
 then Docfd defaults to scanning the
 current directory `.`
-unless any of the following
-`--paths-from`, `--glob`, `--single-line-glob` is used.
-
-<details>
-
-If any of the file ends with `.pdf`, then `pdftotext`
-is required to continue.
-
-If any of the file ends with extension that is supported
-via `pandoc`, then `pandoc` is required to continue.
+unless any of the following is used:
+`--paths-from`, `--glob`, `--single-line-glob`.
 
 If exactly one file is specified
 in the list of paths, then Docfd uses single file view.
 Otherwise, Docfd uses multi-file view.
-
-</details>
 
 #### Scan for files then select with fzf
 
