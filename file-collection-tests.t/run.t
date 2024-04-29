@@ -29,6 +29,7 @@ Setup:
   $ ln -s $(pwd)/test0/abcd/efgh.txt test2/abcd/efgh.txt
   $ ln -s ../test1/5678.md test2/56.md
   $ ln -s ../test1/ijkl test2/ijkl
+  $ ln -s test2 test3
   $ tree
   .
   |-- dune -> ../../../../default/file-collection-tests.t/dune
@@ -51,15 +52,16 @@ Setup:
   |   |   |-- mnop.md
   |   |   `-- mnop.txt
   |   `-- ijkl.txt
-  `-- test2
-      |-- 1234.md
-      |-- 56.md -> ../test1/5678.md
-      |-- abcd
-      |   |-- efgh.md
-      |   `-- efgh.txt -> $TESTCASE_ROOT/test0/abcd/efgh.txt
-      `-- ijkl -> ../test1/ijkl
+  |-- test2
+  |   |-- 1234.md
+  |   |-- 56.md -> ../test1/5678.md
+  |   |-- abcd
+  |   |   |-- efgh.md
+  |   |   `-- efgh.txt -> $TESTCASE_ROOT/test0/abcd/efgh.txt
+  |   `-- ijkl -> ../test1/ijkl
+  `-- test3 -> test2
   
-  6 directories, 21 files
+  6 directories, 22 files
 
 Default path is not picked if any of the following is used: --paths-from, --glob, --single-line-glob:
   $ # test.md and test.txt should not be picked for the following 3 cases.
@@ -100,6 +102,12 @@ Default path is not picked if any of the following is used: --paths-from, --glob
   +File: '$TESTCASE_ROOT/test2/abcd/efgh.txt'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.md'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
+  +File: '$TESTCASE_ROOT/test3/1234.md'
+  +File: '$TESTCASE_ROOT/test3/56.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.txt'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.md'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
   $ docfd    --debug-log - --index-only --glob '*.log' . 2>&1 | grep '^File:' | sort | tee $TMP0
   File: '$TESTCASE_ROOT/empty-paths.txt'
   File: '$TESTCASE_ROOT/test.log'
@@ -125,6 +133,12 @@ Default path is not picked if any of the following is used: --paths-from, --glob
   +File: '$TESTCASE_ROOT/test2/abcd/efgh.txt'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.md'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
+  +File: '$TESTCASE_ROOT/test3/1234.md'
+  +File: '$TESTCASE_ROOT/test3/56.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.txt'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.md'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
   $ docfd    --debug-log - --index-only --single-line-glob '*.log' . 2>&1 | grep '^File:' | sort | tee $TMP0
   File: '$TESTCASE_ROOT/empty-paths.txt'
   File: '$TESTCASE_ROOT/test.log'
@@ -150,6 +164,12 @@ Default path is not picked if any of the following is used: --paths-from, --glob
   +File: '$TESTCASE_ROOT/test2/abcd/efgh.txt'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.md'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
+  +File: '$TESTCASE_ROOT/test3/1234.md'
+  +File: '$TESTCASE_ROOT/test3/56.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.txt'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.md'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
 
 --exts and --glob do not overwrite each other:
   $ docfd    --debug-log - --index-only --exts md --glob '*.log' . 2>&1 | grep '^File:' | sort | tee $TMP0
@@ -169,6 +189,10 @@ Default path is not picked if any of the following is used: --paths-from, --glob
   +File: '$TESTCASE_ROOT/test2/56.md'
    File: '$TESTCASE_ROOT/test2/abcd/efgh.md'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.md'
+  +File: '$TESTCASE_ROOT/test3/1234.md'
+  +File: '$TESTCASE_ROOT/test3/56.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.md'
 
 --single-line-exts and --glob do not overwrite each other:
   $ docfd    --debug-log - --index-only --single-line-exts md --glob '*.log' . 2>&1 | grep '^File:' | sort | tee $TMP0
@@ -196,6 +220,12 @@ Default path is not picked if any of the following is used: --paths-from, --glob
   +File: '$TESTCASE_ROOT/test2/abcd/efgh.txt'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.md'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
+  +File: '$TESTCASE_ROOT/test3/1234.md'
+  +File: '$TESTCASE_ROOT/test3/56.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.txt'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.md'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
 
 --exts and --single-line-glob do not overwrite each other:
   $ docfd    --debug-log - --index-only --exts md --single-line-glob '*.log' . 2>&1 | grep '^File:' | sort | tee $TMP0
@@ -215,6 +245,10 @@ Default path is not picked if any of the following is used: --paths-from, --glob
   +File: '$TESTCASE_ROOT/test2/56.md'
    File: '$TESTCASE_ROOT/test2/abcd/efgh.md'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.md'
+  +File: '$TESTCASE_ROOT/test3/1234.md'
+  +File: '$TESTCASE_ROOT/test3/56.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.md'
 
 --single-line-exts and --single-line-glob do not overwrite each other:
   $ docfd    --debug-log - --index-only --single-line-exts md --single-line-glob '*.log' . 2>&1 | grep '^File:' | sort | tee $TMP0
@@ -242,6 +276,12 @@ Default path is not picked if any of the following is used: --paths-from, --glob
   +File: '$TESTCASE_ROOT/test2/abcd/efgh.txt'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.md'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
+  +File: '$TESTCASE_ROOT/test3/1234.md'
+  +File: '$TESTCASE_ROOT/test3/56.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.txt'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.md'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
 
 Paths from --exts, --single-line-exts, --glob, --single-line-glob, --paths-from are combined correctly:
   $ docfd    --debug-log - --index-only --exts md --single-line-exts log . 2>&1 | grep '^File:' | sort | tee $TMP0
@@ -261,6 +301,10 @@ Paths from --exts, --single-line-exts, --glob, --single-line-glob, --paths-from 
   +File: '$TESTCASE_ROOT/test2/56.md'
    File: '$TESTCASE_ROOT/test2/abcd/efgh.md'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.md'
+  +File: '$TESTCASE_ROOT/test3/1234.md'
+  +File: '$TESTCASE_ROOT/test3/56.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.md'
 
 --add-exts:
   $ docfd    --debug-log - --index-only --add-exts md . 2>&1 | grep '^File:' | sort | tee $TMP0
@@ -288,6 +332,12 @@ Paths from --exts, --single-line-exts, --glob, --single-line-glob, --paths-from 
   +File: '$TESTCASE_ROOT/test2/abcd/efgh.txt'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.md'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
+  +File: '$TESTCASE_ROOT/test3/1234.md'
+  +File: '$TESTCASE_ROOT/test3/56.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.txt'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.md'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
   $ docfd    --debug-log - --index-only --add-exts ext0 . 2>&1 | grep '^File:' | sort | tee $TMP0
   File: '$TESTCASE_ROOT/empty-paths.txt'
   File: '$TESTCASE_ROOT/test.ext0'
@@ -314,6 +364,12 @@ Paths from --exts, --single-line-exts, --glob, --single-line-glob, --paths-from 
   +File: '$TESTCASE_ROOT/test2/abcd/efgh.txt'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.md'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
+  +File: '$TESTCASE_ROOT/test3/1234.md'
+  +File: '$TESTCASE_ROOT/test3/56.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.txt'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.md'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
 
 --single-line-add-exts:
   $ docfd    --debug-log - --index-only --single-line-add-exts md . 2>&1 | grep '^File:' | sort | tee $TMP0
@@ -341,6 +397,12 @@ Paths from --exts, --single-line-exts, --glob, --single-line-glob, --paths-from 
   +File: '$TESTCASE_ROOT/test2/abcd/efgh.txt'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.md'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
+  +File: '$TESTCASE_ROOT/test3/1234.md'
+  +File: '$TESTCASE_ROOT/test3/56.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.txt'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.md'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
   $ docfd    --debug-log - --index-only --single-line-add-exts ext0 . 2>&1 | grep '^File:' | sort | tee $TMP0
   File: '$TESTCASE_ROOT/empty-paths.txt'
   File: '$TESTCASE_ROOT/test.ext0'
@@ -367,6 +429,12 @@ Paths from --exts, --single-line-exts, --glob, --single-line-glob, --paths-from 
   +File: '$TESTCASE_ROOT/test2/abcd/efgh.txt'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.md'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
+  +File: '$TESTCASE_ROOT/test3/1234.md'
+  +File: '$TESTCASE_ROOT/test3/56.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.txt'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.md'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
 
 Picking via multiple --glob and --single-line-glob:
   $ docfd    --debug-log - --index-only --glob '*.txt' 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
@@ -468,6 +536,10 @@ Picking via multiple --glob and --single-line-glob:
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/56.md'
    Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.md'
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/1234.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/56.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
    Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
    Using single line search mode for document '$TESTCASE_ROOT/test.log'
    Using single line search mode for document '$TESTCASE_ROOT/test.txt'
@@ -490,6 +562,10 @@ Picking via multiple --glob and --single-line-glob:
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/56.md'
    Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.md'
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/1234.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/56.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
    Using single line search mode for document '$TESTCASE_ROOT/test.log'
    Using single line search mode for document '$TESTCASE_ROOT/test.md'
   $ docfd    --debug-log - --index-only --single-line-glob '*.md' --single-line-glob '*.txt' --glob '*.txt' --exts md . 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
@@ -511,6 +587,10 @@ Picking via multiple --glob and --single-line-glob:
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/56.md'
    Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.md'
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/1234.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/56.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
    Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
    Using single line search mode for document '$TESTCASE_ROOT/test.log'
    Using single line search mode for document '$TESTCASE_ROOT/test.md'
@@ -538,6 +618,10 @@ Picking via multiple --glob and --single-line-glob:
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/56.md'
    Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.md'
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/1234.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/56.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
    Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
    Using single line search mode for document '$TESTCASE_ROOT/test.txt'
    Using single line search mode for document '$TESTCASE_ROOT/test0/abcd.txt'
@@ -546,6 +630,8 @@ Picking via multiple --glob and --single-line-glob:
    Using single line search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.txt'
   +Using single line search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.txt'
   +Using single line search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.txt'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
   $ docfd    --debug-log - --index-only --single-line-exts md --glob '*.txt' --exts md . 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
@@ -564,6 +650,10 @@ Picking via multiple --glob and --single-line-glob:
   +Using single line search mode for document '$TESTCASE_ROOT/test2/56.md'
    Using single line search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.md'
   +Using single line search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/1234.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/56.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
   $ docfd    --debug-log - --index-only --single-line-exts txt,md --glob '*.txt' --exts md . 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
   Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test.md'
@@ -588,6 +678,12 @@ Picking via multiple --glob and --single-line-glob:
   +Using single line search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.txt'
   +Using single line search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.md'
   +Using single line search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/1234.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/56.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.txt'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
 
 --exts apply to directories in FILE in --paths-from FILE:
   $ docfd    --debug-log - --index-only --paths-from paths --exts txt 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
@@ -656,6 +752,10 @@ Top-level files with unrecognized extensions are still picked:
   +File: '$TESTCASE_ROOT/test2/56.md'
    File: '$TESTCASE_ROOT/test2/abcd/efgh.md'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.md'
+  +File: '$TESTCASE_ROOT/test3/1234.md'
+  +File: '$TESTCASE_ROOT/test3/56.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.md'
   $ docfd    --debug-log - --index-only --exts md test.txt . 2>&1 | grep '^File:' | sort | tee $TMP0
   File: '$TESTCASE_ROOT/test.log'
   File: '$TESTCASE_ROOT/test.md'
@@ -674,6 +774,10 @@ Top-level files with unrecognized extensions are still picked:
   +File: '$TESTCASE_ROOT/test2/56.md'
    File: '$TESTCASE_ROOT/test2/abcd/efgh.md'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.md'
+  +File: '$TESTCASE_ROOT/test3/1234.md'
+  +File: '$TESTCASE_ROOT/test3/56.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.md'
 
 Top-level files without extensions are still picked:
   $ docfd    --debug-log - --index-only --exts md . 2>&1 | grep '^File:' | sort | tee $TMP0
@@ -693,6 +797,10 @@ Top-level files without extensions are still picked:
   +File: '$TESTCASE_ROOT/test2/56.md'
    File: '$TESTCASE_ROOT/test2/abcd/efgh.md'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.md'
+  +File: '$TESTCASE_ROOT/test3/1234.md'
+  +File: '$TESTCASE_ROOT/test3/56.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.md'
   $ docfd    --debug-log - --index-only --exts md no-ext . 2>&1 | grep '^File:' | sort | tee $TMP0
   File: '$TESTCASE_ROOT/no-ext'
   File: '$TESTCASE_ROOT/test.log'
@@ -711,6 +819,10 @@ Top-level files without extensions are still picked:
   +File: '$TESTCASE_ROOT/test2/56.md'
    File: '$TESTCASE_ROOT/test2/abcd/efgh.md'
   +File: '$TESTCASE_ROOT/test2/ijkl/mnop.md'
+  +File: '$TESTCASE_ROOT/test3/1234.md'
+  +File: '$TESTCASE_ROOT/test3/56.md'
+  +File: '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +File: '$TESTCASE_ROOT/test3/ijkl/mnop.md'
 
 Double asterisk glob:
   $ docfd    --debug-log - --index-only --glob '**/*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort | tee $TMP0
@@ -733,6 +845,8 @@ Double asterisk glob:
    Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl/mnop.txt
   +Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test2/abcd/efgh.txt
   +Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test2/ijkl/mnop.txt
+  +Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test3/abcd/efgh.txt
+  +Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test3/ijkl/mnop.txt
    Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
    Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
    Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd.txt'
@@ -741,6 +855,8 @@ Double asterisk glob:
    Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.txt'
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.txt'
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.txt'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
   $ docfd    --debug-log - --index-only --glob '**/**/*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort | tee $TMP0
   Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
   Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test.txt
@@ -761,6 +877,8 @@ Double asterisk glob:
    Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl/mnop.txt
   +Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test2/abcd/efgh.txt
   +Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test2/ijkl/mnop.txt
+  +Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test3/abcd/efgh.txt
+  +Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test3/ijkl/mnop.txt
    Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
    Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
    Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd.txt'
@@ -769,6 +887,8 @@ Double asterisk glob:
    Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.txt'
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.txt'
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.txt'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
   $ docfd    --debug-log - --index-only --glob "$(pwd)/**/*.txt" 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort | tee $TMP0
   Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
   Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test.txt
@@ -789,6 +909,8 @@ Double asterisk glob:
    Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl/mnop.txt
   +Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test2/abcd/efgh.txt
   +Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test2/ijkl/mnop.txt
+  +Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test3/abcd/efgh.txt
+  +Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test3/ijkl/mnop.txt
    Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
    Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
    Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd.txt'
@@ -797,6 +919,8 @@ Double asterisk glob:
    Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.txt'
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.txt'
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.txt'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
   $ docfd    --debug-log - --index-only --glob "$(pwd)/**/**/*.txt" 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort | tee $TMP0
   Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
   Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test.txt
@@ -817,6 +941,8 @@ Double asterisk glob:
    Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl/mnop.txt
   +Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test2/abcd/efgh.txt
   +Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test2/ijkl/mnop.txt
+  +Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test3/abcd/efgh.txt
+  +Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test3/ijkl/mnop.txt
    Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
    Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
    Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd.txt'
@@ -825,6 +951,8 @@ Double asterisk glob:
    Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.txt'
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.txt'
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.txt'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
   $ docfd    --debug-log - --index-only --glob "**/test[01]/*.txt" 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort | tee $TMP0
   Glob regex $TESTCASE_ROOT/**/test[01]/*.txt matches path $TESTCASE_ROOT/test0/abcd.txt
   Glob regex $TESTCASE_ROOT/**/test[01]/*.txt matches path $TESTCASE_ROOT/test1/ijkl.txt
