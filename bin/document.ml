@@ -186,6 +186,11 @@ module Of_path = struct
     let proc_mgr = Eio.Stdenv.process_mgr env in
     let from_format = File_utils.extension_of_file path
                       |> String_utils.remove_leading_dots
+                      |> (fun s ->
+                          match s with
+                          | "htm" -> "html"
+                          | _ -> s
+                        )
     in
     let cmd = [ "pandoc"
               ; "--from"
