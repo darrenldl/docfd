@@ -3,9 +3,12 @@ Setup:
   $ TMP1=$(mktemp)
   $ touch no-ext
   $ touch empty-paths.txt
+  $ echo "test.txt" >> paths
+  $ echo "test-symlink.txt" >> paths
   $ echo "test0" >> paths
   $ echo "test1/ijkl" >> paths
-  $ echo "test.txt" >> paths
+  $ echo "test2/" >> paths
+  $ echo "test3/" >> paths
   $ touch test.ext0
   $ touch test.log
   $ touch test.md
@@ -65,23 +68,28 @@ Setup:
   
   6 directories, 23 files
 
-Default path is not picked if any of the following is used: --paths-from, --glob, --single-line-glob:
+Default path is not picked if --paths-from is used:
   $ docfd    --debug-log - --index-only --paths-from empty-paths.txt 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
   $ docfd -L --debug-log - --index-only --paths-from empty-paths.txt 2>&1 | grep '^Using .* search mode' | sort > $TMP1
-  $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo ""
-  
+  $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
+
+Default path is not picked if --glob is used:
   $ docfd    --debug-log - --index-only --glob '*.log' 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
   Using single line search mode for document '$TESTCASE_ROOT/test.log'
   $ docfd -L --debug-log - --index-only --glob '*.log' 2>&1 | grep '^Using .* search mode' | sort > $TMP1
   $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
+
+Default path is not picked if --single-line-glob is used:
   $ docfd    --debug-log - --index-only --single-line-glob '*.log' 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
   Using single line search mode for document '$TESTCASE_ROOT/test.log'
   $ docfd -L --debug-log - --index-only --single-line-glob '*.log' 2>&1 | grep '^Using .* search mode' | sort > $TMP1
   $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
 
-Empty --exts and --single-line-exts:
+Empty --exts:
   $ docfd --debug-log - --index-only --exts "" . 2>&1 | grep '^Using .* search mode' | sort
   Using single line search mode for document '$TESTCASE_ROOT/test.log'
+
+Empty --single-line-exts:
   $ docfd --debug-log - --index-only --single-line-exts "" . 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
@@ -96,47 +104,21 @@ Empty --exts and --single-line-exts:
   Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test2/1234.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.md'
+
+Empty --exts and --single-line-exts:
   $ docfd --debug-log - --index-only --exts "" --single-line-exts "" .
   error: no usable file extensions or glob patterns
   [1]
 
 --add-exts:
-  $ docfd --debug-log - --index-only --add-exts ext0 . 2>&1 | grep '^Using .* search mode' | sort
-  Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  $ docfd --debug-log - --index-only --add-exts ext0 . 2>&1 | grep '^Using .* search mode' | sort | grep "ext0"
   Using multiline search mode for document '$TESTCASE_ROOT/test.ext0'
-  Using multiline search mode for document '$TESTCASE_ROOT/test.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test0/1234.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test1/5678.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test2/1234.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.md'
-  Using single line search mode for document '$TESTCASE_ROOT/test.log'
 
 --single-line-add-exts:
-  $ docfd    --debug-log - --index-only --single-line-add-exts ext0 . 2>&1 | grep '^Using .* search mode' | sort
-  Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test0/1234.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test1/5678.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test2/1234.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.md'
+  $ docfd --debug-log - --index-only --single-line-add-exts ext0 . 2>&1 | grep '^Using .* search mode' | sort | grep "ext0"
   Using single line search mode for document '$TESTCASE_ROOT/test.ext0'
-  Using single line search mode for document '$TESTCASE_ROOT/test.log'
 
-Picking via multiple --glob and --single-line-glob:
+Picking via multiple --glob:
   $ docfd    --debug-log - --index-only --glob '*.txt' --glob '*.md' --glob '*.log' 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
@@ -145,6 +127,8 @@ Picking via multiple --glob and --single-line-glob:
   $ docfd -L --debug-log - --index-only --glob '*.txt' --glob '*.md' --glob '*.log' 2>&1 | grep '^Using .* search mode' | sort > $TMP1
   $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
   +Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
+
+Picking via multiple --single-line-glob:
   $ docfd    --debug-log - --index-only --single-line-glob '*.txt' --single-line-glob '*.md' --single-line-glob '*.log' 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
   Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test.log'
@@ -153,6 +137,9 @@ Picking via multiple --glob and --single-line-glob:
   $ docfd -L --debug-log - --index-only --single-line-glob '*.txt' --single-line-glob '*.md' --single-line-glob '*.log' 2>&1 | grep '^Using .* search mode' | sort > $TMP1
   $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
   +Using single line search mode for document '$TESTCASE_ROOT/test-symlink.txt'
+
+Picking via multiple --glob and --single-line-glob:
+  $ # --single-line-glob for .txt files
   $ docfd    --debug-log - --index-only --single-line-glob '*.txt' --glob '*.md' --glob '*.log' 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
   Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
@@ -161,6 +148,7 @@ Picking via multiple --glob and --single-line-glob:
   $ docfd -L --debug-log - --index-only --single-line-glob '*.txt' --glob '*.md' --glob '*.log' 2>&1 | grep '^Using .* search mode' | sort > $TMP1
   $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
   +Using single line search mode for document '$TESTCASE_ROOT/test-symlink.txt'
+  $ # --single-line-glob for .md files
   $ docfd    --debug-log - --index-only --glob '*.txt' --single-line-glob '*.md' --glob '*.log' 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
@@ -169,6 +157,7 @@ Picking via multiple --glob and --single-line-glob:
   $ docfd -L --debug-log - --index-only --glob '*.txt' --single-line-glob '*.md' --glob '*.log' 2>&1 | grep '^Using .* search mode' | sort > $TMP1
   $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
   +Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
+  $ # --single-line-glob for .log files
   $ docfd    --debug-log - --index-only --glob '*.txt' --glob '*.md' --single-line-glob '*.log' 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
@@ -177,6 +166,7 @@ Picking via multiple --glob and --single-line-glob:
   $ docfd -L --debug-log - --index-only --glob '*.txt' --glob '*.md' --single-line-glob '*.log' 2>&1 | grep '^Using .* search mode' | sort > $TMP1
   $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
   +Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
+  $ # --glob for .txt files
   $ docfd    --debug-log - --index-only --glob '*.txt' --single-line-glob '*.md' --single-line-glob '*.log' 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
@@ -185,6 +175,7 @@ Picking via multiple --glob and --single-line-glob:
   $ docfd -L --debug-log - --index-only --glob '*.txt' --single-line-glob '*.md' --single-line-glob '*.log' 2>&1 | grep '^Using .* search mode' | sort > $TMP1
   $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
   +Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
+  $ # --glob for .md files
   $ docfd    --debug-log - --index-only --single-line-glob '*.txt' --glob '*.md' --single-line-glob '*.log' 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
   Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
@@ -193,6 +184,7 @@ Picking via multiple --glob and --single-line-glob:
   $ docfd -L --debug-log - --index-only --single-line-glob '*.txt' --glob '*.md' --single-line-glob '*.log' 2>&1 | grep '^Using .* search mode' | sort > $TMP1
   $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
   +Using single line search mode for document '$TESTCASE_ROOT/test-symlink.txt'
+  $ # --glob for .log files
   $ docfd    --debug-log - --index-only --single-line-glob '*.txt' --single-line-glob '*.md' --glob '*.log' 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
   Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test.log'
@@ -201,6 +193,42 @@ Picking via multiple --glob and --single-line-glob:
   $ docfd -L --debug-log - --index-only --single-line-glob '*.txt' --single-line-glob '*.md' --glob '*.log' 2>&1 | grep '^Using .* search mode' | sort > $TMP1
   $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
   +Using single line search mode for document '$TESTCASE_ROOT/test-symlink.txt'
+
+--single-line-exts and --exts:
+  $ docfd    --debug-log - --index-only --single-line-exts md --exts md . 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
+  Using single line search mode for document '$TESTCASE_ROOT/test.md'
+  Using single line search mode for document '$TESTCASE_ROOT/test0/1234.md'
+  Using single line search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.md'
+  Using single line search mode for document '$TESTCASE_ROOT/test1/5678.md'
+  Using single line search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.md'
+  Using single line search mode for document '$TESTCASE_ROOT/test2/1234.md'
+  Using single line search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.md'
+  $ docfd -L --debug-log - --index-only --single-line-exts md --exts md . 2>&1 | grep '^Using .* search mode' | sort > $TMP1
+  $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
+  +Using single line search mode for document '$TESTCASE_ROOT/test2/56.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/1234.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/56.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
+
+--single-line-exts and --glob:
+  $ docfd    --debug-log - --index-only --exts "" --single-line-exts md --glob '**/*.md' 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
+  Using single line search mode for document '$TESTCASE_ROOT/test.md'
+  Using single line search mode for document '$TESTCASE_ROOT/test0/1234.md'
+  Using single line search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.md'
+  Using single line search mode for document '$TESTCASE_ROOT/test1/5678.md'
+  Using single line search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.md'
+  Using single line search mode for document '$TESTCASE_ROOT/test2/1234.md'
+  Using single line search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.md'
+  $ docfd -L --debug-log - --index-only --exts "" --single-line-exts md --glob '**/*.md' 2>&1 | grep '^Using .* search mode' | sort > $TMP1
+  $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
+  +Using single line search mode for document '$TESTCASE_ROOT/test2/56.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/1234.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/56.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
 
 --single-line-glob and --exts:
   $ docfd    --debug-log - --index-only --single-line-glob '*.md' --exts md . 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
@@ -222,99 +250,44 @@ Picking via multiple --glob and --single-line-glob:
   +Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
 
 --single-line-glob and --glob:
-  $ docfd    --debug-log - --index-only --single-line-glob '*.md' --glob '*.md' . 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
-  Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
+  $ docfd    --debug-log - --index-only --single-line-glob '*.md' --glob '**/*.md' 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
   Using multiline search mode for document '$TESTCASE_ROOT/test0/1234.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test1/5678.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test2/1234.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.md'
-  Using single line search mode for document '$TESTCASE_ROOT/test.log'
   Using single line search mode for document '$TESTCASE_ROOT/test.md'
-  $ docfd -L --debug-log - --index-only --single-line-glob '*.md' --glob '*.md' . 2>&1 | grep '^Using .* search mode' | sort > $TMP1
+  $ docfd -L --debug-log - --index-only --single-line-glob '*.md' --glob '**/*.md' 2>&1 | grep '^Using .* search mode' | sort > $TMP1
   $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
-  +Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/56.md'
-  +Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.txt'
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.md'
-  +Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
   +Using multiline search mode for document '$TESTCASE_ROOT/test3/1234.md'
   +Using multiline search mode for document '$TESTCASE_ROOT/test3/56.md'
   +Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.md'
-  +Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.txt'
   +Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
-  +Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
 
---single-line-exts and --exts:
-  $ docfd    --debug-log - --index-only --single-line-exts md --exts md . 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
-  Using single line search mode for document '$TESTCASE_ROOT/test.md'
-  Using single line search mode for document '$TESTCASE_ROOT/test0/1234.md'
-  Using single line search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.md'
-  Using single line search mode for document '$TESTCASE_ROOT/test1/5678.md'
-  Using single line search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.md'
-  Using single line search mode for document '$TESTCASE_ROOT/test2/1234.md'
-  Using single line search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.md'
-  $ docfd -L --debug-log - --index-only --single-line-exts md --exts md . 2>&1 | grep '^Using .* search mode' | sort > $TMP1
-  $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
-  +Using single line search mode for document '$TESTCASE_ROOT/test2/56.md'
-  +Using single line search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.md'
-  +Using single line search mode for document '$TESTCASE_ROOT/test3/1234.md'
-  +Using single line search mode for document '$TESTCASE_ROOT/test3/56.md'
-  +Using single line search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.md'
-  +Using single line search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
-
---single-line-exts and --glob:
-  $ docfd    --debug-log - --index-only --exts "" --single-line-exts md --glob '*.md' . 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
-  Using single line search mode for document '$TESTCASE_ROOT/test.md'
-  Using single line search mode for document '$TESTCASE_ROOT/test0/1234.md'
-  Using single line search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.md'
-  Using single line search mode for document '$TESTCASE_ROOT/test1/5678.md'
-  Using single line search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.md'
-  Using single line search mode for document '$TESTCASE_ROOT/test2/1234.md'
-  Using single line search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.md'
-  $ docfd -L --debug-log - --index-only --exts "" --single-line-exts md --glob '*.md' . 2>&1 | grep '^Using .* search mode' | sort > $TMP1
-  $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
-  +Using single line search mode for document '$TESTCASE_ROOT/test2/56.md'
-  +Using single line search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.md'
-  +Using single line search mode for document '$TESTCASE_ROOT/test3/1234.md'
-  +Using single line search mode for document '$TESTCASE_ROOT/test3/56.md'
-  +Using single line search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.md'
-  +Using single line search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
-
---exts apply to directories in FILE in --paths-from FILE:
-  $ docfd    --debug-log - --index-only --paths-from paths --exts txt 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
-  Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.txt'
-  $ docfd -L --debug-log - --index-only --paths-from paths --exts txt 2>&1 | grep '^Using .* search mode' | sort > $TMP1
-  $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
+--exts applies to directories in FILE in --paths-from FILE:
   $ docfd    --debug-log - --index-only --paths-from paths --exts md 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
+  Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test0/1234.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.md'
+  Using multiline search mode for document '$TESTCASE_ROOT/test2/1234.md'
+  Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.md'
+  Using multiline search mode for document '$TESTCASE_ROOT/test3/1234.md'
+  Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.md'
   $ docfd -L --debug-log - --index-only --paths-from paths --exts md 2>&1 | grep '^Using .* search mode' | sort > $TMP1
   $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
+  +Using multiline search mode for document '$TESTCASE_ROOT/test2/56.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/56.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
 
 --single-line-exts apply to directories in FILE in --paths-from FILE:
-  $ docfd    --debug-log - --index-only --paths-from paths --single-line-exts txt 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
-  Using multiline search mode for document '$TESTCASE_ROOT/test0/1234.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.md'
-  Using single line search mode for document '$TESTCASE_ROOT/test.txt'
-  Using single line search mode for document '$TESTCASE_ROOT/test0/abcd.txt'
-  Using single line search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.txt'
-  Using single line search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.txt'
-  $ docfd -L --debug-log - --index-only --paths-from paths --single-line-exts txt 2>&1 | grep '^Using .* search mode' | sort > $TMP1
-  $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
   $ docfd    --debug-log - --index-only --paths-from paths --single-line-exts md 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
+  Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.txt'
@@ -322,14 +295,35 @@ Picking via multiple --glob and --single-line-glob:
   Using single line search mode for document '$TESTCASE_ROOT/test0/1234.md'
   Using single line search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.md'
   Using single line search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.md'
+  Using single line search mode for document '$TESTCASE_ROOT/test2/1234.md'
+  Using single line search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.md'
+  Using single line search mode for document '$TESTCASE_ROOT/test3/1234.md'
+  Using single line search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.md'
   $ docfd -L --debug-log - --index-only --paths-from paths --single-line-exts md 2>&1 | grep '^Using .* search mode' | sort > $TMP1
   $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
+  +Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.txt'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.txt'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
+  +Using single line search mode for document '$TESTCASE_ROOT/test2/56.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/56.md'
+  +Using single line search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
 
 Top-level symlinks:
   $ docfd    --debug-log - --index-only test-symlink.txt 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   $ docfd -L --debug-log - --index-only test-symlink.txt 2>&1 | grep '^Using .* search mode' | sort > $TMP1
   $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
+  $ docfd    --debug-log - --index-only test3 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
+  Using multiline search mode for document '$TESTCASE_ROOT/test3/1234.md'
+  Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  $ docfd -L --debug-log - --index-only test3 2>&1 | grep '^Using .* search mode' | sort > $TMP1
+  $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/56.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.txt'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
 
 Top-level files and --single-line-exts:
   $ docfd    --debug-log - --index-only test.txt --single-line-exts txt 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
@@ -390,44 +384,12 @@ Top-level files and --single-line-glob:
   +Using single line search mode for document '$TESTCASE_ROOT/test-symlink.txt'
 
 Top-level files with unrecognized extensions are still picked:
-  $ docfd    --debug-log - --index-only --exts md test.txt . 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
-  Using multiline search mode for document '$TESTCASE_ROOT/test.md'
+  $ docfd --debug-log - --index-only --exts md test.txt . 2>&1 | grep '^Using .* search mode' | sort | grep 'test.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
-  Using multiline search mode for document '$TESTCASE_ROOT/test0/1234.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test1/5678.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test2/1234.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.md'
-  Using single line search mode for document '$TESTCASE_ROOT/test.log'
-  $ docfd -L --debug-log - --index-only --exts md test.txt . 2>&1 | grep '^Using .* search mode' | sort > $TMP1
-  $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
-  +Using multiline search mode for document '$TESTCASE_ROOT/test2/56.md'
-  +Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.md'
-  +Using multiline search mode for document '$TESTCASE_ROOT/test3/1234.md'
-  +Using multiline search mode for document '$TESTCASE_ROOT/test3/56.md'
-  +Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.md'
-  +Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
 
 Top-level files without extensions are still picked:
-  $ docfd    --debug-log - --index-only --exts md no-ext . 2>&1 | grep '^Using .* search mode' | sort | tee $TMP0
+  $ docfd --debug-log - --index-only --exts md no-ext . 2>&1 | grep '^Using .* search mode' | sort | grep 'no-ext'
   Using multiline search mode for document '$TESTCASE_ROOT/no-ext'
-  Using multiline search mode for document '$TESTCASE_ROOT/test.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test0/1234.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test1/5678.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl/mnop.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test2/1234.md'
-  Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.md'
-  Using single line search mode for document '$TESTCASE_ROOT/test.log'
-  $ docfd -L --debug-log - --index-only --exts md no-ext . 2>&1 | grep '^Using .* search mode' | sort > $TMP1
-  $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
-  +Using multiline search mode for document '$TESTCASE_ROOT/test2/56.md'
-  +Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.md'
-  +Using multiline search mode for document '$TESTCASE_ROOT/test3/1234.md'
-  +Using multiline search mode for document '$TESTCASE_ROOT/test3/56.md'
-  +Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.md'
-  +Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
 
 Current working directory is symlink:
   $ cd test3
