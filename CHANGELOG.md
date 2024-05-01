@@ -30,6 +30,11 @@
 
 - Changed to allow `--paths-from` to be specified multiple times
 
+- Fixed handling of `.htm` files
+
+    - `htm` is not a valid value for pandoc's `--format` argument
+    - Now it is rewritten to `html` before being passed to pandoc
+
 ## 4.0.0
 
 - Made document search asynchronous to search field input, so UI remains
