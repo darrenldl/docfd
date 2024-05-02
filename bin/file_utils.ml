@@ -95,13 +95,17 @@ let read_in_channel_to_tmp_file (ic : in_channel) : (string, string) result =
       Error (Fmt.str "failed to write stdin to %s" (Filename.quote file))
     )
 
-let list_files_recursive_all (path : string) : String_set.t =
+let list_files_recursive
+    ~(filter : int -> string -> bool)
+    (path : string)
+  : String_set.t =
   let acc = ref String_set.empty in
   let add x =
     acc := String_set.add x !acc
   in
-  let rec aux path =
-    match typ_of_path ~follow_symlinks:!Params.follow_symlinks path with
+  let rec aux depth path =
+    let follow_symlinks = depth = 0 || !Params.follow_symlinks in 
+    match typ_of_path ~follow_symlinks path with
     | Some `Dir -> (
         let next_choices =
           try
@@ -110,16 +114,18 @@ let list_files_recursive_all (path : string) : String_set.t =
           | _ -> [||]
         in
         Array.iter (fun f ->
-            aux (Filename.concat path f)
+            aux (depth + 1) (Filename.concat path f)
           )
           next_choices
       )
     | Some `File -> (
-        add path
+        if filter depth path then (
+          add path
+        )
       )
     | _ | exception _ -> ()
   in
-  aux (normalize_path_to_absolute path);
+  aux 0 (normalize_path_to_absolute path);
   !acc
 
 let list_files_recursive_filter_by_globs
@@ -159,14 +165,15 @@ let list_files_recursive_filter_by_globs
                 Printf.fprintf oc "Compiling glob regex using pattern: %s\n" re_string
               );
             let re = compile_glob_re re_string in
-            list_files_recursive_all path
+            path
+            |> list_files_recursive ~filter:(fun _depth path ->
+                Re.execp re path
+              )
             |> String_set.iter (fun path ->
-                if Re.execp re path then (
-                  do_if_debug (fun oc ->
-                      Printf.fprintf oc "Glob regex %s matches path %s\n" re_string path
-                    );
-                  add path
-                )
+                do_if_debug (fun oc ->
+                    Printf.fprintf oc "Glob regex %s matches path %s\n" re_string path
+                  );
+                add path
               )
           )
         | _ -> (
@@ -205,37 +212,14 @@ let list_files_recursive_filter_by_exts
     ~(exts : string list)
     (paths : string Seq.t)
   : String_set.t =
-  let acc = ref String_set.empty in
-  let add x =
-    acc := String_set.add x !acc
-  in
-  let rec aux depth path =
-    let follow_symlinks = depth = 0 || !Params.follow_symlinks in 
-    match typ_of_path ~follow_symlinks path with
-    | Some `Dir -> (
-        let next_choices =
-          try
-            Sys.readdir path
-          with
-          | _ -> [||]
-        in
-        Array.iter (fun f ->
-            aux (depth + 1) (Filename.concat path f)
-          )
-          next_choices
-      )
-    | Some `File -> (
-        let ext = extension_of_file path in
-        if depth = 0 || List.mem ext exts then (
-          add path
-        )
-      )
-    | _ | exception _ -> ()
+  let filter depth path =
+    let ext = extension_of_file path in
+    depth = 0 || List.mem ext exts
   in
   paths
   |> Seq.map normalize_path_to_absolute
-  |> Seq.iter (fun x -> aux 0 x);
-  !acc
+  |> Seq.map (list_files_recursive ~filter)
+  |> Seq.fold_left String_set.union String_set.empty
 
 let mkdir_recursive (dir : string) : unit =
   let rec aux acc parts =
