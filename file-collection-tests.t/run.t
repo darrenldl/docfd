@@ -425,7 +425,15 @@ Current working directory is symlink:
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
   $ cd ..
 
-Double asterisk glob:
+'..' in glob:
+  $ docfd    --debug-log - --index-only --glob 'test3/../*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort | tee $TMP0
+  $ docfd -L --debug-log - --index-only --glob 'test3/../*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort > $TMP1
+  $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
+  +Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
+  +Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
+
+'**' in glob:
   $ docfd    --debug-log - --index-only --glob '**/*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort | tee $TMP0
   Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
   Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test.txt
