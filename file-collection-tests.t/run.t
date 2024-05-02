@@ -425,12 +425,38 @@ Current working directory is symlink:
   +Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
   $ cd ..
 
+'./' in glob:
+  $ docfd    --debug-log - --index-only --glob './*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort | tee $TMP0
+  Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
+  $ docfd -L --debug-log - --index-only --glob './*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort > $TMP1
+  $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
+
 '..' in glob:
+  $ docfd    --debug-log - --index-only --glob 'test1/../*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort | tee $TMP0
+  Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
+  $ docfd -L --debug-log - --index-only --glob 'test1/../*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort > $TMP1
+  $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
+
+Crossing symlinks explicitly in glob:
   $ docfd    --debug-log - --index-only --glob 'test3/../*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort | tee $TMP0
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   $ docfd -L --debug-log - --index-only --glob 'test3/../*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort > $TMP1
+  $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
+  $ docfd    --debug-log - --index-only --glob 'test3/abcd/*.txt' --glob 'test3/abcd/*.md' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort | tee $TMP0
+  Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.md'
+  Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.txt'
+  $ docfd -L --debug-log - --index-only --glob 'test3/abcd/*.txt' --glob 'test3/abcd/*.md' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort > $TMP1
+  $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
+  $ docfd    --debug-log - --index-only --glob 'test3/ijkl/*.txt' --glob 'test3/ijkl/*.md' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort | tee $TMP0
+  Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
+  Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
+  $ docfd -L --debug-log - --index-only --glob 'test3/ijkl/*.txt' --glob 'test3/ijkl/*.md' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort > $TMP1
   $ diff $TMP0 $TMP1 | tail -n +4 | grep -e '^+' -e '^-'; echo -n ""
 
 '**' in glob:
