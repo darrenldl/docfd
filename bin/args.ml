@@ -209,14 +209,6 @@ let search_result_print_text_width_arg =
     & info [ search_result_print_text_width_arg_name ] ~doc ~docv:"N"
   )
 
-let follow_symlinks_arg =
-  let doc =
-    Fmt.str "Follow symbolic links during traversal.
-By default symbolic links are not followed
-unless they are specified directly as arguments."
-  in
-  Arg.(value & flag & info [ "L"; "follow-symlinks" ] ~doc)
-
 let paths_from_arg_name = "paths-from"
 
 let paths_from_arg =
@@ -229,6 +221,17 @@ and add to the final list of paths to be scanned."
     & opt_all string []
     & info [ paths_from_arg_name ] ~doc ~docv:"FILE"
   )
+
+let follow_symlinks_arg =
+  let doc =
+    Fmt.str "Follow symbolic links during directory traversal.
+Note that this only affects the traversal of:
+directories specified as command line arguments,
+directories specified in FILE from --%s FILE,
+and ** in globs."
+      paths_from_arg_name
+  in
+  Arg.(value & flag & info [ "L"; "follow-symlinks" ] ~doc)
 
 let glob_arg_name = "glob"
 
