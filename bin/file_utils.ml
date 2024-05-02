@@ -138,10 +138,7 @@ let list_files_recursive_filter_by_globs
   in
   let rec aux (path_parts : string list) (glob_parts : string list) =
     let path = path_of_parts path_parts in
-    match
-      typ_of_path ~follow_symlinks:true path,
-      glob_parts
-    with
+    match typ_of_path ~follow_symlinks:true path, glob_parts with
     | Some `File, [] -> add path
     | Some `File, _ -> ()
     | Some `Dir, [] -> ()
