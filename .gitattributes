@@ -1,1 +1,1 @@
-*.t/run.t linguist-language=bash
+*.t/run.t linguist-vendored
