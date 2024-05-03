@@ -322,7 +322,6 @@ let run
       ~globs
       ~single_line_globs
   in
-  Random.self_init ();
   let pool = Task_pool.make ~sw (Eio.Stdenv.domain_mgr env) in
   Ui_base.Vars.pool := Some pool;
   do_if_debug (fun oc ->
