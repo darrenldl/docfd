@@ -101,6 +101,13 @@ let read_in_channel_to_tmp_file (ic : in_channel) : (string, string) result =
       Error (Fmt.str "failed to write stdin to %s" (Filename.quote file))
     )
 
+let next_choices path : string Seq.t =
+  try
+    Sys.readdir path
+    |> Array.to_seq
+  with
+  | _ -> Seq.empty
+
 let list_files_recursive
     ~(filter : int -> string -> bool)
     (path : string)
@@ -118,16 +125,10 @@ let list_files_recursive
           | `Is_link -> depth = 0 || !Params.follow_symlinks
         in
         if proceed then (
-          let next_choices =
-            try
-              Sys.readdir path
-            with
-            | _ -> [||]
-          in
-          Array.iter (fun f ->
+          next_choices path
+          |> Seq.iter (fun f ->
               aux (depth + 1) (Filename.concat path f)
             )
-            next_choices
         )
       )
     | Some (`File, _) -> (
@@ -190,18 +191,12 @@ let list_files_recursive_filter_by_globs
           )
         | _ -> (
             let re = compile_glob_re x in
-            let next_choices =
-              try
-                Sys.readdir path
-              with
-              | _ -> [||]
-            in
-            Array.iter (fun f ->
+            next_choices path
+            |> Seq.iter (fun f ->
                 if Re.execp re f then (
                   aux (f :: path_parts) xs
                 )
               )
-              next_choices;
           )
       )
     | None, _ -> ()
