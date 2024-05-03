@@ -224,12 +224,8 @@ and add to the final list of paths to be scanned."
 
 let follow_symlinks_arg =
   let doc =
-    Fmt.str "Follow symbolic links during directory traversal.
-Note that this only affects the traversal of:
-directories specified as command line arguments,
-directories specified in FILE from --%s FILE,
-and ** in globs."
-      paths_from_arg_name
+    "Follow symbolic links during directory traversal.
+See documentation for details."
   in
   Arg.(value & flag & info [ "L"; "follow-symlinks" ] ~doc)
 

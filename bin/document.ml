@@ -93,8 +93,8 @@ let clean_up_cache_dir ~cache_dir =
     |> List.map (fun x ->
         Filename.concat cache_dir x)
     |> List.filter (fun x ->
-        match File_utils.typ_of_path ~follow_symlinks:false x with
-        | Some `File -> File_utils.extension_of_file x = Params.index_file_ext
+        match File_utils.typ_of_path x with
+        | Some (`File, _) -> File_utils.extension_of_file x = Params.index_file_ext
         | _ -> false
       )
   in

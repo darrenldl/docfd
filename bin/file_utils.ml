@@ -28,18 +28,24 @@ type typ = [
   | `Dir
 ]
 
-let typ_of_path ~follow_symlinks (path : string) : typ option =
-  let open Unix in
-  let stat =
-    if follow_symlinks then
-      stat path
-    else
-      lstat path
-  in
+type is_link = [
+  | `Is_link
+  | `Not_link
+]
+
+let typ_of_path (path : string) : (typ * is_link) option =
+  let stat = Unix.lstat path in
   match stat.st_kind with
-  | S_REG -> Some `File
-  | S_DIR -> Some `Dir
-  | _ -> None
+  | S_REG -> Some (`File, `Not_link)
+  | S_DIR -> Some (`Dir, `Not_link)
+  | S_LNK -> (
+      let stat = Unix.stat path in
+      match stat.st_kind with
+      | S_REG -> Some (`File, `Is_link)
+      | S_DIR -> Some (`Dir, `Is_link)
+      | _ -> None
+    )
+  | _ | exception _ -> None
 
 let path_of_parts parts =
   List.rev parts
@@ -104,26 +110,32 @@ let list_files_recursive
     acc := String_set.add x !acc
   in
   let rec aux depth path =
-    let follow_symlinks = depth = 0 || !Params.follow_symlinks in 
-    match typ_of_path ~follow_symlinks path with
-    | Some `Dir -> (
-        let next_choices =
-          try
-            Sys.readdir path
-          with
-          | _ -> [||]
+    match typ_of_path path with
+    | Some (`Dir, is_link) -> (
+        let proceed =
+          match is_link with
+          | `Not_link -> true
+          | `Is_link -> depth = 0 || !Params.follow_symlinks
         in
-        Array.iter (fun f ->
-            aux (depth + 1) (Filename.concat path f)
-          )
-          next_choices
+        if proceed then (
+          let next_choices =
+            try
+              Sys.readdir path
+            with
+            | _ -> [||]
+          in
+          Array.iter (fun f ->
+              aux (depth + 1) (Filename.concat path f)
+            )
+            next_choices
+        )
       )
-    | Some `File -> (
+    | Some (`File, _) -> (
         if filter depth path then (
           add path
         )
       )
-    | _ | exception _ -> ()
+    | _ -> ()
   in
   aux 0 (normalize_path_to_absolute path);
   !acc
@@ -144,11 +156,11 @@ let list_files_recursive_filter_by_globs
   in
   let rec aux (path_parts : string list) (glob_parts : string list) =
     let path = path_of_parts path_parts in
-    match typ_of_path ~follow_symlinks:true path, glob_parts with
-    | Some `File, [] -> add path
-    | Some `File, _ -> ()
-    | Some `Dir, [] -> ()
-    | Some `Dir, x :: xs -> (
+    match typ_of_path path, glob_parts with
+    | Some (`File, _), [] -> add path
+    | Some (`File, _), _ -> ()
+    | Some (`Dir, _), [] -> ()
+    | Some (`Dir, _), x :: xs -> (
         match x with
         | "" | "." -> aux path_parts xs
         | ".." -> (
