@@ -121,13 +121,19 @@ let save_index ~env ~hash index : (unit, string) result =
   | None -> Ok ()
   | Some cache_dir -> (
       let fs = Eio.Stdenv.fs env in
-      let path =
-        Eio.Path.(fs /
-                  Filename.concat cache_dir (Fmt.str "%s%s" hash Params.index_file_ext))
+      let rand = Random.int 1000 in
+      let tmp_file_name = Fmt.str "%s%s.%04d" hash Params.index_file_ext rand in
+      let final_file_name = Fmt.str "%s%s" hash Params.index_file_ext in
+      let tmp_path =
+        Eio.Path.(fs / Filename.concat cache_dir tmp_file_name)
+      in
+      let final_path =
+        Eio.Path.(fs / Filename.concat cache_dir final_file_name)
       in
       let json = Index.to_json index in
       try
-        Eio.Path.save ~create:(`Or_truncate 0o644) path (Yojson.Safe.to_string json);
+        Eio.Path.save ~create:(`Or_truncate 0o644) tmp_path (Yojson.Safe.to_string json);
+        Eio.Path.rename tmp_path final_path;
         clean_up_cache_dir ~cache_dir;
         Ok ()
       with
