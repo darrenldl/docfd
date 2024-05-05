@@ -106,6 +106,8 @@ Basic invocation for reference:
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test.log'
+  $ docfd --debug-log - --index-only --max-depth 1 --glob '**/*.md' 2>&1 | grep '^Using .* search mode' | sort
+  Using multiline search mode for document '$TESTCASE_ROOT/test.md'
 
 --max-depth 2:
   $ docfd --debug-log - --index-only --max-depth 2 . 2>&1 | grep '^Using .* search mode' | sort
@@ -122,6 +124,14 @@ Basic invocation for reference:
   Using multiline search mode for document '$TESTCASE_ROOT/test3/1234.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test3/56.md'
   Using single line search mode for document '$TESTCASE_ROOT/test.log'
+  $ docfd --debug-log - --index-only --max-depth 2 --glob '**/*.md' 2>&1 | grep '^Using .* search mode' | sort
+  Using multiline search mode for document '$TESTCASE_ROOT/test.md'
+  Using multiline search mode for document '$TESTCASE_ROOT/test0/1234.md'
+  Using multiline search mode for document '$TESTCASE_ROOT/test1/5678.md'
+  Using multiline search mode for document '$TESTCASE_ROOT/test2/1234.md'
+  Using multiline search mode for document '$TESTCASE_ROOT/test2/56.md'
+  Using multiline search mode for document '$TESTCASE_ROOT/test3/1234.md'
+  Using multiline search mode for document '$TESTCASE_ROOT/test3/56.md'
 
 Default path is not picked if --paths-from is used:
   $ docfd --debug-log - --index-only --paths-from empty-paths.txt 2>&1 | grep '^Using .* search mode' | sort
