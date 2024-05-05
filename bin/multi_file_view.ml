@@ -407,6 +407,7 @@ let keyboard_handler
           `Handled
         )
       | (`Tab, []) -> (
+          Ui_base.Key_binding_info.blink "Tab";
           Option.iter (fun (doc, _search_results) ->
               let document_store = Lwd.peek Ui_base.Vars.document_store in
               let single_file_document_store =

@@ -7,6 +7,8 @@
 - Adjusted path display in UI to hide current working directory segment when
   applicable
 
+- Added missing blinking for `Tab` key presses
+
 ## 5.0.0
 
 - Added file globbing support in the form of `--glob` argument

@@ -192,6 +192,7 @@ let keyboard_handler
           `Handled
         )
       | (`Tab, []) -> (
+          Ui_base.Key_binding_info.blink "Tab";
           (match !Ui_base.Vars.init_ui_mode with
            | Ui_multi_file ->
              Lwd.set Ui_base.Vars.ui_mode Ui_multi_file
