@@ -29,6 +29,11 @@
     - `htm` is not a valid value for pandoc's `--format` argument
     - Now it is rewritten to `html` before being passed to pandoc
 
+- Changed `--max-depth`:
+
+    - Changed default max scan depth of directory tree from 10 to 100
+    - Changed it to accept 0 as value
+
 ## 4.0.0
 
 - Made document search asynchronous to search field input, so UI remains
