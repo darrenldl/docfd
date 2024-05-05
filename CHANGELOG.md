@@ -11,8 +11,6 @@
     - `--single-line-glob`
     - `--single-line`
 
-- Removed `--max-depths` argument
-
 - Fixed crash on empty file
 
    - This was due to assertion failure of `max_line_num` in
@@ -23,10 +21,6 @@
 
 - Added blinking to key binding info grid to give better visual feedback,
   especially for the new behavior of search result printing
-
-- Changed to not follow symlinks by default
-
-- Added `-L`, `--follow-symlinks` for following symlinks
 
 - Changed to allow `--paths-from` to be specified multiple times
 
