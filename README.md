@@ -181,7 +181,7 @@ has one path per line.
 #### Globbing
 
 ```
-docfd --glob 'relative/path/glob' --glob `/absolute/path/glob`
+docfd --glob 'relative/path/glob' --glob '/absolute/path/glob'
 ```
 
 ## File collection rules
