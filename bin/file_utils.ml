@@ -118,18 +118,11 @@ let list_files_recursive
   in
   let rec aux depth path =
     match typ_of_path path with
-    | Some (`Dir, is_link) -> (
-        let proceed =
-          match is_link with
-          | `Not_link -> true
-          | `Is_link -> depth = 0 || !Params.follow_symlinks
-        in
-        if proceed then (
+    | Some (`Dir, _) -> (
           next_choices path
           |> Seq.iter (fun f ->
               aux (depth + 1) (Filename.concat path f)
             )
-        )
       )
     | Some (`File, _) -> (
         if filter depth path then (

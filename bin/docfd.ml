@@ -215,7 +215,6 @@ let run
     (search_exp : string option)
     (search_result_count_per_doc : int)
     (search_result_print_text_width : int)
-    (follow_symlinks : bool)
     (paths_from : string list)
     (globs : string list)
     (single_line_globs : string list)
@@ -254,7 +253,6 @@ let run
   Params.index_chunk_token_count := index_chunk_token_count;
   Params.cache_size := cache_size;
   Params.search_result_print_text_width := search_result_print_text_width;
-  Params.follow_symlinks := follow_symlinks;
   Params.cache_dir := (
     if no_cache then (
       None
@@ -676,7 +674,6 @@ let cmd ~env ~sw =
      $ search_arg
      $ search_result_count_per_doc_arg
      $ search_result_print_text_width_arg
-     $ follow_symlinks_arg
      $ paths_from_arg
      $ glob_arg
      $ single_line_glob_arg

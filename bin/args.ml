@@ -222,13 +222,6 @@ and add to the final list of paths to be scanned."
     & info [ paths_from_arg_name ] ~doc ~docv:"FILE"
   )
 
-let follow_symlinks_arg =
-  let doc =
-    "Follow symbolic links during directory traversal.
-See documentation for details."
-  in
-  Arg.(value & flag & info [ "L"; "follow-symlinks" ] ~doc)
-
 let glob_arg_name = "glob"
 
 let glob_arg =

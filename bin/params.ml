@@ -65,5 +65,3 @@ let last_scan_format_string =
    | Some _ -> "")
 
 let blink_on_duration : Mtime.span = Mtime.Span.(140 * ms)
-
-let follow_symlinks = ref false
