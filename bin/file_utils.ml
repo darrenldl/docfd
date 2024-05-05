@@ -34,18 +34,21 @@ type is_link = [
 ]
 
 let typ_of_path (path : string) : (typ * is_link) option =
-  let stat = Unix.lstat path in
-  match stat.st_kind with
-  | S_REG -> Some (`File, `Not_link)
-  | S_DIR -> Some (`Dir, `Not_link)
-  | S_LNK -> (
-      let stat = Unix.stat path in
-      match stat.st_kind with
-      | S_REG -> Some (`File, `Is_link)
-      | S_DIR -> Some (`Dir, `Is_link)
-      | _ -> None
-    )
-  | _ | exception _ -> None
+  try
+    let stat = Unix.lstat path in
+    match stat.st_kind with
+    | S_REG -> Some (`File, `Not_link)
+    | S_DIR -> Some (`Dir, `Not_link)
+    | S_LNK -> (
+        let stat = Unix.stat path in
+        match stat.st_kind with
+        | S_REG -> Some (`File, `Is_link)
+        | S_DIR -> Some (`Dir, `Is_link)
+        | _ -> None
+      )
+    | _ -> None
+  with
+  | _ -> None
 
 let path_of_parts parts =
   List.rev parts
