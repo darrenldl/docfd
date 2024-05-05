@@ -114,6 +114,7 @@ module Top_pane = struct
         (I.string A.(fg lightgreen) "@ ")
         <|>
         (Document.path doc
+         |> File_utils.remove_cwd_from_path
          |> Tokenize.tokenize ~drop_spaces:false
          |> List.of_seq
          |> Content_and_search_result_render.Text_block_render.of_words ~width:sub_item_width

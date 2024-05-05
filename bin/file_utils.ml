@@ -1,6 +1,12 @@
 open Misc_utils
 open Debug_utils
 
+let remove_cwd_from_path (s : string) =
+  let cwd = Printf.sprintf "%s/" (Sys.getcwd ()) in
+  match CCString.chop_prefix ~pre:cwd s with
+  | None -> s
+  | Some s -> s
+
 let extension_of_file (s : string) =
   Filename.extension s
   |> String.lowercase_ascii

@@ -71,7 +71,7 @@ module Bottom_pane = struct
           List.assoc input_mode Ui_base.Status_bar.input_mode_images;
           Ui_base.Status_bar.element_spacer;
           Notty.I.strf ~attr:Ui_base.Status_bar.attr
-            "Document: %s" (Document.path document);
+            "Document: %s" (Document.path document |> File_utils.remove_cwd_from_path);
           Ui_base.Status_bar.element_spacer;
           Notty.I.strf ~attr:Ui_base.Status_bar.attr
             "Last scan: %a"
