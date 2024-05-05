@@ -31,8 +31,8 @@
 
 - Changed `--max-depth`:
 
-    - Changed default max scan depth of directory tree from 10 to 100
-    - Changed it to accept 0
+    - Changed default from 10 to 100
+    - Changed to accept 0
 
 ## 4.0.0
 
