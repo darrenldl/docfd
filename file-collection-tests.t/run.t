@@ -566,6 +566,12 @@ Current working directory is symlink:
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
 
+Directories in glob:
+  $ docfd --debug-log - --index-only --glob '.' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --index-only --glob '..' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --index-only --glob 'test0/' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --index-only --glob 'test3' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+
 Crossing symlinks explicitly in glob:
   $ docfd --debug-log - --index-only --glob 'test3/../*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
