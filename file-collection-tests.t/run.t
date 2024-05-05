@@ -239,7 +239,10 @@ Picking via multiple --glob and --single-line-glob:
   Using single line search mode for document '$TESTCASE_ROOT/test.txt'
 
 --single-line-exts and --exts:
-  $ docfd --debug-log - --index-only --single-line-exts md --exts md . 2>&1 | grep '^Using .* search mode' | sort
+  $ docfd --debug-log - --index-only --single-line-exts md --exts md . 2>&1 | grep -e '^Using .* search mode' -e '^Checking.*search mode' | sort
+  Checking if efficiently computed and naively computed results for default search mode files are consistent
+  Checking if efficiently computed and naively computed results for single line search mode files are consistent
+  Checking if single line search mode files and default search mode files are disjoint
   Using single line search mode for document '$TESTCASE_ROOT/test.md'
   Using single line search mode for document '$TESTCASE_ROOT/test0/1234.md'
   Using single line search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.md'
@@ -255,7 +258,10 @@ Picking via multiple --glob and --single-line-glob:
   Using single line search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
 
 --single-line-exts and --glob:
-  $ docfd --debug-log - --index-only --exts "" --single-line-exts md --glob '**/*.md' 2>&1 | grep '^Using .* search mode' | sort
+  $ docfd --debug-log - --index-only --exts "" --single-line-exts md --glob '**/*.md' 2>&1 | grep -e '^Using .* search mode' -e '^Checking.*search mode' | sort
+  Checking if efficiently computed and naively computed results for default search mode files are consistent
+  Checking if efficiently computed and naively computed results for single line search mode files are consistent
+  Checking if single line search mode files and default search mode files are disjoint
   Using single line search mode for document '$TESTCASE_ROOT/test.md'
   Using single line search mode for document '$TESTCASE_ROOT/test0/1234.md'
   Using single line search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.md'
@@ -271,7 +277,10 @@ Picking via multiple --glob and --single-line-glob:
   Using single line search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
 
 --single-line-glob and --exts:
-  $ docfd --debug-log - --index-only --single-line-glob '*.md' --exts md . 2>&1 | grep '^Using .* search mode' | sort
+  $ docfd --debug-log - --index-only --single-line-glob '*.md' --exts md . 2>&1 | grep -e '^Using .* search mode' -e '^Checking.*search mode'| sort
+  Checking if efficiently computed and naively computed results for default search mode files are consistent
+  Checking if efficiently computed and naively computed results for single line search mode files are consistent
+  Checking if single line search mode files and default search mode files are disjoint
   Using multiline search mode for document '$TESTCASE_ROOT/test0/1234.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test1/5678.md'
@@ -288,7 +297,10 @@ Picking via multiple --glob and --single-line-glob:
   Using single line search mode for document '$TESTCASE_ROOT/test.md'
 
 --single-line-glob and --glob:
-  $ docfd --debug-log - --index-only --exts "" --single-line-glob '*.md' --glob '**/*.md' 2>&1 | grep '^Using .* search mode' | sort
+  $ docfd --debug-log - --index-only --exts "" --single-line-glob '*.md' --glob '**/*.md' 2>&1 | grep -e '^Using .* search mode' -e '^Checking.*search mode' | sort
+  Checking if efficiently computed and naively computed results for default search mode files are consistent
+  Checking if efficiently computed and naively computed results for single line search mode files are consistent
+  Checking if single line search mode files and default search mode files are disjoint
   Using multiline search mode for document '$TESTCASE_ROOT/test0/1234.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd/efgh.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test1/5678.md'
