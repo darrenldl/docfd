@@ -7,6 +7,8 @@ Setup:
   $ echo "test1/ijkl" >> paths
   $ echo "test2/" >> paths
   $ echo "test3/" >> paths
+  $ echo "test.log" >> single-path0.txt
+  $ echo "test.txt" >> single-path1.txt
   $ touch test.ext0
   $ touch test.log
   $ touch test.md
@@ -38,6 +40,8 @@ Setup:
   |-- empty-paths.txt
   |-- no-ext
   |-- paths
+  |-- single-path0.txt
+  |-- single-path1.txt
   |-- test-symlink.txt -> test.txt
   |-- test.ext0
   |-- test.log
@@ -64,11 +68,13 @@ Setup:
   |   `-- ijkl -> ../test1/ijkl
   `-- test3 -> test2
   
-  6 directories, 23 files
+  6 directories, 25 files
 
 Basic invocation for reference:
   $ docfd --debug-log - --index-only . 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
@@ -102,6 +108,8 @@ Basic invocation for reference:
 --max-depth 1:
   $ docfd --debug-log - --index-only --max-depth 1 . 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
@@ -112,6 +120,8 @@ Basic invocation for reference:
 --max-depth 2:
   $ docfd --debug-log - --index-only --max-depth 2 . 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
@@ -144,6 +154,11 @@ Default path is not picked if --single-line-glob is used:
   $ docfd --debug-log - --index-only --single-line-glob '*.log' 2>&1 | grep '^Using .* search mode' | sort
   Using single line search mode for document '$TESTCASE_ROOT/test.log'
 
+Multiple --paths-from:
+  $ docfd --debug-log - --index-only --paths-from single-path0.txt --paths-from single-path1.txt 2>&1 | grep '^Using .* search mode' | sort
+  Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/test.log'
+
 Empty --exts:
   $ docfd --debug-log - --index-only --exts "" . 2>&1 | grep '^Using .* search mode' | sort
   Using single line search mode for document '$TESTCASE_ROOT/test.log'
@@ -151,6 +166,8 @@ Empty --exts:
 Empty --single-line-exts:
   $ docfd --debug-log - --index-only --single-line-exts "" . 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
@@ -191,6 +208,8 @@ Empty --exts and --single-line-exts:
 Picking via multiple --glob:
   $ docfd --debug-log - --index-only --glob '*.txt' --glob '*.md' --glob '*.log' 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
@@ -199,6 +218,8 @@ Picking via multiple --glob:
 Picking via multiple --single-line-glob:
   $ docfd --debug-log - --index-only --single-line-glob '*.txt' --single-line-glob '*.md' --single-line-glob '*.log' 2>&1 | grep '^Using .* search mode' | sort
   Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test.log'
   Using single line search mode for document '$TESTCASE_ROOT/test.md'
@@ -209,12 +230,16 @@ Picking via multiple --glob and --single-line-glob:
   $ docfd --debug-log - --index-only --single-line-glob '*.txt' --glob '*.md' --glob '*.log' 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
   Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test.log'
   Using single line search mode for document '$TESTCASE_ROOT/test.txt'
   $ # --single-line-glob for .md files
   $ docfd --debug-log - --index-only --glob '*.txt' --single-line-glob '*.md' --glob '*.log' 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test.log'
@@ -222,6 +247,8 @@ Picking via multiple --glob and --single-line-glob:
   $ # --single-line-glob for .log files
   $ docfd --debug-log - --index-only --glob '*.txt' --glob '*.md' --single-line-glob '*.log' 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
@@ -229,6 +256,8 @@ Picking via multiple --glob and --single-line-glob:
   $ # --glob for .txt files
   $ docfd --debug-log - --index-only --glob '*.txt' --single-line-glob '*.md' --single-line-glob '*.log' 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test.log'
@@ -237,12 +266,16 @@ Picking via multiple --glob and --single-line-glob:
   $ docfd --debug-log - --index-only --single-line-glob '*.txt' --glob '*.md' --single-line-glob '*.log' 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
   Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test.log'
   Using single line search mode for document '$TESTCASE_ROOT/test.txt'
   $ # --glob for .log files
   $ docfd --debug-log - --index-only --single-line-glob '*.txt' --single-line-glob '*.md' --glob '*.log' 2>&1 | grep '^Using .* search mode' | sort
   Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test.log'
   Using single line search mode for document '$TESTCASE_ROOT/test.md'
@@ -382,12 +415,16 @@ Top-level files and --single-line-exts:
 Top-level files and --single-line-glob:
   $ docfd --debug-log - --index-only test.txt --single-line-glob '*.txt' 2>&1 | grep '^Using .* search mode' | sort
   Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test.txt'
 
 --glob and unrecognized extensions:
   $ docfd --debug-log - --index-only --exts md --glob "*.txt" . 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
@@ -421,6 +458,8 @@ Top-level files and --single-line-glob:
   Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
   Using single line search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using single line search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using single line search mode for document '$TESTCASE_ROOT/test.log'
   Using single line search mode for document '$TESTCASE_ROOT/test.txt'
@@ -468,18 +507,24 @@ Current working directory is symlink:
 './' in glob:
   $ docfd --debug-log - --index-only --glob './*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
 
 '..' in glob:
   $ docfd --debug-log - --index-only --glob 'test1/../*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
 
 Crossing symlinks explicitly in glob:
   $ docfd --debug-log - --index-only --glob 'test3/../*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   $ docfd --debug-log - --index-only --glob 'test3/abcd/*.txt' --glob 'test3/abcd/*.md' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
@@ -492,6 +537,8 @@ Crossing symlinks explicitly in glob:
 '**' in glob:
   $ docfd --debug-log - --index-only --glob '**/*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
   Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
+  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/single-path0.txt
+  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/single-path1.txt
   Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test-symlink.txt
   Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test.txt
   Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test0/abcd.txt
@@ -503,6 +550,8 @@ Crossing symlinks explicitly in glob:
   Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test3/abcd/efgh.txt
   Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test3/ijkl/mnop.txt
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd.txt'
@@ -515,6 +564,8 @@ Crossing symlinks explicitly in glob:
   Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
   $ docfd --debug-log - --index-only --glob '**/**/*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
   Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
+  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/single-path0.txt
+  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/single-path1.txt
   Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test-symlink.txt
   Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test.txt
   Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test0/abcd.txt
@@ -526,6 +577,8 @@ Crossing symlinks explicitly in glob:
   Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test3/abcd/efgh.txt
   Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test3/ijkl/mnop.txt
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd.txt'
@@ -538,6 +591,8 @@ Crossing symlinks explicitly in glob:
   Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
   $ docfd --debug-log - --index-only --glob "$(pwd)/**/*.txt" 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
   Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
+  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/single-path0.txt
+  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/single-path1.txt
   Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test-symlink.txt
   Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test.txt
   Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test0/abcd.txt
@@ -549,6 +604,8 @@ Crossing symlinks explicitly in glob:
   Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test3/abcd/efgh.txt
   Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test3/ijkl/mnop.txt
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd.txt'
@@ -561,6 +618,8 @@ Crossing symlinks explicitly in glob:
   Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
   $ docfd --debug-log - --index-only --glob "$(pwd)/**/**/*.txt" 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
   Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
+  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/single-path0.txt
+  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/single-path1.txt
   Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test-symlink.txt
   Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test.txt
   Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test0/abcd.txt
@@ -572,6 +631,8 @@ Crossing symlinks explicitly in glob:
   Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test3/abcd/efgh.txt
   Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test3/ijkl/mnop.txt
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd.txt'
