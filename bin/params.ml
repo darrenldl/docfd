@@ -69,3 +69,7 @@ let last_scan_format_string =
    | Some _ -> "")
 
 let blink_on_duration : Mtime.span = Mtime.Span.(140 * ms)
+
+let cwd = Sys.getcwd ()
+
+let cwd_with_trailing_slash = Printf.sprintf "%s/" cwd

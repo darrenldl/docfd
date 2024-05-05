@@ -2,8 +2,8 @@ open Misc_utils
 open Debug_utils
 
 let remove_cwd_from_path (s : string) =
-  let cwd = Printf.sprintf "%s/" (Sys.getcwd ()) in
-  match CCString.chop_prefix ~pre:cwd s with
+  let pre = Params.cwd_with_trailing_slash in
+  match CCString.chop_prefix ~pre s with
   | None -> s
   | Some s -> s
 
@@ -61,8 +61,8 @@ let path_of_parts parts =
   |> String.concat Filename.dir_sep
   |> (fun s -> Printf.sprintf "/%s" s)
 
-let cwd_path_parts () =
-  Sys.getcwd ()
+let cwd_path_parts =
+  Params.cwd
   |> CCString.split ~by:Filename.dir_sep
   |> (fun l -> match l with
       | "" :: l -> l
@@ -95,7 +95,7 @@ let normalize_path_to_absolute path =
       aux [] l
     )
   | l -> (
-      aux (cwd_path_parts ()) l
+      aux cwd_path_parts l
     )
 
 let read_in_channel_to_tmp_file (ic : in_channel) : (string, string) result =
@@ -214,7 +214,7 @@ let list_files_recursive_filter_by_globs
           aux [] rest
         )
       | _ -> (
-          aux (cwd_path_parts ()) glob_parts
+          aux cwd_path_parts glob_parts
         )
     ) globs;
   !acc
