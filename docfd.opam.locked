@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "docfd"
-version: "0.6.1"
+version: "3.0.0"
 synopsis: "TUI multiline fuzzy document finder"
 maintainer: "Darren Li"
 authors: "Darren Li"
@@ -10,7 +10,9 @@ homepage: "https://github.com/darrenldl/docfd"
 doc: "https://github.com/darrenldl/docfd"
 bug-reports: "https://github.com/darrenldl/docfd/issues"
 depends: [
-  "angstrom" {= "0.15.0"}
+  "alcotest" {= "1.7.0" & with-test}
+  "angstrom" {= "0.16.0"}
+  "astring" {= "0.8.5" & with-test}
   "base-bigarray" {= "base"}
   "base-bytes" {= "base"}
   "base-domains" {= "base"}
@@ -19,73 +21,70 @@ depends: [
   "base-unix" {= "base"}
   "bigstringaf" {= "0.9.1"}
   "cmdliner" {= "1.2.0"}
-  "containers" {= "3.12"}
-  "containers-data" {= "3.12"}
+  "containers" {= "3.13.1"}
+  "containers-data" {= "3.13.1"}
   "cppo" {= "1.6.9"}
   "csexp" {= "1.5.2"}
   "cstruct" {= "6.2.0"}
-  "digestif" {= "1.1.4"}
-  "domain-local-await" {= "1.0.0"}
-  "domain_shims" {= "0.1.0"}
-  "domainslib" {= "0.5.1"}
-  "dune" {= "3.11.1"}
-  "dune-configurator" {= "3.11.1"}
-  "eio" {= "0.12"}
-  "eio_linux" {= "0.12"}
-  "eio_main" {= "0.12"}
-  "eio_posix" {= "0.12"}
+  "digestif" {= "1.2.0"}
+  "domain-local-await" {= "1.0.1"}
+  "dune" {= "3.15.2"}
+  "dune-configurator" {= "3.15.2"}
+  "eio" {= "1.0"}
+  "eio_linux" {= "1.0"}
+  "eio_main" {= "1.0"}
+  "eio_posix" {= "1.0"}
   "either" {= "1.0.0"}
   "eqaf" {= "0.9"}
   "fmt" {= "0.9.0"}
   "hmap" {= "0.8.1"}
   "iomux" {= "0.3"}
-  "logs" {= "0.7.0"}
   "lwd" {= "0.3"}
   "lwt" {= "5.7.0"}
   "lwt-dllist" {= "1.0.1"}
   "mtime" {= "2.0.0"}
   "nottui" {= "0.3"}
   "notty" {= "0.2.3"}
-  "ocaml" {= "5.1.0"}
-  "ocaml-base-compiler" {= "5.1.0"}
+  "ocaml" {= "5.1.1"}
+  "ocaml-base-compiler" {= "5.1.1"}
+  "ocaml-compiler-libs" {= "v0.12.4"}
   "ocaml-config" {= "3"}
   "ocaml-options-vanilla" {= "1"}
   "ocaml-syntax-shims" {= "1.0.0"}
-  "ocamlbuild" {= "0.14.2"}
+  "ocamlbuild" {= "0.14.3"}
   "ocamlfind" {= "1.9.6"}
+  "ocolor" {= "1.3.1"}
   "ocplib-endian" {= "1.2"}
   "optint" {= "0.3.0"}
-  "oseq" {= "0.5"}
+  "oseq" {= "0.5.1"}
+  "ounit2" {= "2.2.7" & with-test}
+  "ppx_derivers" {= "1.2.1"}
+  "ppx_deriving" {= "5.2.1"}
+  "ppxlib" {= "0.32.1"}
   "psq" {= "0.2.1"}
   "ptime" {= "1.1.0"}
+  "qcheck" {= "0.21.3" & with-test}
+  "qcheck-alcotest" {= "0.21.3" & with-test}
+  "qcheck-core" {= "0.21.3" & with-test}
+  "qcheck-ounit" {= "0.21.3" & with-test}
+  "re" {= "1.11.0"}
   "result" {= "1.5"}
-  "saturn" {= "0.4.0"}
-  "saturn_lockfree" {= "0.4.0"}
   "seq" {= "base"}
+  "sexplib0" {= "v0.17.0"}
   "spelll" {= "0.4"}
   "stdlib-shims" {= "0.3.0"}
   "thread-table" {= "1.0.0"}
-  "timedesc" {= "2.0.0"}
-  "timedesc-tzdb" {= "2.0.0"}
-  "timedesc-tzlocal" {= "2.0.0"}
+  "timedesc" {= "3.1.0"}
+  "timedesc-tzdb" {= "3.1.0"}
+  "timedesc-tzlocal" {= "3.1.0"}
   "topkg" {= "1.0.7"}
-  "uring" {= "0.7"}
+  "uring" {= "0.8"}
   "uutf" {= "1.0.3"}
-  "yojson" {= "2.1.1"}
+  "yojson" {= "2.1.2"}
 ]
 build: [
   ["dune" "subst"] {dev}
-  [
-    "dune"
-    "build"
-    "-p"
-    name
-    "-j"
-    jobs
-    "@install"
-    "@runtest" {with-test}
-    "@doc" {with-doc}
-  ]
+  ["dune" "build" "-p" name "-j" jobs "@install" "@doc" {with-doc}]
 ]
 dev-repo: "git+https://github.com/darrenldl/docfd.git"
 pin-depends: [
@@ -94,12 +93,12 @@ pin-depends: [
     "git+https://github.com/let-def/lwd.git#a337a778001e6c1dbaed7e758c9e05f300abd388"
   ]
   [
-    "ocaml-base-compiler.5.1.0"
-    "https://github.com/ocaml/ocaml/archive/5.1.0.tar.gz"
-  ]
+  "ocaml-base-compiler.5.1.1"
+  "https://github.com/ocaml/ocaml/archive/5.1.1.tar.gz"
+]
 ]
 description: """\
-Think interactive grep for both text files and PDFs,
+Think interactive grep for text files, PDFs, DOCXs, etc,
 but word/token based instead of regex and line based,
 so you can search across lines easily.
 
