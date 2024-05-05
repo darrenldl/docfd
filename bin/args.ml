@@ -6,7 +6,7 @@ let max_depth_arg_name = "max-depth"
 let max_depth_arg =
   let doc =
     Fmt.str
-      "Scan up to N levels when exploring file tree.
+      "Scan up to N levels when exploring file trees.
 This applies to directory paths provided
 and ** in globs.
 Note that --%s 0 results in no-op when scanning
