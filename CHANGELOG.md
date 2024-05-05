@@ -2,7 +2,7 @@
 
 ## 5.0.1
 
-- Improved help messages for `--max-token-search-dist`
+- Fixed help message for `--max-token-search-dist`
 
 ## 5.0.0
 
