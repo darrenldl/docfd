@@ -1,6 +1,26 @@
 open Cmdliner
 open Misc_utils
 
+let max_depth_arg_name = "max-depth"
+
+let max_depth_arg =
+  let doc =
+    Fmt.str
+      "Scan up to N levels when exploring file tree.
+This applies to directory paths provided
+and ** in globs.
+Note that --%s 0 results in no-op when scanning
+directories, and --%s 1 means only scanning for
+direct children."
+      max_depth_arg_name
+      max_depth_arg_name
+  in
+  Arg.(
+    value
+    & opt int Params.default_max_file_tree_scan_depth
+    & info [ max_depth_arg_name ] ~doc ~docv:"N"
+  )
+
 let exts_arg_name = "exts"
 
 let exts_arg =
@@ -282,6 +302,7 @@ To use piped stdin as input, the list of paths must be empty."
   Arg.(value & pos_all string [] & info [] ~doc ~docv:"PATH")
 
 let check
+    ~max_depth
     ~max_fuzzy_edit_dist
     ~max_token_search_dist
     ~max_linked_token_search_dist
@@ -290,6 +311,10 @@ let check
     ~search_result_count_per_doc
     ~search_result_print_text_width
   =
+  if max_depth < 0 then (
+    exit_with_error_msg
+      (Fmt.str "invalid %s: cannot be < 0" max_depth_arg_name)
+  );
   if max_fuzzy_edit_dist < 0 then (
     exit_with_error_msg
       (Fmt.str "invalid %s: cannot be < 0" max_fuzzy_edit_dist_arg_name)

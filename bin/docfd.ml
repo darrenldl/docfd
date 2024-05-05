@@ -199,6 +199,7 @@ let run
     ~(env : Eio_unix.Stdenv.base)
     ~sw
     (debug_log : string option)
+    (max_depth : int)
     (max_fuzzy_edit_dist : int)
     (max_token_search_dist : int)
     (max_linked_token_search_dist : int)
@@ -222,6 +223,7 @@ let run
     (paths : string list)
   =
   Args.check
+    ~max_depth
     ~max_fuzzy_edit_dist
     ~max_token_search_dist
     ~max_linked_token_search_dist
@@ -247,6 +249,7 @@ let run
             )
         )
     );
+  Params.max_file_tree_scan_depth := max_depth;
   Params.max_fuzzy_edit_dist := max_fuzzy_edit_dist;
   Params.max_token_search_dist := max_token_search_dist;
   Params.max_linked_token_search_dist := max_linked_token_search_dist;
@@ -658,6 +661,7 @@ let cmd ~env ~sw =
   Cmd.v (Cmd.info "docfd" ~version ~doc)
     (const (run ~env ~sw)
      $ debug_log_arg
+     $ max_depth_arg
      $ max_fuzzy_edit_dist_arg
      $ max_token_search_dist_arg
      $ max_linked_token_search_dist_arg

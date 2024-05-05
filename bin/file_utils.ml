@@ -117,19 +117,21 @@ let list_files_recursive
     acc := String_set.add x !acc
   in
   let rec aux depth path =
-    match typ_of_path path with
-    | Some (`Dir, _) -> (
+    if depth <= !Params.max_file_tree_scan_depth then (
+      match typ_of_path path with
+      | Some (`Dir, _) -> (
           next_choices path
           |> Seq.iter (fun f ->
               aux (depth + 1) (Filename.concat path f)
             )
-      )
-    | Some (`File, _) -> (
-        if filter depth path then (
-          add path
         )
-      )
-    | _ -> ()
+      | Some (`File, _) -> (
+          if filter depth path then (
+            add path
+          )
+        )
+      | _ -> ()
+    )
   in
   aux 0 (normalize_path_to_absolute path);
   !acc
