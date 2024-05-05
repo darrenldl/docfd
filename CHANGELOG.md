@@ -1,8 +1,11 @@
 # Changelog
 
-## 5.0.1
+## 5.1.0
 
 - Fixed help message for `--max-token-search-dist`
+
+- Adjusted path display in UI to hide current working directory segment when
+  applicable
 
 ## 5.0.0
 
