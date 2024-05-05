@@ -90,7 +90,7 @@ let max_token_search_dist_arg_name = "max-token-search-dist"
 
 let max_token_search_dist_arg =
   let doc =
-    "Maximum distance to look for the next matching token in search phrase.
+    "Maximum distance to look for the next matching token in document.
 If two tokens are adjacent, then they are 1 distance away from each other.
 Note that contiguous spaces count as one token as well."
   in

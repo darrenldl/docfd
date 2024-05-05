@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.0.1
+
+- Improved help messages for `--max-token-search-dist`
+
 ## 5.0.0
 
 - Added file globbing support in the form of `--glob` argument
