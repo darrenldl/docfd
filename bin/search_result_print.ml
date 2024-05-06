@@ -16,7 +16,7 @@ let output_image (oc : out_channel) (img : Notty.image) : unit =
     else
       Cap.dumb
   in
-  Render.to_buffer buf cap (0, 0) (!Params.search_result_print_text_width, I.height img) img;
+  Render.to_buffer buf cap (0, 0) (I.width img, I.height img) img;
   Buffer.output_buffer oc buf
 
 let newline_image (out : print_output) =
