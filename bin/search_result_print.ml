@@ -26,15 +26,9 @@ let newline_image (out : print_output) =
 let search_results (out : print_output) document (results : Search_result.t Seq.t) =
   let path = Document.path document in
   let oc = out_channel_of_print_output out in
-  if Out_channel.isatty oc then (
-    let buf = Buffer.create (String.length path) in
-    let fmt = Format.formatter_of_buffer buf in
-    Ocolor_format.prettify_formatter fmt;
-    Fmt.pf fmt "@[<h>@{<magenta>%s@}@]%a" path Format.pp_print_flush ();
-    Printf.fprintf oc "%s\n" (Buffer.contents buf);
-  ) else (
-    Printf.fprintf oc "%s\n" path;
-  );
+  Notty.I.string Notty.A.(fg magenta) path
+  |> Notty_unix.eol
+  |> output_image oc;
   Seq.iteri (fun i search_result ->
       if i > 0 then (
         newline_image out

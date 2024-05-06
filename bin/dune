@@ -48,7 +48,6 @@
             notty.unix
             nottui
             lwd
-            ocolor
             oseq
             eio
             eio_main
