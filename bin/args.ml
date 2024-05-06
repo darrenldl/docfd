@@ -106,7 +106,7 @@ let max_linked_token_search_dist_arg =
   let doc =
     Fmt.str
       {|Similar to %s but for linked tokens.
-Two tokens are linked if there is no space between them,
+Two tokens are linked if there is no space between them in the search phrase,
 e.g. "-" and ">" are linked in "->" but not in "- >",
 "and" "/" "or" are linked in "and/or" but not in "and / or".|}
       max_token_search_dist_arg_name

@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.1.1
+
+- Fixed help message of `--max-linked-token-search-dist`
+
 ## 5.1.0
 
 - Fixed help message of `--max-token-search-dist`
