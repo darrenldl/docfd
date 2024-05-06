@@ -4,6 +4,8 @@
 
 - Fixed help message of `--max-linked-token-search-dist`
 
+- Fixed search result printing where output gets chopped off if terminal width is too small
+
 ## 5.1.0
 
 - Fixed help message of `--max-token-search-dist`
