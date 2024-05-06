@@ -1,5 +1,4 @@
 open Docfd_lib
-open Misc_utils
 
 type print_output = [ `Stdout | `Stderr ]
 
@@ -8,19 +7,26 @@ let out_channel_of_print_output (out : print_output) : out_channel =
   | `Stdout -> stdout
   | `Stderr -> stderr
 
-let print_output_is_atty (out : print_output) =
-  match out with
-  | `Stdout -> stdout_is_atty ()
-  | `Stderr -> stderr_is_atty ()
+let output_image (oc : out_channel) (img : Notty.image) : unit =
+  let open Notty in
+  let buf = Buffer.create 1024 in
+  let cap =
+    if Out_channel.isatty oc then
+      Cap.ansi
+    else
+      Cap.dumb
+  in
+  Render.to_buffer buf cap (0, 0) (!Params.search_result_print_text_width, I.height img) img;
+  Buffer.output_buffer oc buf
 
 let newline_image (out : print_output) =
   Notty_unix.eol (Notty.I.void 0 1)
-  |> Notty_unix.output_image ~fd:(out_channel_of_print_output out)
+  |> output_image (out_channel_of_print_output out)
 
 let search_results (out : print_output) document (results : Search_result.t Seq.t) =
   let path = Document.path document in
   let oc = out_channel_of_print_output out in
-  if print_output_is_atty out then (
+  if Out_channel.isatty oc then (
     let buf = Buffer.create (String.length path) in
     let fmt = Format.formatter_of_buffer buf in
     Ocolor_format.prettify_formatter fmt;
@@ -41,7 +47,7 @@ let search_results (out : print_output) document (results : Search_result.t Seq.
           search_result
       in
       Notty_unix.eol img
-      |> Notty_unix.output_image ~fd:oc;
+      |> output_image oc;
     ) results
 
 let print_req : (print_output * Document.t * Search_result.t Seq.t) Eio.Stream.t = Eio.Stream.create 100
