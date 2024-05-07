@@ -469,7 +469,7 @@ let keyboard_handler
       | (`ASCII 'P', []) -> (
           Ui_base.Key_binding_info.blink "Shift+P";
           Option.iter (fun (doc, _search_results) ->
-              Search_result_print.submit_print_req `Stderr doc Seq.empty;
+              Printers.Worker.submit_search_results_print_req `Stderr doc Seq.empty;
             )
             document_info;
           `Handled
@@ -483,7 +483,7 @@ let keyboard_handler
                 else
                   Seq.empty
               in
-              Search_result_print.submit_print_req `Stderr doc search_results;
+              Printers.Worker.submit_search_results_print_req `Stderr doc search_results;
             )
             document_info;
           `Handled

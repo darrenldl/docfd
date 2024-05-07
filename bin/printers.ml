@@ -44,17 +44,20 @@ let search_results (out : print_output) document (results : Search_result.t Seq.
       |> output_image oc;
     ) results
 
-let print_req : (print_output * Document.t * Search_result.t Seq.t) Eio.Stream.t = Eio.Stream.create 100
+module Worker = struct
+  let print_req : (print_output * Document.t * Search_result.t Seq.t) Eio.Stream.t = Eio.Stream.create 100
 
-let submit_print_req out document results = Eio.Stream.add print_req (out, document, results)
+  let submit_search_results_print_req out document results =
+    Eio.Stream.add print_req (out, document, results)
 
-let fiber () =
-  let first_print = ref true in
-  while true do
-    let (out, document, results) = Eio.Stream.take print_req in
-    if not !first_print then (
-      newline_image out
-    );
-    search_results out document results;
-    first_print := false;
-  done
+  let fiber () =
+    let first_print = ref true in
+    while true do
+      let (out, document, results) = Eio.Stream.take print_req in
+      if not !first_print then (
+        newline_image out
+      );
+      search_results out document results;
+      first_print := false;
+    done
+end

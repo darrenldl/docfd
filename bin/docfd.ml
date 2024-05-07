@@ -476,10 +476,10 @@ let run
            let out = `Stdout in
            Array.iteri (fun i (document, search_results) ->
                if i > 0 then (
-                 Search_result_print.newline_image out;
+                 Printers.newline_image out;
                );
                array_sub_seq ~start:0 ~end_exc:search_result_count_per_doc search_results
-               |> Search_result_print.search_results out document
+               |> Printers.search_results out document
              ) document_info_s;
            clean_up ();
            exit 0
@@ -621,7 +621,7 @@ let run
          (fun () -> Search_manager.search_fiber pool));
     Search_manager.manager_fiber;
     Ui_base.Key_binding_info.grid_light_fiber;
-    Search_result_print.fiber;
+    Printers.Worker.fiber;
     (fun () ->
        (match start_with_search with
         | None -> ()

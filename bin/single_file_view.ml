@@ -235,7 +235,7 @@ let keyboard_handler
         )
       | (`ASCII 'P', []) -> (
           Ui_base.Key_binding_info.blink "Shift+P";
-          Search_result_print.submit_print_req `Stderr document Seq.empty;
+          Printers.Worker.submit_search_results_print_req `Stderr document Seq.empty;
           `Handled
         )
       | (`ASCII 'p', []) -> (
@@ -246,7 +246,7 @@ let keyboard_handler
             else
               Seq.empty
           in
-          Search_result_print.submit_print_req `Stderr document search_results;
+          Printers.Worker.submit_search_results_print_req `Stderr document search_results;
           `Handled
         )
       | (`Enter, []) -> (
