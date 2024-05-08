@@ -192,25 +192,25 @@ let render_grid
          let cells = Array.to_list cells in
          let global_line_num = grid.start_global_line_num + i in
          let line_loc = Index.line_loc_of_global_line_num global_line_num index in
-         let display_line_num = Index.Line_loc.line_num_in_page line_loc + 1 in
-         let display_page_num = Index.Line_loc.page_num line_loc + 1 in
+         let displayed_line_num = Index.Line_loc.line_num_in_page line_loc + 1 in
+         let displayed_page_num = Index.Line_loc.page_num line_loc + 1 in
          let left_column_label =
            match render_mode with
            | `Page_num_only -> (
                I.hcat
-                 [ I.strf ~attr:A.(fg lightyellow) "Page %d" display_page_num
+                 [ I.strf ~attr:A.(fg lightyellow) "Page %d" displayed_page_num
                  ; I.strf ": " ]
              )
            | `Line_num_only -> (
                I.hcat
-                 [ I.strf ~attr:A.(fg lightyellow) "%d" display_line_num
+                 [ I.strf ~attr:A.(fg lightyellow) "%d" displayed_line_num
                  ; I.strf ": " ]
              )
            | `Page_and_line_num -> (
                I.hcat
                  [ I.strf ~attr:A.(fg lightyellow) "Page %d, %d"
-                     display_page_num
-                     display_line_num
+                     displayed_page_num
+                     displayed_line_num
                  ; I.strf ": " ]
              )
            | `None -> (
