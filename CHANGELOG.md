@@ -1,6 +1,6 @@
 # Changelog
 
-## 5.2.0
+## 6.0.0
 
 - Fixed help message of `--max-linked-token-search-dist`
 
@@ -17,6 +17,10 @@
 
 - Added search result underlining when output is not a terminal,
   e.g. redirected to file
+
+- Changed `--search` to `--search-samples` to better describe its intended use
+
+- Added `--search-all`
 
 ## 5.1.0
 
