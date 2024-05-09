@@ -377,9 +377,9 @@ let check
   );
   if search_result_print_snippet_min_size < 0 then (
     exit_with_error_msg
-      (Fmt.str "invalid %s: cannot be < 1" search_result_print_snippet_min_size_arg_name)
+      (Fmt.str "invalid %s: cannot be < 0" search_result_print_snippet_min_size_arg_name)
   );
-  if search_result_print_max_add_lines < 1 then (
+  if search_result_print_max_add_lines < 0 then (
     exit_with_error_msg
-      (Fmt.str "invalid %s: cannot be < 1" search_result_print_snippet_max_add_lines_arg_name)
+      (Fmt.str "invalid %s: cannot be < 0" search_result_print_snippet_max_add_lines_arg_name)
   )
