@@ -1,10 +1,19 @@
 # Changelog
 
-## 5.1.1
+## 5.2.0
 
 - Fixed help message of `--max-linked-token-search-dist`
 
 - Fixed search result printing where output gets chopped off if terminal width is too small
+
+- Added smart additional line grabbing for search result printing
+
+    - `--search-result-print-snippet-min-size N`
+        - If the search result to be printed has fewer than `N` non-space tokens,
+          then Docfd tries to add surrounding lines to the snippet
+          to give better context.
+    - `--search-result-print-snippet-max-add-lines`
+        - Controls maximum number of surrounding lines that can be added in each direction.
 
 ## 5.1.0
 
