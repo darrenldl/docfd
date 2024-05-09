@@ -255,7 +255,7 @@ Docfd can add in each direction."
   in
   Arg.(
     value
-    & opt int Params.default_search_result_print_snippet_max_additional_lines_per_direction
+    & opt int Params.default_search_result_print_snippet_max_additional_lines_each_direction
     & info [ search_result_print_snippet_max_add_lines_arg_name ] ~doc ~docv:"N"
   )
 

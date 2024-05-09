@@ -260,6 +260,9 @@ let run
   Params.index_chunk_token_count := index_chunk_token_count;
   Params.cache_size := cache_size;
   Params.search_result_print_text_width := search_result_print_text_width;
+  Params.search_result_print_snippet_min_size := search_result_print_snippet_min_size;
+  Params.search_result_print_snippet_max_additional_lines_each_direction :=
+    search_result_print_max_add_lines;
   Params.cache_dir := (
     if no_cache then (
       None

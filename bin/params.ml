@@ -55,10 +55,10 @@ let default_search_result_print_snippet_min_size = 10
 
 let search_result_print_snippet_min_size = ref default_search_result_print_snippet_min_size
 
-let default_search_result_print_snippet_max_additional_lines_per_direction = 2
+let default_search_result_print_snippet_max_additional_lines_each_direction = 2
 
-let search_result_print_snippet_max_additional_lines_per_direction =
-  ref default_search_result_print_snippet_max_additional_lines_per_direction
+let search_result_print_snippet_max_additional_lines_each_direction =
+  ref default_search_result_print_snippet_max_additional_lines_each_direction
 
 let default_cache_size = 100
 

@@ -327,7 +327,7 @@ let grab_additional_lines
     |> Seq.length
   in
   let rec aux ~non_space_word_count ~i x y =
-    if i < !Params.search_result_print_snippet_max_additional_lines_per_direction
+    if i < !Params.search_result_print_snippet_max_additional_lines_each_direction
     && non_space_word_count < !Params.search_result_print_snippet_min_size
     then (
       let x, top_add_count =
