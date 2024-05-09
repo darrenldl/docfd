@@ -294,9 +294,57 @@ let content_snippet
         index
     )
 
+let word_is_not_space s =
+  String.length s > 0 && not (Parser_components.is_space s.[0])
+
+let grab_additional_lines
+    index
+    ~non_space_word_count
+    start_global_line_num
+    end_inc_global_line_num
+  : int * int =
+  let max_end_inc_global_line_num = Index.global_line_count index - 1 in
+  let non_space_word_count_of_line n =
+    Index.words_of_global_line_num n index
+    |> Seq.filter word_is_not_space
+    |> Seq.length
+  in
+  let rec aux ~non_space_word_count ~i x y =
+    if i < !Params.search_result_print_snippet_max_additional_lines_per_direction
+    && non_space_word_count < !Params.search_result_print_snippet_min_size
+    then (
+      let x, top_add_count =
+        let n = x - 1 in
+        if n >= 0 then (
+          (n, non_space_word_count_of_line n)
+        ) else (
+          (x, 0)
+        )
+      in
+      let y, bottom_add_count =
+        let n = y + 1 in
+        if n <= max_end_inc_global_line_num then (
+          (n, non_space_word_count_of_line n)
+        ) else (
+          (y, 0)
+        )
+      in
+      let non_space_word_count =
+        non_space_word_count
+        + top_add_count
+        + bottom_add_count
+      in
+      aux ~non_space_word_count ~i:(i + 1) x y
+    ) else (
+      (x, y)
+    )
+  in
+  aux ~non_space_word_count ~i:0 start_global_line_num end_inc_global_line_num
+
 let search_result
     ~render_mode
     ~width
+    ~fill_in_context
     (index : Index.t)
     (search_result : Search_result.t)
   : Notty.image =
@@ -304,6 +352,18 @@ let search_result
   let open Notty.Infix in
   let (start_global_line_num, end_inc_global_line_num) =
     start_and_end_inc_global_line_num_of_search_result index search_result
+    |> (fun (x, y) ->
+        if fill_in_context then (
+          let non_space_word_count =
+            Search_result.search_phrase search_result
+            |> List.filter word_is_not_space
+            |> List.length
+          in
+          grab_additional_lines index ~non_space_word_count x y
+        ) else (
+          (x, y)
+        )
+      )
   in
   let grid =
     word_grid_of_index

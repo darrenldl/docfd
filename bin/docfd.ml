@@ -216,6 +216,8 @@ let run
     (search_exp : string option)
     (search_result_count_per_doc : int)
     (search_result_print_text_width : int)
+    (search_result_print_snippet_min_size : int)
+    (search_result_print_max_add_lines : int)
     (paths_from : string list)
     (globs : string list)
     (single_line_globs : string list)
@@ -230,7 +232,9 @@ let run
     ~index_chunk_token_count
     ~cache_size
     ~search_result_count_per_doc
-    ~search_result_print_text_width;
+    ~search_result_print_text_width
+    ~search_result_print_snippet_min_size
+    ~search_result_print_max_add_lines;
   Params.debug_output := (match debug_log with
       | None -> None
       | Some "-" -> Some stderr
@@ -678,6 +682,8 @@ let cmd ~env ~sw =
      $ search_arg
      $ search_result_count_per_doc_arg
      $ search_result_print_text_width_arg
+     $ search_result_print_snippet_min_size_arg
+     $ search_result_print_snippet_max_add_lines_arg
      $ paths_from_arg
      $ glob_arg
      $ single_line_glob_arg

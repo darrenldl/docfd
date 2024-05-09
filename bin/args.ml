@@ -232,6 +232,33 @@ let search_result_print_text_width_arg =
     & info [ search_result_print_text_width_arg_name ] ~doc ~docv:"N"
   )
 
+let search_result_print_snippet_min_size_arg_name = "search-result-print-snippet-min-size"
+
+let search_result_print_snippet_min_size_arg =
+  let doc =
+    "If the search result to be printed has fewer than N non-space tokens,
+then Docfd tries to add surrounding lines to the snippet
+to give better context."
+  in
+  Arg.(
+    value
+    & opt int Params.default_search_result_print_snippet_min_size
+    & info [ search_result_print_snippet_min_size_arg_name ] ~doc ~docv:"N"
+  )
+
+let search_result_print_snippet_max_add_lines_arg_name = "search-result-print-snippet-max-add-lines"
+
+let search_result_print_snippet_max_add_lines_arg =
+  let doc =
+    "This controls the maximum number of surrounding lines
+Docfd can add in each direction."
+  in
+  Arg.(
+    value
+    & opt int Params.default_search_result_print_snippet_max_additional_lines_per_direction
+    & info [ search_result_print_snippet_max_add_lines_arg_name ] ~doc ~docv:"N"
+  )
+
 let paths_from_arg_name = "paths-from"
 
 let paths_from_arg =
@@ -313,6 +340,8 @@ let check
     ~cache_size
     ~search_result_count_per_doc
     ~search_result_print_text_width
+    ~search_result_print_snippet_min_size
+    ~search_result_print_max_add_lines
   =
   if max_depth < 0 then (
     exit_with_error_msg
@@ -345,4 +374,12 @@ let check
   if search_result_print_text_width < 1 then (
     exit_with_error_msg
       (Fmt.str "invalid %s: cannot be < 1" search_result_print_text_width_arg_name)
+  );
+  if search_result_print_snippet_min_size < 0 then (
+    exit_with_error_msg
+      (Fmt.str "invalid %s: cannot be < 1" search_result_print_snippet_min_size_arg_name)
+  );
+  if search_result_print_max_add_lines < 1 then (
+    exit_with_error_msg
+      (Fmt.str "invalid %s: cannot be < 1" search_result_print_snippet_max_add_lines_arg_name)
   )
