@@ -132,7 +132,6 @@ module Search_result_list = struct
         |> Seq.map (Content_and_search_result_render.search_result
                       ~render_mode:(render_mode_of_document document)
                       ~width
-                      ~fill_in_context:false
                       (Document.index document))
         |> List.of_seq
       in

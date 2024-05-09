@@ -28,7 +28,8 @@ module Text_block_render = struct
     in
     aux [] img
 
-  let of_cells ?attr ~width (cells : cell list) : Notty.image * Int_set.t =
+  let of_cells ?attr ~width ?(underline = false) (cells : cell list) : Notty.image * Int_set.t =
+    let open Notty.Infix in
     assert (width > 0);
     let rendered_lines_with_search_result_words = ref Int_set.empty in
     let grid : Notty.image list list =
@@ -43,13 +44,26 @@ module Text_block_render = struct
                )
            in
            let word =
-             match I.string attr cell.word with
-             | s -> s
-             | exception _ -> (
-                 I.string A.(fg lightred) (String.make (String.length cell.word) '?')
-               )
+             (match I.string attr cell.word with
+              | s -> s
+              | exception _ -> (
+                  I.string A.(fg lightred) (String.make (String.length cell.word) '?')
+                ))
            in
            let word_len = I.width word in
+           let word =
+             match cell.typ with
+             | `Plain -> word
+             | `Search_result -> (
+                 if underline then (
+                   word
+                   <->
+                   (I.string A.empty (String.make word_len '^'))
+                 ) else (
+                   word
+                 )
+               )
+           in
            let new_len = cur_len + word_len in
            let cur_len, acc =
              if new_len <= width then (
@@ -90,8 +104,8 @@ module Text_block_render = struct
     in
     (img, !rendered_lines_with_search_result_words)
 
-  let of_words ?attr ~width (words : string list) : Notty.image =
-    of_cells ?attr ~width (List.map (fun word -> { word; typ = `Plain }) words)
+  let of_words ?attr ~width ?underline (words : string list) : Notty.image =
+    of_cells ?attr ~width ?underline (List.map (fun word -> { word; typ = `Plain }) words)
     |> fst
 end
 
@@ -181,6 +195,7 @@ let render_grid
     ~(render_mode : render_mode)
     ~width
     ?(height : int option)
+    ?underline
     (grid : word_grid)
     (index : Index.t)
   : Notty.image =
@@ -219,7 +234,7 @@ let render_grid
          in
          let content_width = max 1 (width - I.width left_column_label) in
          let content, rendered_lines_with_search_result_words =
-           Text_block_render.of_cells ~width:content_width cells
+           Text_block_render.of_cells ?underline ~width:content_width cells
          in
          ((rendered_line_count + I.height content,
            rendered_lines_with_search_result_words
@@ -258,6 +273,7 @@ let content_snippet
     ?(search_result : Search_result.t option)
     ~(width : int)
     ~(height : int)
+    ?underline
     (index : Index.t)
   : Notty.image =
   let max_line_num = max 0 (Index.global_line_count index - 1) in
@@ -270,7 +286,7 @@ let content_snippet
           ~end_inc_global_line_num:(min max_line_num (height - 1))
           index
       in
-      render_grid ~render_mode:`None ~width ~height grid index
+      render_grid ~render_mode:`None ~width ~height ?underline grid index
     )
   | Some search_result -> (
       let (relevant_start_line, relevant_end_inc_line) =
@@ -290,6 +306,7 @@ let content_snippet
         ~render_mode:`None
         ~width
         ~height
+        ?underline
         grid
         index
     )
@@ -344,7 +361,8 @@ let grab_additional_lines
 let search_result
     ~render_mode
     ~width
-    ~fill_in_context
+    ?underline
+    ?(fill_in_context = false)
     (index : Index.t)
     (search_result : Search_result.t)
   : Notty.image =
@@ -372,7 +390,7 @@ let search_result
       index
   in
   mark_search_result_in_word_grid grid index search_result;
-  let img = render_grid ~render_mode ~width grid index in
+  let img = render_grid ~render_mode ~width ?underline grid index in
   if Option.is_some !Params.debug_output then (
     let score = Search_result.score search_result in
     I.strf "(Score: %f)" score

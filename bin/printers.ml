@@ -37,6 +37,7 @@ let search_results (out : print_output) document (results : Search_result.t Seq.
         Content_and_search_result_render.search_result
           ~render_mode:(Ui_base.render_mode_of_document document)
           ~width:!Params.search_result_print_text_width
+          ~underline:(not (Out_channel.isatty oc))
           ~fill_in_context:true
           (Document.index document)
           search_result
