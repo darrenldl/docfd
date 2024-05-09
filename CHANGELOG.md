@@ -15,6 +15,9 @@
     - `--search-result-print-snippet-max-add-lines`
         - Controls maximum number of surrounding lines that can be added in each direction.
 
+- Added search result underlining when output is not a terminal,
+  e.g. redirected to file
+
 ## 5.1.0
 
 - Fixed help message of `--max-token-search-dist`
