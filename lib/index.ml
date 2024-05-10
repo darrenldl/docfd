@@ -557,7 +557,7 @@ module Search = struct
               max
                 Params.search_result_min_per_start
                 (
-                  (Params.search_result_rough_total_per_document + possible_start_count - 1) / possible_start_count
+                  (Params.default_search_result_total_per_document + possible_start_count - 1) / possible_start_count
                 )
             in
             let search_chunk_size =
