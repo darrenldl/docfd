@@ -1,4 +1,4 @@
-let search_result_max_total_per_document = 50
+let search_result_rough_total_per_document = 50
 
 let search_result_min_per_start = 5
 
