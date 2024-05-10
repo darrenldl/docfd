@@ -200,9 +200,13 @@ let start_with_search_arg =
 
 let sample_arg_name = "sample"
 
+let sample_count_per_doc_arg_name = "sample-count-per-doc"
+
 let sample_arg =
   let doc =
-    Fmt.str "Sample some search results with expression EXP in non-interactive mode."
+    Fmt.str "Search with expression EXP in non-interactive mode but only
+show top N results where N is controlled by --%s."
+      sample_count_per_doc_arg_name
   in
   Arg.(
     value
@@ -210,12 +214,10 @@ let sample_arg =
     & info [ sample_arg_name ] ~doc ~docv:"EXP"
   )
 
-let sample_count_per_doc_arg_name = "sample-count-per-doc"
-
 let sample_count_per_doc_arg =
   let doc =
     Fmt.str
-      "Number of search results to sample per document when --%s is used."
+      "Number of search results to show per document when --%s is used."
       sample_arg_name
   in
   Arg.(
@@ -228,8 +230,7 @@ let search_arg_name = "search"
 
 let search_arg =
   let doc =
-    Fmt.str "Search exhaustively (as exhaustive as interactive mode)
-with expression EXP in non-interactive mode."
+    "Search with expression EXP in non-interactive mode and show all results."
   in
   Arg.(
     value
