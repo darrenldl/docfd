@@ -210,7 +210,7 @@ let sample_arg =
     & info [ sample_arg_name ] ~doc ~docv:"EXP"
   )
 
-let sample_count_per_doc_arg_name = "search-result-count-per-doc"
+let sample_count_per_doc_arg_name = "sample-count-per-doc"
 
 let sample_count_per_doc_arg =
   let doc =
