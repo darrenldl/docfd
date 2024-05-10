@@ -11,10 +11,15 @@ let output_image (oc : out_channel) (img : Notty.image) : unit =
   let open Notty in
   let buf = Buffer.create 1024 in
   let cap =
-    if Out_channel.isatty oc then
-      Cap.ansi
-    else
-      Cap.dumb
+    match !Params.print_color_mode with
+    | `Never -> Cap.dumb
+    | `Always -> Cap.ansi
+    | `Auto -> (
+        if Out_channel.isatty oc then
+          Cap.ansi
+        else
+          Cap.dumb
+      )
   in
   Render.to_buffer buf cap (0, 0) (I.width img, I.height img) img;
   Buffer.output_buffer oc buf
@@ -33,11 +38,17 @@ let search_results (out : print_output) document (results : Search_result.t Seq.
       if i > 0 then (
         newline_image out
       );
+      let underline =
+        match !Params.print_underline_mode with
+        | `Never -> false
+        | `Always -> true
+        | `Auto -> not (Out_channel.isatty oc)
+      in
       let img =
         Content_and_search_result_render.search_result
           ~render_mode:(Ui_base.render_mode_of_document document)
           ~width:!Params.search_result_print_text_width
-          ~underline:(not (Out_channel.isatty oc))
+          ~underline
           ~fill_in_context:true
           (Document.index document)
           search_result

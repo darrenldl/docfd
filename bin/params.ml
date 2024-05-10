@@ -47,6 +47,12 @@ let line_wrap_underestimate_offset = 2
 
 let default_non_interactive_sample_count_per_document = 5
 
+type style_mode = [ `Never | `Always | `Auto ]
+
+let print_color_mode : style_mode ref = ref `Auto
+
+let print_underline_mode : style_mode ref = ref `Auto
+
 let default_search_result_print_text_width = 80
 
 let search_result_print_text_width = ref default_search_result_print_text_width

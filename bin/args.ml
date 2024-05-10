@@ -238,6 +238,32 @@ let search_arg =
     & info [ search_arg_name ] ~doc ~docv:"EXP"
   )
 
+let style_mode_options = [ ("never", `Never); ("always", `Always); ("auto", `Auto) ]
+
+let color_arg =
+  let doc =
+    Fmt.str
+      "Set coloring mode for search result printing, one of: %s."
+      (String.concat ", " (List.map fst style_mode_options))
+  in
+  Arg.(
+    value
+    & opt (Arg.enum style_mode_options) `Auto
+    & info [ "color" ] ~doc ~docv:"MODE"
+  )
+
+let underline_arg =
+  let doc =
+    Fmt.str
+      "Set underlining mode for search result printing, one of: %s."
+      (String.concat ", " (List.map fst style_mode_options))
+  in
+  Arg.(
+    value
+    & opt (Arg.enum style_mode_options) `Auto
+    & info [ "underline" ] ~doc ~docv:"MODE"
+  )
+
 let search_result_print_text_width_arg_name = "search-result-print-text-width"
 
 let search_result_print_text_width_arg =

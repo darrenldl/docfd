@@ -216,6 +216,8 @@ let run
     (sample_search_exp : string option)
     (sample_count_per_doc : int)
     (search_exp : string option)
+    (print_color_mode : Params.style_mode)
+    (print_underline_mode : Params.style_mode)
     (search_result_print_text_width : int)
     (search_result_print_snippet_min_size : int)
     (search_result_print_max_add_lines : int)
@@ -260,6 +262,8 @@ let run
   Params.max_linked_token_search_dist := max_linked_token_search_dist;
   Params.index_chunk_token_count := index_chunk_token_count;
   Params.cache_size := cache_size;
+  Params.print_color_mode := print_color_mode;
+  Params.print_underline_mode := print_underline_mode;
   Params.search_result_print_text_width := search_result_print_text_width;
   Params.search_result_print_snippet_min_size := search_result_print_snippet_min_size;
   Params.search_result_print_snippet_max_additional_lines_each_direction :=
@@ -698,6 +702,8 @@ let cmd ~env ~sw =
      $ sample_arg
      $ sample_count_per_doc_arg
      $ search_arg
+     $ color_arg
+     $ underline_arg
      $ search_result_print_text_width_arg
      $ search_result_print_snippet_min_size_arg
      $ search_result_print_snippet_max_add_lines_arg
