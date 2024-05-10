@@ -18,12 +18,19 @@
 - Added search result underlining when output is not a terminal,
   e.g. redirected to file
 
-- Changed `--search` to be exhaustive search
+- Changed `--search` to show all search results
 
 - Added `--sample` that uses `--search` previous behavior where (by default)
-  only a handful search results are picked for each document
+  only a handful of top search results are picked for each document
 
 - Changed `--search-result-count-per-doc` to `--sample-count-per-doc`
+
+- Added `--color` and `--underline` for controlling behavior of search result
+  printing, they can take one of:
+
+    - `never`
+    - `always`
+    - `auto`
 
 ## 5.1.0
 
