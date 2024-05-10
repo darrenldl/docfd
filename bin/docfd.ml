@@ -213,8 +213,9 @@ let run
     (no_cache : bool)
     (index_only : bool)
     (start_with_search : string option)
+    (sample_search_exp : string option)
+    (sample_count_per_doc : int)
     (search_exp : string option)
-    (search_result_count_per_doc : int)
     (search_result_print_text_width : int)
     (search_result_print_snippet_min_size : int)
     (search_result_print_max_add_lines : int)
@@ -231,7 +232,7 @@ let run
     ~max_linked_token_search_dist
     ~index_chunk_token_count
     ~cache_size
-    ~search_result_count_per_doc
+    ~sample_count_per_doc
     ~search_result_print_text_width
     ~search_result_print_snippet_min_size
     ~search_result_print_max_add_lines;
@@ -461,10 +462,20 @@ let run
     clean_up ();
     exit 0
   );
-  (match search_exp with
-   | None -> ()
-   | Some search_exp -> (
+  (match sample_search_exp, search_exp with
+   | None, None -> ()
+   | Some _, Some _ -> (
+       exit_with_error_msg
+         (Fmt.str "%s and %s cannot be used together" Args.sample_arg_name Args.search_arg_name)
+     )
+   | Some search_exp, None
+   | None, Some search_exp -> (
        (* Non-interactive mode *)
+       let print_limit =
+         match sample_search_exp with
+         | Some _ -> Some sample_count_per_doc
+         | None -> None
+       in
        match
          Search_exp.make
            ~fuzzy_max_edit_dist:!Params.max_fuzzy_edit_dist
@@ -485,7 +496,9 @@ let run
                if i > 0 then (
                  Printers.newline_image out;
                );
-               array_sub_seq ~start:0 ~end_exc:search_result_count_per_doc search_results
+               (match print_limit with
+                | None -> Array.to_seq search_results
+                | Some end_exc -> array_sub_seq ~start:0 ~end_exc search_results)
                |> Printers.search_results out document
              ) document_info_s;
            clean_up ();
@@ -682,8 +695,9 @@ let cmd ~env ~sw =
      $ no_cache_arg
      $ index_only_arg
      $ start_with_search_arg
+     $ sample_arg
+     $ sample_count_per_doc_arg
      $ search_arg
-     $ search_result_count_per_doc_arg
      $ search_result_print_text_width_arg
      $ search_result_print_snippet_min_size_arg
      $ search_result_print_snippet_max_add_lines_arg

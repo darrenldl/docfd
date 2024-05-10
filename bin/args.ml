@@ -198,26 +198,43 @@ let start_with_search_arg =
     & info [ "start-with-search" ] ~doc ~docv:"EXP"
   )
 
-let search_arg =
+let sample_arg_name = "sample"
+
+let sample_arg =
   let doc =
-    Fmt.str "Search with expression EXP in non-interactive mode."
+    Fmt.str "Sample some search results with expression EXP in non-interactive mode."
   in
   Arg.(
     value
     & opt (some string) None
-    & info [ "search" ] ~doc ~docv:"EXP"
+    & info [ sample_arg_name ] ~doc ~docv:"EXP"
   )
 
-let search_result_count_per_doc_arg_name = "search-result-count-per-doc"
+let sample_count_per_doc_arg_name = "search-result-count-per-doc"
 
-let search_result_count_per_doc_arg =
+let sample_count_per_doc_arg =
   let doc =
-    "Number of search results per document to show in non-interactive search mode."
+    Fmt.str
+      "Number of search results to sample per document when --%s is used."
+      sample_arg_name
   in
   Arg.(
     value
-    & opt int Params.default_non_interactive_search_result_count_per_document
-    & info [ search_result_count_per_doc_arg_name ] ~doc ~docv:"N"
+    & opt int Params.default_non_interactive_sample_count_per_document
+    & info [ sample_count_per_doc_arg_name ] ~doc ~docv:"N"
+  )
+
+let search_arg_name = "search"
+
+let search_arg =
+  let doc =
+    Fmt.str "Search exhaustively (as exhaustive as interactive mode)
+with expression EXP in non-interactive mode."
+  in
+  Arg.(
+    value
+    & opt (some string) None
+    & info [ search_arg_name ] ~doc ~docv:"EXP"
   )
 
 let search_result_print_text_width_arg_name = "search-result-print-text-width"
@@ -338,7 +355,7 @@ let check
     ~max_linked_token_search_dist
     ~index_chunk_token_count
     ~cache_size
-    ~search_result_count_per_doc
+    ~sample_count_per_doc
     ~search_result_print_text_width
     ~search_result_print_snippet_min_size
     ~search_result_print_max_add_lines
@@ -367,9 +384,9 @@ let check
     exit_with_error_msg
       (Fmt.str "invalid %s: cannot be < 1" cache_size_arg_name)
   );
-  if search_result_count_per_doc < 1 then (
+  if sample_count_per_doc < 1 then (
     exit_with_error_msg
-      (Fmt.str "invalid %s: cannot be < 1" search_result_count_per_doc_arg_name)
+      (Fmt.str "invalid %s: cannot be < 1" sample_count_per_doc_arg_name)
   );
   if search_result_print_text_width < 1 then (
     exit_with_error_msg
