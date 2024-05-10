@@ -18,9 +18,12 @@
 - Added search result underlining when output is not a terminal,
   e.g. redirected to file
 
-- Changed `--search` to `--search-samples` to better describe its intended use
+- Changed `--search` to be exhaustive search
 
-- Added `--search-all`
+- Added `--sample` that uses `--search` previous behavior where (by default)
+  only a handful search results are picked for each document
+
+- Changed `--search-result-count-per-doc` to `--sample-count-per-doc`
 
 ## 5.1.0
 
