@@ -12,3 +12,43 @@ Stdin and path both specified:
   $TESTCASE_ROOT/abcd.txt
   1: abcd
      ^^^^
+
+--underline:
+  $ docfd --underline never abcd.txt --search "ab|cd"
+  $TESTCASE_ROOT/abcd.txt
+  1: abcd
+  
+  1: abcd
+  $ docfd --underline always abcd.txt --search "ab|cd"
+  $TESTCASE_ROOT/abcd.txt
+  1: abcd
+     ^^^^
+  
+  1: abcd
+     ^^^^
+  $ docfd --underline auto abcd.txt --search "ab|cd"
+  $TESTCASE_ROOT/abcd.txt
+  1: abcd
+     ^^^^
+  
+  1: abcd
+     ^^^^
+
+--color:
+  $ docfd --color never abcd.txt --search "ab|cd"
+  $TESTCASE_ROOT/abcd.txt
+  1: abcd
+     ^^^^
+  
+  1: abcd
+     ^^^^
+  $ # The output below is messed up after passing through dune.
+  $ docfd --color always abcd.txt --search "ab|cd"
+  $TESTCASE_ROOT/abcd.txt1: abcd   ^^^^1: abcd   ^^^^
+  $ docfd --color auto abcd.txt --search "ab|cd"
+  $TESTCASE_ROOT/abcd.txt
+  1: abcd
+     ^^^^
+  
+  1: abcd
+     ^^^^
