@@ -16,7 +16,7 @@
         - Controls maximum number of surrounding lines that can be added in each direction.
 
 - Added search result underlining when output is not a terminal,
-  e.g. redirected to file
+  e.g. redirected to file, piped to another command
 
 - Changed `--search` to show all search results
 
