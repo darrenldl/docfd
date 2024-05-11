@@ -42,7 +42,7 @@ Stdin and path both specified:
   
   1: abcd
      ^^^^
-  $ # The output below is messed up after passing through dune.
+  $ # The output below is messed up after passing through Dune, I do not know why.
   $ docfd --color always abcd.txt --search "ab|cd"
   $TESTCASE_ROOT/abcd.txt1: abcd   ^^^^1: abcd   ^^^^
   $ docfd --color auto abcd.txt --search "ab|cd"
