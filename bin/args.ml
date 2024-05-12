@@ -243,7 +243,7 @@ let style_mode_options = [ ("never", `Never); ("always", `Always); ("auto", `Aut
 let color_arg =
   let doc =
     Fmt.str
-      "Set coloring mode for search result printing, one of: %s."
+      "Set color mode for search result printing, one of: %s."
       (String.concat ", " (List.map fst style_mode_options))
   in
   Arg.(
@@ -255,7 +255,7 @@ let color_arg =
 let underline_arg =
   let doc =
     Fmt.str
-      "Set underlining mode for search result printing, one of: %s."
+      "Set underline mode for search result printing, one of: %s."
       (String.concat ", " (List.map fst style_mode_options))
   in
   Arg.(
