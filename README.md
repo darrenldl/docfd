@@ -46,7 +46,7 @@ result via PDF viewer integration:
 
 Docfd uses the text editor specified by `$VISUAL` (this is checked first) or `$EDITOR`.
 
-Docfd opens the file at first line of search result
+Docfd opens the file to the first line of the search result
 for the following editors:
 
 - `nano`
@@ -65,7 +65,7 @@ and invokes the viewer either directly or via flatpak
 depending on where the desktop file can be first found
 in the list of directories specified by `$XDG_DATA_DIRS`.
 
-Docfd opens the file at first page of the search result
+Docfd opens the file to the first page of the search result
 and starts a text search of the most unique word
 of the matched phrase within the same page
 for the following viewers:
@@ -75,7 +75,7 @@ for the following viewers:
 - xreader
 - atril
 
-Docfd opens the file at first page of the search result
+Docfd opens the file to the first page of the search result
 for the following viewers:
 
 - mupdf
