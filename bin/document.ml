@@ -166,10 +166,11 @@ module Of_path = struct
 
   let pdf ~env pool search_mode path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
+    let fs = Eio.Stdenv.fs env in
     let rec aux acc page_num =
       let page_num_string = Int.to_string page_num in
       let cmd = [ "pdftotext"; "-f"; page_num_string; "-l"; page_num_string; path; "-" ] in
-      match Proc_utils.run_return_stdout ~proc_mgr cmd with
+      match Proc_utils.run_return_stdout ~proc_mgr ~fs cmd with
       | None -> (
           parse_pages pool search_mode ~path (acc |> List.rev |> List.to_seq)
         )
@@ -184,6 +185,7 @@ module Of_path = struct
 
   let pandoc_supported_format ~env pool search_mode path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
+    let fs = Eio.Stdenv.fs env in
     let from_format = File_utils.extension_of_file path
                       |> String_utils.remove_leading_dots
                       |> (fun s ->
@@ -205,7 +207,7 @@ module Of_path = struct
               ]
     in
     let error_msg = Fmt.str "failed to extract text from %s" (Filename.quote path) in
-    match Proc_utils.run_return_stdout ~proc_mgr cmd with
+    match Proc_utils.run_return_stdout ~proc_mgr ~fs cmd with
     | None -> (
         Error error_msg
       )
