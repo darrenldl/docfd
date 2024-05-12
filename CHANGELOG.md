@@ -32,6 +32,8 @@
     - `always`
     - `auto`
 
+- Added missing blinking for `Enter` key presses
+
 ## 5.1.0
 
 - Fixed help message of `--max-token-search-dist`
