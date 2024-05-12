@@ -32,7 +32,7 @@
     - `always`
     - `auto`
 
-- Added missing blinking for `Enter` key presses
+- Removed blinking for `Tab` key presses
 
 ## 5.1.0
 
