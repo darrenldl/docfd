@@ -489,6 +489,7 @@ let keyboard_handler
           `Handled
         )
       | (`Enter, []) -> (
+          Ui_base.Key_binding_info.blink "Enter";
           Option.iter (fun (doc, search_results) ->
               let search_result =
                 if search_result_current_choice < Array.length search_results then

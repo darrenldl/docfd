@@ -250,6 +250,7 @@ let keyboard_handler
           `Handled
         )
       | (`Enter, []) -> (
+          Ui_base.Key_binding_info.blink "Enter";
           let search_result =
             if search_result_current_choice < Array.length search_results then
               Some search_results.(search_result_current_choice)
