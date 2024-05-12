@@ -9,7 +9,7 @@ Set FontSize 15
 
 Set TypingSpeed 100ms
 
-Type@50ms "docfd --cache-dir .cache *.md # Using a local cache for demo."
+Type@50ms "docfd --cache-dir .cache *.md # Using a local cache for the demo."
 Sleep 1s
 Enter
 
@@ -37,7 +37,7 @@ Sleep 1s
 Enter
 Sleep 1s
 Type "O"
-Type@50ms "Docfd opens editor to where the search result is at when we hit Enter."
+Type@50ms "Docfd opens the editor to where the search result is when we hit Enter."
 Escape
 Sleep 2s
 Type@200ms ":q!"
