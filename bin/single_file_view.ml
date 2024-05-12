@@ -192,7 +192,6 @@ let keyboard_handler
           `Handled
         )
       | (`Tab, []) -> (
-          Ui_base.Key_binding_info.blink "Tab";
           (match !Ui_base.Vars.init_ui_mode with
            | Ui_multi_file ->
              Lwd.set Ui_base.Vars.ui_mode Ui_multi_file
@@ -250,7 +249,6 @@ let keyboard_handler
           `Handled
         )
       | (`Enter, []) -> (
-          Ui_base.Key_binding_info.blink "Enter";
           let search_result =
             if search_result_current_choice < Array.length search_results then
               Some search_results.(search_result_current_choice)
