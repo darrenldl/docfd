@@ -37,8 +37,8 @@ let search_fiber pool =
      domain to immediately continue running after key presses that trigger
      searches or search cancellations.
 
-     This is mainly to remove the need to structure document store operations
-     to always yield frequently.
+     This removes the need to make the code of document store always yield
+     frequently.
   *)
   while true do
     let (s, document_store, document_store_var) = Eio.Stream.take ingress in
