@@ -1,5 +1,14 @@
 # Changelog
 
+## 6.0.1
+
+- Fixed race condition in search related fibers that were put in place
+  for asynchronous search since 4.0.0, where deadlock may occur
+  when waiting for cancellation acknowledgement
+
+    - As usual with race conditions, this only manifests under some specific
+      timing by chance
+
 ## 6.0.0
 
 - Fixed help message of `--max-linked-token-search-dist`
