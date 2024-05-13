@@ -33,9 +33,12 @@ let manager_fiber () =
   done
 
 let search_fiber pool =
-  (* This fiber is run in a background domain to allow UI fiber in main domain
-     to continue running after key presses that trigger searches or search
-     cancellations.
+  (* This fiber runs in a background domain to allow the UI code in the main
+     domain to immediately continue running after key presses that trigger
+     searches or search cancellations.
+
+     This is mainly to remove the need to structure document store operations
+     to always yield frequently.
   *)
   while true do
     let (s, document_store, document_store_var) = Eio.Stream.take ingress in
