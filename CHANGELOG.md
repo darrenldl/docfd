@@ -2,9 +2,13 @@
 
 ## 6.0.1
 
-- Fixed race condition in search related fibers that were put in place
-  for asynchronous search since 4.0.0, where deadlock may occur
-  when waiting for cancellation acknowledgement
+- Fixed random UI freezes when updating search field
+
+    - This is due to a race condition in the search cancellation mechanism that
+      may cause UI fiber to starve and wait forever for a cancellation
+      acknowledgement
+
+    - This mechanism was put in place for asynchronous search since 4.0.0
 
     - As usual with race conditions, this only manifests under some specific
       timing by chance
