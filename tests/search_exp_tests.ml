@@ -2,17 +2,17 @@ open Docfd_lib
 open Test_utils
 
 module Alco = struct
-  let fuzzy_max_edit_dist = 0
+  let max_fuzzy_edit_dist = 0
 
   let test_invalid_exp (s : string) =
     Alcotest.(check bool)
       "true"
       true
       (Option.is_none
-         (Search_exp.make ~fuzzy_max_edit_dist s))
+         (Search_exp.make ~max_fuzzy_edit_dist s))
 
   let test_empty_phrase (s : string) =
-    let phrase = Search_phrase.make ~fuzzy_max_edit_dist s in
+    let phrase = Search_phrase.make ~max_fuzzy_edit_dist s in
     Alcotest.(check bool)
       "case0"
       true
@@ -23,7 +23,7 @@ module Alco = struct
       (List.is_empty (Search_phrase.to_enriched_tokens phrase))
 
   let test_empty_exp (s : string) =
-    let exp = Search_exp.make ~fuzzy_max_edit_dist s |> Option.get in
+    let exp = Search_exp.make ~max_fuzzy_edit_dist s |> Option.get in
     Alcotest.(check bool)
       "case0"
       true
@@ -41,14 +41,14 @@ module Alco = struct
       (s : string)
       (l : (string * (string * bool) list) list)
     =
-    let fuzzy_max_edit_dist = 0 in
+    let max_fuzzy_edit_dist = 0 in
     let neg' = neg in
     let phrases =
       l
       |> List.map fst
-      |> List.map (Search_phrase.make ~fuzzy_max_edit_dist)
+      |> List.map (Search_phrase.make ~max_fuzzy_edit_dist)
     in
-    let automaton = Spelll.of_string ~limit:fuzzy_max_edit_dist "" in
+    let automaton = Spelll.of_string ~limit:max_fuzzy_edit_dist "" in
     let enriched_token_list_list =
       List.map snd l
       |> List.map (List.map (fun (string, is_linked_to_prev) ->
@@ -68,7 +68,7 @@ module Alco = struct
                  )))
       (Fmt.str "case1 of %S" s)
       (List.sort Search_phrase.compare phrases)
-      (Search_exp.make ~fuzzy_max_edit_dist s
+      (Search_exp.make ~max_fuzzy_edit_dist s
        |> Option.get
        |> Search_exp.flattened
        |> List.sort Search_phrase.compare

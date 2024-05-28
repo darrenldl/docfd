@@ -47,7 +47,7 @@ let search_fiber pool =
     Eio.Stream.add stop_signal_swap_completed ();
     match
       Search_exp.make
-        ~fuzzy_max_edit_dist:!Params.max_fuzzy_edit_dist
+        ~max_fuzzy_edit_dist:!Params.max_fuzzy_edit_dist
         s
     with
     | None -> (

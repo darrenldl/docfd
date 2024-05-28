@@ -63,8 +63,8 @@ let main env =
   Eio.Switch.run @@ fun sw ->
   let pool = Task_pool.make ~sw (Eio.Stdenv.domain_mgr env) in
   let index = Index.of_lines pool (List.to_seq lines) in
-  let fuzzy_max_edit_dist = 3 in
-  let search_exp = Search_exp.make ~fuzzy_max_edit_dist "vestibul rutru" |> Option.get in
+  let max_fuzzy_edit_dist = 3 in
+  let search_exp = Search_exp.make ~max_fuzzy_edit_dist "vestibul rutru" |> Option.get in
   let s = "PellentesquePellentesque" in
   for len=1 to 20 do
     let limit = 2 in

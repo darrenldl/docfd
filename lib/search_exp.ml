@@ -10,17 +10,17 @@ and binary_op =
   | Or
 
 type t = {
-  fuzzy_max_edit_dist : int;
+  max_fuzzy_edit_dist : int;
   exp : exp;
   flattened : Search_phrase.t list;
 }
 
-let fuzzy_max_edit_dist (t : t) = t.fuzzy_max_edit_dist
+let max_fuzzy_edit_dist (t : t) = t.max_fuzzy_edit_dist
 
 let flattened (t : t) = t.flattened
 
 let empty : t = {
-  fuzzy_max_edit_dist = 0;
+  max_fuzzy_edit_dist = 0;
   exp = `List [];
   flattened = [];
 }
@@ -103,7 +103,7 @@ module Parsers = struct
     <* skip_spaces
 end
 
-let flatten ~fuzzy_max_edit_dist (exp : exp) : Search_phrase.t list =
+let flatten ~max_fuzzy_edit_dist (exp : exp) : Search_phrase.t list =
   let get_group_id =
     let counter = ref 0 in
     fun () ->
@@ -143,20 +143,20 @@ let flatten ~fuzzy_max_edit_dist (exp : exp) : Search_phrase.t list =
   aux (get_group_id ()) exp
   |> Seq.map (fun l ->
       List.to_seq l
-      |> Search_phrase.of_annotated_tokens ~fuzzy_max_edit_dist)
+      |> Search_phrase.of_annotated_tokens ~max_fuzzy_edit_dist)
   |> List.of_seq
   |> List.sort_uniq Search_phrase.compare
 
-let make ~fuzzy_max_edit_dist s =
+let make ~max_fuzzy_edit_dist s =
   if String.length s = 0 || String.for_all Parser_components.is_space s then (
     Some empty
   ) else (
     match Angstrom.(parse_string ~consume:Consume.All) Parsers.p s with
     | Ok exp -> (
         Some
-          { fuzzy_max_edit_dist;
+          { max_fuzzy_edit_dist;
             exp;
-            flattened = flatten ~fuzzy_max_edit_dist exp;
+            flattened = flatten ~max_fuzzy_edit_dist exp;
           }
       )
     | Error _ -> None

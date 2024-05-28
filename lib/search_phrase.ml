@@ -80,7 +80,7 @@ type token_process_ctx = {
 }
 
 let of_annotated_tokens
-    ~fuzzy_max_edit_dist
+    ~max_fuzzy_edit_dist
     (tokens : annotated_token Seq.t)
   =
   let token_is_space (token : annotated_token) =
@@ -129,7 +129,7 @@ let of_annotated_tokens
         Mutex.lock cache.mutex;
         let automaton =
           CCCache.with_cache cache.cache
-            (Spelll.of_string ~limit:fuzzy_max_edit_dist)
+            (Spelll.of_string ~limit:max_fuzzy_edit_dist)
             x
         in
         Mutex.unlock cache.mutex;
@@ -143,14 +143,14 @@ let of_annotated_tokens
   }
 
 let of_tokens
-    ~fuzzy_max_edit_dist
+    ~max_fuzzy_edit_dist
     (tokens : string Seq.t)
   =
   tokens
   |> Seq.map (fun string -> { string; group_id = 0 })
-  |> of_annotated_tokens ~fuzzy_max_edit_dist
+  |> of_annotated_tokens ~max_fuzzy_edit_dist
 
-let make ~fuzzy_max_edit_dist phrase =
+let make ~max_fuzzy_edit_dist phrase =
   phrase
   |> Tokenize.tokenize ~drop_spaces:false
-  |> of_tokens ~fuzzy_max_edit_dist
+  |> of_tokens ~max_fuzzy_edit_dist

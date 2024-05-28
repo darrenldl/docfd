@@ -482,7 +482,7 @@ let run
        in
        match
          Search_exp.make
-           ~fuzzy_max_edit_dist:!Params.max_fuzzy_edit_dist
+           ~max_fuzzy_edit_dist:!Params.max_fuzzy_edit_dist
            search_exp
        with
        | None -> (
