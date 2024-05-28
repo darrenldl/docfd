@@ -428,3 +428,6 @@ Navigation mode
 - Demo gifs and some screenshots are made using [vhs](https://github.com/charmbracelet/vhs).
 - [ripgrep-all](https://github.com/phiresky/ripgrep-all) was used as reference
   for text extraction software choices
+- [Marc Coquand](https://mccd.space) (author of
+  [Stitch](https://git.mccd.space/pub/stitch/)) for discussions and inspiration
+  of results narrowing functionality

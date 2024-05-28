@@ -1,5 +1,11 @@
 # Changelog
 
+## 7.0.0
+
+- Added "commit" functionality to multi-file view
+
+    - This reduces the document set to the currently visible ones
+
 ## 6.0.1
 
 - Fixed random UI freezes when updating search field
