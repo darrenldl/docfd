@@ -52,6 +52,14 @@ let reload_document_selected
     reload_document doc;
   )
 
+let commit () =
+  reset_document_selected ();
+  let document_store =
+    Lwd.peek Ui_base.Vars.document_store
+    |> Document_store.commit
+  in
+  Lwd.set Ui_base.Vars.document_store document_store
+
 let update_search_phrase () =
   reset_document_selected ();
   let s = fst @@ Lwd.peek Vars.search_field in
@@ -311,6 +319,7 @@ module Bottom_pane = struct
           [
             { label = "r"; msg = "reload document selected" };
             { label = "Shift+R"; msg = "rescan for documents" };
+            { label = "c"; msg = "commit to current set" };
           ];
         ]
       in
@@ -399,6 +408,11 @@ let keyboard_handler
           reset_document_selected ();
           Lwd.set Ui_base.Vars.quit true;
           Ui_base.Vars.action := Some Ui_base.Recompute_document_src;
+          `Handled
+        )
+      | (`ASCII 'c', []) -> (
+          Ui_base.Key_binding_info.blink "c";
+          commit ();
           `Handled
         )
       | (`ASCII 'r', []) -> (
