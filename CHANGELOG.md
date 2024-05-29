@@ -4,6 +4,8 @@
 
 - Added discard mode to multi-file view
 
+- Changed to using thin bars as pane separators, i.e. tmux style
+
 ## 6.0.1
 
 - Fixed random UI freezes when updating search field
