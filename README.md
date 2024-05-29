@@ -423,8 +423,9 @@ Navigation mode
 
 ## Acknowledgement
 
-- Big thanks to [@lunacookies](https://github.com/lunacookies) for the many UI/UX discussions
-  and suggestions
+- Big thanks to [@lunacookies](https://github.com/lunacookies) and
+  [@jthvai](https://github.com/jthvai) for the many UI/UX discussions and
+  suggestions
 - Demo gifs and some screenshots are made using [vhs](https://github.com/charmbracelet/vhs).
 - [ripgrep-all](https://github.com/phiresky/ripgrep-all) was used as reference
   for text extraction software choices
