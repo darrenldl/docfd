@@ -4,6 +4,7 @@ open Lwd_infix
 type input_mode =
   | Navigate
   | Search
+  | Delete
 
 type ui_mode =
   | Ui_single_file
@@ -183,6 +184,7 @@ module Status_bar = struct
     let l =
       [ (Navigate, "NAVIGATE")
       ; (Search, "SEARCH")
+      ; (Delete, "DELETE")
       ]
     in
     let max_input_mode_string_len =
@@ -397,14 +399,14 @@ let ui_loop ~quit ~term root =
   let root =
     let$ root = root in
     root
-    |> Nottui.Ui.event_filter (fun x ->
+    (* |> Nottui.Ui.event_filter (fun x ->
         match x with
         | `Key (`Escape, []) -> (
             Lwd.set quit true;
             `Handled
           )
         | _ -> `Unhandled
-      )
+       ) *)
   in
   let rec loop () =
     if not (Lwd.peek quit) then (

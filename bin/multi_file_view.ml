@@ -52,11 +52,26 @@ let reload_document_selected
     reload_document doc;
   )
 
-let commit () =
-  reset_document_selected ();
+let drop ~document_count (choice : [`Single of string | `Listed | `Unlisted]) =
+  let choice =
+    match choice with
+    | `Single path -> (
+        let n = Lwd.peek Vars.index_of_document_selected in
+        set_document_selected ~choice_count:(document_count - 1) n;
+        `Single path
+      )
+    | `Listed -> (
+        reset_document_selected ();
+        `Usable
+      )
+    | `Unlisted -> (
+        reset_document_selected ();
+        `Unusable
+      )
+  in
   let document_store =
     Lwd.peek Ui_base.Vars.document_store
-    |> Document_store.commit
+    |> Document_store.drop choice
   in
   Lwd.set Ui_base.Vars.document_store document_store
 
@@ -319,7 +334,7 @@ module Bottom_pane = struct
           [
             { label = "r"; msg = "reload document selected" };
             { label = "Shift+R"; msg = "rescan for documents" };
-            { label = "c"; msg = "commit to current set" };
+            { label = "d"; msg = "delete mode" };
           ];
         ]
       in
@@ -329,6 +344,19 @@ module Bottom_pane = struct
             { label = "Enter"; msg = "exit search mode" };
           ];
           empty_row;
+          empty_row;
+        ]
+      in
+      let delete_grid =
+        [
+          [
+            { label = "d"; msg = "delete currently selected" };
+            { label = "u"; msg = "delete unlisted documents" };
+            { label = "l"; msg = "delete listed documents" };
+          ];
+          [
+            { label = "Esc"; msg = "cancel" };
+          ];
           empty_row;
         ]
       in
@@ -344,6 +372,12 @@ module Bottom_pane = struct
         );
         ({ input_mode = Search; init_ui_mode = Ui_single_file },
          search_grid
+        );
+        ({ input_mode = Delete; init_ui_mode = Ui_multi_file },
+         delete_grid
+        );
+        ({ input_mode = Delete; init_ui_mode = Ui_single_file },
+         delete_grid
         );
       ]
 
@@ -373,14 +407,14 @@ let keyboard_handler
     ~(document_info_s : Document_store.document_info array)
     (key : Nottui.Ui.key)
   =
-  let document_choice_count =
+  let document_count =
     Array.length document_info_s
   in
   let document_current_choice =
     Lwd.peek Vars.index_of_document_selected
   in
   let document_info =
-    if document_choice_count = 0 then
+    if document_count = 0 then
       None
     else
       Some document_info_s.(document_current_choice)
@@ -410,9 +444,8 @@ let keyboard_handler
           Ui_base.Vars.action := Some Ui_base.Recompute_document_src;
           `Handled
         )
-      | (`ASCII 'c', []) -> (
-          Ui_base.Key_binding_info.blink "c";
-          commit ();
+      | (`ASCII 'd', []) -> (
+          Lwd.set Ui_base.Vars.input_mode Delete;
           `Handled
         )
       | (`ASCII 'r', []) -> (
@@ -456,7 +489,7 @@ let keyboard_handler
       | (`ASCII 'j', [])
       | (`Arrow `Down, []) -> (
           set_document_selected
-            ~choice_count:document_choice_count
+            ~choice_count:document_count
             (document_current_choice+1);
           `Handled
         )
@@ -464,7 +497,7 @@ let keyboard_handler
       | (`ASCII 'k', [])
       | (`Arrow `Up, []) -> (
           set_document_selected
-            ~choice_count:document_choice_count
+            ~choice_count:document_count
             (document_current_choice-1);
           `Handled
         )
@@ -517,6 +550,36 @@ let keyboard_handler
           `Handled
         )
       | _ -> `Handled
+    )
+  | Delete -> (
+      let handled =
+        (match key with
+         | (`Escape, []) -> (
+             `Handled
+           )
+         | (`ASCII 'd', []) -> (
+             Option.iter (fun (doc, _search_results) ->
+                 drop ~document_count (`Single (Document.path doc))
+               ) document_info;
+             `Handled
+           )
+         | (`ASCII 'u', []) -> (
+             drop ~document_count `Unlisted;
+             `Handled
+           )
+         | (`ASCII 'l', []) -> (
+             drop ~document_count `Listed;
+             `Handled
+           )
+         | _ -> `Unhandled
+        );
+      in
+      match handled with
+      | `Handled -> (
+          Lwd.set Ui_base.Vars.input_mode Navigate;
+          `Handled
+        )
+      | `Unhandled -> `Unhandled
     )
   | _ -> `Unhandled
 

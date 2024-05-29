@@ -123,16 +123,33 @@ let usable_documents (t : t) : (Document.t * Search_result.t array) array =
     arr
   )
 
-let commit (t : t) : t =
-  let documents_to_keep =
-    usable_documents t
-    |> Array.to_seq
-    |> Seq.map (fun (doc, _) -> Document.path doc)
-    |> String_set.of_seq
-  in
-  { all_documents = String_map.filter (fun path _ ->
-        String_set.mem path documents_to_keep) t.all_documents;
-    search_exp = t.search_exp;
-    search_results = String_map.filter (fun path _ ->
-        String_set.mem path documents_to_keep) t.search_results;
-  }
+let drop (choice : [ `Single of string | `Usable | `Unusable ]) (t : t) : t =
+  match choice with
+  | `Single path -> (
+      { all_documents = String_map.remove path t.all_documents;
+        search_exp = t.search_exp;
+        search_results = String_map.remove path t.search_results;
+      }
+    )
+  | `Usable | `Unusable -> (
+      let usable_documents =
+        usable_documents t
+        |> Array.to_seq
+        |> Seq.map (fun (doc, _) -> Document.path doc)
+        |> String_set.of_seq
+      in
+      let document_is_usable path =
+        String_set.mem path usable_documents
+      in
+      let f : 'a. string -> 'a -> bool =
+        fun path _ ->
+          match choice with
+          | `Usable -> not (document_is_usable path)
+          | `Unusable -> document_is_usable path
+          | _ -> failwith "unexpected case"
+      in
+      { all_documents = String_map.filter f t.all_documents;
+        search_exp = t.search_exp;
+        search_results = String_map.filter f t.search_results;
+      }
+    )
