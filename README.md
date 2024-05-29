@@ -345,6 +345,18 @@ Navigation mode
         - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
 - Switch to single file view
     - `Tab`
+- Enter discard mode
+    - `d`
+
+Discard mode
+- Discard currently selected document
+    - `d`
+- Discard all unlisted documents
+    - `u`
+- Discard all listed documents
+    - `l`
+- Cancel/exit discard mode
+    - `Esc`
 
 </details>
 
