@@ -334,7 +334,7 @@ module Bottom_pane = struct
           [
             { label = "r"; msg = "reload document selected" };
             { label = "Shift+R"; msg = "rescan for documents" };
-            { label = "d"; msg = "delete mode" };
+            { label = "d"; msg = "discard mode" };
           ];
         ]
       in
@@ -347,12 +347,12 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
-      let delete_grid =
+      let discard_grid =
         [
           [
-            { label = "d"; msg = "delete currently selected" };
-            { label = "u"; msg = "delete unlisted documents" };
-            { label = "l"; msg = "delete listed documents" };
+            { label = "d"; msg = "currently selected" };
+            { label = "u"; msg = "unlisted" };
+            { label = "l"; msg = "listed" };
           ];
           [
             { label = "Esc"; msg = "cancel" };
@@ -373,11 +373,11 @@ module Bottom_pane = struct
         ({ input_mode = Search; init_ui_mode = Ui_single_file },
          search_grid
         );
-        ({ input_mode = Delete; init_ui_mode = Ui_multi_file },
-         delete_grid
+        ({ input_mode = Discard; init_ui_mode = Ui_multi_file },
+         discard_grid
         );
-        ({ input_mode = Delete; init_ui_mode = Ui_single_file },
-         delete_grid
+        ({ input_mode = Discard; init_ui_mode = Ui_single_file },
+         discard_grid
         );
       ]
 
@@ -445,7 +445,7 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'd', []) -> (
-          Lwd.set Ui_base.Vars.input_mode Delete;
+          Lwd.set Ui_base.Vars.input_mode Discard;
           `Handled
         )
       | (`ASCII 'r', []) -> (
@@ -551,35 +551,31 @@ let keyboard_handler
         )
       | _ -> `Handled
     )
-  | Delete -> (
-      let handled =
+  | Discard -> (
+      let exit =
         (match key with
-         | (`Escape, []) -> (
-             `Handled
-           )
+         | (`Escape, []) -> true
          | (`ASCII 'd', []) -> (
              Option.iter (fun (doc, _search_results) ->
                  drop ~document_count (`Single (Document.path doc))
                ) document_info;
-             `Handled
+             true
            )
          | (`ASCII 'u', []) -> (
              drop ~document_count `Unlisted;
-             `Handled
+             true
            )
          | (`ASCII 'l', []) -> (
              drop ~document_count `Listed;
-             `Handled
+             true
            )
-         | _ -> `Unhandled
+         | _ -> false
         );
       in
-      match handled with
-      | `Handled -> (
-          Lwd.set Ui_base.Vars.input_mode Navigate;
-          `Handled
-        )
-      | `Unhandled -> `Unhandled
+      if exit then (
+        Lwd.set Ui_base.Vars.input_mode Navigate;
+      );
+      `Handled
     )
   | _ -> `Unhandled
 

@@ -4,7 +4,7 @@ open Lwd_infix
 type input_mode =
   | Navigate
   | Search
-  | Delete
+  | Discard
 
 type ui_mode =
   | Ui_single_file
@@ -184,7 +184,7 @@ module Status_bar = struct
     let l =
       [ (Navigate, "NAVIGATE")
       ; (Search, "SEARCH")
-      ; (Delete, "DELETE")
+      ; (Discard, "DISCARD")
       ]
     in
     let max_input_mode_string_len =
