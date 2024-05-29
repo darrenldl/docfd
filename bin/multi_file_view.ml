@@ -505,6 +505,18 @@ let keyboard_handler
             (document_current_choice-1);
           `Handled
         )
+      | (`ASCII 'g', []) -> (
+          set_document_selected
+            ~choice_count:document_count
+            0;
+          `Handled
+        )
+      | (`ASCII 'G', []) -> (
+          set_document_selected
+            ~choice_count:document_count
+            (document_count - 1);
+          `Handled
+        )
       | (`ASCII '/', []) -> (
           Nottui.Focus.request Vars.search_field_focus_handle;
           Lwd.set Ui_base.Vars.input_mode Search;
