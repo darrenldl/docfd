@@ -70,6 +70,36 @@ let full_term_sized_background =
   Notty.I.void term_width term_height
   |> Nottui.Ui.atom
 
+let vbar ~height =
+  let uc = Uchar.of_int 0x2502 in
+  Notty.I.uchar Notty.A.(fg white) uc 1 height
+  |> Nottui.Ui.atom
+
+let hbar ~width =
+  let uc = Uchar.of_int 0x2015 in
+  Notty.I.uchar Notty.A.(fg white) uc width 1
+  |> Nottui.Ui.atom
+
+let hpane ~lwidth ~rwidth ~height (x : Nottui.ui Lwd.t) (y : Nottui.ui Lwd.t) : Nottui.ui Lwd.t =
+  let$* x = x in
+  let$ y = y in
+  let crop w x = Nottui.Ui.resize ~w ~h:height x in
+  Nottui.Ui.hcat [
+    crop lwidth x;
+    vbar ~height;
+    crop rwidth y;
+  ]
+
+let vpane ~width ~height (x : Nottui.ui Lwd.t) (y : Nottui.ui Lwd.t) : Nottui.ui Lwd.t =
+  let$* x = x in
+  let$ y = y in
+  let crop x = Nottui.Ui.resize ~w:width ~h:(height / 2) x in
+  Nottui.Ui.vcat [
+    crop x;
+    hbar ~width;
+    crop y;
+  ]
+
 module Content_view = struct
   let main
       ~height

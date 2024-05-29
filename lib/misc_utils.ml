@@ -55,7 +55,10 @@ let length_and_list_of_seq (s : 'a Seq.t) : int * 'a list =
   (len, List.rev acc)
 
 let div_round_to_closest x y =
-  (x + y - 1) / y
+  (x + (y / 2)) / y
+
+let div_round_up x y =
+  (x + (y - 1)) / y
 
 let opening_closing_symbol_pairs (l : string list) : (int * int) list =
   let _, pairs =

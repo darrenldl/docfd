@@ -43,8 +43,6 @@ let hash_chunk_size = 4096
 
 let text_editor = ref ""
 
-let line_wrap_underestimate_offset = 2
-
 let default_non_interactive_sample_count_per_document = 5
 
 type style_mode = [ `Never | `Always | `Auto ]
