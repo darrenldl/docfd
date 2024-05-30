@@ -6,6 +6,8 @@
 
 - Changed to using thin bars as pane separators, i.e. tmux style
 
+- Added `g` and `G` key bindings for going to top and bottom of document list respectively
+
 ## 6.0.1
 
 - Fixed random UI freezes when updating search field
