@@ -599,7 +599,7 @@ let run
               document_store_of_document_src ~env pool document_src
               |> Document_store.update_search_exp pool (Stop_signal.make ()) search_exp
             in
-            Lwd.set Ui_base.Vars.document_store document_store;
+            Search_manager.submit_update_req document_store Ui_base.Vars.document_store;
             loop ()
           )
         | Open_file_and_search_result (doc, search_result) -> (
