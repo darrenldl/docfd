@@ -39,7 +39,7 @@ let reload_document (doc : Document.t) =
         Lwd.peek Ui_base.Vars.document_store
         |> Document_store.add_document pool doc
       in
-      Lwd.set Ui_base.Vars.document_store document_store;
+      Search_manager.submit_update_req document_store Ui_base.Vars.document_store;
     )
   | Error _ -> ()
 
@@ -73,7 +73,7 @@ let drop ~document_count (choice : [`Single of string | `Listed | `Unlisted]) =
     Lwd.peek Ui_base.Vars.document_store
     |> Document_store.drop choice
   in
-  Lwd.set Ui_base.Vars.document_store document_store
+  Search_manager.submit_update_req document_store Ui_base.Vars.document_store
 
 let update_search_phrase () =
   reset_document_selected ();
