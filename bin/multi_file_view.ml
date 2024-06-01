@@ -13,6 +13,12 @@ module Vars = struct
   let require_field = Lwd.var Ui_base.empty_text_field
 
   let require_field_focus_handle = Nottui.Focus.make ()
+
+  let document_store_undo : Document_store.t Stack.t =
+    Stack.create ()
+
+  let document_store_redo : Document_store.t Stack.t =
+    Stack.create ()
 end
 
 let set_document_selected ~choice_count n =
@@ -52,6 +58,10 @@ let reload_document_selected
     reload_document doc;
   )
 
+let add_to_undo (store : Document_store.t) =
+  Stack.push store Vars.document_store_undo;
+  Stack.clear Vars.document_store_redo
+
 let drop ~document_count (choice : [`Single of string | `Listed | `Unlisted]) =
   let choice =
     match choice with
@@ -69,15 +79,16 @@ let drop ~document_count (choice : [`Single of string | `Listed | `Unlisted]) =
         `Unusable
       )
   in
-  let document_store =
-    Lwd.peek Ui_base.Vars.document_store
-    |> Document_store.drop choice
-  in
-  Document_store_manager.submit_update_req document_store Ui_base.Vars.document_store
+  let document_store = Lwd.peek Ui_base.Vars.document_store in
+  add_to_undo document_store;
+  Document_store_manager.submit_update_req
+    (Document_store.drop choice document_store)
+    Ui_base.Vars.document_store
 
 let update_search_phrase () =
   reset_document_selected ();
   let s = fst @@ Lwd.peek Vars.search_field in
+  Stack.clear Vars.document_store_redo;
   Document_store_manager.submit_search_req s Ui_base.Vars.document_store
 
 module Top_pane = struct
@@ -450,6 +461,34 @@ let keyboard_handler
         )
       | (`ASCII 'd', []) -> (
           Lwd.set Ui_base.Vars.input_mode Discard;
+          `Handled
+        )
+      | (`ASCII 'u', [])
+      | (`ASCII 'u', [`Meta])
+      | (`ASCII 'Z', [`Ctrl]) -> (
+          (match Stack.pop_opt Vars.document_store_undo with
+           | None -> ()
+           | Some prev -> (
+               let cur = Lwd.peek Ui_base.Vars.document_store in
+               Stack.push cur Vars.document_store_redo;
+               Document_store_manager.submit_update_req prev Ui_base.Vars.document_store;
+               let s = Document_store.search_exp_text prev in
+               Lwd.set Vars.search_field (s, String.length s)
+             ));
+          `Handled
+        )
+      | (`ASCII 'e', [`Meta])
+      | (`ASCII 'R', [`Ctrl])
+      | (`ASCII 'Y', [`Ctrl]) -> (
+          (match Stack.pop_opt Vars.document_store_redo with
+           | None -> ()
+           | Some next -> (
+               let cur = Lwd.peek Ui_base.Vars.document_store in
+               Stack.push cur Vars.document_store_undo;
+               Document_store_manager.submit_update_req next Ui_base.Vars.document_store;
+               let s = Document_store.search_exp_text next in
+               Lwd.set Vars.search_field (s, String.length s)
+             ));
           `Handled
         )
       | (`ASCII 'r', []) -> (

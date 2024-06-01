@@ -67,7 +67,7 @@ let search_fiber pool =
             Eio.Stream.add internal_status_mailbox `Searching;
             let document_store =
               document_store
-              |> Document_store.update_search_exp pool stop_signal' search_exp
+              |> Document_store.update_search_exp pool stop_signal' s search_exp
             in
             Eio.Stream.add internal_status_mailbox `Idle;
             Eio.Stream.add egress_mailbox (document_store, document_store_var)

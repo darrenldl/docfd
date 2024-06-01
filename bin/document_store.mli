@@ -10,9 +10,17 @@ val size : t -> int
 
 val empty : t
 
-val update_search_exp : Task_pool.t -> Stop_signal.t -> Search_exp.t -> t -> t
+val update_search_exp :
+  Task_pool.t ->
+  Stop_signal.t ->
+  string ->
+  Search_exp.t ->
+  t ->
+  t
 
 val search_exp : t -> Search_exp.t
+
+val search_exp_text : t -> string
 
 val add_document : Task_pool.t -> Document.t -> t -> t
 

@@ -7,6 +7,7 @@ type document_info = Document.t * Search_result.t array
 type t = {
   all_documents : Document.t String_map.t;
   search_exp : Search_exp.t;
+  search_exp_text : string;
   search_results : Search_result.t array String_map.t;
 }
 
@@ -17,10 +18,13 @@ let empty : t =
   {
     all_documents = String_map.empty;
     search_exp = Search_exp.empty;
+    search_exp_text = "";
     search_results = String_map.empty;
   }
 
 let search_exp (t : t) = t.search_exp
+
+let search_exp_text (t : t) = t.search_exp_text
 
 let single_out ~path (t : t) =
   match String_map.find_opt path t.all_documents with
@@ -32,6 +36,7 @@ let single_out ~path (t : t) =
       {
         all_documents;
         search_exp = t.search_exp;
+        search_exp_text = t.search_exp_text;
         search_results = String_map.(add path search_results empty);
       }
 
@@ -45,7 +50,7 @@ let min_binding (t : t) =
       Some (path, (doc, search_results))
     )
 
-let update_search_exp pool stop_signal search_exp (t : t) : t =
+let update_search_exp pool stop_signal search_exp_text search_exp (t : t) : t =
   if Search_exp.equal search_exp t.search_exp then (
     t
   ) else (
@@ -65,6 +70,7 @@ let update_search_exp pool stop_signal search_exp (t : t) : t =
     in
     { t with
       search_exp;
+      search_exp_text;
       search_results;
     }
   )
@@ -128,6 +134,7 @@ let drop (choice : [ `Single of string | `Usable | `Unusable ]) (t : t) : t =
   | `Single path -> (
       { all_documents = String_map.remove path t.all_documents;
         search_exp = t.search_exp;
+        search_exp_text = t.search_exp_text;
         search_results = String_map.remove path t.search_results;
       }
     )
@@ -150,6 +157,7 @@ let drop (choice : [ `Single of string | `Usable | `Unusable ]) (t : t) : t =
       in
       { all_documents = String_map.filter f t.all_documents;
         search_exp = t.search_exp;
+        search_exp_text = t.search_exp_text;
         search_results = String_map.filter f t.search_results;
       }
     )
