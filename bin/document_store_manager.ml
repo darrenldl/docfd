@@ -10,7 +10,7 @@ type request =
   | Search of string * Document_store.t * Document_store.t Lwd.var
   | Update of Document_store.t * Document_store.t Lwd.var
 
-let ui_status : status Lwd.var = Lwd.var `Idle
+let search_ui_status : status Lwd.var = Lwd.var `Idle
 
 let internal_status_mailbox : status Eio.Stream.t = Eio.Stream.create 1
 
@@ -37,7 +37,7 @@ let manager_fiber () =
            )
        )
      | _ -> ());
-    Lwd.set ui_status status
+    Lwd.set search_ui_status status
   done
 
 let search_fiber pool =
