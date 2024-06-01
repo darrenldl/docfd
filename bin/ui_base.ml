@@ -380,7 +380,7 @@ module Search_bar = struct
     |> Lwd.return
 
   let search_status =
-    let$* status = Lwd.get Search_manager.ui_status in
+    let$* status = Lwd.get Document_store_manager.ui_status in
     (match status with
      | `Idle -> (
          Notty.I.string Notty.A.(fg lightgreen)

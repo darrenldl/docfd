@@ -39,7 +39,7 @@ let reload_document (doc : Document.t) =
         Lwd.peek Ui_base.Vars.document_store
         |> Document_store.add_document pool doc
       in
-      Search_manager.submit_update_req document_store Ui_base.Vars.document_store;
+      Document_store_manager.submit_update_req document_store Ui_base.Vars.document_store;
     )
   | Error _ -> ()
 
@@ -73,12 +73,12 @@ let drop ~document_count (choice : [`Single of string | `Listed | `Unlisted]) =
     Lwd.peek Ui_base.Vars.document_store
     |> Document_store.drop choice
   in
-  Search_manager.submit_update_req document_store Ui_base.Vars.document_store
+  Document_store_manager.submit_update_req document_store Ui_base.Vars.document_store
 
 let update_search_phrase () =
   reset_document_selected ();
   let s = fst @@ Lwd.peek Vars.search_field in
-  Search_manager.submit_search_req s Ui_base.Vars.document_store
+  Document_store_manager.submit_search_req s Ui_base.Vars.document_store
 
 module Top_pane = struct
   module Document_list = struct
@@ -463,7 +463,7 @@ let keyboard_handler
               let single_file_document_store =
                 Option.get (Document_store.single_out ~path:(Document.path doc) document_store)
               in
-              Search_manager.submit_update_req single_file_document_store Ui_base.Vars.Single_file.document_store;
+              Document_store_manager.submit_update_req single_file_document_store Ui_base.Vars.Single_file.document_store;
               Lwd.set Ui_base.Vars.Single_file.index_of_search_result_selected
                 (Lwd.peek Vars.index_of_search_result_selected);
               Lwd.set Ui_base.Vars.Single_file.search_field

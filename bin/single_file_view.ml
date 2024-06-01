@@ -14,7 +14,7 @@ let reset_search_result_selected () =
 let update_search_phrase () =
   reset_search_result_selected ();
   let s = fst @@ Lwd.peek Ui_base.Vars.Single_file.search_field in
-  Search_manager.submit_search_req s Ui_base.Vars.Single_file.document_store
+  Document_store_manager.submit_search_req s Ui_base.Vars.Single_file.document_store
 
 let reload_document (doc : Document.t) : unit =
   let pool = Ui_base.task_pool () in
@@ -27,12 +27,12 @@ let reload_document (doc : Document.t) : unit =
         Lwd.peek Ui_base.Vars.document_store
         |> Document_store.add_document pool doc
       in
-      Search_manager.submit_update_req global_document_store Ui_base.Vars.document_store;
+      Document_store_manager.submit_update_req global_document_store Ui_base.Vars.document_store;
       let document_store =
         Lwd.peek Ui_base.Vars.Single_file.document_store
         |> Document_store.add_document pool doc
       in
-      Search_manager.submit_update_req document_store Ui_base.Vars.Single_file.document_store;
+      Document_store_manager.submit_update_req document_store Ui_base.Vars.Single_file.document_store;
     )
   | Error _ -> ()
 
