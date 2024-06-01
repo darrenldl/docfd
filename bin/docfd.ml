@@ -191,9 +191,13 @@ let document_store_of_document_src ~env pool (document_src : Document_src.t) =
           )
       )
   in
-  all_documents
-  |> List.to_seq
-  |> Document_store.of_seq pool
+  let store =
+    all_documents
+    |> List.to_seq
+    |> Document_store.of_seq pool
+  in
+  Gc.compact ();
+  store
 
 let run
     ~(env : Eio_unix.Stdenv.base)
@@ -652,6 +656,13 @@ let run
     Document_store_manager.manager_fiber;
     Ui_base.Key_binding_info.grid_light_fiber;
     Printers.Worker.fiber;
+    (fun () ->
+       let clock = Eio.Stdenv.mono_clock env in
+       while true do
+         Eio.Time.Mono.sleep clock 60.0;
+         Gc.compact ();
+       done
+    );
     (fun () ->
        (match start_with_search with
         | None -> ()
