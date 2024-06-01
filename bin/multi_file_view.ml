@@ -463,7 +463,7 @@ let keyboard_handler
               let single_file_document_store =
                 Option.get (Document_store.single_out ~path:(Document.path doc) document_store)
               in
-              Lwd.set Ui_base.Vars.Single_file.document_store single_file_document_store;
+              Search_manager.submit_update_req single_file_document_store Ui_base.Vars.Single_file.document_store;
               Lwd.set Ui_base.Vars.Single_file.index_of_search_result_selected
                 (Lwd.peek Vars.index_of_search_result_selected);
               Lwd.set Ui_base.Vars.Single_file.search_field
