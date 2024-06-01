@@ -144,7 +144,7 @@ let unusable_documents_paths (t : t) =
   let s = usable_documents_paths t in
   all_documents_paths t
   |> Seq.filter (fun path ->
-      String_set.mem path s)
+      not (String_set.mem path s))
 
 let drop (choice : [ `Single of string | `Usable | `Unusable ]) (t : t) : t =
   match choice with
