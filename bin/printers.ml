@@ -28,12 +28,16 @@ let newline_image (out : print_output) =
   Notty_unix.eol (Notty.I.void 0 1)
   |> output_image (out_channel_of_print_output out)
 
-let search_results (out : print_output) document (results : Search_result.t Seq.t) =
-  let path = Document.path document in
+let path_image (out : print_output) path =
   let oc = out_channel_of_print_output out in
   Notty.I.string Notty.A.(fg magenta) path
   |> Notty_unix.eol
-  |> output_image oc;
+  |> output_image oc
+
+let search_results (out : print_output) document (results : Search_result.t Seq.t) =
+  let path = Document.path document in
+  let oc = out_channel_of_print_output out in
+  path_image out path;
   Seq.iteri (fun i search_result ->
       if i > 0 then (
         newline_image out

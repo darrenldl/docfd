@@ -8,6 +8,9 @@
 
 - Added `g` and `G` key bindings for going to top and bottom of document list respectively
 
+- Added `-l`/`--files-with-match` and `--files-without-match` for printing just paths
+  in non-interactive mode
+
 ## 6.0.1
 
 - Fixed random UI freezes when updating search field

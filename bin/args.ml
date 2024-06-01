@@ -359,6 +359,34 @@ let single_line_arg =
     & info [ "single-line" ] ~doc
   )
 
+let files_with_match_arg_name = "files-with-match"
+
+let files_with_match_arg =
+  let doc =
+    Fmt.str "If in non-interactive mode,
+print the paths of documents with at least one match
+instead of printing the search results."
+  in
+  Arg.(
+    value
+    & flag
+    & info [ "l"; files_with_match_arg_name ] ~doc
+  )
+
+let files_without_match_arg_name = "files-without-match"
+
+let files_without_match_arg =
+  let doc =
+    Fmt.str "If in non-interactive mode,
+print the paths of documents with no matches
+instead of printing the search results."
+  in
+  Arg.(
+    value
+    & flag
+    & info [ files_without_match_arg_name ] ~doc
+  )
+
 let paths_arg =
   let doc =
     Fmt.str
@@ -386,6 +414,8 @@ let check
     ~search_result_print_text_width
     ~search_result_print_snippet_min_size
     ~search_result_print_max_add_lines
+    ~print_files_with_match
+    ~print_files_without_match
   =
   if max_depth < 0 then (
     exit_with_error_msg
@@ -426,4 +456,8 @@ let check
   if search_result_print_max_add_lines < 0 then (
     exit_with_error_msg
       (Fmt.str "invalid %s: cannot be < 0" search_result_print_snippet_max_add_lines_arg_name)
+  );
+  if print_files_with_match && print_files_without_match then (
+    exit_with_error_msg
+      (Fmt.str "cannot specify both --%s and --%s" files_with_match_arg_name files_without_match_arg_name)
   )

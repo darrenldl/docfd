@@ -235,6 +235,8 @@ let run
     (globs : string list)
     (single_line_globs : string list)
     (single_line_search_mode_by_default : bool)
+    (print_files_with_match : bool)
+    (print_files_without_match : bool)
     (paths : string list)
   =
   Args.check
@@ -247,7 +249,9 @@ let run
     ~sample_count_per_doc
     ~search_result_print_text_width
     ~search_result_print_snippet_min_size
-    ~search_result_print_max_add_lines;
+    ~search_result_print_max_add_lines
+    ~print_files_with_match
+    ~print_files_without_match;
   Params.debug_output := (match debug_log with
       | None -> None
       | Some "-" -> Some stderr
@@ -507,19 +511,27 @@ let run
                search_exp
                init_document_store
            in
-           let document_info_s =
-             Document_store.usable_documents document_store
-           in
            let out = `Stdout in
-           Array.iteri (fun i (document, search_results) ->
-               if i > 0 then (
-                 Printers.newline_image out;
-               );
-               (match print_limit with
-                | None -> Array.to_seq search_results
-                | Some end_exc -> array_sub_seq ~start:0 ~end_exc search_results)
-               |> Printers.search_results out document
-             ) document_info_s;
+           if print_files_with_match then (
+             let s = Document_store.usable_documents_paths document_store in
+             String_set.iter (Printers.path_image out) s
+           ) else if print_files_without_match then (
+             Document_store.unusable_documents_paths document_store
+             |> Seq.iter (Printers.path_image out)
+           ) else (
+             let document_info_s =
+               Document_store.usable_documents document_store
+             in
+             Array.iteri (fun i (document, search_results) ->
+                 if i > 0 then (
+                   Printers.newline_image out;
+                 );
+                 (match print_limit with
+                  | None -> Array.to_seq search_results
+                  | Some end_exc -> array_sub_seq ~start:0 ~end_exc search_results)
+                 |> Printers.search_results out document
+               ) document_info_s;
+           );
            clean_up ();
            exit 0
          )
@@ -734,6 +746,8 @@ let cmd ~env ~sw =
      $ glob_arg
      $ single_line_glob_arg
      $ single_line_arg
+     $ files_with_match_arg
+     $ files_without_match_arg
      $ paths_arg)
 
 let () = Eio_main.run (fun env ->

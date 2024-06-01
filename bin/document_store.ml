@@ -129,6 +129,23 @@ let usable_documents (t : t) : (Document.t * Search_result.t array) array =
     arr
   )
 
+let usable_documents_paths (t : t) : String_set.t =
+  usable_documents t
+  |> Array.to_seq
+  |> Seq.map (fun (doc, _) -> Document.path doc)
+  |> String_set.of_seq
+
+let all_documents_paths (t : t) : string Seq.t =
+  t.all_documents
+  |> String_map.to_seq
+  |> Seq.map fst
+
+let unusable_documents_paths (t : t) =
+  let s = usable_documents_paths t in
+  all_documents_paths t
+  |> Seq.filter (fun path ->
+      String_set.mem path s)
+
 let drop (choice : [ `Single of string | `Usable | `Unusable ]) (t : t) : t =
   match choice with
   | `Single path -> (
@@ -139,14 +156,11 @@ let drop (choice : [ `Single of string | `Usable | `Unusable ]) (t : t) : t =
       }
     )
   | `Usable | `Unusable -> (
-      let usable_documents =
-        usable_documents t
-        |> Array.to_seq
-        |> Seq.map (fun (doc, _) -> Document.path doc)
-        |> String_set.of_seq
+      let usable_documents_paths =
+        usable_documents_paths t
       in
       let document_is_usable path =
-        String_set.mem path usable_documents
+        String_set.mem path usable_documents_paths
       in
       let f : 'a. string -> 'a -> bool =
         fun path _ ->
