@@ -162,8 +162,11 @@ let document_store_of_document_src ~env pool (document_src : Document_src.t) =
              (String_set.to_seq default_search_mode_files))
           (Seq.map (fun path -> (`Single_line, path))
              (String_set.to_seq single_line_search_mode_files))
+        |> Seq.mapi (fun i (search_mode, path) ->
+            (i, search_mode, path)
+          )
         |> List.of_seq
-        |> Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size (fun (search_mode, path) ->
+        |> Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size (fun (i, search_mode, path) ->
             do_if_debug (fun oc ->
                 Printf.fprintf oc "Loading document: %s\n" (Filename.quote path);
               );
@@ -175,6 +178,9 @@ let document_store_of_document_src ~env pool (document_src : Document_src.t) =
                   )
                   (Filename.quote path)
               );
+            if i mod 20 = 0 then (
+              Gc.compact ();
+            );
             match Document.of_path ~env pool search_mode path with
             | Ok x -> (
                 do_if_debug (fun oc ->
