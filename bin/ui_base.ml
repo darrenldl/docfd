@@ -5,6 +5,8 @@ type input_mode =
   | Navigate
   | Search
   | Discard
+  | Print
+  | Reload
 
 type ui_mode =
   | Ui_single_file
@@ -215,6 +217,8 @@ module Status_bar = struct
       [ (Navigate, "NAVIGATE")
       ; (Search, "SEARCH")
       ; (Discard, "DISCARD")
+      ; (Print, "PRINT")
+      ; (Reload, "RELOAD")
       ]
     in
     let max_input_mode_string_len =

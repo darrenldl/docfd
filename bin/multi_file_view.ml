@@ -343,13 +343,11 @@ module Bottom_pane = struct
           ];
           [
             { label = "Tab"; msg = "single file view" };
-            { label = "p"; msg = "print search result" };
-            { label = "Shift+P"; msg = "print document path" };
+            { label = "p"; msg = "print mode" };
+            { label = "d"; msg = "discard mode" };
           ];
           [
-            { label = "r"; msg = "reload document selected" };
-            { label = "Shift+R"; msg = "rescan for documents" };
-            { label = "d"; msg = "discard mode" };
+            { label = "r"; msg = "reload mode" };
           ];
         ]
       in
@@ -366,13 +364,28 @@ module Bottom_pane = struct
         [
           [
             { label = "d"; msg = "currently selected" };
-            { label = "u"; msg = "unlisted" };
             { label = "l"; msg = "listed" };
+            { label = "u"; msg = "unlisted" };
           ];
           [
             { label = "Esc"; msg = "cancel" };
           ];
           empty_row;
+        ]
+      in
+      let print_grid =
+        [
+          [
+            { label = "s"; msg = "selected search result" };
+            { label = "p"; msg = "path of selected" };
+          ];
+          [
+            { label = "l"; msg = "paths of listed" };
+            { label = "u"; msg = "paths of unlisted" };
+          ];
+          [
+            { label = "Esc"; msg = "cancel" };
+          ];
         ]
       in
       [
@@ -393,6 +406,12 @@ module Bottom_pane = struct
         );
         ({ input_mode = Discard; init_ui_mode = Ui_single_file },
          discard_grid
+        );
+        ({ input_mode = Print; init_ui_mode = Ui_multi_file },
+         print_grid
+        );
+        ({ input_mode = Print; init_ui_mode = Ui_single_file },
+         print_grid
         );
       ]
 
@@ -461,6 +480,10 @@ let keyboard_handler
         )
       | (`ASCII 'd', []) -> (
           Lwd.set Ui_base.Vars.input_mode Discard;
+          `Handled
+        )
+      | (`ASCII 'p', []) -> (
+          Lwd.set Ui_base.Vars.input_mode Print;
           `Handled
         )
       | (`ASCII 'u', [])
@@ -567,28 +590,6 @@ let keyboard_handler
           update_search_phrase ();
           `Handled
         )
-      | (`ASCII 'P', []) -> (
-          Ui_base.Key_binding_info.blink "Shift+P";
-          Option.iter (fun (doc, _search_results) ->
-              Printers.Worker.submit_search_results_print_req `Stderr doc Seq.empty;
-            )
-            document_info;
-          `Handled
-        )
-      | (`ASCII 'p', []) -> (
-          Ui_base.Key_binding_info.blink "p";
-          Option.iter (fun (doc, search_results) ->
-              let search_results =
-                if search_result_current_choice < Array.length search_results then
-                  Seq.return search_results.(search_result_current_choice)
-                else
-                  Seq.empty
-              in
-              Printers.Worker.submit_search_results_print_req `Stderr doc search_results;
-            )
-            document_info;
-          `Handled
-        )
       | (`Enter, []) -> (
           Option.iter (fun (doc, search_results) ->
               let search_result =
@@ -622,6 +623,44 @@ let keyboard_handler
            )
          | (`ASCII 'l', []) -> (
              drop ~document_count `Listed;
+             true
+           )
+         | _ -> false
+        );
+      in
+      if exit then (
+        Lwd.set Ui_base.Vars.input_mode Navigate;
+      );
+      `Handled
+    )
+  | Print -> (
+      let exit =
+        (match key with
+         | (`Escape, []) -> true
+         | (`ASCII 's', []) -> (
+             Option.iter (fun (doc, search_results) ->
+                 let search_results =
+                   if search_result_current_choice < Array.length search_results then
+                     Seq.return search_results.(search_result_current_choice)
+                   else
+                     Seq.empty
+                 in
+                 Printers.Worker.submit_search_results_print_req `Stderr doc search_results;
+               )
+               document_info;
+             true
+           )
+         | (`ASCII 'p', []) -> (
+             Option.iter (fun (doc, _search_results) ->
+                 Printers.Worker.submit_search_results_print_req `Stderr doc Seq.empty;
+               )
+               document_info;
+             true
+           )
+         | (`ASCII 'l', []) -> (
+             true
+           )
+         | (`ASCII 'u', []) -> (
              true
            )
          | _ -> false
