@@ -363,7 +363,7 @@ module Bottom_pane = struct
       let discard_grid =
         [
           [
-            { label = "d"; msg = "currently selected" };
+            { label = "d"; msg = "selected" };
             { label = "l"; msg = "listed" };
             { label = "u"; msg = "unlisted" };
           ];
@@ -376,8 +376,9 @@ module Bottom_pane = struct
       let print_grid =
         [
           [
-            { label = "s"; msg = "selected search result" };
-            { label = "p"; msg = "path of selected" };
+            { label = "p"; msg = "selected search result" };
+            { label = "a"; msg = "all results of selected document" };
+            { label = "Shift+P"; msg = "path of selected document" };
           ];
           [
             { label = "l"; msg = "paths of listed" };
@@ -438,6 +439,7 @@ module Bottom_pane = struct
 end
 
 let keyboard_handler
+    ~(document_store : Document_store.t)
     ~(document_info_s : Document_store.document_info array)
     (key : Nottui.Ui.key)
   =
@@ -637,7 +639,7 @@ let keyboard_handler
       let exit =
         (match key with
          | (`Escape, []) -> true
-         | (`ASCII 's', []) -> (
+         | (`ASCII 'p', []) -> (
              Option.iter (fun (doc, search_results) ->
                  let search_results =
                    if search_result_current_choice < Array.length search_results then
@@ -650,7 +652,11 @@ let keyboard_handler
                document_info;
              true
            )
-         | (`ASCII 'p', []) -> (
+         | (`ASCII 'l', []) -> (
+             let usable_documents_paths = Document_store.usable_documents_paths document_store in
+             true
+           )
+         | (`ASCII 'P', []) -> (
              Option.iter (fun (doc, _search_results) ->
                  Printers.Worker.submit_search_results_print_req `Stderr doc Seq.empty;
                )
@@ -691,7 +697,7 @@ let main : Nottui.ui Lwd.t =
   Nottui_widgets.vbox
     [
       Lwd.return (Nottui.Ui.keyboard_area
-                    (keyboard_handler ~document_info_s)
+                    (keyboard_handler ~document_store ~document_info_s)
                     top_pane);
       Lwd.return bottom_pane;
     ]

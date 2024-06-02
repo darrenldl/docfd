@@ -11,6 +11,8 @@
 - Added `-l`/`--files-with-match` and `--files-without-match` for printing just paths
   in non-interactive mode
 
+- Grouped print key bindings under print mode
+
 ## 6.0.1
 
 - Fixed random UI freezes when updating search field

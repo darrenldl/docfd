@@ -305,7 +305,7 @@ module Key_binding_info = struct
   let make_grid_lookup grid_contents : grid_lookup =
     let max_label_msg_len_lookup =
       grid_contents
-      |> List.map (fun (mode, grid) ->
+      |> List.map (fun (mode_comb, grid) ->
           let max_label_len, max_msg_len =
             List.fold_left (fun (max_label_len, max_msg_len) row ->
                 List.fold_left (fun (max_label_len, max_msg_len) { label; msg } ->
@@ -318,7 +318,7 @@ module Key_binding_info = struct
               (0, 0)
               grid
           in
-          (mode, (max_label_len, max_msg_len))
+          (mode_comb, (max_label_len, max_msg_len))
         )
     in
     let label_msg_pair mode_comb { label; msg } : Nottui.ui Lwd.t =
