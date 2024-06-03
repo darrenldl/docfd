@@ -13,6 +13,10 @@
 
 - Grouped print key bindings under print mode
 
+- Added more print key bindings
+
+- Grouped reload key bindings under reload mode
+
 ## 6.0.1
 
 - Fixed random UI freezes when updating search field
