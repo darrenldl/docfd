@@ -514,8 +514,8 @@ let run
            in
            let out = `Stdout in
            if print_files_with_match then (
-             let s = Document_store.usable_documents_paths document_store in
-             String_set.iter (Printers.path_image out) s
+             Document_store.usable_documents_paths document_store
+             |> String_set.iter (Printers.path_image out)
            ) else if print_files_without_match then (
              Document_store.unusable_documents_paths document_store
              |> Seq.iter (Printers.path_image out)
