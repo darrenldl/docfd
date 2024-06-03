@@ -85,6 +85,11 @@ module Bottom_pane = struct
   module Key_binding_info = struct
     let grid_contents : Ui_base.Key_binding_info.grid_contents =
       let open Ui_base.Key_binding_info in
+      let empty_row =
+        [
+          { label = ""; msg = "" };
+        ]
+      in
       let navigate_line0 =
         [
           { label = "Enter"; msg = "open document" };
@@ -94,8 +99,7 @@ module Bottom_pane = struct
       in
       let print_items =
         [
-          { label = "p"; msg = "print search result" };
-          { label = "Shift+P"; msg = "print document path" };
+          { label = "p"; msg = "print mode" };
         ]
       in
       let navigate_line2 =
@@ -108,12 +112,22 @@ module Bottom_pane = struct
           [
             { label = "Enter"; msg = "exit search mode" };
           ];
+          empty_row;
+          empty_row;
+        ]
+      in
+      let print_grid =
+        [
           [
-            { label = ""; msg = "" };
+            { label = "p"; msg = "selected search result" };
+            { label = "s"; msg = "samples" };
+            { label = "a"; msg = "all results" };
           ];
           [
-            { label = ""; msg = "" };
+            { label = "Shift+P"; msg = "path of selected" };
+            { label = "Esc"; msg = "cancel" };
           ];
+          empty_row;
         ]
       in
       [
@@ -136,6 +150,12 @@ module Bottom_pane = struct
         );
         ({ input_mode = Search; init_ui_mode = Ui_single_file },
          search_grid
+        );
+        ({ input_mode = Print; init_ui_mode = Ui_multi_file },
+         print_grid
+        );
+        ({ input_mode = Print; init_ui_mode = Ui_single_file },
+         print_grid
         );
       ]
 
@@ -231,20 +251,8 @@ let keyboard_handler
           update_search_phrase ();
           `Handled
         )
-      | (`ASCII 'P', []) -> (
-          Ui_base.Key_binding_info.blink "Shift+P";
-          Printers.Worker.submit_search_results_print_req `Stderr document Seq.empty;
-          `Handled
-        )
       | (`ASCII 'p', []) -> (
-          Ui_base.Key_binding_info.blink "p";
-          let search_results =
-            if search_result_current_choice < Array.length search_results then
-              Seq.return search_results.(search_result_current_choice)
-            else
-              Seq.empty
-          in
-          Printers.Worker.submit_search_results_print_req `Stderr document search_results;
+          Lwd.set Ui_base.Vars.input_mode Print;
           `Handled
         )
       | (`Enter, []) -> (
@@ -260,6 +268,48 @@ let keyboard_handler
           `Handled
         )
       | _ -> `Handled
+    )
+  | Print -> (
+      let exit =
+        (match key with
+         | (`Escape, []) -> true
+         | (`ASCII 'p', []) -> (
+             let (doc, search_results) = document_info in
+             let s =
+               if search_result_current_choice < Array.length search_results then
+                 Seq.return search_results.(search_result_current_choice)
+               else
+                 Seq.empty
+             in
+             Printers.Worker.submit_search_results_print_req `Stderr doc s;
+             true
+           )
+         | (`ASCII 's', []) -> (
+             let (doc, search_results) = document_info in
+             let s = Array.to_seq search_results
+                     |> OSeq.take !Params.sample_count_per_document
+             in
+             Printers.Worker.submit_search_results_print_req `Stderr doc s;
+             true
+           )
+         | (`ASCII 'a', []) -> (
+             let (doc, search_results) = document_info in
+             let s = Array.to_seq search_results in
+             Printers.Worker.submit_search_results_print_req `Stderr doc s;
+             true
+           )
+         | (`ASCII 'P', []) -> (
+             let (doc, _search_results) = document_info in
+             Printers.Worker.submit_search_results_print_req `Stderr doc Seq.empty;
+             true
+           )
+         | _ -> false
+        );
+      in
+      if exit then (
+        Lwd.set Ui_base.Vars.input_mode Navigate;
+      );
+      `Handled
     )
   | _ -> `Unhandled
 
