@@ -392,6 +392,18 @@ module Bottom_pane = struct
           ];
         ]
       in
+      let reload_grid =
+        [
+          [
+            { label = "r"; msg = "selected" };
+            { label = "a"; msg = "all" };
+          ];
+          [
+            { label = "Esc"; msg = "cancel" };
+          ];
+          empty_row;
+        ]
+      in
       [
         ({ input_mode = Navigate; init_ui_mode = Ui_multi_file },
          navigate_grid
@@ -416,6 +428,12 @@ module Bottom_pane = struct
         );
         ({ input_mode = Print; init_ui_mode = Ui_single_file },
          print_grid
+        );
+        ({ input_mode = Reload; init_ui_mode = Ui_multi_file },
+         reload_grid
+        );
+        ({ input_mode = Reload; init_ui_mode = Ui_single_file },
+         reload_grid
         );
       ]
 
@@ -476,15 +494,12 @@ let keyboard_handler
           Ui_base.Vars.action := None;
           `Handled
         )
-      | (`ASCII 'R', []) -> (
-          Ui_base.Key_binding_info.blink "Shift+R";
-          reset_document_selected ();
-          Lwd.set Ui_base.Vars.quit true;
-          Ui_base.Vars.action := Some Ui_base.Recompute_document_src;
-          `Handled
-        )
       | (`ASCII 'd', []) -> (
           Lwd.set Ui_base.Vars.input_mode Discard;
+          `Handled
+        )
+      | (`ASCII 'r', []) -> (
+          Lwd.set Ui_base.Vars.input_mode Reload;
           `Handled
         )
       | (`ASCII 'p', []) -> (
@@ -517,11 +532,6 @@ let keyboard_handler
                let s = Document_store.search_exp_text next in
                Lwd.set Vars.search_field (s, String.length s)
              ));
-          `Handled
-        )
-      | (`ASCII 'r', []) -> (
-          Ui_base.Key_binding_info.blink "r";
-          reload_document_selected ~document_info_s;
           `Handled
         )
       | (`Tab, []) -> (
@@ -714,6 +724,30 @@ let keyboard_handler
                  |> submit_search_results_print_req doc
                )
                document_info_s;
+             true
+           )
+         | _ -> false
+        );
+      in
+      if exit then (
+        Lwd.set Ui_base.Vars.input_mode Navigate;
+      );
+      `Handled
+    )
+  | Reload -> (
+      let exit =
+        (match key with
+         | (`Escape, [])
+         | (`ASCII 'Q', [`Ctrl])
+         | (`ASCII 'C', [`Ctrl]) -> true
+         | (`ASCII 'r', []) -> (
+             reload_document_selected ~document_info_s;
+             true
+           )
+         | (`ASCII 'a', []) -> (
+             reset_document_selected ();
+             Lwd.set Ui_base.Vars.quit true;
+             Ui_base.Vars.action := Some Ui_base.Recompute_document_src;
              true
            )
          | _ -> false
