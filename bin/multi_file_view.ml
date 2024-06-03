@@ -378,7 +378,7 @@ module Bottom_pane = struct
           [
             { label = "p"; msg = "selected search result" };
             { label = "s"; msg = "samples of selected document" };
-            { label = "a"; msg = "all results of selected document" };
+            { label = "a"; msg = "results of selected document" };
           ];
           [
             { label = "Shift+P"; msg = "path of selected document" };
@@ -386,8 +386,8 @@ module Bottom_pane = struct
             { label = "u"; msg = "paths of unlisted" };
           ];
           [
-            { label = "Shift+S"; msg = "all samples" };
-            { label = "Shift+A"; msg = "all results" };
+            { label = "Shift+S"; msg = "samples of all documents" };
+            { label = "Shift+A"; msg = "results of all documents" };
             { label = "Esc"; msg = "cancel" };
           ];
         ]
