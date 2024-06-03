@@ -272,7 +272,9 @@ let keyboard_handler
   | Print -> (
       let exit =
         (match key with
-         | (`Escape, []) -> true
+         | (`Escape, [])
+         | (`ASCII 'Q', [`Ctrl])
+         | (`ASCII 'C', [`Ctrl]) -> true
          | (`ASCII 'p', []) -> (
              let (doc, search_results) = document_info in
              let s =

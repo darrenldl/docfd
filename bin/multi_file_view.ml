@@ -615,7 +615,9 @@ let keyboard_handler
   | Discard -> (
       let exit =
         (match key with
-         | (`Escape, []) -> true
+         | (`Escape, [])
+         | (`ASCII 'Q', [`Ctrl])
+         | (`ASCII 'C', [`Ctrl]) -> true
          | (`ASCII 'd', []) -> (
              Option.iter (fun (doc, _search_results) ->
                  drop ~document_count (`Single (Document.path doc))
@@ -641,7 +643,9 @@ let keyboard_handler
   | Print -> (
       let exit =
         (match key with
-         | (`Escape, []) -> true
+         | (`Escape, [])
+         | (`ASCII 'Q', [`Ctrl])
+         | (`ASCII 'C', [`Ctrl]) -> true
          | (`ASCII 'p', []) -> (
              Option.iter (fun (doc, search_results) ->
                  let s =
