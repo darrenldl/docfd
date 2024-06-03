@@ -641,6 +641,12 @@ let keyboard_handler
       `Handled
     )
   | Print -> (
+      let submit_search_results_print_req doc s =
+        Printers.Worker.submit_search_results_print_req `Stderr doc s
+      in
+      let submit_paths_print_req s =
+        Printers.Worker.submit_paths_print_req `Stderr s
+      in
       let exit =
         (match key with
          | (`Escape, [])
@@ -648,70 +654,64 @@ let keyboard_handler
          | (`ASCII 'C', [`Ctrl]) -> true
          | (`ASCII 'p', []) -> (
              Option.iter (fun (doc, search_results) ->
-                 let s =
-                   if search_result_current_choice < Array.length search_results then
-                     Seq.return search_results.(search_result_current_choice)
-                   else
-                     Seq.empty
-                 in
-                 Printers.Worker.submit_search_results_print_req `Stderr doc s;
+                 (if search_result_current_choice < Array.length search_results then
+                    Seq.return search_results.(search_result_current_choice)
+                  else
+                    Seq.empty)
+                 |> submit_search_results_print_req doc
                )
                document_info;
              true
            )
          | (`ASCII 's', []) -> (
              Option.iter (fun (doc, search_results) ->
-                 let s = Array.to_seq search_results
-                         |> OSeq.take !Params.sample_count_per_document
-                 in
-                 Printers.Worker.submit_search_results_print_req `Stderr doc s;
+                 Array.to_seq search_results
+                 |> OSeq.take !Params.sample_count_per_document
+                 |> submit_search_results_print_req doc
                )
                document_info;
              true
            )
          | (`ASCII 'a', []) -> (
              Option.iter (fun (doc, search_results) ->
-                 let s = Array.to_seq search_results in
-                 Printers.Worker.submit_search_results_print_req `Stderr doc s;
+                 Array.to_seq search_results
+                 |> submit_search_results_print_req doc
                )
                document_info;
              true
            )
          | (`ASCII 'P', []) -> (
              Option.iter (fun (doc, _search_results) ->
-                 Printers.Worker.submit_search_results_print_req `Stderr doc Seq.empty;
+                 Seq.empty
+                 |> submit_search_results_print_req doc
                )
                document_info;
              true
            )
          | (`ASCII 'l', []) -> (
              Document_store.usable_documents_paths document_store
-             |> String_set.iter (fun path ->
-                 Printers.Worker.submit_path_print_req `Stderr path;
-               );
+             |> String_set.to_seq
+             |> submit_paths_print_req;
              true
            )
          | (`ASCII 'u', []) -> (
              Document_store.unusable_documents_paths document_store
-             |> Seq.iter (fun path ->
-                 Printers.Worker.submit_path_print_req `Stderr path;
-               );
+             |> submit_paths_print_req;
              true
            )
          | (`ASCII 'S', []) -> (
              Array.iter (fun (doc, search_results) ->
-                 let s = Array.to_seq search_results
-                         |> OSeq.take !Params.sample_count_per_document
-                 in
-                 Printers.Worker.submit_search_results_print_req `Stderr doc s;
+                 Array.to_seq search_results
+                 |> OSeq.take !Params.sample_count_per_document
+                 |> submit_search_results_print_req doc
                )
                document_info_s;
              true
            )
          | (`ASCII 'A', []) -> (
              Array.iter (fun (doc, search_results) ->
-                 let s = Array.to_seq search_results in
-                 Printers.Worker.submit_search_results_print_req `Stderr doc s;
+                 Array.to_seq search_results
+                 |> submit_search_results_print_req doc
                )
                document_info_s;
              true

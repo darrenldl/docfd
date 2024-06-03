@@ -63,29 +63,30 @@ let search_results (out : print_output) document (results : Search_result.t Seq.
 
 module Worker = struct
   type request =
-    | Document of Document.t * Search_result.t Seq.t
-    | Path of string
+    | Document_and_search_results of Document.t * Search_result.t Seq.t
+    | Paths of string Seq.t
 
   let print_req : (print_output * request) Eio.Stream.t = Eio.Stream.create 100
 
   let submit_search_results_print_req out document results =
-    Eio.Stream.add print_req (out, Document (document, results))
+    Eio.Stream.add print_req (out, Document_and_search_results (document, results))
 
-  let submit_path_print_req out path =
-    Eio.Stream.add print_req (out, Path path)
+  let submit_paths_print_req out paths =
+    Eio.Stream.add print_req (out, Paths paths)
 
   let fiber () =
     let first_print = ref true in
     while true do
-      (match Eio.Stream.take print_req with
-       | out, Document (document, results) -> (
-           if not !first_print then (
-             newline_image out
-           );
+      let (out, req) = Eio.Stream.take print_req in
+      if not !first_print then (
+        newline_image out
+      );
+      (match req with
+       | Document_and_search_results (document, results) -> (
            search_results out document results;
          )
-       | out, Path path -> (
-           path_image out path
+       | Paths paths -> (
+           Seq.iter (path_image out) paths
          ));
       first_print := false;
     done

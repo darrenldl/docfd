@@ -270,6 +270,9 @@ let keyboard_handler
       | _ -> `Handled
     )
   | Print -> (
+      let submit_search_results_print_req doc s =
+        Printers.Worker.submit_search_results_print_req `Stderr doc s
+      in
       let exit =
         (match key with
          | (`Escape, [])
@@ -277,32 +280,30 @@ let keyboard_handler
          | (`ASCII 'C', [`Ctrl]) -> true
          | (`ASCII 'p', []) -> (
              let (doc, search_results) = document_info in
-             let s =
-               if search_result_current_choice < Array.length search_results then
-                 Seq.return search_results.(search_result_current_choice)
-               else
-                 Seq.empty
-             in
-             Printers.Worker.submit_search_results_print_req `Stderr doc s;
+             (if search_result_current_choice < Array.length search_results then
+                Seq.return search_results.(search_result_current_choice)
+              else
+                Seq.empty)
+             |> submit_search_results_print_req doc;
              true
            )
          | (`ASCII 's', []) -> (
              let (doc, search_results) = document_info in
-             let s = Array.to_seq search_results
-                     |> OSeq.take !Params.sample_count_per_document
-             in
-             Printers.Worker.submit_search_results_print_req `Stderr doc s;
+             Array.to_seq search_results
+             |> OSeq.take !Params.sample_count_per_document
+             |> submit_search_results_print_req doc;
              true
            )
          | (`ASCII 'a', []) -> (
              let (doc, search_results) = document_info in
-             let s = Array.to_seq search_results in
-             Printers.Worker.submit_search_results_print_req `Stderr doc s;
+             Array.to_seq search_results
+             |> submit_search_results_print_req doc;
              true
            )
          | (`ASCII 'P', []) -> (
              let (doc, _search_results) = document_info in
-             Printers.Worker.submit_search_results_print_req `Stderr doc Seq.empty;
+             Seq.empty
+             |> submit_search_results_print_req doc;
              true
            )
          | _ -> false
