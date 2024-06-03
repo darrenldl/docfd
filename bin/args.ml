@@ -217,12 +217,13 @@ show top N results where N is controlled by --%s."
 let sample_count_per_doc_arg =
   let doc =
     Fmt.str
-      "Number of search results to show per document when --%s is used."
+      "Number of search results to show per document when --%s is used
+or when samples printing is triggered."
       sample_arg_name
   in
   Arg.(
     value
-    & opt int Params.default_non_interactive_sample_count_per_document
+    & opt int Params.default_sample_count_per_document
     & info [ sample_count_per_doc_arg_name ] ~doc ~docv:"N"
   )
 

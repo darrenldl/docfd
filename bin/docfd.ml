@@ -282,6 +282,7 @@ let run
   Params.search_result_print_snippet_min_size := search_result_print_snippet_min_size;
   Params.search_result_print_snippet_max_additional_lines_each_direction :=
     search_result_print_max_add_lines;
+  Params.sample_count_per_document := sample_count_per_doc;
   Params.cache_dir := (
     if no_cache then (
       None
@@ -526,9 +527,11 @@ let run
                  if i > 0 then (
                    Printers.newline_image out;
                  );
-                 (match print_limit with
-                  | None -> Array.to_seq search_results
-                  | Some end_exc -> array_sub_seq ~start:0 ~end_exc search_results)
+                 Array.to_seq search_results
+                 |> (fun s ->
+                     match print_limit with
+                     | None -> s
+                     | Some end_exc -> OSeq.take end_exc s)
                  |> Printers.search_results out document
                ) document_info_s;
            );

@@ -43,7 +43,9 @@ let hash_chunk_size = 4096
 
 let text_editor = ref ""
 
-let default_non_interactive_sample_count_per_document = 5
+let default_sample_count_per_document = 5
+
+let sample_count_per_document = ref default_sample_count_per_document
 
 type style_mode = [ `Never | `Always | `Auto ]
 

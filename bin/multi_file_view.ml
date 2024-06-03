@@ -377,14 +377,17 @@ module Bottom_pane = struct
         [
           [
             { label = "p"; msg = "selected search result" };
-            { label = "a"; msg = "all results of selected document" };
-            { label = "Shift+P"; msg = "path of selected document" };
+            { label = "s"; msg = "samples of selected" };
+            { label = "a"; msg = "all results of selected" };
           ];
           [
+            { label = "Shift+P"; msg = "path of selected" };
             { label = "l"; msg = "paths of listed" };
             { label = "u"; msg = "paths of unlisted" };
           ];
           [
+            { label = "Shift+S"; msg = "all samples" };
+            { label = "Shift+A"; msg = "all results" };
             { label = "Esc"; msg = "cancel" };
           ];
         ]
@@ -641,19 +644,33 @@ let keyboard_handler
          | (`Escape, []) -> true
          | (`ASCII 'p', []) -> (
              Option.iter (fun (doc, search_results) ->
-                 let search_results =
+                 let s =
                    if search_result_current_choice < Array.length search_results then
                      Seq.return search_results.(search_result_current_choice)
                    else
                      Seq.empty
                  in
-                 Printers.Worker.submit_search_results_print_req `Stderr doc search_results;
+                 Printers.Worker.submit_search_results_print_req `Stderr doc s;
                )
                document_info;
              true
            )
-         | (`ASCII 'l', []) -> (
-             let usable_documents_paths = Document_store.usable_documents_paths document_store in
+         | (`ASCII 's', []) -> (
+             Option.iter (fun (doc, search_results) ->
+                 let s = Array.to_seq search_results
+                         |> OSeq.take !Params.sample_count_per_document
+                 in
+                 Printers.Worker.submit_search_results_print_req `Stderr doc s;
+               )
+               document_info;
+             true
+           )
+         | (`ASCII 'a', []) -> (
+             Option.iter (fun (doc, search_results) ->
+                 let s = Array.to_seq search_results in
+                 Printers.Worker.submit_search_results_print_req `Stderr doc s;
+               )
+               document_info;
              true
            )
          | (`ASCII 'P', []) -> (
@@ -664,9 +681,35 @@ let keyboard_handler
              true
            )
          | (`ASCII 'l', []) -> (
+             Document_store.usable_documents_paths document_store
+             |> String_set.iter (fun path ->
+                 Printers.Worker.submit_path_print_req `Stderr path;
+               );
              true
            )
          | (`ASCII 'u', []) -> (
+             Document_store.unusable_documents_paths document_store
+             |> Seq.iter (fun path ->
+                 Printers.Worker.submit_path_print_req `Stderr path;
+               );
+             true
+           )
+         | (`ASCII 'S', []) -> (
+             Array.iter (fun (doc, search_results) ->
+                 let s = Array.to_seq search_results
+                         |> OSeq.take !Params.sample_count_per_document
+                 in
+                 Printers.Worker.submit_search_results_print_req `Stderr doc s;
+               )
+               document_info_s;
+             true
+           )
+         | (`ASCII 'A', []) -> (
+             Array.iter (fun (doc, search_results) ->
+                 let s = Array.to_seq search_results in
+                 Printers.Worker.submit_search_results_print_req `Stderr doc s;
+               )
+               document_info_s;
              true
            )
          | _ -> false
