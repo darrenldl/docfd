@@ -124,7 +124,7 @@ module Bottom_pane = struct
             { label = "a"; msg = "all results" };
           ];
           [
-            { label = "Shift+P"; msg = "path of selected" };
+            { label = "Shift+P"; msg = "path" };
             { label = "Esc"; msg = "cancel" };
           ];
           empty_row;
