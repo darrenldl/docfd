@@ -19,6 +19,11 @@
 
 - Added fixes to ensure Docfd does not exit until all printing is done
 
+- Slimmed down memory usage by switching to OCaml 5.2 which enables use of `Gc.compact`
+
+    - Still no auto-compaction yet, however, will need to wait for a future
+      OCaml release
+
 ## 6.0.1
 
 - Fixed random UI freezes when updating search field
