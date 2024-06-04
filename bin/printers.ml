@@ -67,7 +67,7 @@ module Worker = struct
     | Paths of string Seq.t
 
   let print_req : (print_output * request) option Eio.Stream.t =
-    Eio.Stream.create 100
+    Eio.Stream.create 10240
 
   let submit_search_results_print_req out document results =
     Eio.Stream.add
