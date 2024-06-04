@@ -240,23 +240,22 @@ module Top_pane = struct
         ~(document_selected : int)
       : Nottui.ui Lwd.t =
       if Array.length document_info_s = 0 then
+        let blank ~height =
+          let _ = height in
+          Nottui_widgets.empty_lwd
+        in
         Ui_base.vpane ~width ~height
-          Nottui_widgets.empty_lwd Nottui_widgets.empty_lwd
+          blank blank
       else (
         let$* search_result_selected = Lwd.get Vars.index_of_search_result_selected in
         let document_info = document_info_s.(document_selected) in
-        let sub_pane_height =
-          height / 2
-        in
         Ui_base.vpane ~width ~height
           (Ui_base.Content_view.main
              ~width
-             ~height:sub_pane_height
              ~document_info
              ~search_result_selected)
           (Ui_base.Search_result_list.main
              ~width
-             ~height:sub_pane_height
              ~document_info
              ~index_of_search_result_selected:Vars.index_of_search_result_selected)
       )
@@ -268,21 +267,12 @@ module Top_pane = struct
       ~(document_info_s : Document_store.document_info array)
     : Nottui.ui Lwd.t =
     let$* document_selected = Lwd.get Vars.index_of_document_selected in
-    let lwidth =
-      (* Minus 1 for pane separator bar. *)
-      (width / 2) - 1
-    in
-    let rwidth =
-      (Misc_utils.div_round_up width 2)
-    in
-    Ui_base.hpane ~lwidth ~rwidth ~height
+    Ui_base.hpane ~width ~height
       (Document_list.main
-         ~width:lwidth
          ~height
          ~document_info_s
          ~document_selected)
       (Right_pane.main
-         ~width:rwidth
          ~height
          ~document_info_s
          ~document_selected)

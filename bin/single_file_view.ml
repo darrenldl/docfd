@@ -45,15 +45,12 @@ module Top_pane = struct
     let$* search_result_selected =
       Lwd.get Ui_base.Vars.Single_file.index_of_search_result_selected
     in
-    let sub_pane_height = height / 2 in
     Ui_base.vpane ~width ~height
       (Ui_base.Content_view.main
-         ~height:sub_pane_height
          ~width
          ~document_info
          ~search_result_selected)
       (Ui_base.Search_result_list.main
-         ~height:sub_pane_height
          ~width
          ~document_info
          ~index_of_search_result_selected:Ui_base.Vars.Single_file.index_of_search_result_selected)

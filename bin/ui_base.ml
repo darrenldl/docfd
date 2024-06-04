@@ -82,24 +82,48 @@ let hbar ~width =
   Notty.I.uchar Notty.A.(fg white) uc width 1
   |> Nottui.Ui.atom
 
-let hpane ~lwidth ~rwidth ~height (x : Nottui.ui Lwd.t) (y : Nottui.ui Lwd.t) : Nottui.ui Lwd.t =
-  let$* x = x in
-  let$ y = y in
+let hpane
+    ~width
+    ~height
+    (x : width:int -> Nottui.ui Lwd.t)
+    (y : width:int -> Nottui.ui Lwd.t)
+  : Nottui.ui Lwd.t =
+  let l_width =
+    (* Minus 1 for pane separator bar. *)
+    (width / 2) - 1
+  in
+  let r_width =
+    (Misc_utils.div_round_up width 2)
+  in
+  let$* x = x ~width:l_width in
+  let$ y = y ~width: r_width in
   let crop w x = Nottui.Ui.resize ~w ~h:height x in
   Nottui.Ui.hcat [
-    crop lwidth x;
+    crop l_width x;
     vbar ~height;
-    crop rwidth y;
+    crop r_width y;
   ]
 
-let vpane ~width ~height (x : Nottui.ui Lwd.t) (y : Nottui.ui Lwd.t) : Nottui.ui Lwd.t =
-  let$* x = x in
-  let$ y = y in
-  let crop x = Nottui.Ui.resize ~w:width ~h:(height / 2) x in
+let vpane
+    ~width
+    ~height
+    (x : height:int -> Nottui.ui Lwd.t)
+    (y : height:int -> Nottui.ui Lwd.t)
+  : Nottui.ui Lwd.t =
+  let t_height =
+    (* Minus 1 for pane separator bar. *)
+    (height / 2) - 1
+  in
+  let b_height =
+    (Misc_utils.div_round_up height 2)
+  in
+  let$* x = x ~height:t_height in
+  let$ y = y ~height:b_height in
+  let crop h x = Nottui.Ui.resize ~w:width ~h x in
   Nottui.Ui.vcat [
-    crop x;
+    crop t_height x;
     hbar ~width;
-    crop y;
+    crop b_height y;
   ]
 
 module Content_view = struct
