@@ -17,6 +17,8 @@
 
 - Grouped reload key bindings under reload mode
 
+- Added fixes to ensure Docfd does not exit until all printing is done
+
 ## 6.0.1
 
 - Fixed random UI freezes when updating search field
