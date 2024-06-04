@@ -111,11 +111,11 @@ let vpane
     (y : height:int -> Nottui.ui Lwd.t)
   : Nottui.ui Lwd.t =
   let t_height =
-    (* Minus 1 for pane separator bar. *)
-    (height / 2) - 1
+    (Misc_utils.div_round_up height 2)
   in
   let b_height =
-    (Misc_utils.div_round_up height 2)
+    (* Minus 1 for pane separator bar. *)
+    (height / 2) - 1
   in
   let$* x = x ~height:t_height in
   let$ y = y ~height:b_height in
