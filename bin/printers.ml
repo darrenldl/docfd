@@ -66,28 +66,41 @@ module Worker = struct
     | Document_and_search_results of Document.t * Search_result.t Seq.t
     | Paths of string Seq.t
 
-  let print_req : (print_output * request) Eio.Stream.t = Eio.Stream.create 100
+  let print_req : (print_output * request) option Eio.Stream.t =
+    Eio.Stream.create 100
 
   let submit_search_results_print_req out document results =
-    Eio.Stream.add print_req (out, Document_and_search_results (document, results))
+    Eio.Stream.add
+      print_req
+      (Some (out, Document_and_search_results (document, results)))
 
   let submit_paths_print_req out paths =
-    Eio.Stream.add print_req (out, Paths paths)
+    Eio.Stream.add
+      print_req
+      (Some (out, Paths paths))
+
+  let stop () = Eio.Stream.add print_req None
 
   let fiber () =
-    let first_print = ref true in
-    while true do
-      let (out, req) = Eio.Stream.take print_req in
-      if not !first_print then (
-        newline_image out
-      );
-      (match req with
-       | Document_and_search_results (document, results) -> (
-           search_results out document results;
-         )
-       | Paths paths -> (
-           Seq.iter (path_image out) paths
-         ));
-      first_print := false;
-    done
+    Eio.Cancel.protect (fun () ->
+        let first_print = ref true in
+        let stop = ref false in
+        while not !stop do
+          match Eio.Stream.take print_req with
+          | None -> stop := true
+          | Some (out, req) -> (
+              if not !first_print then (
+                newline_image out
+              );
+              (match req with
+               | Document_and_search_results (document, results) -> (
+                   search_results out document results;
+                 )
+               | Paths paths -> (
+                   Seq.iter (path_image out) paths
+                 ));
+              first_print := false;
+            )
+        done
+      )
 end

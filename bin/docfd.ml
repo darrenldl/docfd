@@ -699,7 +699,8 @@ let run
                 Single_file_view.update_search_phrase ();
               )
           ));
-       loop ()
+       loop ();
+       Printers.Worker.stop ();
     );
   ];
   close_term ();
