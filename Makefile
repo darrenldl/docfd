@@ -40,6 +40,7 @@ tests :
 	dune build @file-collection-tests
 	dune build @line-wrapping-tests
 	dune build @misc-behavior-tests
+	dune build @printing-tests
 
 .PHONY: demo-vhs
 demo-vhs :
