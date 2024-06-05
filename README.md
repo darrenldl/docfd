@@ -282,10 +282,8 @@ Navigation mode
     - `x`
 - Exit Docfd
     - `Esc`, `Ctrl+C` or `Ctrl+Q`
-- Print selected search result to stderr
+- Enter print mode to print items to stderr
     - `p`
-- Print path of selected document to stderr
-    - `Shift`+`P`
 
 Search mode
 - Search field is active in this mode
