@@ -511,3 +511,11 @@ let ui_loop ~quit ~term root =
     )
   in
   loop ()
+
+let set_ui_mode mode =
+  Lwd.set Vars.ui_mode mode;
+  Key_binding_info.reset_rotation ()
+
+let set_input_mode mode =
+  Lwd.set Vars.input_mode mode;
+  Key_binding_info.reset_rotation ()

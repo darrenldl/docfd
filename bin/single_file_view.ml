@@ -208,8 +208,7 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'p', []) -> (
-          Lwd.set Ui_base.Vars.input_mode Print;
-          Ui_base.Key_binding_info.reset_rotation ();
+          Ui_base.set_input_mode Print;
           `Handled
         )
       | (`ASCII 'r', []) -> (
@@ -220,8 +219,7 @@ let keyboard_handler
       | (`Tab, []) -> (
           (match !Ui_base.Vars.init_ui_mode with
            | Ui_multi_file -> (
-               Lwd.set Ui_base.Vars.ui_mode Ui_multi_file;
-               Ui_base.Key_binding_info.reset_rotation ();
+               Ui_base.set_ui_mode Ui_multi_file;
              )
            | Ui_single_file -> ()
           );
@@ -251,7 +249,7 @@ let keyboard_handler
         )
       | (`ASCII '/', []) -> (
           Nottui.Focus.request Vars.search_field_focus_handle;
-          Lwd.set Ui_base.Vars.input_mode Search;
+          Ui_base.set_input_mode Search;
           `Handled
         )
       | (`ASCII 'x', []) -> (
@@ -283,6 +281,10 @@ let keyboard_handler
          | (`Escape, [])
          | (`ASCII 'Q', [`Ctrl])
          | (`ASCII 'C', [`Ctrl]) -> true
+         | (`ASCII 'h', []) -> (
+             Ui_base.Key_binding_info.incr_rotation ();
+             false
+           )
          | (`ASCII 'p', []) -> (
              let (doc, search_results) = document_info in
              (if search_result_current_choice < Array.length search_results then
@@ -315,7 +317,7 @@ let keyboard_handler
         );
       in
       if exit then (
-        Lwd.set Ui_base.Vars.input_mode Navigate;
+        Ui_base.set_input_mode Navigate;
       );
       `Handled
     )

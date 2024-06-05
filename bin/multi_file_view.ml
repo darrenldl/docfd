@@ -490,18 +490,15 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'd', []) -> (
-          Lwd.set Ui_base.Vars.input_mode Discard;
-          Ui_base.Key_binding_info.reset_rotation ();
+          Ui_base.set_input_mode Discard;
           `Handled
         )
       | (`ASCII 'r', []) -> (
-          Lwd.set Ui_base.Vars.input_mode Reload;
-          Ui_base.Key_binding_info.reset_rotation ();
+          Ui_base.set_input_mode Reload;
           `Handled
         )
       | (`ASCII 'p', []) -> (
-          Lwd.set Ui_base.Vars.input_mode Print;
-          Ui_base.Key_binding_info.reset_rotation ();
+          Ui_base.set_input_mode Print;
           `Handled
         )
       | (`ASCII 'u', [])
@@ -534,7 +531,6 @@ let keyboard_handler
         )
       | (`Tab, []) -> (
           Option.iter (fun (doc, _search_results) ->
-              Ui_base.Key_binding_info.reset_rotation ();
               let document_store = Lwd.peek Ui_base.Vars.document_store in
               let single_file_document_store =
                 Option.get (Document_store.single_out ~path:(Document.path doc) document_store)
@@ -544,7 +540,7 @@ let keyboard_handler
                 (Lwd.peek Vars.index_of_search_result_selected);
               Lwd.set Ui_base.Vars.Single_file.search_field
                 (Lwd.peek Vars.search_field);
-              Lwd.set Ui_base.Vars.ui_mode Ui_single_file;
+              Ui_base.set_ui_mode Ui_single_file;
             )
             document_info;
           `Handled
@@ -595,7 +591,7 @@ let keyboard_handler
         )
       | (`ASCII '/', []) -> (
           Nottui.Focus.request Vars.search_field_focus_handle;
-          Lwd.set Ui_base.Vars.input_mode Search;
+          Ui_base.set_input_mode Search;
           `Handled
         )
       | (`ASCII 'x', []) -> (
@@ -627,6 +623,10 @@ let keyboard_handler
          | (`Escape, [])
          | (`ASCII 'Q', [`Ctrl])
          | (`ASCII 'C', [`Ctrl]) -> true
+         | (`ASCII 'h', []) -> (
+             Ui_base.Key_binding_info.incr_rotation ();
+             false
+           )
          | (`ASCII 'd', []) -> (
              Option.iter (fun (doc, _search_results) ->
                  drop ~document_count (`Single (Document.path doc))
@@ -645,7 +645,7 @@ let keyboard_handler
         );
       in
       if exit then (
-        Lwd.set Ui_base.Vars.input_mode Navigate;
+        Ui_base.set_input_mode Navigate;
       );
       `Handled
     )
@@ -661,6 +661,10 @@ let keyboard_handler
          | (`Escape, [])
          | (`ASCII 'Q', [`Ctrl])
          | (`ASCII 'C', [`Ctrl]) -> true
+         | (`ASCII 'h', []) -> (
+             Ui_base.Key_binding_info.incr_rotation ();
+             false
+           )
          | (`ASCII 'p', []) -> (
              Option.iter (fun (doc, search_results) ->
                  (if search_result_current_choice < Array.length search_results then
@@ -729,7 +733,7 @@ let keyboard_handler
         );
       in
       if exit then (
-        Lwd.set Ui_base.Vars.input_mode Navigate;
+        Ui_base.set_input_mode Navigate;
       );
       `Handled
     )
@@ -753,7 +757,7 @@ let keyboard_handler
         );
       in
       if exit then (
-        Lwd.set Ui_base.Vars.input_mode Navigate;
+        Ui_base.set_input_mode Navigate;
       );
       `Handled
     )
