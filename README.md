@@ -356,7 +356,27 @@ Discard mode
 - Discard all listed documents
     - `l`
 - Cancel/exit discard mode
-    - `Esc`
+    - `Esc`, `Ctrl+C` or `Ctrl+Q`
+
+Print mode
+- Print currently selected search result
+    - `p`
+- Samples of selected document
+    - `s`
+- All results of selected document
+    - `a`
+- Path of selected document
+    - `Shift+P`
+- Paths of listed documents
+    - `l`
+- Paths of unlisted documents
+    - `u`
+- Samples of all documents
+    - `Shift+S`
+- All results of all documents
+    - `Shift+A`
+- Cancel/exit print mode
+    - `Esc`, `Ctrl+C` or `Ctrl+Q`
 
 </details>
 
@@ -402,6 +422,18 @@ Navigation mode
         - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
 - Switch to multi-file view
     - `Tab`
+
+Print mode
+- Print currently selected search result
+    - `p`
+- Samples
+    - `s`
+- All results
+    - `a`
+- Path
+    - `Shift+P`
+- Cancel/exit print mode
+    - `Esc`, `Ctrl+C` or `Ctrl+Q`
 
 </details>
 
