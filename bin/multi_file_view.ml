@@ -743,6 +743,10 @@ let keyboard_handler
          | (`Escape, [])
          | (`ASCII 'Q', [`Ctrl])
          | (`ASCII 'C', [`Ctrl]) -> true
+         | (`ASCII 'h', []) -> (
+             Ui_base.Key_binding_info.incr_rotation ();
+             false
+           )
          | (`ASCII 'r', []) -> (
              reload_document_selected ~document_info_s;
              true
