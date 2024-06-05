@@ -101,6 +101,7 @@ module Bottom_pane = struct
       in
       let navigate_line2 =
         [
+          { label = "h"; msg = "rotate key binding info" };
           { label = "r"; msg = "reload" };
         ]
       in
@@ -202,6 +203,15 @@ let keyboard_handler
           Ui_base.Vars.action := None;
           `Handled
         )
+      | (`ASCII 'h', []) -> (
+          Ui_base.Key_binding_info.incr_rotation ();
+          `Handled
+        )
+      | (`ASCII 'p', []) -> (
+          Lwd.set Ui_base.Vars.input_mode Print;
+          Ui_base.Key_binding_info.reset_rotation ();
+          `Handled
+        )
       | (`ASCII 'r', []) -> (
           Ui_base.Key_binding_info.blink "r";
           reload_document document;
@@ -209,8 +219,10 @@ let keyboard_handler
         )
       | (`Tab, []) -> (
           (match !Ui_base.Vars.init_ui_mode with
-           | Ui_multi_file ->
-             Lwd.set Ui_base.Vars.ui_mode Ui_multi_file
+           | Ui_multi_file -> (
+               Lwd.set Ui_base.Vars.ui_mode Ui_multi_file;
+               Ui_base.Key_binding_info.reset_rotation ();
+             )
            | Ui_single_file -> ()
           );
           `Handled
@@ -246,10 +258,6 @@ let keyboard_handler
           Ui_base.Key_binding_info.blink "x";
           Lwd.set Ui_base.Vars.Single_file.search_field Ui_base.empty_text_field;
           update_search_phrase ();
-          `Handled
-        )
-      | (`ASCII 'p', []) -> (
-          Lwd.set Ui_base.Vars.input_mode Print;
           `Handled
         )
       | (`Enter, []) -> (

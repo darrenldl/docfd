@@ -67,3 +67,11 @@ let array_sub_seq : 'a. start:int -> end_exc:int -> 'a array -> 'a Seq.t =
     )
   in
   aux start
+
+let rotate_list (x : int) (l : 'a list) : 'a list =
+  let arr = Array.of_list l in
+  let len = Array.length arr in
+  Seq.append
+    (array_sub_seq ~start:x ~end_exc:len arr)
+    (array_sub_seq ~start:0 ~end_exc:x arr)
+  |> List.of_seq

@@ -24,6 +24,8 @@
     - Still no auto-compaction yet, however, will need to wait for a future
       OCaml release
 
+- Added `h` key binding to rotate key binding info grid
+
 ## 6.0.1
 
 - Fixed random UI freezes when updating search field

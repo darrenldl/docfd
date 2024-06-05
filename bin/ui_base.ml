@@ -263,6 +263,14 @@ module Status_bar = struct
 end
 
 module Key_binding_info = struct
+  let rotation : int Lwd.var = Lwd.var 0
+
+  let incr_rotation () =
+    Lwd.set rotation (Lwd.peek rotation + 1)
+
+  let reset_rotation () =
+    Lwd.set rotation 0
+
   type labelled_msg = {
     label : string;
     msg : string;
@@ -381,14 +389,33 @@ module Key_binding_info = struct
       |> Nottui.Ui.atom
     in
     List.map (fun (mode_comb, grid_contents) ->
-        (mode_comb,
-         grid_contents
-         |> List.map (fun l ->
-             List.map (label_msg_pair mode_comb) l
-           )
-         |> Nottui_widgets.grid
-           ~pad:(Nottui.Gravity.make ~h:`Negative ~v:`Negative)
-        )
+        let max_row_size =
+          List.fold_left (fun n l ->
+              max n (List.length l)
+            )
+            0
+            grid_contents
+        in
+        let grid_contents =
+          grid_contents
+          |> List.map (fun l ->
+              let padding =
+                List.init (max_row_size - List.length l)
+                  (fun _ -> { label = ""; msg = "" })
+              in
+              List.map (label_msg_pair mode_comb) (l @ padding)
+            )
+        in
+        let grid =
+          let$* rotation = Lwd.get rotation in
+          grid_contents
+          |> List.map (fun l ->
+              Misc_utils.rotate_list (rotation mod max_row_size) l
+            )
+          |> Nottui_widgets.grid
+            ~pad:(Nottui.Gravity.make ~h:`Negative ~v:`Negative)
+        in
+        (mode_comb, grid)
       )
       grid_contents
 

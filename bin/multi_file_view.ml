@@ -337,6 +337,7 @@ module Bottom_pane = struct
             { label = "d"; msg = "discard mode" };
           ];
           [
+            { label = "h"; msg = "rotate key binding info" };
             { label = "r"; msg = "reload mode" };
           ];
         ]
@@ -484,16 +485,23 @@ let keyboard_handler
           Ui_base.Vars.action := None;
           `Handled
         )
+      | (`ASCII 'h', []) -> (
+          Ui_base.Key_binding_info.incr_rotation ();
+          `Handled
+        )
       | (`ASCII 'd', []) -> (
           Lwd.set Ui_base.Vars.input_mode Discard;
+          Ui_base.Key_binding_info.reset_rotation ();
           `Handled
         )
       | (`ASCII 'r', []) -> (
           Lwd.set Ui_base.Vars.input_mode Reload;
+          Ui_base.Key_binding_info.reset_rotation ();
           `Handled
         )
       | (`ASCII 'p', []) -> (
           Lwd.set Ui_base.Vars.input_mode Print;
+          Ui_base.Key_binding_info.reset_rotation ();
           `Handled
         )
       | (`ASCII 'u', [])
@@ -526,6 +534,7 @@ let keyboard_handler
         )
       | (`Tab, []) -> (
           Option.iter (fun (doc, _search_results) ->
+              Ui_base.Key_binding_info.reset_rotation ();
               let document_store = Lwd.peek Ui_base.Vars.document_store in
               let single_file_document_store =
                 Option.get (Document_store.single_out ~path:(Document.path doc) document_store)
