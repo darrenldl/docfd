@@ -1,39 +1,49 @@
-type t = {
-  phrase : string list;
-  is_linked_to_prev : bool list;
-  fuzzy_index : Spelll.automaton list;
-}
+type match_typ = [
+  | `Fuzzy
+  | `Exact
+  | `Suffix
+  | `Prefix
+]
 
 type annotated_token = {
   string : string;
   group_id : int;
 }
 
-type enriched_token = {
-  string : string;
-  is_linked_to_prev : bool;
-  automaton : Spelll.automaton;
+module Enriched_token = struct
+  type t = {
+    string : string;
+    is_linked_to_prev : bool;
+    automaton : Spelll.automaton;
+    match_typ : match_typ;
+  }
+
+  let pp fmt (x : t) =
+    Fmt.pf fmt "%s:%b" x.string x.is_linked_to_prev
+
+  let string (t : t) =
+    t.string
+
+  let equal (x : t) (y : t) =
+    String.equal x.string y.string
+    &&
+    x.is_linked_to_prev = y.is_linked_to_prev
+end
+
+type t = {
+  phrase : string list;
+  enriched_tokens : Enriched_token.t list;
+  is_linked_to_prev : bool list;
+  fuzzy_index : Spelll.automaton list;
 }
 
-let pp_enriched_token fmt (x : enriched_token) =
-  Fmt.pf fmt "%s:%b" x.string x.is_linked_to_prev
-
-let equal_enriched_token (x : enriched_token) (y : enriched_token) =
-  String.equal x.string y.string
-  &&
-  x.is_linked_to_prev = y.is_linked_to_prev
-
-let to_enriched_tokens (t : t) : enriched_token list =
-  List.combine
-    (List.combine t.phrase t.is_linked_to_prev)
-    t.fuzzy_index
-  |> List.map (fun ((string, is_linked_to_prev), automaton) ->
-      { string; is_linked_to_prev; automaton })
+let is_empty (t : t) =
+  List.is_empty t.enriched_tokens
 
 let pp fmt (t : t) =
   Fmt.pf fmt "%a"
-    Fmt.(list ~sep:sp pp_enriched_token)
-    (to_enriched_tokens t)
+    Fmt.(list ~sep:sp Enriched_token.pp)
+    t.enriched_tokens
 
 type cache = {
   mutex : Mutex.t;
@@ -47,9 +57,6 @@ let cache = {
 
 let phrase t =
   t.phrase
-
-let is_empty (t : t) =
-  t.phrase = []
 
 let fuzzy_index t =
   t.fuzzy_index
@@ -72,12 +79,57 @@ let empty : t =
     phrase = [];
     is_linked_to_prev = [];
     fuzzy_index = [];
+    enriched_tokens = [];
   }
 
 type token_process_ctx = {
   prev_was_space : bool;
   prev_group_id : int;
 }
+
+let add_enriched_tokens (t : t) : t =
+  let rec aux acc (l : Enriched_token.t list) =
+    match l with
+    | [] -> List.rev acc
+    | x0 :: xs when List.mem x0.string [ "'"; "^" ] -> (
+        let match_typ =
+          match x0.string with
+          | "'" -> `Exact
+          | "^" -> `Prefix
+          | _ -> failwith "unexpected case"
+        in
+        match xs with
+        | [] -> aux acc xs
+        | x1 :: xs -> (
+            if x1.is_linked_to_prev then
+              aux ({x1 with match_typ} :: acc) xs
+            else
+              aux (x1 :: acc) xs
+          )
+      )
+    | x :: xs when x.string = "$" -> (
+        match acc with
+        | [] -> aux acc xs
+        | y :: ys -> (
+            if y.is_linked_to_prev then
+              aux ({y with match_typ = `Suffix} :: ys) xs
+            else
+              aux acc xs
+          )
+      )
+    | x :: xs -> (
+        aux (x :: acc) xs
+      )
+  in
+  let enriched_tokens =
+    List.combine
+      (List.combine t.phrase t.is_linked_to_prev)
+      t.fuzzy_index
+    |> List.map (fun ((string, is_linked_to_prev), automaton) : Enriched_token.t ->
+        { string; is_linked_to_prev; automaton; match_typ = `Fuzzy })
+    |> aux []
+  in
+  { t with enriched_tokens }
 
 let of_annotated_tokens
     ~max_fuzzy_edit_dist
@@ -140,7 +192,9 @@ let of_annotated_tokens
     phrase;
     is_linked_to_prev;
     fuzzy_index;
+    enriched_tokens = [];
   }
+  |> add_enriched_tokens
 
 let of_tokens
     ~max_fuzzy_edit_dist
@@ -154,3 +208,6 @@ let make ~max_fuzzy_edit_dist phrase =
   phrase
   |> Tokenize.tokenize ~drop_spaces:false
   |> of_tokens ~max_fuzzy_edit_dist
+
+let actual_search_phrase t =
+  List.map Enriched_token.string t.enriched_tokens

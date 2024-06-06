@@ -444,11 +444,12 @@ module Search = struct
       ?within
       ?around_pos
       ~(consider_edit_dist : bool)
-      (token : Search_phrase.enriched_token)
+      (token : Search_phrase.Enriched_token.t)
       (t : t)
     : int Seq.t =
     Eio.Fiber.yield ();
     let search_word = token.string in
+    let match_typ = token.match_typ in
     let word_ci_and_positions_to_consider =
       match around_pos with
       | None -> word_ci_and_pos_s t
@@ -484,16 +485,28 @@ module Search = struct
     |> Seq.filter (fun (indexed_word, _pos_s) ->
         Eio.Fiber.yield ();
         let indexed_word_len = String.length indexed_word in
-        if Parser_components.is_possibly_utf_8 indexed_word.[0] then
+        if Parser_components.is_possibly_utf_8 indexed_word.[0] then (
           String.equal search_word_ci indexed_word
-        else (
-          String.equal search_word_ci indexed_word
-          || CCString.find ~sub:search_word_ci indexed_word >= 0
-          || (indexed_word_len >= 2
-              && CCString.find ~sub:indexed_word search_word_ci >= 0)
-          || (consider_edit_dist
-              && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word search_word_ci.[0]
-              && Spelll.match_with token.automaton indexed_word)
+        ) else (
+          match match_typ with
+          | `Fuzzy -> (
+              String.equal search_word_ci indexed_word
+              || CCString.find ~sub:search_word_ci indexed_word >= 0
+              || (indexed_word_len >= 2
+                  && CCString.find ~sub:indexed_word search_word_ci >= 0)
+              || (consider_edit_dist
+                  && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word search_word_ci.[0]
+                  && Spelll.match_with token.automaton indexed_word)
+            )
+          | `Exact -> (
+              String.equal search_word_ci indexed_word
+            )
+          | `Prefix -> (
+              CCString.prefix ~pre:search_word_ci indexed_word
+            )
+          | `Suffix -> (
+              CCString.suffix ~suf:search_word_ci indexed_word
+            )
         )
       )
     |> Seq.flat_map (fun (_indexed_word, pos_s) ->
@@ -504,7 +517,7 @@ module Search = struct
       ~consider_edit_dist
       ~(within : (int * int) option)
       (around_pos : int)
-      (l : Search_phrase.enriched_token list)
+      (l : Search_phrase.Enriched_token.t list)
       (t : t)
     : int list Seq.t =
     let rec aux around_pos l =
@@ -542,7 +555,7 @@ module Search = struct
     if Search_phrase.is_empty phrase then (
       Search_result_heap.empty
     ) else (
-      match Search_phrase.to_enriched_tokens phrase with
+      match phrase.Search_phrase.enriched_tokens with
       | [] -> failwith "unexpected case"
       | first_word :: rest -> (
           Eio.Fiber.yield ();
@@ -637,7 +650,7 @@ module Search = struct
                                  opening_closing_symbol_pairs
                              in
                              Search_result.make
-                               ~search_phrase:phrase.phrase
+                               ~search_phrase:(Search_phrase.actual_search_phrase phrase)
                                ~found_phrase:(List.map
                                                 (fun pos ->
                                                    Search_result.{
