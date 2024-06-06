@@ -18,6 +18,9 @@ module Enriched_token = struct
     match_typ : match_typ;
   }
 
+  let make ~string ~is_linked_to_prev automaton match_typ =
+    { string; is_linked_to_prev; automaton; match_typ }
+
   let pp fmt (x : t) =
     Fmt.pf fmt "%s:%b" x.string x.is_linked_to_prev
 
@@ -166,8 +169,8 @@ let add_enriched_tokens (t : t) : t =
     List.combine
       (List.combine t.raw_phrase t.is_linked_to_prev)
       t.fuzzy_index
-    |> List.map (fun ((string, is_linked_to_prev), automaton) : Enriched_token.t ->
-        { string; is_linked_to_prev; automaton; match_typ = `Fuzzy })
+    |> List.map (fun ((string, is_linked_to_prev), automaton) ->
+        Enriched_token.make ~string ~is_linked_to_prev automaton `Fuzzy)
     |> aux []
   in
   { t with enriched_tokens }

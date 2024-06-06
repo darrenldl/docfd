@@ -20,7 +20,7 @@ module Alco = struct
     Alcotest.(check bool)
       "case1"
       true
-      (List.is_empty (Search_phrase.to_enriched_tokens phrase))
+      (List.is_empty (Search_phrase.enriched_tokens phrase))
 
   let test_empty_exp (s : string) =
     let exp = Search_exp.make ~max_fuzzy_edit_dist s |> Option.get in
@@ -52,13 +52,13 @@ module Alco = struct
     let enriched_token_list_list =
       List.map snd l
       |> List.map (List.map (fun (string, is_linked_to_prev) ->
-          Search_phrase.{ string; is_linked_to_prev; automaton }))
+          Search_phrase.Enriched_token.make ~string ~is_linked_to_prev automaton `Fuzzy))
     in
     Alcotest.(check (list (list enriched_token_testable)))
       (Fmt.str "case0 of %S" s)
       enriched_token_list_list
       (phrases
-       |> List.map Search_phrase.to_enriched_tokens
+       |> List.map Search_phrase.enriched_tokens
       );
     Alcotest.(check
                 (if neg' then (

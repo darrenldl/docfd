@@ -13,6 +13,13 @@ type annotated_token = {
 module Enriched_token : sig
   type t
 
+  val make :
+    string:string ->
+    is_linked_to_prev:bool ->
+    Spelll.automaton ->
+    match_typ ->
+    t
+
   val string : t -> string
 
   val equal : t -> t -> bool
@@ -31,6 +38,8 @@ type t
 val empty : t
 
 val compare : t -> t -> int
+
+val equal : t -> t -> bool
 
 val pp : Format.formatter -> t -> unit
 
