@@ -440,6 +440,8 @@ let start_end_inc_pos_of_global_line_num x t =
   )
 
 module Search = struct
+  module ET = Search_phrase.Enriched_token
+
   let usable_positions
       ?within
       ?around_pos
@@ -448,14 +450,14 @@ module Search = struct
       (t : t)
     : int Seq.t =
     Eio.Fiber.yield ();
-    let search_word = token.string in
-    let match_typ = token.match_typ in
+    let search_word = ET.string token in
+    let match_typ = ET.match_typ token in
     let word_ci_and_positions_to_consider =
       match around_pos with
       | None -> word_ci_and_pos_s t
       | Some around_pos -> (
           let dist =
-            if token.is_linked_to_prev then (
+            if ET.is_linked_to_prev token then (
               !Params.max_linked_token_search_dist
             ) else (
               !Params.max_token_search_dist
@@ -496,7 +498,7 @@ module Search = struct
                   && CCString.find ~sub:indexed_word search_word_ci >= 0)
               || (consider_edit_dist
                   && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word search_word_ci.[0]
-                  && Spelll.match_with token.automaton indexed_word)
+                  && Spelll.match_with (ET.automaton token) indexed_word)
             )
           | `Exact -> (
               String.equal search_word_ci indexed_word
@@ -555,7 +557,7 @@ module Search = struct
     if Search_phrase.is_empty phrase then (
       Search_result_heap.empty
     ) else (
-      match phrase.Search_phrase.enriched_tokens with
+      match Search_phrase.enriched_tokens phrase with
       | [] -> failwith "unexpected case"
       | first_word :: rest -> (
           Eio.Fiber.yield ();
