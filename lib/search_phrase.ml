@@ -155,7 +155,7 @@ let add_enriched_tokens (t : t) : t =
         match acc with
         | [] -> aux acc xs
         | y :: ys -> (
-            if y.is_linked_to_prev then
+            if x.is_linked_to_prev then
               aux ({y with match_typ = `Suffix} :: ys) xs
             else
               aux acc xs
