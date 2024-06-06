@@ -474,3 +474,4 @@ Print mode
 - [Marc Coquand](https://mccd.space) (author of
   [Stitch](https://git.mccd.space/pub/stitch/)) for discussions and inspiration
   of results narrowing functionality
+- Part of the search syntax was copied from [fzf](https://github.com/junegunn/fzf)
