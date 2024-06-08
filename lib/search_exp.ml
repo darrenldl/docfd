@@ -128,7 +128,6 @@ let process_match_typ_markers group_id (l : exp list) : exp list =
             match xs0 with
             | `Word x1 :: xs1 -> (
                 if Parser_components.is_space (String.get x1 0) then (
-                  exit 10;
                   aux (x0 :: `Word x1 :: acc) xs1
                 ) else (
                   let match_typ =
