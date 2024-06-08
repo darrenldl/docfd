@@ -242,6 +242,11 @@ A search expression is a sequence of tokens where a token is one of:
 - `^tok` (`^` prefix means prefix match the token)
 - `tok$` (`$` suffix means suffix match the token)
 
+For `'`, `^`, `$` to be considered annotation markers, there
+cannot be space between the marker and token,
+e.g. `^abc` means "prefix match `abc`", but `^ abc` means
+"fuzzy match `^` and fuzzy match `abc`".
+
 Search is asynchronous, specifically:
 - Editing of search field is not blocked by search progress
 - Updating/clearing the search field cancels the current search
