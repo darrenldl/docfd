@@ -153,7 +153,8 @@ let process_match_typ_markers group_id (l : exp list) : exp list =
             in
             match xs0 with
             | [] -> aux (modify_acc acc) xs0
-            | `Word "$" :: _ -> aux (`Word "$" :: acc) xs0
+            | `Suffix_match_marker :: _ ->
+              aux (`Suffix_match_marker :: acc) xs0
             | _ -> aux (modify_acc acc) xs0
           )
         | _ -> (
@@ -162,6 +163,28 @@ let process_match_typ_markers group_id (l : exp list) : exp list =
       )
   in
   aux [] l
+
+let flatten_nested_lists (exp : exp) : exp =
+  let rec aux (exp : exp) =
+    match exp with
+    | `Annotated_token _
+    | `Word _
+    | `Exact_match_marker
+    | `Prefix_match_marker
+    | `Suffix_match_marker -> exp
+    | `List l -> (
+        `List
+          (CCList.flat_map (fun e ->
+               match aux e with
+               | `List l -> l
+               | x -> [ x ]
+             ) l)
+      )
+    | `Paren e -> `Paren (aux e)
+    | `Binary_op (op, x, y) -> `Binary_op (op, aux x, aux y)
+    | `Optional e -> `Optional (aux e)
+  in
+  aux exp
 
 let flatten ~max_fuzzy_edit_dist (exp : exp) : Search_phrase.t list =
   let get_group_id =
@@ -218,6 +241,7 @@ let make ~max_fuzzy_edit_dist s =
   ) else (
     match Angstrom.(parse_string ~consume:Consume.All) Parsers.p s with
     | Ok exp -> (
+        let exp = flatten_nested_lists exp in
         Some
           { max_fuzzy_edit_dist;
             exp;

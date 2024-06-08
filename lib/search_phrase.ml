@@ -25,7 +25,7 @@ module Enriched_token = struct
     { string; is_linked_to_prev; automaton; match_typ }
 
   let pp fmt (x : t) =
-    Fmt.pf fmt "%s:%b" x.string x.is_linked_to_prev
+    Fmt.pf fmt "%s:%b:%a" x.string x.is_linked_to_prev pp_match_typ x.match_typ
 
   let string (t : t) =
     t.string
