@@ -8,6 +8,7 @@ type match_typ = [
 type annotated_token = {
   string : string;
   group_id : int;
+  match_typ : match_typ;
 }
 
 module Enriched_token : sig

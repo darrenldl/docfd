@@ -8,6 +8,7 @@ type match_typ = [
 type annotated_token = {
   string : string;
   group_id : int;
+  match_typ : match_typ;
 }
 
 module Enriched_token = struct
@@ -27,7 +28,7 @@ module Enriched_token = struct
   let string (t : t) =
     t.string
 
-  let match_typ t =
+  let match_typ (t : t) =
     t.match_typ
 
   let automaton t =
@@ -46,6 +47,7 @@ type t = {
   raw_phrase : string list;
   enriched_tokens : Enriched_token.t list;
   is_linked_to_prev : bool list;
+  match_typs : match_typ list;
   fuzzy_index : Spelll.automaton list;
 }
 
@@ -88,22 +90,25 @@ let empty : t =
     raw_phrase = [];
     is_linked_to_prev = [];
     fuzzy_index = [];
+    match_typs = [];
     enriched_tokens = [];
   }
 
 let process_tokens
     (phrase : annotated_token Seq.t)
-  : string list * bool list =
+  : string list * bool list * match_typ list =
   let token_is_space (token : annotated_token) =
     Parser_components.is_space (String.get token.string 0)
   in
   let rec aux
       word_acc
       is_linked_to_prev_acc
+      match_typ_acc
       (prev_token : annotated_token option)
       (phrase : annotated_token Seq.t) =
     match phrase () with
-    | Seq.Nil -> (List.rev word_acc, List.rev is_linked_to_prev_acc)
+    | Seq.Nil ->
+      (List.rev word_acc, List.rev is_linked_to_prev_acc, List.rev match_typ_acc)
     | Seq.Cons (token, rest) -> (
         let is_linked_to_prev =
           match prev_token with
@@ -118,60 +123,28 @@ let process_tokens
           aux
             word_acc
             is_linked_to_prev_acc
+            match_typ_acc
             (Some token)
             rest
         ) else (
           aux
             (token.string :: word_acc)
             (is_linked_to_prev :: is_linked_to_prev_acc)
+            (token.match_typ :: match_typ_acc)
             (Some token)
             rest
         )
       )
   in
-  aux [] [] None phrase
+  aux [] [] [] None phrase
 
 let add_enriched_tokens (t : t) : t =
-  let rec aux acc (l : Enriched_token.t list) =
-    match l with
-    | [] -> List.rev acc
-    | x0 :: xs when List.mem x0.string [ "'"; "^" ] -> (
-        let match_typ =
-          match x0.string with
-          | "'" -> `Exact
-          | "^" -> `Prefix
-          | _ -> failwith "unexpected case"
-        in
-        match xs with
-        | [] -> aux acc xs
-        | x1 :: xs -> (
-            if x1.is_linked_to_prev then
-              aux ({x1 with match_typ} :: acc) xs
-            else
-              aux (x1 :: acc) xs
-          )
-      )
-    | x :: xs when x.string = "$" -> (
-        match acc with
-        | [] -> aux acc xs
-        | y :: ys -> (
-            if x.is_linked_to_prev then
-              aux ({y with match_typ = `Suffix} :: ys) xs
-            else
-              aux acc xs
-          )
-      )
-    | x :: xs -> (
-        aux (x :: acc) xs
-      )
-  in
   let enriched_tokens =
-    List.combine
-      (List.combine t.raw_phrase t.is_linked_to_prev)
-      t.fuzzy_index
-    |> List.map (fun ((string, is_linked_to_prev), automaton) ->
-        Enriched_token.make ~string ~is_linked_to_prev automaton `Fuzzy)
-    |> aux []
+    List.combine t.raw_phrase t.is_linked_to_prev
+    |> (fun x -> List.combine x t.fuzzy_index)
+    |> (fun x -> List.combine x t.match_typs)
+    |> List.map (fun (((string, is_linked_to_prev), automaton), match_typ) ->
+        Enriched_token.make ~string ~is_linked_to_prev automaton match_typ)
   in
   { t with enriched_tokens }
 
@@ -179,7 +152,7 @@ let of_annotated_tokens
     ~max_fuzzy_edit_dist
     (tokens : annotated_token Seq.t)
   =
-  let raw_phrase, is_linked_to_prev = process_tokens tokens in
+  let raw_phrase, is_linked_to_prev, match_typs = process_tokens tokens in
   let fuzzy_index =
     raw_phrase
     |> List.map (fun x ->
@@ -197,6 +170,7 @@ let of_annotated_tokens
     raw_phrase;
     is_linked_to_prev;
     fuzzy_index;
+    match_typs;
     enriched_tokens = [];
   }
   |> add_enriched_tokens
@@ -206,7 +180,7 @@ let of_tokens
     (tokens : string Seq.t)
   =
   tokens
-  |> Seq.map (fun string -> { string; group_id = 0 })
+  |> Seq.map (fun string -> { string; group_id = 0; match_typ = `Fuzzy })
   |> of_annotated_tokens ~max_fuzzy_edit_dist
 
 let make ~max_fuzzy_edit_dist phrase =

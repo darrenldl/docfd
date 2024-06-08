@@ -1,5 +1,6 @@
 type exp = [
-  | `Phrase of string list
+  | `Annotated_token of Search_phrase.annotated_token
+  | `Word of string
   | `List of exp list
   | `Paren of exp
   | `Binary_op of binary_op * exp * exp
@@ -33,7 +34,9 @@ let is_empty (t : t) =
 let equal (t1 : t) (t2 : t) =
   let rec aux (e1 : exp) (e2 : exp) =
     match e1, e2 with
-    | `Phrase p1, `Phrase p2 -> List.equal String.equal p1 p2
+    | `Annotated_token x1, `Annotated_token x2 ->
+      String.equal x1.string x2.string
+    | `Word x1, `Word x2 -> String.equal x1 x2
     | `List l1, `List l2 -> List.equal aux l1 l2
     | `Paren e1, `Paren e2 -> aux e1 e2
     | `Binary_op (Or, e1x, e1y), `Binary_op (Or, e2x, e2y) ->
@@ -47,7 +50,9 @@ let as_paren x : exp = `Paren x
 
 let as_list l : exp = `List l
 
-let as_phrase (l : string list) : exp = `Phrase l
+let as_word s : exp = `Word s
+
+let as_word_list (l : string list) : exp = `List (List.map as_word  l)
 
 module Parsers = struct
   open Angstrom
@@ -57,11 +62,13 @@ module Parsers = struct
     many1 (
       take_while1 (fun c ->
           match c with
-          | '?' | '|' | '\\' | '(' | ')' -> false
+          | '?' | '|' | '\\' | '(' | ')' | '\'' | '^' | '$' -> false
           | _ -> true
         )
       <|>
       (char '\\' *> any_char >>| fun c -> Printf.sprintf "%c" c)
+      <|>
+      (choice [ char '\''; char '^'; char '$' ] >>| fun c -> Printf.sprintf "%c" c)
     )
     >>| fun l ->
     String.concat "" l
@@ -75,8 +82,8 @@ module Parsers = struct
     fix (fun (exp : exp Angstrom.t) : exp Angstrom.t ->
         let base =
           choice [
-            (phrase >>| as_phrase);
-            (string "()" *> return (as_phrase []));
+            (phrase >>| as_word_list);
+            (string "()" *> return (as_word_list []));
             (char '(' *> exp <* char ')' >>| as_paren);
           ]
         in
@@ -87,7 +94,7 @@ module Parsers = struct
              match l with
              | [] -> failwith "unexpected case"
              | x :: xs -> (
-                 as_list [ `Optional (as_phrase [ x ]); as_phrase xs ]
+                 as_list [ `Optional (as_word x); as_word_list xs ]
                )
             );
             (char '?' *> skip_spaces *> base >>| fun p -> `Optional p);
@@ -103,6 +110,53 @@ module Parsers = struct
     <* skip_spaces
 end
 
+let process_contiguous_words group_id (l : exp list) : exp list =
+  let rec aux acc l =
+    match l with
+    | [] -> List.rev acc
+    | x0 :: xs0 -> (
+        match x0 with
+        | `Word "'"
+        | `Word "^" -> (
+            match xs0 with
+            | `Word x1 :: xs1 -> (
+                if Parser_components.is_space (String.get x1 0) then (
+                  aux (`Word x1 :: acc) xs1
+                ) else (
+                  let match_typ =
+                    match x0 with
+                    | `Word "'" -> `Exact
+                    | `Word "^" -> `Prefix
+                    | _ -> failwith "unexpected case"
+                  in
+                  aux
+                    (`Annotated_token Search_phrase.{ string = x1; group_id; match_typ } :: acc)
+                    xs1
+                )
+              )
+            | _ -> aux acc xs0
+          )
+        | `Word "$" -> (
+            let modify_acc acc =
+              match acc with
+              | [] -> []
+              | `Word string :: ys -> (
+                  `Annotated_token Search_phrase.{ string; group_id; match_typ = `Suffix } :: ys
+                )
+              | _ -> acc
+            in
+            match xs0 with
+            | [] -> aux (modify_acc acc) xs0
+            | `Word "$" :: _ -> aux (`Word "$" :: acc) xs0
+            | _ -> aux (modify_acc acc) xs0
+          )
+        | _ -> (
+            aux (x0 :: acc) xs0
+          )
+      )
+  in
+  aux [] l
+
 let flatten ~max_fuzzy_edit_dist (exp : exp) : Search_phrase.t list =
   let get_group_id =
     let counter = ref 0 in
@@ -113,20 +167,17 @@ let flatten ~max_fuzzy_edit_dist (exp : exp) : Search_phrase.t list =
   in
   let rec aux group_id (exp : exp) : Search_phrase.annotated_token list Seq.t =
     match exp with
-    | `Phrase l -> (
-        l
-        |> List.map (fun string -> Search_phrase.{ string; group_id })
-        |> Seq.return
+    | `Annotated_token x -> Seq.return [ x ]
+    | `Word string -> (
+        Seq.return [ Search_phrase.{ string; group_id; match_typ = `Fuzzy } ]
       )
     | `List l -> (
-        match l with
-        | [] -> failwith "unexpected case"
-        | _ -> (
-            List.to_seq l
-            |> Seq.map (aux group_id)
-            |> OSeq.cartesian_product
-            |> Seq.map List.concat
-          )
+        l
+        |> process_contiguous_words group_id
+        |> List.to_seq
+        |> Seq.map (aux group_id)
+        |> OSeq.cartesian_product
+        |> Seq.map List.concat
       )
     | `Paren e -> (
         aux (get_group_id ()) e
