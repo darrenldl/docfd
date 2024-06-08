@@ -1,6 +1,7 @@
 (library
  (flags     (-w "+a-4-9-29-37-40-42-44-48-50-32-30-70@8"))
  (name docfd_lib)
+ (preprocess (pps ppx_deriving.show ppx_deriving.ord))
  (libraries containers
             containers-data
             angstrom

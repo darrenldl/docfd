@@ -504,6 +504,11 @@ let run
            exit_with_error_msg "failed to parse search exp"
          )
        | Some search_exp -> (
+           do_if_debug (fun oc ->
+               Fmt.pf
+                 (Format.formatter_of_out_channel oc)
+                 "Search expression: @[<v>%a@]@." Search_exp.pp search_exp
+             );
            let document_store =
              Document_store.update_search_exp
                pool

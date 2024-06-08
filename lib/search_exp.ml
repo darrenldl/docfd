@@ -1,20 +1,26 @@
 type exp = [
   | `Annotated_token of Search_phrase.annotated_token
   | `Word of string
+  | `Exact_match_marker
+  | `Prefix_match_marker
+  | `Suffix_match_marker
   | `List of exp list
   | `Paren of exp
   | `Binary_op of binary_op * exp * exp
   | `Optional of exp
 ]
+[@@deriving show]
 
 and binary_op =
   | Or
+[@@deriving show]
 
 type t = {
   max_fuzzy_edit_dist : int;
   exp : exp;
   flattened : Search_phrase.t list;
 }
+[@@deriving show]
 
 let max_fuzzy_edit_dist (t : t) = t.max_fuzzy_edit_dist
 
@@ -67,8 +73,6 @@ module Parsers = struct
         )
       <|>
       (char '\\' *> any_char >>| fun c -> Printf.sprintf "%c" c)
-      <|>
-      (choice [ char '\''; char '^'; char '$' ] >>| fun c -> Printf.sprintf "%c" c)
     )
     >>| fun l ->
     String.concat "" l
@@ -83,6 +87,9 @@ module Parsers = struct
         let base =
           choice [
             (phrase >>| as_word_list);
+            (char '\'' *> return `Exact_match_marker);
+            (char '^' *> return `Prefix_match_marker);
+            (char '$' *> return `Suffix_match_marker);
             (string "()" *> return (as_word_list []));
             (char '(' *> exp <* char ')' >>| as_paren);
           ]
@@ -110,33 +117,33 @@ module Parsers = struct
     <* skip_spaces
 end
 
-let process_contiguous_words group_id (l : exp list) : exp list =
+let process_match_typ_markers group_id (l : exp list) : exp list =
   let rec aux acc l =
     match l with
     | [] -> List.rev acc
     | x0 :: xs0 -> (
         match x0 with
-        | `Word "'"
-        | `Word "^" -> (
+        | `Exact_match_marker
+        | `Prefix_match_marker as x0 -> (
             match xs0 with
             | `Word x1 :: xs1 -> (
                 if Parser_components.is_space (String.get x1 0) then (
-                  aux (`Word x1 :: acc) xs1
+                  exit 10;
+                  aux (x0 :: `Word x1 :: acc) xs1
                 ) else (
                   let match_typ =
-                    match x0 with
-                    | `Word "'" -> `Exact
-                    | `Word "^" -> `Prefix
-                    | _ -> failwith "unexpected case"
+                    match (x0 : [ `Exact_match_marker | `Prefix_match_marker ]) with
+                    | `Exact_match_marker -> `Exact
+                    | `Prefix_match_marker -> `Prefix
                   in
                   aux
                     (`Annotated_token Search_phrase.{ string = x1; group_id; match_typ } :: acc)
                     xs1
                 )
               )
-            | _ -> aux acc xs0
+            | _ -> aux (x0 :: acc) xs0
           )
-        | `Word "$" -> (
+        | `Suffix_match_marker -> (
             let modify_acc acc =
               match acc with
               | [] -> []
@@ -165,15 +172,23 @@ let flatten ~max_fuzzy_edit_dist (exp : exp) : Search_phrase.t list =
       counter := x + 1;
       x
   in
+  let atom string group_id =
+    Seq.return [ Search_phrase.{ string; group_id; match_typ = `Fuzzy } ]
+  in
   let rec aux group_id (exp : exp) : Search_phrase.annotated_token list Seq.t =
     match exp with
     | `Annotated_token x -> Seq.return [ x ]
-    | `Word string -> (
-        Seq.return [ Search_phrase.{ string; group_id; match_typ = `Fuzzy } ]
-      )
+    | `Exact_match_marker ->
+      atom "'" group_id
+    | `Prefix_match_marker ->
+      atom "^" group_id
+    | `Suffix_match_marker ->
+      atom "$" group_id
+    | `Word string ->
+      atom string group_id
     | `List l -> (
         l
-        |> process_contiguous_words group_id
+        |> process_match_typ_markers group_id
         |> List.to_seq
         |> Seq.map (aux group_id)
         |> OSeq.cartesian_product

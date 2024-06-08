@@ -1,5 +1,7 @@
 type t
 
+val pp : Format.formatter -> t -> unit
+
 val empty : t
 
 val is_empty : t -> bool

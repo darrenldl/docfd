@@ -4,12 +4,14 @@ type match_typ = [
   | `Suffix
   | `Prefix
 ]
+[@@deriving show]
 
 type annotated_token = {
   string : string;
   group_id : int;
   match_typ : match_typ;
 }
+[@@deriving show]
 
 module Enriched_token = struct
   type t = {
