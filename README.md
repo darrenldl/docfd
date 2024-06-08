@@ -227,13 +227,20 @@ docfd --glob 'relative/path/glob' --glob '/absolute/path/glob'
 The search field takes a search expression as input. A search expression is
 one of:
 
-- Search phrase, e.g. `fuzzy search`
+- Search phrase
 - `?expression` (optional)
 - `(expression)`
 - `expression | expression` (or), e.g. `go ( left | right )`
 
 To use literal `?`, `(`, `)` or `|`, a backslash (`\`) needs to be placed in front
 of the character.
+
+A search expression is a sequence of tokens where a token is one of:
+
+- Unannotated (fuzzy match, e.g. `hello` means fuzzy match `hello`)
+- `'tok` (`'` prefix means exact match the token)
+- `^tok` (`^` prefix means prefix match the token)
+- `tok$` (`$` suffix means suffix match the token)
 
 Search is asynchronous, specifically:
 - Editing of search field is not blocked by search progress
