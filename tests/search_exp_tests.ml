@@ -36,10 +36,14 @@ module Alco = struct
        ||
        List.for_all Search_phrase.is_empty flattened)
 
+  let et ?(m : Search_phrase.match_typ = `Fuzzy) string is_linked_to_prev =
+    let automaton = Spelll.of_string ~limit:max_fuzzy_edit_dist "" in
+    Search_phrase.Enriched_token.make ~string ~is_linked_to_prev automaton m
+
   let test_exp
       ?(neg = false)
       (s : string)
-      (l : (string * (string * bool) list) list)
+      (l : (string * Search_phrase.Enriched_token.t list) list)
     =
     let max_fuzzy_edit_dist = 0 in
     let neg' = neg in
@@ -48,11 +52,8 @@ module Alco = struct
       |> List.map fst
       |> List.map (Search_phrase.make ~max_fuzzy_edit_dist)
     in
-    let automaton = Spelll.of_string ~limit:max_fuzzy_edit_dist "" in
     let enriched_token_list_list =
       List.map snd l
-      |> List.map (List.map (fun (string, is_linked_to_prev) ->
-          Search_phrase.Enriched_token.make ~string ~is_linked_to_prev automaton `Fuzzy))
     in
     Alcotest.(check (list (list enriched_token_testable)))
       (Fmt.str "case0 of %S" s)
@@ -103,318 +104,322 @@ module Alco = struct
     test_invalid_exp "?  ";
     test_exp "(hello)"
       [ ("hello",
-         [ ("hello", false) ])
+         [ (et "hello" false) ])
       ];
     test_exp "()hello"
       [ ("hello",
-         [ ("hello", false) ])
+         [ (et "hello" false) ])
       ];
     test_exp "hello()"
       [ ("hello",
-         [ ("hello", false) ])
+         [ (et "hello" false) ])
       ];
     test_exp "( ) hello"
       [ ("hello",
-         [ ("hello", false) ])
+         [ (et "hello" false) ])
       ];
     test_exp "hello ( )"
       [ ("hello",
-         [ ("hello", false) ])
+         [ (et "hello" false) ])
       ];
     test_exp "?hello"
       [ ("", [])
       ; ("hello",
-         [ ("hello", false) ])
+         [ (et "hello" false) ])
       ];
     test_exp "(?hello)"
       [ ("", [])
       ; ("hello",
-         [ ("hello", false) ])
+         [ (et "hello" false) ])
       ];
     test_exp "?(hello)"
       [ ("", [])
       ; ("hello",
-         [ ("hello", false) ])
+         [ (et "hello" false) ])
       ];
     test_exp "?hello()"
       [ ("", [])
       ; ("hello",
-         [ ("hello", false) ])
+         [ (et "hello" false) ])
       ];
     test_exp "?hello ()"
       [ ("", [])
       ; ("hello",
-         [ ("hello", false) ])
+         [ (et "hello" false) ])
       ];
     test_exp "? hello"
       [ ("", [])
       ; ("hello",
-         [ ("hello", false) ])
+         [ (et "hello" false) ])
       ];
     test_exp "?hello world"
       [ ("world",
-         [ ("world", false) ])
+         [ (et "world" false) ])
       ; ("hello world",
-         [ ("hello", false); ("world", false) ])
+         [ (et "hello" false); (et "world" false) ])
       ];
     test_exp "? hello world"
       [ ("world",
-         [ ("world", false) ])
+         [ (et "world" false) ])
       ; ("hello world",
-         [ ("hello", false); ("world", false) ])
+         [ (et "hello" false); (et "world" false) ])
       ];
     test_exp "?(hello) world"
       [ ("world",
-         [ ("world", false) ] )
+         [ (et "world" false) ] )
       ; ("hello world",
-         [ ("hello", false); ("world", false) ] )
+         [ (et "hello" false); (et "world" false) ] )
       ];
     test_exp "? (hello) world"
       [ ("world",
-         [ ("world", false) ] )
+         [ (et "world" false) ] )
       ; ("hello world",
-         [ ("hello", false); ("world", false) ])
+         [ (et "hello" false); (et "world" false) ])
       ];
     test_exp "?(hello world) abcd"
       [ ("abcd",
-         [ ("abcd", false) ] )
+         [ (et "abcd" false) ] )
       ; ("hello world abcd",
-         [ ("hello", false); ("world", false); ("abcd", false) ] )
+         [ (et "hello" false); (et "world" false); (et "abcd" false) ] )
       ];
     test_exp "ab ?(hello world) cd"
       [ ("ab cd",
-         [ ("ab", false); ("cd", false) ])
+         [ (et "ab" false); (et "cd" false) ])
       ; ("ab hello world cd",
-         [ ("ab", false); ("hello", false); ("world", false); ("cd", false) ])
+         [ (et "ab" false); (et "hello" false); (et "world" false); (et "cd" false) ])
       ];
     test_exp "ab ?hello world cd"
       [ ("ab world cd",
-         [ ("ab", false); ("world", false); ("cd", false) ])
+         [ (et "ab" false); (et "world" false); (et "cd" false) ])
       ; ("ab hello world cd",
-         [ ("ab", false); ("hello", false); ("world", false); ("cd", false) ])
+         [ (et "ab" false); (et "hello" false); (et "world" false); (et "cd" false) ])
       ];
     test_exp "go (left | right)"
       [ ("go left",
-         [ ("go", false); ("left", false) ])
+         [ (et "go" false); (et "left" false) ])
       ; ("go right",
-         [ ("go", false); ("right", false) ])
+         [ (et "go" false); (et "right" false) ])
       ];
     test_exp "go (?up | left | right)"
       [ ("go",
-         [ ("go", false) ])
+         [ (et "go" false) ])
       ; ("go up",
-         [ ("go", false); ("up", false) ])
+         [ (et "go" false); (et "up" false) ])
       ; ("go left",
-         [ ("go", false); ("left", false) ])
+         [ (et "go" false); (et "left" false) ])
       ; ("go right",
-         [ ("go", false); ("right", false) ])];
+         [ (et "go" false); (et "right" false) ])];
     test_exp "(left | right) (up | down)"
       [ ("left up",
-         [ ("left", false); ("up", false) ])
+         [ (et "left" false); (et "up" false) ])
       ; ("left down",
-         [ ("left", false); ("down", false) ])
+         [ (et "left" false); (et "down" false) ])
       ; ("right up",
-         [ ("right", false); ("up", false) ])
+         [ (et "right" false); (et "up" false) ])
       ; ("right down",
-         [ ("right", false); ("down", false) ])
+         [ (et "right" false); (et "down" false) ])
       ];
     test_exp "((a|b)(c|d)) (e | f)"
       [ ("a c e",
-         [ ("a", false); ("c", false); ("e", false) ])
+         [ (et "a" false); (et "c" false); (et "e" false) ])
       ; ("a c f",
-         [ ("a", false); ("c", false); ("f", false) ])
+         [ (et "a" false); (et "c" false); (et "f" false) ])
       ; ("a d e",
-         [ ("a", false); ("d", false); ("e", false) ])
+         [ (et "a" false); (et "d" false); (et "e" false) ])
       ; ("a d f",
-         [ ("a", false); ("d", false); ("f", false) ])
+         [ (et "a" false); (et "d" false); (et "f" false) ])
       ; ("b c e",
-         [ ("b", false); ("c", false); ("e", false) ])
+         [ (et "b" false); (et "c" false); (et "e" false) ])
       ; ("b c f",
-         [ ("b", false); ("c", false); ("f", false) ])
+         [ (et "b" false); (et "c" false); (et "f" false) ])
       ; ("b d e",
-         [ ("b", false); ("d", false); ("e", false) ])
+         [ (et "b" false); (et "d" false); (et "e" false) ])
       ; ("b d f",
-         [ ("b", false); ("d", false); ("f", false) ])
+         [ (et "b" false); (et "d" false); (et "f" false) ])
       ];
     test_exp "(?left | right) (up | down)"
       [ ("up",
-         [ ("up", false) ])
+         [ (et "up" false) ])
       ; ("down",
-         [ ("down", false) ])
+         [ (et "down" false) ])
       ; ("left up",
-         [ ("left", false); ("up", false) ])
+         [ (et "left" false); (et "up" false) ])
       ; ("left down",
-         [ ("left", false); ("down", false) ])
+         [ (et "left" false); (et "down" false) ])
       ; ("right up",
-         [ ("right", false); ("up", false) ])
+         [ (et "right" false); (et "up" false) ])
       ; ("right down",
-         [ ("right", false); ("down", false) ])
+         [ (et "right" false); (et "down" false) ])
       ];
     test_exp "go (left | right) or ( up | down )"
       [ ("go left or up",
-         [ ("go", false); ("left", false); ("or", false); ("up", false) ])
+         [ (et "go" false); (et "left" false); (et "or" false); (et "up" false) ])
       ; ("go left or down",
-         [ ("go", false); ("left", false); ("or", false); ("down", false) ])
+         [ (et "go" false); (et "left" false); (et "or" false); (et "down" false) ])
       ; ("go right or up",
-         [ ("go", false); ("right", false); ("or", false); ("up", false) ])
+         [ (et "go" false); (et "right" false); (et "or" false); (et "up" false) ])
       ; ("go right or down",
-         [ ("go", false); ("right", false); ("or", false); ("down", false) ])
+         [ (et "go" false); (et "right" false); (et "or" false); (et "down" false) ])
       ];
     test_exp "and/or"
       [ ("and/or",
-         [ ("and", false); ("/", true); ("or", true) ])
+         [ (et "and" false); (et "/" true); (et "or" true) ])
       ];
     test_exp ~neg:true "and/or"
       [ ("and / or",
-         [ ("and", false); ("/", false); ("or", false) ])
+         [ (et "and" false); (et "/" false); (et "or" false) ])
       ];
     test_exp ~neg:true "and/or"
       [ ("and /or",
-         [ ("and", false); ("/", false); ("or", true) ])
+         [ (et "and" false); (et "/" false); (et "or" true) ])
       ];
     test_exp ~neg:true "and/or"
       [ ("and/ or",
-         [ ("and", false); ("/", true); ("or", false) ])
+         [ (et "and" false); (et "/" true); (et "or" false) ])
       ];
     test_exp "and / or"
       [ ("and / or",
-         [ ("and", false); ("/", false); ("or", false) ])
+         [ (et "and" false); (et "/" false); (et "or" false) ])
       ];
     test_exp ~neg:true "and / or"
       [ ("and/or",
-         [ ("and", false); ("/", true); ("or", true) ])
+         [ (et "and" false); (et "/" true); (et "or" true) ])
       ];
     test_exp ~neg:true "and / or"
       [ ("and /or",
-         [ ("and", false); ("/", false); ("or", true) ])
+         [ (et "and" false); (et "/" false); (et "or" true) ])
       ];
     test_exp ~neg:true "and / or"
       [ ("and/ or",
-         [ ("and", false); ("/", true); ("or", false) ])
+         [ (et "and" false); (et "/" true); (et "or" false) ])
       ];
     test_exp "(and)/ or"
       [ ("and / or",
-         [ ("and", false); ("/", false); ("or", false) ])
+         [ (et "and" false); (et "/" false); (et "or" false) ])
       ];
     test_exp ~neg:true "(and)/ or"
       [ ("and/ or",
-         [ ("and", false); ("/", true); ("or", false) ])
+         [ (et "and" false); (et "/" true); (et "or" false) ])
       ];
     test_exp "and(/) or"
       [ ("and / or",
-         [ ("and", false); ("/", false); ("or", false) ])
+         [ (et "and" false); (et "/" false); (et "or" false) ])
       ];
     test_exp ~neg:true "and(/) or"
       [ ("and/ or",
-         [ ("and", false); ("/", true); ("or", false) ])
+         [ (et "and" false); (et "/" true); (et "or" false) ])
       ];
     test_exp "and/(or)"
       [ ("and/ or",
-         [ ("and", false); ("/", true); ("or", false) ])
+         [ (et "and" false); (et "/" true); (et "or" false) ])
       ];
     test_exp ~neg:true "and/(or)"
       [ ("and/or",
-         [ ("and", false); ("/", true); ("or", true) ])
+         [ (et "and" false); (et "/" true); (et "or" true) ])
       ];
     test_exp "go (left | right) and/or ( up | down )"
       [ ("go left and/or up",
-         [ ("go", false); ("left", false); ("and", false); ("/", true); ("or", true); ("up", false) ])
+         [ (et "go" false); (et "left" false); (et "and" false); (et "/" true); (et "or" true); (et "up" false) ])
       ; ("go left and/or down",
-         [ ("go", false); ("left", false); ("and", false); ("/", true); ("or", true); ("down", false) ])
+         [ (et "go" false); (et "left" false); (et "and" false); (et "/" true); (et "or" true); (et "down" false) ])
       ; ("go right and/or up",
-         [ ("go", false); ("right", false); ("and", false); ("/", true); ("or", true); ("up", false) ])
+         [ (et "go" false); (et "right" false); (et "and" false); (et "/" true); (et "or" true); (et "up" false) ])
       ; ("go right and/or down",
-         [ ("go", false); ("right", false); ("and", false); ("/", true); ("or", true); ("down", false) ])
+         [ (et "go" false); (et "right" false); (et "and" false); (et "/" true); (et "or" true); (et "down" false) ])
       ];
     test_exp "go (left | right) and / or ( up | down )"
       [ ("go left and / or up",
-         [ ("go", false); ("left", false); ("and", false); ("/", false); ("or", false); ("up", false) ])
+         [ (et "go" false); (et "left" false); (et "and" false); (et "/" false); (et "or" false); (et "up" false) ])
       ; ("go left and / or down",
-         [ ("go", false); ("left", false); ("and", false); ("/", false); ("or", false); ("down", false) ])
+         [ (et "go" false); (et "left" false); (et "and" false); (et "/" false); (et "or" false); (et "down" false) ])
       ; ("go right and / or up",
-         [ ("go", false); ("right", false); ("and", false); ("/", false); ("or", false); ("up", false) ])
+         [ (et "go" false); (et "right" false); (et "and" false); (et "/" false); (et "or" false); (et "up" false) ])
       ; ("go right and / or down",
-         [ ("go", false); ("right", false); ("and", false); ("/", false); ("or", false); ("down", false) ])
+         [ (et "go" false); (et "right" false); (et "and" false); (et "/" false); (et "or" false); (et "down" false) ])
       ];
     test_exp "go ?(left | right) ( up | down )"
       [ ( "go up",
-          [ ("go", false); ("up", false) ])
+          [ (et "go" false); (et "up" false) ])
       ; ( "go down",
-          [ ("go", false); ("down", false) ])
+          [ (et "go" false); (et "down" false) ])
       ; ( "go left up",
-          [ ("go", false); ("left", false); ("up", false) ])
+          [ (et "go" false); (et "left" false); (et "up" false) ])
       ; ( "go left down",
-          [ ("go", false); ("left", false); ("down", false) ])
+          [ (et "go" false); (et "left" false); (et "down" false) ])
       ; ( "go right up",
-          [ ("go", false); ("right", false); ("up", false) ])
+          [ (et "go" false); (et "right" false); (et "up" false) ])
       ; ( "go right down",
-          [ ("go", false); ("right", false); ("down", false) ])
+          [ (et "go" false); (et "right" false); (et "down" false) ])
       ];
     test_exp "go ?((left | right) or) ( up | down )"
       [ ( "go up",
-          [ ("go", false); ("up", false) ])
+          [ (et "go" false); (et "up" false) ])
       ; ( "go down",
-          [ ("go", false); ("down", false) ])
+          [ (et "go" false); (et "down" false) ])
       ; ( "go left or up",
-          [ ("go", false); ("left", false); ("or", false); ("up", false) ])
+          [ (et "go" false); (et "left" false); (et "or" false); (et "up" false) ])
       ; ( "go left or down",
-          [ ("go", false); ("left", false); ("or", false); ("down", false) ])
+          [ (et "go" false); (et "left" false); (et "or" false); (et "down" false) ])
       ; ( "go right or up",
-          [ ("go", false); ("right", false); ("or", false); ("up", false) ])
+          [ (et "go" false); (et "right" false); (et "or" false); (et "up" false) ])
       ; ( "go right or down",
-          [ ("go", false); ("right", false); ("or", false); ("down", false) ])
+          [ (et "go" false); (et "right" false); (et "or" false); (et "down" false) ])
       ];
     test_exp "go ?(?(left | right) or) ( up | down )"
       [ ( "go up",
-          [ ("go", false); ("up", false) ])
+          [ (et "go" false); (et "up" false) ])
       ; ( "go down",
-          [ ("go", false); ("down", false) ])
+          [ (et "go" false); (et "down" false) ])
       ; ( "go or up",
-          [ ("go", false); ("or", false); ("up", false) ])
+          [ (et "go" false); (et "or" false); (et "up" false) ])
       ; ( "go or down",
-          [ ("go", false); ("or", false); ("down", false) ])
+          [ (et "go" false); (et "or" false); (et "down" false) ])
       ; ( "go left or up",
-          [ ("go", false); ("left", false); ("or", false); ("up", false) ])
+          [ (et "go" false); (et "left" false); (et "or" false); (et "up" false) ])
       ; ( "go left or down",
-          [ ("go", false); ("left", false); ("or", false); ("down", false) ])
+          [ (et "go" false); (et "left" false); (et "or" false); (et "down" false) ])
       ; ( "go right or up",
-          [ ("go", false); ("right", false); ("or", false); ("up", false) ])
+          [ (et "go" false); (et "right" false); (et "or" false); (et "up" false) ])
       ; ( "go right or down",
-          [ ("go", false); ("right", false); ("or", false); ("down", false) ])
+          [ (et "go" false); (et "right" false); (et "or" false); (et "down" false) ])
       ];
     test_exp "go ?(?(left | right) or) or ( ?up | down )"
       [ ( "go or",
-          [ ("go", false); ("or", false) ])
+          [ (et "go" false); (et "or" false) ])
       ; ( "go or up",
-          [ ("go", false); ("or", false); ("up", false) ])
+          [ (et "go" false); (et "or" false); (et "up" false) ])
       ; ( "go or down",
-          [ ("go", false); ("or", false); ("down", false) ])
+          [ (et "go" false); (et "or" false); (et "down" false) ])
       ; ( "go or or",
-          [ ("go", false); ("or", false); ("or", false) ])
+          [ (et "go" false); (et "or" false); (et "or" false) ])
       ; ( "go or or up",
-          [ ("go", false); ("or", false); ("or", false); ("up", false) ])
+          [ (et "go" false); (et "or" false); (et "or" false); (et "up" false) ])
       ; ( "go or or down",
-          [ ("go", false); ("or", false); ("or", false); ("down", false) ])
+          [ (et "go" false); (et "or" false); (et "or" false); (et "down" false) ])
       ; ( "go left or or",
-          [ ("go", false); ("left", false); ("or", false); ("or", false) ])
+          [ (et "go" false); (et "left" false); (et "or" false); (et "or" false) ])
       ; ( "go left or or up",
-          [ ("go", false); ("left", false); ("or", false); ("or", false); ("up", false) ])
+          [ (et "go" false); (et "left" false); (et "or" false); (et "or" false); (et "up" false) ])
       ; ( "go left or or down",
-          [ ("go", false); ("left", false); ("or", false); ("or", false); ("down", false) ])
+          [ (et "go" false); (et "left" false); (et "or" false); (et "or" false); (et "down" false) ])
       ; ( "go right or or",
-          [ ("go", false); ("right", false); ("or", false); ("or", false) ])
+          [ (et "go" false); (et "right" false); (et "or" false); (et "or" false) ])
       ; ( "go right or or up",
-          [ ("go", false); ("right", false); ("or", false); ("or", false); ("up", false) ])
+          [ (et "go" false); (et "right" false); (et "or" false); (et "or" false); (et "up" false) ])
       ; ( "go right or or down",
-          [ ("go", false); ("right", false); ("or", false); ("or", false); ("down", false) ])
+          [ (et "go" false); (et "right" false); (et "or" false); (et "or" false); (et "down" false) ])
       ];
     test_exp "- - -"
       [ ("- - -",
-         [ ("-", false); ("-", false); ("-", false) ])
+         [ (et "-" false); (et "-" false); (et "-" false) ])
       ];
     test_exp "-- -"
       [ ("-- -",
-         [ ("-", false); ("-", true); ("-", false) ])
+         [ (et "-" false); (et "-" true); (et "-" false) ])
+      ];
+    test_exp "'abcd"
+      [ ("abcd",
+         [ (et ~m:`Exact "abcd" false ) ])
       ];
     ()
 

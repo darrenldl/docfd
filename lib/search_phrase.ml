@@ -4,7 +4,7 @@ type match_typ = [
   | `Suffix
   | `Prefix
 ]
-[@@deriving show]
+[@@deriving show, ord]
 
 type annotated_token = {
   string : string;
@@ -43,6 +43,8 @@ module Enriched_token = struct
     String.equal x.string y.string
     &&
     x.is_linked_to_prev = y.is_linked_to_prev
+    &&
+    x.match_typ = y.match_typ
 end
 
 type t = {
@@ -77,10 +79,11 @@ let fuzzy_index t =
 let compare (t1 : t) (t2 : t) =
   match List.compare String.compare t1.raw_phrase t2.raw_phrase with
   | 0 -> (
-      match t1.is_linked_to_prev, t2.is_linked_to_prev with
-      | [], [] -> 0
-      | _ :: xs, _ :: ys -> List.compare Bool.compare xs ys
-      | xs, ys -> List.compare Bool.compare xs ys
+      match List.compare Bool.compare t1.is_linked_to_prev t2.is_linked_to_prev with
+      | 0 -> (
+          List.compare compare_match_typ t1.match_typs t2.match_typs
+        )
+      | n -> n
     )
   | n -> n
 
