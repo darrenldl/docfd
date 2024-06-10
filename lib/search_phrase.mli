@@ -4,7 +4,7 @@ type match_typ = [
   | `Suffix
   | `Prefix
 ]
-[@@deriving show]
+[@@deriving show, ord]
 
 type annotated_token = {
   string : string;
