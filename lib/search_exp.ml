@@ -1,7 +1,10 @@
+type match_typ_marker = [ `Exact | `Prefix | `Suffix ]
+[@@deriving show]
+
 type exp = [
   | `Annotated_token of Search_phrase.annotated_token
   | `Word of string
-  | `Match_typ_marker of [ `Exact | `Prefix | `Suffix ]
+  | `Match_typ_marker of match_typ_marker
   | `List of exp list
   | `Paren of exp
   | `Binary_op of binary_op * exp * exp
@@ -12,8 +15,6 @@ type exp = [
 and binary_op =
   | Or
 [@@deriving show]
-
-type match_typ_marker = [ `Exact | `Prefix | `Suffix ]
 
 let char_of_match_typ_marker (x : match_typ_marker) =
   match x with
@@ -159,17 +160,30 @@ let process_match_typ_markers group_id (l : exp list) : exp list =
             | _ -> aux (x0 :: acc) xs0
           )
         | `Match_typ_marker `Suffix -> (
-            match acc with
-            | `Word y :: ys -> (
-                if Parser_components.is_space (String.get y 0) then (
-                  aux (x0 :: acc) xs0
-                ) else (
-                  aux
-                    (`Annotated_token Search_phrase.{ string = y; group_id; match_typ = `Suffix } :: ys)
-                    xs0
+            let modify_acc acc : exp list =
+              match acc with
+              | [] -> [ x0 ]
+              | `Word y :: ys -> (
+                  if Parser_components.is_space (String.get y 0) then (
+                    x0 :: acc
+                  ) else (
+                    `Annotated_token Search_phrase.{ string = y; group_id; match_typ = `Suffix } :: ys
+                  )
                 )
-              )
-            | _ -> aux (x0 :: acc) xs0
+              | `Match_typ_marker y :: ys ->
+                `Annotated_token Search_phrase.{ string = string_of_match_typ_marker y; group_id; match_typ = `Suffix } :: ys
+              | _ -> x0 :: acc
+            in
+            let end_of_phrase =
+              match xs0 with
+              | [] -> true
+              | `Word x1 :: _ -> Parser_components.is_space (String.get x1 0)
+              | _ -> false
+            in
+            if end_of_phrase then
+              aux (modify_acc acc) xs0
+            else
+              aux (x0 :: acc) xs0
           )
         | _ -> (
             aux (x0 :: acc) xs0

@@ -455,7 +455,7 @@ module Alco = struct
          [ et "abcd" false; et ~m:`Suffix "$" true ])
       ];
     test_exp "'^abcd efgh$$ ij$kl$"
-      [ ([ at ~m:`Prefix "^"
+      [ ([ at ~m:`Exact "^"
          ; at "abcd"
          ; at " "
          ; at "efgh"
@@ -468,7 +468,7 @@ module Alco = struct
          [ et ~m:`Exact "^" false
          ; et "abcd" true
          ; et "efgh" false
-         ; et "$" true
+         ; et ~m:`Suffix "$" true
          ; et "ij" false
          ; et "$" true
          ; et ~m:`Suffix "kl" true
