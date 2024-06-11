@@ -55,7 +55,7 @@ module Alco = struct
       |> List.map fst
       |> List.map (fun l ->
           List.to_seq l
-      |> Search_phrase.of_annotated_tokens ~max_fuzzy_edit_dist)
+          |> Search_phrase.of_annotated_tokens ~max_fuzzy_edit_dist)
     in
     let enriched_token_list_list =
       List.map snd l
@@ -344,87 +344,87 @@ module Alco = struct
       ];
     test_exp "go ?(left | right) ( up | down )"
       [ ([ at "go"; at " "; at "up" ],
-          [ et "go" false; et "up" false ])
+         [ et "go" false; et "up" false ])
       ; ([ at "go"; at " "; at "down" ],
-          [ et "go" false; et "down" false ])
+         [ et "go" false; et "down" false ])
       ; ([ at "go"; at " "; at "left"; at " "; at "up" ],
-          [ et "go" false; et "left" false; et "up" false ])
+         [ et "go" false; et "left" false; et "up" false ])
       ; ([ at "go"; at " "; at "left"; at " "; at "down" ],
-          [ et "go" false; et "left" false; et "down" false ])
+         [ et "go" false; et "left" false; et "down" false ])
       ; ([ at "go"; at " "; at "right"; at " "; at "up" ],
-          [ et "go" false; et "right" false; et "up" false ])
+         [ et "go" false; et "right" false; et "up" false ])
       ; ([ at "go"; at " "; at "right"; at " "; at "down" ],
-          [ et "go" false; et "right" false; et "down" false ])
+         [ et "go" false; et "right" false; et "down" false ])
       ];
     test_exp "go ?((left | right) or) ( up | down )"
       [ ([ at "go"; at " "; at "up" ],
-          [ et "go" false; et "up" false ])
+         [ et "go" false; et "up" false ])
       ; ([ at "go"; at " "; at "down" ],
-          [ et "go" false; et "down" false ])
+         [ et "go" false; et "down" false ])
       ; ([ at "go"; at " "; at "left"; at " "; at "or"; at " "; at "up" ],
-          [ et "go" false; et "left" false; et "or" false; et "up" false ])
+         [ et "go" false; et "left" false; et "or" false; et "up" false ])
       ; ([ at "go"; at " "; at "left"; at " "; at "or"; at " "; at "down" ],
-          [ et "go" false; et "left" false; et "or" false; et "down" false ])
+         [ et "go" false; et "left" false; et "or" false; et "down" false ])
       ; ([ at "go"; at " "; at "right"; at " "; at "or"; at " "; at "up" ],
-          [ et "go" false; et "right" false; et "or" false; et "up" false ])
+         [ et "go" false; et "right" false; et "or" false; et "up" false ])
       ; ([ at "go"; at " "; at "right"; at " "; at "or"; at " "; at "down" ],
-          [ et "go" false; et "right" false; et "or" false; et "down" false ])
+         [ et "go" false; et "right" false; et "or" false; et "down" false ])
       ];
     test_exp "go ?(?(left | right) or) ( up | down )"
       [ ([ at "go"; at " "; at "up" ],
-          [ et "go" false; et "up" false ])
+         [ et "go" false; et "up" false ])
       ; ([ at "go"; at " "; at "down" ],
-          [ et "go" false; et "down" false ])
+         [ et "go" false; et "down" false ])
       ; ([ at "go"; at " "; at "or"; at " "; at "up" ],
-          [ et "go" false; et "or" false; et "up" false ])
+         [ et "go" false; et "or" false; et "up" false ])
       ; ([ at "go"; at " "; at "or"; at " "; at "down" ],
-          [ et "go" false; et "or" false; et "down" false ])
+         [ et "go" false; et "or" false; et "down" false ])
       ; ([ at "go"; at " "; at "left"; at " "; at "or"; at " "; at "up" ],
-          [ et "go" false; et "left" false; et "or" false; et "up" false ])
+         [ et "go" false; et "left" false; et "or" false; et "up" false ])
       ; ([ at "go"; at " "; at "left"; at " "; at "or"; at " "; at "down" ],
-          [ et "go" false; et "left" false; et "or" false; et "down" false ])
+         [ et "go" false; et "left" false; et "or" false; et "down" false ])
       ; ([ at "go"; at " "; at "right"; at " "; at "or"; at " "; at "up" ],
-          [ et "go" false; et "right" false; et "or" false; et "up" false ])
+         [ et "go" false; et "right" false; et "or" false; et "up" false ])
       ; ([ at "go"; at " "; at "right"; at " "; at "or"; at " "; at "down" ],
-          [ et "go" false; et "right" false; et "or" false; et "down" false ])
+         [ et "go" false; et "right" false; et "or" false; et "down" false ])
       ];
     test_exp "go ?(?(left | right) or) or ( ?up | down )"
       [ ([ at "go"; at " "; at "or" ],
-          [ et "go" false; et "or" false ])
+         [ et "go" false; et "or" false ])
       ; ([ at "go"; at " "; at "or"; at " "; at "up" ],
-          [ et "go" false; et "or" false; et "up" false ])
+         [ et "go" false; et "or" false; et "up" false ])
       ; ([ at "go"; at " "; at "or"; at " "; at "down" ],
-          [ et "go" false; et "or" false; et "down" false ])
+         [ et "go" false; et "or" false; et "down" false ])
       ; ([ at "go"; at " "; at "or"; at " "; at "or" ],
-          [ et "go" false; et "or" false; et "or" false ])
+         [ et "go" false; et "or" false; et "or" false ])
       ; ([ at "go"; at " "; at "or"; at " "; at "or"; at " "; at "up" ],
-          [ et "go" false; et "or" false; et "or" false; et "up" false ])
+         [ et "go" false; et "or" false; et "or" false; et "up" false ])
       ; ([ at "go"; at " "; at "or"; at " "; at "or"; at " "; at "down" ],
-          [ et "go" false; et "or" false; et "or" false; et "down" false ])
+         [ et "go" false; et "or" false; et "or" false; et "down" false ])
       ; ([ at "go"; at " "; at "left"; at " "; at "or"; at " "; at "or" ],
-          [ et "go" false; et "left" false; et "or" false; et "or" false ])
+         [ et "go" false; et "left" false; et "or" false; et "or" false ])
       ; ([ at "go"; at " "; at "left"; at " "; at "or"; at " "; at "or"; at " "; at "up" ],
-          [ et "go" false; et "left" false; et "or" false; et "or" false; et "up" false ])
+         [ et "go" false; et "left" false; et "or" false; et "or" false; et "up" false ])
       ; ([ at "go"; at " "; at "left"; at " "; at "or"; at " "; at "or"; at " "; at "down" ],
-          [ et "go" false; et "left" false; et "or" false; et "or" false; et "down" false ])
+         [ et "go" false; et "left" false; et "or" false; et "or" false; et "down" false ])
       ; ([ at "go"; at " "; at "right"; at " "; at "or"; at " "; at "or" ],
-          [ et "go" false; et "right" false; et "or" false; et "or" false ])
+         [ et "go" false; et "right" false; et "or" false; et "or" false ])
       ; ([ at "go"; at " "; at "right"; at " "; at "or"; at " "; at "or"; at " "; at "up" ],
-          [ et "go" false; et "right" false; et "or" false; et "or" false; et "up" false ])
+         [ et "go" false; et "right" false; et "or" false; et "or" false; et "up" false ])
       ; ([ at "go"; at " "; at "right"; at " "; at "or"; at " "; at "or"; at " "; at "down" ],
-          [ et "go" false; et "right" false; et "or" false; et "or" false; et "down" false ])
+         [ et "go" false; et "right" false; et "or" false; et "or" false; et "down" false ])
       ];
     test_exp "- - -"
       [ ([ at "-"; at " "; at "-"; at " "; at "-" ],
-         [ (et "-" false); (et "-" false); (et "-" false) ])
+         [ et "-" false; et "-" false; et "-" false ])
       ];
     test_exp "-- -"
       [ ([ at "-"; at "-"; at " "; at "-" ],
-         [ (et "-" false); (et "-" true); (et "-" false) ])
+         [ et "-" false; et "-" true; et "-" false ])
       ];
     test_exp "'abcd"
       [ ([ at ~m:`Exact "abcd" ],
-         [ (et ~m:`Exact "abcd" false ) ])
+         [ et ~m:`Exact "abcd" false ])
       ];
     ()
 
