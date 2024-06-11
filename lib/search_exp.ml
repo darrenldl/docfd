@@ -1,9 +1,7 @@
 type exp = [
   | `Annotated_token of Search_phrase.annotated_token
   | `Word of string
-  | `Exact_match_marker
-  | `Prefix_match_marker
-  | `Suffix_match_marker
+  | `Match_typ_marker of [ `Exact | `Prefix | `Suffix ]
   | `List of exp list
   | `Paren of exp
   | `Binary_op of binary_op * exp * exp
@@ -14,6 +12,20 @@ type exp = [
 and binary_op =
   | Or
 [@@deriving show]
+
+type match_typ_marker = [ `Exact | `Prefix | `Suffix ]
+
+let char_of_match_typ_marker (x : match_typ_marker) =
+  match x with
+  | `Exact -> '\''
+  | `Prefix -> '^'
+  | `Suffix -> '$'
+
+let string_of_match_typ_marker (x : match_typ_marker) =
+  match x with
+  | `Exact -> "\'"
+  | `Prefix -> "^"
+  | `Suffix -> "$"
 
 type t = {
   max_fuzzy_edit_dist : int;
@@ -87,9 +99,9 @@ module Parsers = struct
         let base =
           choice [
             (phrase >>| as_word_list);
-            (char '\'' *> return `Exact_match_marker);
-            (char '^' *> return `Prefix_match_marker);
-            (char '$' *> return `Suffix_match_marker);
+            (char '\'' *> return (`Match_typ_marker `Exact));
+            (char '^' *> return (`Match_typ_marker `Prefix));
+            (char '$' *> return (`Match_typ_marker `Suffix));
             (string "()" *> return (as_word_list []));
             (char '(' *> exp <* char ')' >>| as_paren);
           ]
@@ -123,39 +135,41 @@ let process_match_typ_markers group_id (l : exp list) : exp list =
     | [] -> List.rev acc
     | x0 :: xs0 -> (
         match x0 with
-        | `Exact_match_marker
-        | `Prefix_match_marker as x0 -> (
+        | `Match_typ_marker `Exact
+        | `Match_typ_marker `Prefix as x0 -> (
+            let match_typ =
+              match (x0 : [ `Match_typ_marker of [ `Exact | `Prefix ] ]) with
+              | `Match_typ_marker x -> (x :> Search_phrase.match_typ)
+            in
             match xs0 with
             | `Word x1 :: xs1 -> (
                 if Parser_components.is_space (String.get x1 0) then (
-                  aux (x0 :: `Word x1 :: acc) xs1
+                  aux (`Word x1 :: x0 :: acc) xs1
                 ) else (
-                  let match_typ =
-                    match (x0 : [ `Exact_match_marker | `Prefix_match_marker ]) with
-                    | `Exact_match_marker -> `Exact
-                    | `Prefix_match_marker -> `Prefix
-                  in
                   aux
                     (`Annotated_token Search_phrase.{ string = x1; group_id; match_typ } :: acc)
                     xs1
                 )
               )
+            | `Match_typ_marker x1 :: xs1 -> (
+                aux
+                  (`Annotated_token Search_phrase.{ string = string_of_match_typ_marker x1; group_id; match_typ } :: acc)
+                  xs1
+              )
             | _ -> aux (x0 :: acc) xs0
           )
-        | `Suffix_match_marker -> (
-            let modify_acc acc =
-              match acc with
-              | [] -> []
-              | `Word string :: ys -> (
-                  `Annotated_token Search_phrase.{ string; group_id; match_typ = `Suffix } :: ys
+        | `Match_typ_marker `Suffix -> (
+            match acc with
+            | `Word y :: ys -> (
+                if Parser_components.is_space (String.get y 0) then (
+                  aux (x0 :: acc) xs0
+                ) else (
+                  aux
+                    (`Annotated_token Search_phrase.{ string = y; group_id; match_typ = `Suffix } :: ys)
+                    xs0
                 )
-              | _ -> acc
-            in
-            match xs0 with
-            | [] -> aux (modify_acc acc) xs0
-            | `Suffix_match_marker :: _ ->
-              aux (`Suffix_match_marker :: acc) xs0
-            | _ -> aux (modify_acc acc) xs0
+              )
+            | _ -> aux (x0 :: acc) xs0
           )
         | _ -> (
             aux (x0 :: acc) xs0
@@ -169,9 +183,7 @@ let flatten_nested_lists (exp : exp) : exp =
     match exp with
     | `Annotated_token _
     | `Word _
-    | `Exact_match_marker
-    | `Prefix_match_marker
-    | `Suffix_match_marker -> exp
+    | `Match_typ_marker _ -> exp
     | `List l -> (
         `List
           (CCList.flat_map (fun e ->
@@ -200,12 +212,11 @@ let flatten ~max_fuzzy_edit_dist (exp : exp) : Search_phrase.t list =
   let rec aux group_id (exp : exp) : Search_phrase.annotated_token list Seq.t =
     match exp with
     | `Annotated_token x -> Seq.return [ x ]
-    | `Exact_match_marker ->
-      atom "'" group_id
-    | `Prefix_match_marker ->
-      atom "^" group_id
-    | `Suffix_match_marker ->
-      atom "$" group_id
+    | `Match_typ_marker x -> (
+        atom
+          (string_of_match_typ_marker x)
+          group_id
+      )
     | `Word string ->
       atom string group_id
     | `List l -> (

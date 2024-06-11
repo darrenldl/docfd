@@ -60,24 +60,24 @@ module Alco = struct
     let enriched_token_list_list =
       List.map snd l
     in
-    Alcotest.(check (list (list enriched_token_testable)))
-      (Fmt.str "case0 of %S" s)
-      enriched_token_list_list
-      (phrases
-       |> List.map Search_phrase.enriched_tokens
-      );
     Alcotest.(check
                 (if neg' then (
                     neg (list search_phrase_testable)
                   ) else (
                    list search_phrase_testable
                  )))
-      (Fmt.str "case1 of %S" s)
+      (Fmt.str "case0 of %S" s)
       (List.sort Search_phrase.compare phrases)
       (Search_exp.make ~max_fuzzy_edit_dist s
        |> Option.get
        |> Search_exp.flattened
        |> List.sort Search_phrase.compare
+      );
+    Alcotest.(check (list (list enriched_token_testable)))
+      (Fmt.str "case1 of %S" s)
+      enriched_token_list_list
+      (phrases
+       |> List.map Search_phrase.enriched_tokens
       )
 
   let corpus () =
@@ -425,6 +425,54 @@ module Alco = struct
     test_exp "'abcd"
       [ ([ at ~m:`Exact "abcd" ],
          [ et ~m:`Exact "abcd" false ])
+      ];
+    test_exp "' abcd"
+      [ ([ at "'"; at " "; at "abcd" ],
+         [ et "'" false; et "abcd" false ])
+      ];
+    test_exp "^abcd"
+      [ ([ at ~m:`Prefix "abcd" ],
+         [ et ~m:`Prefix "abcd" false ])
+      ];
+    test_exp "^ abcd"
+      [ ([ at "^"; at " "; at "abcd" ],
+         [ et "^" false; et "abcd" false ])
+      ];
+    test_exp "abcd$"
+      [ ([ at ~m:`Suffix "abcd" ],
+         [ et ~m:`Suffix "abcd" false ])
+      ];
+    test_exp "abcd $"
+      [ ([ at "abcd"; at " "; at "$" ],
+         [ et "abcd" false; et "$" false ])
+      ];
+    test_exp "''abcd"
+      [ ([ at ~m:`Exact "'"; at "abcd" ],
+         [ et ~m:`Exact "'" false; et "abcd" true ])
+      ];
+    test_exp "abcd$$"
+      [ ([ at "abcd"; at ~m:`Suffix "$" ],
+         [ et "abcd" false; et ~m:`Suffix "$" true ])
+      ];
+    test_exp "'^abcd efgh$$ ij$kl$"
+      [ ([ at ~m:`Prefix "^"
+         ; at "abcd"
+         ; at " "
+         ; at "efgh"
+         ; at ~m:`Suffix "$"
+         ; at " "
+         ; at "ij"
+         ; at "$"
+         ; at ~m:`Suffix "kl"
+         ],
+         [ et ~m:`Exact "^" false
+         ; et "abcd" true
+         ; et "efgh" false
+         ; et "$" true
+         ; et "ij" false
+         ; et "$" true
+         ; et ~m:`Suffix "kl" true
+         ])
       ];
     ()
 
