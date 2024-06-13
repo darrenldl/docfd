@@ -447,8 +447,8 @@ module Alco = struct
          [ et "abcd" false; et "$" false ])
       ];
     test_exp "''abcd"
-      [ ([ at ~m:`Exact "'"; at "abcd" ],
-         [ et ~m:`Exact "'" false; et "abcd" true ])
+      [ ([ at ~m:`Exact "'"; at ~m:`Exact "abcd" ],
+         [ et ~m:`Exact "'" false; et ~m:`Exact "abcd" true ])
       ];
     test_exp "abcd$$"
       [ ([ at "abcd"; at ~m:`Suffix "$" ],

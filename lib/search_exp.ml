@@ -138,26 +138,19 @@ let process_match_typ_markers group_id (l : exp list) : exp list =
         match x0 with
         | `Match_typ_marker `Exact
         | `Match_typ_marker `Prefix as x0 -> (
-            let match_typ =
+            let original_marker, marker, marker_last =
               match (x0 : [ `Match_typ_marker of [ `Exact | `Prefix ] ]) with
-              | `Match_typ_marker x -> (x :> Search_phrase.match_typ)
+              | `Match_typ_marker `Exact -> `Exact, `Exact, `Exact
+              | `Match_typ_marker `Prefix -> `Prefix, `Exact, `Prefix
             in
-            match xs0 with
-            | `Word x1 :: xs1 -> (
-                if Parser_components.is_space (String.get x1 0) then (
-                  aux (`Word x1 :: x0 :: acc) xs1
-                ) else (
-                  aux
-                    (`Annotated_token Search_phrase.{ string = x1; group_id; match_typ } :: acc)
-                    xs1
-                )
-              )
-            | `Match_typ_marker x1 :: xs1 -> (
-                aux
-                  (`Annotated_token Search_phrase.{ string = string_of_match_typ_marker x1; group_id; match_typ } :: acc)
-                  xs1
-              )
-            | _ -> aux (x0 :: acc) xs0
+            rewrite_tokens_forward
+              true
+              original_marker
+              marker
+              marker_last
+              []
+              acc
+              xs0
           )
         | `Match_typ_marker `Suffix -> (
             let modify_acc acc : exp list =
@@ -167,11 +160,19 @@ let process_match_typ_markers group_id (l : exp list) : exp list =
                   if Parser_components.is_space (String.get y 0) then (
                     x0 :: acc
                   ) else (
-                    `Annotated_token Search_phrase.{ string = y; group_id; match_typ = `Suffix } :: ys
+                    `Annotated_token Search_phrase.{
+                        string = y;
+                        group_id;
+                        match_typ = `Suffix
+                      } :: ys
                   )
                 )
               | `Match_typ_marker y :: ys ->
-                `Annotated_token Search_phrase.{ string = string_of_match_typ_marker y; group_id; match_typ = `Suffix } :: ys
+                `Annotated_token Search_phrase.{
+                    string = string_of_match_typ_marker y;
+                    group_id;
+                    match_typ = `Suffix
+                  } :: ys
               | _ -> x0 :: acc
             in
             let end_of_phrase =
@@ -187,6 +188,80 @@ let process_match_typ_markers group_id (l : exp list) : exp list =
           )
         | _ -> (
             aux (x0 :: acc) xs0
+          )
+      )
+  and rewrite_tokens_forward
+      first
+      (original_marker : match_typ_marker)
+      (marker : match_typ_marker)
+      (marker_last : match_typ_marker)
+      (acc_buffer : exp list)
+      (acc : exp list)
+      l
+    =
+    let match_typ = (marker :> Search_phrase.match_typ) in
+    let match_typ_last = (marker_last :> Search_phrase.match_typ) in
+    let stop acc_buffer acc l =
+      let acc_buffer =
+        match acc_buffer with
+        | [] -> []
+        | x :: xs -> (
+            match x with
+            | `Annotated_token x -> (
+                `Annotated_token Search_phrase.{ x with match_typ = match_typ_last } :: xs
+              )
+            | _ -> acc_buffer
+          )
+      in
+      let acc =
+        if first then (
+          acc_buffer @ `Match_typ_marker original_marker :: acc
+        ) else (
+          acc_buffer @ acc
+        )
+      in
+      aux acc l
+    in
+    match l with
+    | [] -> stop acc_buffer acc l
+    | x :: xs -> (
+        match x with
+        | `Word s -> (
+            if Parser_components.is_space (String.get s 0) then (
+              stop acc_buffer acc l
+            ) else (
+              rewrite_tokens_forward
+                false
+                original_marker
+                marker
+                marker_last
+                (`Annotated_token
+                   Search_phrase.{
+                     string = s;
+                     group_id;
+                     match_typ
+                   } :: acc_buffer)
+                acc
+                xs
+            )
+          )
+        | `Match_typ_marker x -> (
+            rewrite_tokens_forward
+              false
+              original_marker
+              marker
+              marker_last
+              (`Annotated_token
+                 Search_phrase.{
+                   string = string_of_match_typ_marker x;
+                   group_id;
+                   match_typ
+                 } :: acc_buffer)
+              acc
+              xs
+          )
+        | _ -> (
+            stop acc_buffer acc l
           )
       )
   in
