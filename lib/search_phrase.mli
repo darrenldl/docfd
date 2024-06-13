@@ -6,10 +6,12 @@ type match_typ = [
 ]
 [@@deriving show, ord]
 
+type match_typ_marker = [ `Exact | `Prefix | `Suffix ]
+[@@deriving show]
+
 type annotated_token = {
-  string : string;
+  data : [ `String of string | `Match_typ_marker of match_typ_marker ];
   group_id : int;
-  match_typ : match_typ;
 }
 [@@deriving show]
 
@@ -46,15 +48,13 @@ val equal : t -> t -> bool
 
 val pp : Format.formatter -> t -> unit
 
-val of_annotated_tokens : max_fuzzy_edit_dist:int -> annotated_token Seq.t -> t
+val of_annotated_tokens : annotated_token Seq.t -> t
 
-val of_tokens : max_fuzzy_edit_dist:int -> string Seq.t -> t
+val of_tokens : string Seq.t -> t
 
-val make : max_fuzzy_edit_dist:int -> string -> t
+val make : string -> t
 
 val is_empty : t -> bool
-
-val fuzzy_index : t -> Spelll.automaton list
 
 val actual_search_phrase : t -> string list
 

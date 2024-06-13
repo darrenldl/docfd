@@ -2,7 +2,6 @@ type match_typ_marker = [ `Exact | `Prefix | `Suffix ]
 [@@deriving show]
 
 type exp = [
-  | `Annotated_token of Search_phrase.annotated_token
   | `Word of string
   | `Match_typ_marker of match_typ_marker
   | `List of exp list
@@ -15,18 +14,6 @@ type exp = [
 and binary_op =
   | Or
 [@@deriving show]
-
-let char_of_match_typ_marker (x : match_typ_marker) =
-  match x with
-  | `Exact -> '\''
-  | `Prefix -> '^'
-  | `Suffix -> '$'
-
-let string_of_match_typ_marker (x : match_typ_marker) =
-  match x with
-  | `Exact -> "\'"
-  | `Prefix -> "^"
-  | `Suffix -> "$"
 
 type t = {
   max_fuzzy_edit_dist : int;
@@ -53,8 +40,6 @@ let is_empty (t : t) =
 let equal (t1 : t) (t2 : t) =
   let rec aux (e1 : exp) (e2 : exp) =
     match e1, e2 with
-    | `Annotated_token x1, `Annotated_token x2 ->
-      String.equal x1.string x2.string
     | `Word x1, `Word x2 -> String.equal x1 x2
     | `List l1, `List l2 -> List.equal aux l1 l2
     | `Paren e1, `Paren e2 -> aux e1 e2
@@ -130,16 +115,16 @@ module Parsers = struct
     <* skip_spaces
 end
 
-let process_match_typ_markers group_id (l : exp list) : exp list =
+(*let process_match_typ_markers group_id (l : exp list) : exp list =
   let rec aux acc l =
     match l with
     | [] -> List.rev acc
-    | x0 :: xs0 -> (
-        match x0 with
+    | x :: xs -> (
+        match x with
         | `Match_typ_marker `Exact
-        | `Match_typ_marker `Prefix as x0 -> (
+        | `Match_typ_marker `Prefix as x -> (
             let original_marker, marker, marker_last =
-              match (x0 : [ `Match_typ_marker of [ `Exact | `Prefix ] ]) with
+              match (x : [ `Match_typ_marker of [ `Exact | `Prefix ] ]) with
               | `Match_typ_marker `Exact -> `Exact, `Exact, `Exact
               | `Match_typ_marker `Prefix -> `Prefix, `Exact, `Prefix
             in
@@ -150,44 +135,23 @@ let process_match_typ_markers group_id (l : exp list) : exp list =
               marker_last
               []
               acc
-              xs0
+              xs
           )
         | `Match_typ_marker `Suffix -> (
-            let modify_acc acc : exp list =
-              match acc with
-              | [] -> [ x0 ]
-              | `Word y :: ys -> (
-                  if Parser_components.is_space (String.get y 0) then (
-                    x0 :: acc
-                  ) else (
-                    `Annotated_token Search_phrase.{
-                        string = y;
-                        group_id;
-                        match_typ = `Suffix
-                      } :: ys
-                  )
-                )
-              | `Match_typ_marker y :: ys ->
-                `Annotated_token Search_phrase.{
-                    string = string_of_match_typ_marker y;
-                    group_id;
-                    match_typ = `Suffix
-                  } :: ys
-              | _ -> x0 :: acc
-            in
-            let end_of_phrase =
-              match xs0 with
-              | [] -> true
-              | `Word x1 :: _ -> Parser_components.is_space (String.get x1 0)
-              | _ -> false
-            in
-            if end_of_phrase then
-              aux (modify_acc acc) xs0
-            else
-              aux (x0 :: acc) xs0
+          let original_marker, marker, marker_last =
+            `Suffix, `Exact, `Suffix
+          in
+            rewrite_tokens_backward
+            true
+            original_marker
+            marker
+            marker_last
+            []
+            acc
+            xs
           )
         | _ -> (
-            aux (x0 :: acc) xs0
+            aux (x :: acc) xs
           )
       )
   and rewrite_tokens_forward
@@ -239,7 +203,7 @@ let process_match_typ_markers group_id (l : exp list) : exp list =
                    Search_phrase.{
                      string = s;
                      group_id;
-                     match_typ
+                     match_typ;
                    } :: acc_buffer)
                 acc
                 xs
@@ -255,7 +219,7 @@ let process_match_typ_markers group_id (l : exp list) : exp list =
                  Search_phrase.{
                    string = string_of_match_typ_marker x;
                    group_id;
-                   match_typ
+                   match_typ;
                  } :: acc_buffer)
               acc
               xs
@@ -264,13 +228,86 @@ let process_match_typ_markers group_id (l : exp list) : exp list =
             stop acc_buffer acc l
           )
       )
+  and rewrite_tokens_backward
+      first
+      (original_marker : match_typ_marker)
+      (marker : match_typ_marker)
+      (marker_last : match_typ_marker)
+      (acc_buffer : exp list)
+      (acc : exp list)
+      l
+      =
+    let match_typ = (marker :> Search_phrase.match_typ) in
+    let match_typ_last = (marker_last :> Search_phrase.match_typ) in
+    let stop acc_buffer acc l =
+      let acc_buffer =
+        match acc_buffer with
+        | [] -> []
+        | x :: xs -> (
+            match x with
+            | `Annotated_token x -> (
+                `Annotated_token Search_phrase.{ x with match_typ = match_typ_last } :: xs
+              )
+            | _ -> acc_buffer
+          )
+      in
+      let acc =
+        if first then (
+          List.rev acc_buffer @ `Match_typ_marker original_marker :: acc
+        ) else (
+          List.rev acc_buffer @ acc
+        )
+      in
+      aux acc l
+    in
+    match acc with
+    | [] -> stop acc_buffer acc l
+    | x :: xs -> (
+      match x with
+      | `Word s -> (
+            if Parser_components.is_space (String.get s 0) then (
+              stop acc_buffer acc l
+            ) else (
+              rewrite_tokens_backward
+              false
+              original_marker
+              marker
+              marker_last
+                (`Annotated_token
+                   Search_phrase.{
+                     string = s;
+                     group_id;
+                     match_typ;
+                   } :: acc_buffer)
+                xs
+                l
+            )
+      )
+      | `Match_typ_marker x -> (
+              rewrite_tokens_backward
+              false
+              original_marker
+              marker
+              marker_last
+                (`Annotated_token
+                   Search_phrase.{
+                   string = string_of_match_typ_marker x;
+                     group_id;
+                     match_typ;
+                   } :: acc_buffer)
+                xs
+                l
+      )
+      | _ -> (
+        stop acc_buffer acc l
+      )
+    )
   in
-  aux [] l
+  aux [] l *)
 
 let flatten_nested_lists (exp : exp) : exp =
   let rec aux (exp : exp) =
     match exp with
-    | `Annotated_token _
     | `Word _
     | `Match_typ_marker _ -> exp
     | `List l -> (
@@ -287,7 +324,7 @@ let flatten_nested_lists (exp : exp) : exp =
   in
   aux exp
 
-let flatten ~max_fuzzy_edit_dist (exp : exp) : Search_phrase.t list =
+let flatten (exp : exp) : Search_phrase.t list =
   let get_group_id =
     let counter = ref 0 in
     fun () ->
@@ -295,22 +332,19 @@ let flatten ~max_fuzzy_edit_dist (exp : exp) : Search_phrase.t list =
       counter := x + 1;
       x
   in
-  let atom string group_id =
-    Seq.return [ Search_phrase.{ string; group_id; match_typ = `Fuzzy } ]
-  in
   let rec aux group_id (exp : exp) : Search_phrase.annotated_token list Seq.t =
     match exp with
-    | `Annotated_token x -> Seq.return [ x ]
     | `Match_typ_marker x -> (
-        atom
-          (string_of_match_typ_marker x)
-          group_id
+        Seq.return [
+          Search_phrase.{ data = `Match_typ_marker x; group_id }
+        ]
       )
-    | `Word string ->
-      atom string group_id
+    | `Word s ->
+      Seq.return [
+        Search_phrase.{ data = `String s; group_id }
+      ]
     | `List l -> (
         l
-        |> process_match_typ_markers group_id
         |> List.to_seq
         |> Seq.map (aux group_id)
         |> OSeq.cartesian_product
@@ -331,7 +365,7 @@ let flatten ~max_fuzzy_edit_dist (exp : exp) : Search_phrase.t list =
   aux (get_group_id ()) exp
   |> Seq.map (fun l ->
       List.to_seq l
-      |> Search_phrase.of_annotated_tokens ~max_fuzzy_edit_dist)
+      |> Search_phrase.of_annotated_tokens)
   |> List.of_seq
   |> List.sort_uniq Search_phrase.compare
 
@@ -345,7 +379,7 @@ let make ~max_fuzzy_edit_dist s =
         Some
           { max_fuzzy_edit_dist;
             exp;
-            flattened = flatten ~max_fuzzy_edit_dist exp;
+            flattened = flatten exp;
           }
       )
     | Error _ -> None
