@@ -529,15 +529,17 @@ let run
                Document_store.usable_documents document_store
              in
              Array.iteri (fun i (document, search_results) ->
-                 if i > 0 then (
-                   Printers.newline_image out;
-                 );
-                 Array.to_seq search_results
-                 |> (fun s ->
-                     match print_limit with
-                     | None -> s
-                     | Some end_exc -> OSeq.take end_exc s)
-                 |> Printers.search_results out document
+                 if Array.length search_results > 0 then (
+                   if i > 0 then (
+                     Printers.newline_image out;
+                   );
+                   Array.to_seq search_results
+                   |> (fun s ->
+                       match print_limit with
+                       | None -> s
+                       | Some end_exc -> OSeq.take end_exc s)
+                   |> Printers.search_results out document
+                 )
                ) document_info_s;
            );
            clean_up ();
