@@ -28,6 +28,8 @@
 
 - Added exact, prefix and suffix search syntax from fzf
 
+- Fixed extraneous document path print in non-interactive mode when documents have no search results
+
 ## 6.0.1
 
 - Fixed random UI freezes when updating search field
