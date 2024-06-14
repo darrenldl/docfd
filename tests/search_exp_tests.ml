@@ -441,23 +441,27 @@ module Alco = struct
          [ et ~m:`Exact "abcd" false false ])
       ];
     test_exp "' abcd"
+      [ ([ atm `Exact; at " "; at "abcd" ],
+         [ et "'" false false; et "abcd" false false ])
+      ];
+    test_exp "' abcd"
       [ ([ at "'"; at " "; at "abcd" ],
          [ et "'" false false; et "abcd" false false ])
       ];
     test_exp "^abcd"
-      [ ([ at "abcd" ],
+      [ ([ atm `Prefix; at "abcd" ],
          [ et ~m:`Prefix "abcd" false false ])
       ];
     test_exp "^ abcd"
-      [ ([ at "^"; at " "; at "abcd" ],
+      [ ([ atm `Prefix; at " "; at "abcd" ],
          [ et "^" false false; et "abcd" false false ])
       ];
     test_exp "abcd$"
-      [ ([ atm `Suffix; at "abcd" ],
+      [ ([ at "abcd"; atm `Suffix ],
          [ et ~m:`Suffix "abcd" false false ])
       ];
     test_exp "abcd $"
-      [ ([ at "abcd"; at " "; at "$" ],
+      [ ([ at "abcd"; at " "; atm `Suffix ],
          [ et "abcd" false false; et "$" false false ])
       ];
     test_exp "''abcd"
@@ -466,29 +470,33 @@ module Alco = struct
       ];
     test_exp "abcd$$"
       [ ([ at "abcd"; at "$"; atm `Suffix ],
-         [ et "abcd" false true; et ~m:`Suffix "$" true false ])
+         [ et ~m:`Suffix "abcd" false true; et ~m:`Exact "$" true false ])
+      ];
+    test_exp "abcd$$"
+      [ ([ at "abcd"; atm `Suffix; atm `Suffix ],
+         [ et ~m:`Suffix "abcd" false true; et ~m:`Exact "$" true false ])
       ];
     test_exp "'^abcd efgh$$ ij$kl$"
       [ ([ atm `Exact
-         ; at "^"
+         ; atm `Prefix
          ; at "abcd"
          ; at " "
          ; at "efgh"
-         ; at "$"
+         ; atm `Suffix
          ; atm `Suffix
          ; at " "
          ; at "ij"
-         ; at "$"
+         ; atm `Suffix
          ; at "kl"
          ; atm `Suffix
          ],
          [ et ~m:`Exact "^" false true
          ; et ~m:`Exact "abcd" true false
-         ; et "efgh" false true
-         ; et ~m:`Suffix "$" true false
-         ; et "ij" false true
-         ; et "$" true true
-         ; et ~m:`Suffix "kl" true false
+         ; et ~m:`Suffix "efgh" false true
+         ; et ~m:`Exact "$" true false
+         ; et ~m:`Suffix "ij" false true
+         ; et ~m:`Exact "$" true true
+         ; et ~m:`Exact "kl" true false
          ])
       ];
     ()

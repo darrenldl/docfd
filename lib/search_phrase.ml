@@ -172,42 +172,132 @@ let ir0_s_link_forward (ir0_s : ir0 list) : ir0 list =
   |> fst
 
 let ir0_process_exact_prefix_match_typ_markers (ir0_s : ir0 list) : ir0 list =
-  let rec aux (acc : ir0 list) prev_token_removed (marker : [ `Exact | `Prefix] option) (ir0_s : ir0 list) =
+  let rec aux
+      (acc : ir0 list)
+      token_removed
+      (marker : ([ `Exact ] * [ `Exact | `Prefix ]) option)
+      (ir0_s : ir0 list)
+    =
     match ir0_s with
     | [] -> List.rev acc
     | x :: xs -> (
         match marker with
         | None -> (
+            let default () =
+              aux (x :: acc) false None xs
+            in
             match x.data with
             | `String _ ->
-              aux (x :: acc) false None xs
+              default ()
             | `Match_typ_marker m -> (
-                match m with
-                | `Exact | `Prefix as m -> (
-                    aux acc true (Some (m :> [`Exact | `Prefix ])) xs
+                match x.match_typ with
+                | None -> (
+                    if x.is_linked_to_next then (
+                      match m with
+                      | `Exact ->
+                        aux acc true (Some (`Exact, `Exact)) xs
+                      | `Prefix ->
+                        aux acc true (Some (`Exact, `Prefix)) xs
+                      | _ ->
+                        default ()
+                    ) else (
+                      default ()
+                    )
                   )
-                | `Suffix ->
-                  aux (x :: acc) false None xs
+                | Some _ ->
+                  default ()
               )
           )
-        | Some m -> (
-            if x.is_linked_to_prev then (
-              let is_linked_to_prev = not prev_token_removed in
-              aux
-                ({ x with
-                   is_linked_to_prev;
-                   match_typ = Some (m :> match_typ)
-                 } :: acc)
-                false
+        | Some (m, m_last) -> (
+            let x =
+              if x.is_linked_to_prev then (
+                { x with
+                  is_linked_to_prev = not token_removed;
+                  match_typ = Some (
+                      if x.is_linked_to_next then
+                        (m :> match_typ)
+                      else
+                        (m_last :> match_typ)
+                    );
+                }
+              ) else (
+                x
+              )
+            in
+            let marker =
+              if x.is_linked_to_next then
                 marker
-                xs
-            ) else (
-              aux (x :: acc) false None xs
-            )
+              else
+                None
+            in
+            aux (x :: acc) false marker xs
           )
       )
   in
   aux [] false None ir0_s
+
+let ir0_process_suffix_match_typ_markers (ir0_s : ir0 list) : ir0 list =
+  let rec aux
+      (acc : ir0 list)
+      token_removed
+      (marker : ([ `Suffix ] * [ `Exact ]) option)
+      (ir0_s : ir0 list)
+    =
+    match ir0_s with
+    | [] -> acc
+    | x :: xs -> (
+        match marker with
+        | None -> (
+            let default () =
+              aux (x :: acc) false None xs
+            in
+            match x.data with
+            | `String _ ->
+              default ()
+            | `Match_typ_marker m -> (
+                match x.match_typ with
+                | None -> (
+                    if x.is_linked_to_prev then (
+                      match m with
+                      | `Suffix ->
+                        aux acc true (Some (`Suffix, `Exact)) xs
+                      | _ ->
+                        default ()
+                    ) else (
+                      default ()
+                    )
+                  )
+                | Some _ ->
+                  default ()
+              )
+          )
+        | Some (m_first, m) -> (
+            let x =
+              if x.is_linked_to_next then (
+                { x with
+                  is_linked_to_next = not token_removed;
+                  match_typ = Some (
+                      if x.is_linked_to_prev then
+                        (m :> match_typ)
+                      else
+                        (m_first :> match_typ)
+                    );
+                }
+              ) else (
+                x
+              )
+            in
+            let marker =
+              if x.is_linked_to_prev then
+                marker
+              else
+                None
+            in
+            aux (x :: acc) false marker xs
+          )
+      )
+  in
+  aux [] false None (List.rev ir0_s)
 
 let enriched_tokens_of_ir0 (ir0_s : ir0 list) : Enriched_token.t list =
   List.map (fun (ir0 : ir0) ->
@@ -244,6 +334,7 @@ let of_annotated_tokens
     |> ir0_s_of_annotated_tokens
     |> ir0_s_link_forward
     |> ir0_process_exact_prefix_match_typ_markers
+    |> ir0_process_suffix_match_typ_markers
     |> enriched_tokens_of_ir0
   in
   {
