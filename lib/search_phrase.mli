@@ -21,6 +21,7 @@ module Enriched_token : sig
   val make :
     string:string ->
     is_linked_to_prev:bool ->
+    is_linked_to_next:bool ->
     Spelll.automaton ->
     match_typ ->
     t
@@ -34,6 +35,8 @@ module Enriched_token : sig
   val match_typ : t -> match_typ
 
   val is_linked_to_prev : t -> bool
+
+  val is_linked_to_next : t -> bool
 
   val automaton : t -> Spelll.automaton
 end
