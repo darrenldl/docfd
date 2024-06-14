@@ -436,6 +436,10 @@ module Alco = struct
       [ ([ at "-"; at "-"; at " "; at "-" ],
          [ et "-" false true; et "-" true false; et "-" false false ])
       ];
+    test_exp "\\'abcd"
+      [ ([ at "'"; at "abcd" ],
+         [ et "'" false true; et "abcd" true false ])
+      ];
     test_exp "'abcd"
       [ ([ atm `Exact; at "abcd" ],
          [ et ~m:`Exact "abcd" false false ])
@@ -448,9 +452,17 @@ module Alco = struct
       [ ([ at "'"; at " "; at "abcd" ],
          [ et "'" false false; et "abcd" false false ])
       ];
+    test_exp "\\^abcd"
+      [ ([ at "^"; at "abcd" ],
+         [ et "^" false true; et "abcd" true false ])
+      ];
     test_exp "^abcd"
       [ ([ atm `Prefix; at "abcd" ],
          [ et ~m:`Prefix "abcd" false false ])
+      ];
+    test_exp "^ abcd"
+      [ ([ at "^"; at " "; at "abcd" ],
+         [ et "^" false false; et "abcd" false false ])
       ];
     test_exp "^ abcd"
       [ ([ atm `Prefix; at " "; at "abcd" ],
@@ -461,12 +473,20 @@ module Alco = struct
          [ et ~m:`Suffix "abcd" false false ])
       ];
     test_exp "abcd $"
+      [ ([ at "abcd"; at " "; at "$" ],
+         [ et "abcd" false false; et "$" false false ])
+      ];
+    test_exp "abcd $"
       [ ([ at "abcd"; at " "; atm `Suffix ],
          [ et "abcd" false false; et "$" false false ])
       ];
     test_exp "''abcd"
-      [ ([ atm `Exact; at "'"; at "abcd" ],
+      [ ([ atm `Exact; atm `Exact; at "abcd" ],
          [ et ~m:`Exact "'" false true; et ~m:`Exact "abcd" true false ])
+      ];
+    test_exp "^^abcd"
+      [ ([ atm `Prefix; at "^"; at "abcd" ],
+         [ et ~m:`Exact "^" false true; et ~m:`Prefix "abcd" true false ])
       ];
     test_exp "abcd$$"
       [ ([ at "abcd"; at "$"; atm `Suffix ],
