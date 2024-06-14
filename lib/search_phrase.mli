@@ -56,6 +56,8 @@ val make : string -> t
 
 val is_empty : t -> bool
 
-val actual_search_phrase : t -> string list
+val actual_search_phrase_strings : t -> string list
+
+val annotated_tokens : t -> annotated_token list
 
 val enriched_tokens : t -> Enriched_token.t list

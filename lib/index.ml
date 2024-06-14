@@ -652,7 +652,7 @@ module Search = struct
                                  opening_closing_symbol_pairs
                              in
                              Search_result.make
-                               ~search_phrase:(Search_phrase.actual_search_phrase phrase)
+                               ~search_phrase:(Search_phrase.actual_search_phrase_strings phrase)
                                ~found_phrase:(List.map
                                                 (fun pos ->
                                                    Search_result.{

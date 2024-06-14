@@ -25,7 +25,7 @@ type annotated_token = {
   data : [ `String of string | `Match_typ_marker of match_typ_marker ];
   group_id : int;
 }
-[@@deriving show, ord]
+[@@deriving show]
 
 type ir0 = {
   data : [ `String of string | `Match_typ_marker of match_typ_marker ];
@@ -45,7 +45,7 @@ module Enriched_token = struct
     { string; is_linked_to_prev; automaton; match_typ }
 
   let pp fmt (x : t) =
-    Fmt.pf fmt "%s:%b:%a" x.string x.is_linked_to_prev pp_match_typ x.match_typ
+    Fmt.pf fmt "'%s':%b:%a" x.string x.is_linked_to_prev pp_match_typ x.match_typ
 
   let string (t : t) =
     t.string
@@ -59,12 +59,19 @@ module Enriched_token = struct
   let is_linked_to_prev (t : t) =
     t.is_linked_to_prev
 
+  let compare (x : t) (y : t) =
+    match String.compare x.string y.string with
+    | 0 -> (
+        match Bool.compare x.is_linked_to_prev y.is_linked_to_prev with
+        | 0 -> (
+            compare_match_typ x.match_typ y.match_typ
+          )
+        | n -> n
+      )
+    | n -> n
+
   let equal (x : t) (y : t) =
-    String.equal x.string y.string
-    &&
-    x.is_linked_to_prev = y.is_linked_to_prev
-    &&
-    x.match_typ = y.match_typ
+    compare x y = 0
 end
 
 type t = {
@@ -91,7 +98,7 @@ let cache = {
 }
 
 let compare (t1 : t) (t2 : t) =
-  List.compare compare_annotated_token t1.annotated_tokens t2.annotated_tokens
+  List.compare Enriched_token.compare t1.enriched_tokens t2.enriched_tokens
 
 let equal (t1 : t) (t2 : t) =
   compare t1 t2 = 0
@@ -214,8 +221,11 @@ let make phrase =
   |> Tokenize.tokenize ~drop_spaces:false
   |> of_tokens
 
+let annotated_tokens t =
+  t.annotated_tokens
+
 let enriched_tokens t =
   t.enriched_tokens
 
-let actual_search_phrase t =
+let actual_search_phrase_strings t =
   List.map Enriched_token.string t.enriched_tokens

@@ -56,9 +56,7 @@ let search_fiber pool =
     match req with
     | Search (s, document_store, document_store_var) -> (
         match
-          Search_exp.make
-            ~max_fuzzy_edit_dist:!Params.max_fuzzy_edit_dist
-            s
+          Search_exp.make s
         with
         | None -> (
             Eio.Stream.add internal_status_mailbox `Parse_error

@@ -16,18 +16,14 @@ and binary_op =
 [@@deriving show]
 
 type t = {
-  max_fuzzy_edit_dist : int;
   exp : exp;
   flattened : Search_phrase.t list;
 }
 [@@deriving show]
 
-let max_fuzzy_edit_dist (t : t) = t.max_fuzzy_edit_dist
-
 let flattened (t : t) = t.flattened
 
 let empty : t = {
-  max_fuzzy_edit_dist = 0;
   exp = `List [];
   flattened = [];
 }
@@ -369,7 +365,7 @@ let flatten (exp : exp) : Search_phrase.t list =
   |> List.of_seq
   |> List.sort_uniq Search_phrase.compare
 
-let make ~max_fuzzy_edit_dist s =
+let make s =
   if String.length s = 0 || String.for_all Parser_components.is_space s then (
     Some empty
   ) else (
@@ -377,8 +373,7 @@ let make ~max_fuzzy_edit_dist s =
     | Ok exp -> (
         let exp = flatten_nested_lists exp in
         Some
-          { max_fuzzy_edit_dist;
-            exp;
+          { exp;
             flattened = flatten exp;
           }
       )

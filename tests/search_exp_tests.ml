@@ -2,17 +2,15 @@ open Docfd_lib
 open Test_utils
 
 module Alco = struct
-  let max_fuzzy_edit_dist = 0
-
   let test_invalid_exp (s : string) =
     Alcotest.(check bool)
       "true"
       true
       (Option.is_none
-         (Search_exp.make ~max_fuzzy_edit_dist s))
+         (Search_exp.make s))
 
   let test_empty_phrase (s : string) =
-    let phrase = Search_phrase.make ~max_fuzzy_edit_dist s in
+    let phrase = Search_phrase.make s in
     Alcotest.(check bool)
       "case0"
       true
@@ -23,7 +21,7 @@ module Alco = struct
       (List.is_empty (Search_phrase.enriched_tokens phrase))
 
   let test_empty_exp (s : string) =
-    let exp = Search_exp.make ~max_fuzzy_edit_dist s |> Option.get in
+    let exp = Search_exp.make s |> Option.get in
     Alcotest.(check bool)
       "case0"
       true
@@ -36,11 +34,14 @@ module Alco = struct
        ||
        List.for_all Search_phrase.is_empty flattened)
 
-  let at ?(m : Search_phrase.match_typ = `Fuzzy) string =
-    Search_phrase.{ string; group_id = 0; match_typ = m }
+  let at s : Search_phrase.annotated_token =
+    Search_phrase.{ data = `String s; group_id = 0 }
 
-  let et ?(m : Search_phrase.match_typ = `Fuzzy) string is_linked_to_prev =
-    let automaton = Spelll.of_string ~limit:max_fuzzy_edit_dist "" in
+  let atm m : Search_phrase.annotated_token =
+    Search_phrase.{ data = `Match_typ_marker m; group_id = 0 }
+
+  let et ?(m : Search_phrase.match_typ = `Fuzzy) string is_linked_to_prev : Search_phrase.Enriched_token.t =
+    let automaton = Spelll.of_string ~limit:0 "" in
     Search_phrase.Enriched_token.make ~string ~is_linked_to_prev automaton m
 
   let test_exp
@@ -48,14 +49,13 @@ module Alco = struct
       (s : string)
       (l : (Search_phrase.annotated_token list * Search_phrase.Enriched_token.t list) list)
     =
-    let max_fuzzy_edit_dist = 0 in
     let neg' = neg in
     let phrases =
       l
       |> List.map fst
       |> List.map (fun l ->
           List.to_seq l
-          |> Search_phrase.of_annotated_tokens ~max_fuzzy_edit_dist)
+          |> Search_phrase.of_annotated_tokens)
     in
     let enriched_token_list_list =
       List.map snd l
@@ -68,7 +68,7 @@ module Alco = struct
                  )))
       (Fmt.str "case0 of %S" s)
       (List.sort Search_phrase.compare phrases)
-      (Search_exp.make ~max_fuzzy_edit_dist s
+      (Search_exp.make s
        |> Option.get
        |> Search_exp.flattened
        |> List.sort Search_phrase.compare
@@ -423,7 +423,7 @@ module Alco = struct
          [ et "-" false; et "-" true; et "-" false ])
       ];
     test_exp "'abcd"
-      [ ([ at ~m:`Exact "abcd" ],
+      [ ([ at "abcd" ],
          [ et ~m:`Exact "abcd" false ])
       ];
     test_exp "' abcd"
@@ -431,7 +431,7 @@ module Alco = struct
          [ et "'" false; et "abcd" false ])
       ];
     test_exp "^abcd"
-      [ ([ at ~m:`Prefix "abcd" ],
+      [ ([ at "abcd" ],
          [ et ~m:`Prefix "abcd" false ])
       ];
     test_exp "^ abcd"
@@ -439,7 +439,7 @@ module Alco = struct
          [ et "^" false; et "abcd" false ])
       ];
     test_exp "abcd$"
-      [ ([ at ~m:`Suffix "abcd" ],
+      [ ([ atm `Suffix; at "abcd" ],
          [ et ~m:`Suffix "abcd" false ])
       ];
     test_exp "abcd $"
@@ -447,26 +447,29 @@ module Alco = struct
          [ et "abcd" false; et "$" false ])
       ];
     test_exp "''abcd"
-      [ ([ at ~m:`Exact "'"; at ~m:`Exact "abcd" ],
+      [ ([ atm `Exact; at "'"; at "abcd" ],
          [ et ~m:`Exact "'" false; et ~m:`Exact "abcd" true ])
       ];
     test_exp "abcd$$"
-      [ ([ at "abcd"; at ~m:`Suffix "$" ],
+      [ ([ at "abcd"; at "$"; atm `Suffix ],
          [ et "abcd" false; et ~m:`Suffix "$" true ])
       ];
     test_exp "'^abcd efgh$$ ij$kl$"
-      [ ([ at ~m:`Exact "^"
+      [ ([ atm `Exact
+         ; at "^"
          ; at "abcd"
          ; at " "
          ; at "efgh"
-         ; at ~m:`Suffix "$"
+         ; at "$"
+         ; atm `Suffix
          ; at " "
          ; at "ij"
          ; at "$"
-         ; at ~m:`Suffix "kl"
+         ; at "kl"
+         ; atm `Suffix
          ],
          [ et ~m:`Exact "^" false
-         ; et "abcd" true
+         ; et ~m:`Exact "abcd" true
          ; et "efgh" false
          ; et ~m:`Suffix "$" true
          ; et "ij" false

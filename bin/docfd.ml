@@ -496,9 +496,7 @@ let run
          | None -> None
        in
        match
-         Search_exp.make
-           ~max_fuzzy_edit_dist:!Params.max_fuzzy_edit_dist
-           search_exp_text
+         Search_exp.make search_exp_text
        with
        | None -> (
            exit_with_error_msg "failed to parse search exp"
