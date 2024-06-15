@@ -1,0 +1,22 @@
+abcd
+abcdef
+ABCD
+ABCDEF
+ABcd
+ABcdEF
+
+'abcd
+'abcd'
+^efgh
+^^efgh
+efgh$
+efgh$$
+
+abcd$
+efgh$
+
+hello world
+
+Hello world
+
+HELLO WORLD
