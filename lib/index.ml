@@ -459,7 +459,9 @@ module Search = struct
       | Some around_pos -> (
           let dist =
             if ET.is_linked_to_prev token then (
-              !Params.max_linked_token_search_dist
+              match match_typ with
+              | `Fuzzy -> !Params.max_linked_token_search_dist
+              | _ -> 1
             ) else (
               !Params.max_token_search_dist
             )
