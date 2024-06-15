@@ -178,9 +178,10 @@ module Raw = struct
         let line_loc = loc.Loc.line_loc in
         let global_line_num = line_loc.global_line_num in
         let page_num = line_loc.page_num in
-        let pos_s = Option.value ~default:Int_set.empty
-            (Int_map.find_opt index_of_word_ci pos_s_of_word_ci)
-                    |> Int_set.add pos
+        let pos_s =
+          Int_map.find_opt index_of_word_ci pos_s_of_word_ci
+          |> Option.value ~default:Int_set.empty
+          |> Int_set.add pos
         in
         let cur_page_line_count =
           Option.value ~default:0
