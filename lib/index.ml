@@ -479,7 +479,7 @@ module Search = struct
     let search_word_ci =
       String.lowercase_ascii search_word
     in
-    let filter_pos_s
+    let non_fuzzy_filter_pos_s
         ~indexed_word_ci
         (match_typ : [ `Exact | `Prefix | `Suffix ])
         (pos_s : Int_set.t)
@@ -544,9 +544,9 @@ module Search = struct
                 None
               )
             )
-          | `Exact -> filter_pos_s ~indexed_word_ci `Exact pos_s
-          | `Prefix -> filter_pos_s ~indexed_word_ci `Prefix pos_s
-          | `Suffix -> filter_pos_s ~indexed_word_ci `Suffix pos_s
+          | `Exact -> non_fuzzy_filter_pos_s ~indexed_word_ci `Exact pos_s
+          | `Prefix -> non_fuzzy_filter_pos_s ~indexed_word_ci `Prefix pos_s
+          | `Suffix -> non_fuzzy_filter_pos_s ~indexed_word_ci `Suffix pos_s
         )
       )
     |> Seq.flat_map (fun pos_s ->
