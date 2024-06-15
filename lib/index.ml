@@ -457,17 +457,20 @@ module Search = struct
       match around_pos with
       | None -> word_ci_and_pos_s t
       | Some around_pos -> (
-          let dist =
+          let start, end_inc =
             if ET.is_linked_to_prev token then (
               match match_typ with
-              | `Fuzzy -> !Params.max_linked_token_search_dist
-              | _ -> 1
+              | `Fuzzy ->
+                (around_pos - !Params.max_linked_token_search_dist,
+                 around_pos + !Params.max_linked_token_search_dist)
+              | _ ->
+                (around_pos + 1,
+                 around_pos + 1)
             ) else (
-              !Params.max_token_search_dist
+              (around_pos - !Params.max_token_search_dist,
+               around_pos + !Params.max_token_search_dist)
             )
           in
-          let start = around_pos - dist in
-          let end_inc = around_pos + dist in
           let start, end_inc =
             match within with
             | None -> (start, end_inc)
