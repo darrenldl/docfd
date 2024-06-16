@@ -463,7 +463,7 @@ module Search = struct
               | `Fuzzy ->
                 (around_pos - !Params.max_linked_token_search_dist,
                  around_pos + !Params.max_linked_token_search_dist)
-              | _ ->
+              | `Exact | `Prefix | `Suffix ->
                 (around_pos + 1,
                  around_pos + 1)
             ) else (
