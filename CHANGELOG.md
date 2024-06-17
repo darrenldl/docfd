@@ -30,6 +30,8 @@
 
 - Fixed extraneous document path print in non-interactive mode when documents have no search results
 
+- Added "explicit spaces" token `~` to match spaces
+
 ## 6.0.1
 
 - Fixed random UI freezes when updating search field
