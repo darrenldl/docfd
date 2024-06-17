@@ -4,6 +4,7 @@ type match_typ_marker = [ `Exact | `Prefix | `Suffix ]
 type exp = [
   | `Word of string
   | `Match_typ_marker of match_typ_marker
+  | `Explicit_spaces
   | `List of exp list
   | `Paren of exp
   | `Binary_op of binary_op * exp * exp
@@ -62,7 +63,15 @@ module Parsers = struct
     many1 (
       take_while1 (fun c ->
           match c with
-          | '?' | '|' | '\\' | '(' | ')' | '\'' | '^' | '$' -> false
+          | '?'
+          | '|'
+          | '\\'
+          | '('
+          | ')'
+          | '\''
+          | '^'
+          | '$'
+          | '~' -> false
           | _ -> true
         )
       <|>
@@ -84,6 +93,7 @@ module Parsers = struct
             (char '\'' *> return (`Match_typ_marker `Exact));
             (char '^' *> return (`Match_typ_marker `Prefix));
             (char '$' *> return (`Match_typ_marker `Suffix));
+            (char '~' *> return (`Explicit_spaces));
             (string "()" *> return (as_word_list []));
             (char '(' *> exp <* char ')' >>| as_paren);
           ]
@@ -115,7 +125,8 @@ let flatten_nested_lists (exp : exp) : exp =
   let rec aux (exp : exp) =
     match exp with
     | `Word _
-    | `Match_typ_marker _ -> exp
+    | `Match_typ_marker _
+    | `Explicit_spaces -> exp
     | `List l -> (
         `List
           (CCList.flat_map (fun e ->
@@ -148,6 +159,10 @@ let flatten (exp : exp) : Search_phrase.t list =
     | `Word s ->
       Seq.return [
         Search_phrase.{ data = `String s; group_id }
+      ]
+    | `Explicit_spaces ->
+      Seq.return [
+        Search_phrase.{ data = `Explicit_spaces; group_id }
       ]
     | `List l -> (
         l

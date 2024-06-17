@@ -10,7 +10,11 @@ type match_typ_marker = [ `Exact | `Prefix | `Suffix ]
 [@@deriving show]
 
 type annotated_token = {
-  data : [ `String of string | `Match_typ_marker of match_typ_marker ];
+  data : [
+    | `String of string
+    | `Match_typ_marker of match_typ_marker
+    | `Explicit_spaces
+  ];
   group_id : int;
 }
 [@@deriving show]

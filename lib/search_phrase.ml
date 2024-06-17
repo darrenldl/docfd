@@ -22,13 +22,21 @@ let string_of_match_typ_marker (x : match_typ_marker) =
   | `Suffix -> "$"
 
 type annotated_token = {
-  data : [ `String of string | `Match_typ_marker of match_typ_marker ];
+  data : [
+    | `String of string
+    | `Match_typ_marker of match_typ_marker
+    | `Explicit_spaces
+  ];
   group_id : int;
 }
 [@@deriving show]
 
 type ir0 = {
-  data : [ `String of string | `Match_typ_marker of match_typ_marker ];
+  data : [
+    | `String of string
+    | `Match_typ_marker of match_typ_marker
+    | `Explicit_spaces
+  ];
   is_linked_to_prev : bool;
   is_linked_to_next : bool;
   match_typ : match_typ option;
@@ -187,7 +195,7 @@ let ir0_process_exact_prefix_match_typ_markers (ir0_s : ir0 list) : ir0 list =
               aux (x :: acc) false None xs
             in
             match x.data with
-            | `String _ ->
+            | `String _ | `Explicit_spaces ->
               default ()
             | `Match_typ_marker m -> (
                 match x.match_typ with
@@ -252,7 +260,7 @@ let ir0_process_suffix_match_typ_markers (ir0_s : ir0 list) : ir0 list =
               aux (x :: acc) false None xs
             in
             match x.data with
-            | `String _ ->
+            | `String _ | `Explicit_spaces ->
               default ()
             | `Match_typ_marker m -> (
                 match x.match_typ with
@@ -305,6 +313,7 @@ let enriched_tokens_of_ir0 (ir0_s : ir0 list) : Enriched_token.t list =
         match ir0.data with
         | `String s -> s
         | `Match_typ_marker m -> string_of_match_typ_marker m
+        | `Explicit_spaces -> " "
       in
       let is_linked_to_prev = ir0.is_linked_to_prev in
       let is_linked_to_next = ir0.is_linked_to_next in

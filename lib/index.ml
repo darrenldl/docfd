@@ -520,38 +520,45 @@ module Search = struct
     word_ci_and_positions_to_consider
     |> Seq.filter (fun (indexed_word_ci, _pos_s) ->
         Eio.Fiber.yield ();
-        (String.length indexed_word_ci > 0
-         && not (Parser_components.is_space indexed_word_ci.[0]))
+        String.length indexed_word_ci > 0
       )
     |> Seq.filter_map (fun (indexed_word_ci, pos_s) ->
         Eio.Fiber.yield ();
-        let indexed_word_ci_len = String.length indexed_word_ci in
-        if Parser_components.is_possibly_utf_8 indexed_word_ci.[0] then (
-          if String.equal search_word_ci indexed_word_ci then (
+        if Parser_components.is_space indexed_word_ci.[0] then (
+          if Parser_components.is_space search_word.[0] then (
             Some pos_s
           ) else (
             None
           )
         ) else (
-          match match_typ with
-          | `Fuzzy -> (
-              if
-                String.equal search_word_ci indexed_word_ci
-                || CCString.find ~sub:search_word_ci indexed_word_ci >= 0
-                || (indexed_word_ci_len >= 2
-                    && CCString.find ~sub:indexed_word_ci search_word_ci >= 0)
-                || (consider_edit_dist
-                    && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word_ci search_word_ci.[0]
-                    && Spelll.match_with (ET.automaton token) indexed_word_ci)
-              then (
-                Some pos_s
-              ) else (
-                None
-              )
+          let indexed_word_ci_len = String.length indexed_word_ci in
+          if Parser_components.is_possibly_utf_8 indexed_word_ci.[0] then (
+            if String.equal search_word_ci indexed_word_ci then (
+              Some pos_s
+            ) else (
+              None
             )
-          | `Exact -> non_fuzzy_filter_pos_s ~indexed_word_ci `Exact pos_s
-          | `Prefix -> non_fuzzy_filter_pos_s ~indexed_word_ci `Prefix pos_s
-          | `Suffix -> non_fuzzy_filter_pos_s ~indexed_word_ci `Suffix pos_s
+          ) else (
+            match match_typ with
+            | `Fuzzy -> (
+                if
+                  String.equal search_word_ci indexed_word_ci
+                  || CCString.find ~sub:search_word_ci indexed_word_ci >= 0
+                  || (indexed_word_ci_len >= 2
+                      && CCString.find ~sub:indexed_word_ci search_word_ci >= 0)
+                  || (consider_edit_dist
+                      && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word_ci search_word_ci.[0]
+                      && Spelll.match_with (ET.automaton token) indexed_word_ci)
+                then (
+                  Some pos_s
+                ) else (
+                  None
+                )
+              )
+            | `Exact -> non_fuzzy_filter_pos_s ~indexed_word_ci `Exact pos_s
+            | `Prefix -> non_fuzzy_filter_pos_s ~indexed_word_ci `Prefix pos_s
+            | `Suffix -> non_fuzzy_filter_pos_s ~indexed_word_ci `Suffix pos_s
+          )
         )
       )
     |> Seq.flat_map (fun pos_s ->
