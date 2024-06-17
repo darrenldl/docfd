@@ -243,11 +243,6 @@ A search phrase is a sequence of tokens where a token is one of:
 - `tok$` (`$` suffix means suffix match the token)
 - `~` (explicit spaces, i.e. contiguous sequence of spaces, tabs, etc)
 
-For `'`, `^`, `$` to be considered annotation markers, there
-cannot be space between the marker and token,
-e.g. `^abc` means "prefix match `abc`", but `^ abc` means
-"fuzzy match `^` and fuzzy match `abc`".
-
 Tokens that are not separated by spaces, operators, or  parentheses
 are treated specially, we call these linked tokens. For example,
 `12`, `:`, `30` are linked in `12:30`, but not in `12 : 30`. Linked
@@ -260,6 +255,22 @@ To link spaces to tokens, one needs to be make use of `~`. For
 example, to search for "John Smith" ("John" and "Smith" separated
 by some number of spaces), one can use `John~Smith` to establish
 linkage.
+
+For `'`, `^`, `$` to be considered annotation markers, there cannot
+be space between the marker and token, e.g. `^abc` means "prefix
+match `abc`", but `^ abc` means "fuzzy match `^` and fuzzy match
+`abc`".
+
+Annotated linked tokens are also treated specially:
+
+- `^12:30` is equivalent to `'12` `':` `^30`
+- `'12:30` is equivalent to `'12` `':` `'30`
+- `12:30$` is equivalent to `12$` `':` `'30`
+
+But with even stricter search restriction than the normal linked
+tokens, namely the next matching token must follow immediately from
+the current match, e.g. `^12:3` will not match `12 : 30` but will
+match `12:30`
 
 Search is asynchronous, specifically:
 - Editing of search field is not blocked by search progress
