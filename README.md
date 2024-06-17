@@ -235,17 +235,31 @@ one of:
 To use literal `?`, `(`, `)` or `|`, a backslash (`\`) needs to be placed in front
 of the character.
 
-A search expression is a sequence of tokens where a token is one of:
+A search phrase is a sequence of tokens where a token is one of:
 
 - Unannotated (fuzzy match, e.g. `hello` means fuzzy match `hello`)
 - `'tok` (`'` prefix means exact match the token)
 - `^tok` (`^` prefix means prefix match the token)
 - `tok$` (`$` suffix means suffix match the token)
+- `~` (explicit spaces, i.e. contiguous sequence of spaces, tabs, etc)
 
 For `'`, `^`, `$` to be considered annotation markers, there
 cannot be space between the marker and token,
 e.g. `^abc` means "prefix match `abc`", but `^ abc` means
 "fuzzy match `^` and fuzzy match `abc`".
+
+Tokens that are not separated by spaces, operators, or  parentheses
+are treated specially, we call these linked tokens. For example,
+`12`, `:`, `30` are linked in `12:30`, but not in `12 : 30`. Linked
+tokens have a much stricter search distance by default, e.g. in
+`12:30`, Docfd will search for `:` only up to a few tokens away
+from `12`, and so on. This allows user to state intention of
+reduced fuzziness.
+
+To link spaces to tokens, one needs to be make use of `~`. For
+example, to search for "John Smith" ("John" and "Smith" separated
+by some number of spaces), one can use `John~Smith` to establish
+linkage.
 
 Search is asynchronous, specifically:
 - Editing of search field is not blocked by search progress
