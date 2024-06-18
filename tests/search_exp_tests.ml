@@ -51,7 +51,20 @@ module Alco = struct
     : Search_phrase.Enriched_token.t =
     let automaton = Spelll.of_string ~limit:0 "" in
     Search_phrase.Enriched_token.make
-      ~string
+      (`String string)
+      ~is_linked_to_prev
+      ~is_linked_to_next
+      automaton
+      m
+
+  let ets
+      ?(m : Search_phrase.match_typ = `Fuzzy)
+      is_linked_to_prev
+      is_linked_to_next
+    =
+    let automaton = Spelll.of_string ~limit:0 "" in
+    Search_phrase.Enriched_token.make
+      `Explicit_spaces
       ~is_linked_to_prev
       ~is_linked_to_next
       automaton
@@ -498,6 +511,33 @@ module Alco = struct
     test_exp "abcd$$"
       [ ([ at "abcd"; atm `Suffix; atm `Suffix ],
          [ et ~m:`Suffix "abcd" false true; et ~m:`Exact "$" true false ])
+      ];
+    test_exp "'ab~cd"
+      [ ([ atm `Exact; at "ab"; ats; at "cd" ],
+         [ et ~m:`Exact "ab" false true
+         ; ets ~m:`Exact true true
+         ; et ~m:`Exact "cd" true false ])
+      ];
+    test_exp "^ab~cd$"
+      [ ([ atm `Prefix; at "ab"; ats; at "cd"; atm `Suffix ],
+         [ et ~m:`Exact "ab" false true
+         ; ets ~m:`Exact true true
+         ; et ~m:`Exact "cd" true true
+         ; et ~m:`Prefix "$" true false
+         ])
+      ];
+    test_exp "ab~cd$"
+      [ ([ at "ab"; ats; at "cd"; atm `Suffix ],
+         [ et ~m:`Suffix "ab" false true
+         ; ets ~m:`Exact true true
+         ; et ~m:`Exact "cd" true false
+         ])
+      ];
+    test_exp " ~cd$"
+      [ ([ ats; at "cd"; atm `Suffix ],
+         [ ets ~m:`Suffix false true
+         ; et ~m:`Exact "cd" true false
+         ])
       ];
     test_exp "'^abcd efgh$$ ij$kl$"
       [ ([ atm `Exact
