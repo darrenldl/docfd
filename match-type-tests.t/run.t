@@ -323,3 +323,151 @@ Suffix match smart case sensitivity:
      ^^^^^^
   7: 
   8: 'abcd
+
+Fuzzy match explicit spaces:
+  $ docfd test.txt --sample 'hel~word'
+  $TESTCASE_ROOT/test.txt
+  17: 
+  18: hello world
+  19: hello   world
+      ^^^^^^^^^^^^^
+  20: 
+  21: Hello world
+  
+  16: efgh$
+  17: 
+  18: hello world
+      ^^^^^
+  19: hello   world
+           ^^^^^^^^
+  20: 
+  21: Hello world
+  
+  17: 
+  18: hello world
+  19: hello   world
+      ^^^^^^^^
+  20: 
+  21: Hello world
+            ^^^^^
+  22: 
+  23: HELLO WORLD
+  
+  16: efgh$
+  17: 
+  18: hello world
+      ^^^^^
+  19: hello   world
+           ^^^
+  20: 
+  21: Hello world
+            ^^^^^
+  22: 
+  23: HELLO WORLD
+  
+  16: efgh$
+  17: 
+  18: hello world
+            ^^^^^
+  19: hello   world
+      ^^^^^^^^
+  20: 
+  21: Hello world
+
+Exact match explicit spaces:
+  $ docfd test.txt --sample "'hello~world"
+  $TESTCASE_ROOT/test.txt
+  16: efgh$
+  17: 
+  18: hello world
+      ^^^^^^^^^^^
+  19: hello   world
+  20: 
+  
+  17: 
+  18: hello world
+  19: hello   world
+      ^^^^^^^^^^^^^
+  20: 
+  21: Hello world
+  
+  19: hello   world
+  20: 
+  21: Hello world
+      ^^^^^^^^^^^
+  22: 
+  23: HELLO WORLD
+  
+  21: Hello world
+  22: 
+  23: HELLO WORLD
+      ^^^^^^^^^^^
+  $ docfd test.txt --sample "'Hello~world"
+  $TESTCASE_ROOT/test.txt
+  19: hello   world
+  20: 
+  21: Hello world
+      ^^^^^^^^^^^
+  22: 
+  23: HELLO WORLD
+  $ docfd test.txt --sample "'Hello~World"
+
+Prefix match explicit spaces:
+  $ docfd test.txt --sample '^hello~wo'
+  $TESTCASE_ROOT/test.txt
+  17: 
+  18: hello world
+  19: hello   world
+      ^^^^^^^^^^^^^
+  20: 
+  21: Hello world
+  
+  16: efgh$
+  17: 
+  18: hello world
+      ^^^^^^^^^^^
+  19: hello   world
+  20: 
+  
+  19: hello   world
+  20: 
+  21: Hello world
+      ^^^^^^^^^^^
+  22: 
+  23: HELLO WORLD
+  
+  21: Hello world
+  22: 
+  23: HELLO WORLD
+      ^^^^^^^^^^^
+  $ docfd test.txt --sample '^ello~wo'
+
+Suffix match explicit spaces:
+  $ docfd test.txt --sample 'lo~world$'
+  $TESTCASE_ROOT/test.txt
+  17: 
+  18: hello world
+  19: hello   world
+      ^^^^^^^^^^^^^
+  20: 
+  21: Hello world
+  
+  16: efgh$
+  17: 
+  18: hello world
+      ^^^^^^^^^^^
+  19: hello   world
+  20: 
+  
+  19: hello   world
+  20: 
+  21: Hello world
+      ^^^^^^^^^^^
+  22: 
+  23: HELLO WORLD
+  
+  21: Hello world
+  22: 
+  23: HELLO WORLD
+      ^^^^^^^^^^^
+  $ docfd test.txt --sample 'lo~worl$'
