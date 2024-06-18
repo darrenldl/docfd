@@ -6,18 +6,19 @@ type indexed_found_word = {
 
 type t = {
   score : float;
-  search_phrase : string list;
+  search_phrase : Search_phrase.t;
   found_phrase : indexed_found_word list;
 }
 
 let equal t1 t2 =
-  List.length t1.search_phrase = List.length t2.search_phrase
-  && List.for_all2 String.equal t1.search_phrase t2.search_phrase
+  Search_phrase.equal t1.search_phrase t2.search_phrase
   && List.length t1.found_phrase = List.length t2.found_phrase
   && List.for_all2 (fun x1 x2 -> x1.found_word_pos = x2.found_word_pos)
     t1.found_phrase t2.found_phrase
 
 module Score = struct
+  module ET = Search_phrase.Enriched_token
+
   type stats = {
     total_search_char_count : float;
     total_found_char_count : float;
@@ -55,12 +56,12 @@ module Score = struct
   }
 
   let score
-      ~(search_phrase : string list)
+      (search_phrase : Search_phrase.t)
       ~(found_phrase : indexed_found_word list)
       ~(found_phrase_opening_closing_symbol_match_count : int)
     : float =
-    assert (match search_phrase with [] -> false | _ -> true);
-    assert (List.length search_phrase = List.length found_phrase);
+    assert (not (Search_phrase.is_empty search_phrase));
+    assert (List.length (Search_phrase.enriched_tokens search_phrase) = List.length found_phrase);
     let found_phrase_opening_closing_symbol_match_count =
       Int.to_float found_phrase_opening_closing_symbol_match_count
     in
@@ -84,78 +85,93 @@ module Score = struct
       }
     in
     let stats =
-      List.fold_left2 (fun (stats : stats) search_word { found_word_ci; found_word; _ } ->
-          let search_word_len = Int.to_float (String.length search_word) in
+      List.fold_left2 (fun (stats : stats) (token : ET.t) { found_word_ci; found_word; _ } ->
           let found_word_len = Int.to_float (String.length found_word) in
-          let search_word_ci = String.lowercase_ascii search_word in
-          let stats =
-            { stats with
-              total_search_char_count =
-                stats.total_search_char_count +. search_word_len;
-              total_found_char_count =
-                stats.total_found_char_count +. found_word_len;
-            }
-          in
-          if String.equal search_word found_word then (
-            { stats with
-              exact_match_found_char_count =
-                stats.exact_match_found_char_count +. found_word_len;
-            }
-          ) else if String.equal search_word_ci found_word_ci then (
-            { stats with
-              ci_exact_match_found_char_count =
-                stats.ci_exact_match_found_char_count +. found_word_len;
-            }
-          ) else if CCString.find ~sub:search_word found_word >= 0 then (
-            { stats with
-              sub_match_search_word_in_found_word_char_count =
-                stats.sub_match_search_word_in_found_word_char_count +. search_word_len;
-            }
-            |> add_sub_match_search_and_found_char_count
-              ~search_word_len
-              ~found_word_len
-          ) else if CCString.find ~sub:found_word search_word >= 0 then (
-            { stats with
-              sub_match_found_word_in_search_word_char_count =
-                stats.sub_match_found_word_in_search_word_char_count +. found_word_len;
-            }
-            |> add_sub_match_search_and_found_char_count
-              ~search_word_len
-              ~found_word_len
-          ) else if CCString.find ~sub:search_word_ci found_word_ci >= 0 then (
-            { stats with
-              ci_sub_match_search_word_in_found_word_char_count =
-                stats.ci_sub_match_search_word_in_found_word_char_count +. search_word_len;
-            }
-            |> add_ci_sub_match_search_and_found_char_count
-              ~search_word_len
-              ~found_word_len
-          ) else if CCString.find ~sub:found_word_ci search_word_ci >= 0 then (
-            { stats with
-              ci_sub_match_found_word_in_search_word_char_count =
-                stats.ci_sub_match_found_word_in_search_word_char_count +. found_word_len;
-            }
-            |> add_ci_sub_match_search_and_found_char_count
-              ~search_word_len
-              ~found_word_len
-          ) else (
-            { stats with
-              fuzzy_match_edit_distance =
-                stats.fuzzy_match_edit_distance
-                +. Int.to_float (Spelll.edit_distance search_word_ci found_word_ci);
-              fuzzy_match_search_char_count =
-                stats.fuzzy_match_search_char_count +. search_word_len;
-              fuzzy_match_found_char_count =
-                stats.fuzzy_match_found_char_count +. found_word_len;
-            }
-          )
+          match ET.data token with
+          | `Explicit_spaces -> (
+              { stats with
+                total_search_char_count =
+                  stats.total_search_char_count +. found_word_len;
+                total_found_char_count =
+                  stats.total_found_char_count +. found_word_len;
+                exact_match_found_char_count =
+                  stats.exact_match_found_char_count +. found_word_len;
+              }
+            )
+          | `String search_word -> (
+              let search_word_len = Int.to_float (String.length search_word) in
+              let search_word_ci = String.lowercase_ascii search_word in
+              let stats =
+                { stats with
+                  total_search_char_count =
+                    stats.total_search_char_count +. search_word_len;
+                  total_found_char_count =
+                    stats.total_found_char_count +. found_word_len;
+                }
+              in
+              if String.equal search_word found_word then (
+                { stats with
+                  exact_match_found_char_count =
+                    stats.exact_match_found_char_count +. found_word_len;
+                }
+              ) else if String.equal search_word_ci found_word_ci then (
+                { stats with
+                  ci_exact_match_found_char_count =
+                    stats.ci_exact_match_found_char_count +. found_word_len;
+                }
+              ) else if CCString.find ~sub:search_word found_word >= 0 then (
+                { stats with
+                  sub_match_search_word_in_found_word_char_count =
+                    stats.sub_match_search_word_in_found_word_char_count +. search_word_len;
+                }
+                |> add_sub_match_search_and_found_char_count
+                  ~search_word_len
+                  ~found_word_len
+              ) else if CCString.find ~sub:found_word search_word >= 0 then (
+                { stats with
+                  sub_match_found_word_in_search_word_char_count =
+                    stats.sub_match_found_word_in_search_word_char_count +. found_word_len;
+                }
+                |> add_sub_match_search_and_found_char_count
+                  ~search_word_len
+                  ~found_word_len
+              ) else if CCString.find ~sub:search_word_ci found_word_ci >= 0 then (
+                { stats with
+                  ci_sub_match_search_word_in_found_word_char_count =
+                    stats.ci_sub_match_search_word_in_found_word_char_count +. search_word_len;
+                }
+                |> add_ci_sub_match_search_and_found_char_count
+                  ~search_word_len
+                  ~found_word_len
+              ) else if CCString.find ~sub:found_word_ci search_word_ci >= 0 then (
+                { stats with
+                  ci_sub_match_found_word_in_search_word_char_count =
+                    stats.ci_sub_match_found_word_in_search_word_char_count +. found_word_len;
+                }
+                |> add_ci_sub_match_search_and_found_char_count
+                  ~search_word_len
+                  ~found_word_len
+              ) else (
+                { stats with
+                  fuzzy_match_edit_distance =
+                    stats.fuzzy_match_edit_distance
+                    +. Int.to_float (Spelll.edit_distance search_word_ci found_word_ci);
+                  fuzzy_match_search_char_count =
+                    stats.fuzzy_match_search_char_count +. search_word_len;
+                  fuzzy_match_found_char_count =
+                    stats.fuzzy_match_found_char_count +. found_word_len;
+                }
+              )
+            )
         )
         empty_stats
-        search_phrase
+        (Search_phrase.enriched_tokens search_phrase)
         found_phrase
     in
     let search_phrase_length =
-      Int.to_float @@ List.length search_phrase
+      Search_phrase.enriched_tokens search_phrase
+      |> List.length
+      |> Int.to_float
     in
     let unique_match_count =
       found_phrase
@@ -258,12 +274,16 @@ module Score = struct
     let case_sensitive_bonus_multiplier =
       if
         List.exists
-          (fun search_word ->
-             not
-               (String.equal
-                  (String.lowercase_ascii search_word)
-                  search_word))
-          search_phrase
+          (fun token ->
+             match ET.data token with
+             | `Explicit_spaces -> false
+             | `String search_word -> (
+                 not
+                   (String.equal
+                      (String.lowercase_ascii search_word)
+                      search_word))
+          )
+          (Search_phrase.enriched_tokens search_phrase)
       then (
         1.10
       ) else (
@@ -336,14 +356,14 @@ module Score = struct
     )
 end
 
-let make ~search_phrase ~found_phrase ~found_phrase_opening_closing_symbol_match_count =
-  let len = List.length search_phrase in
+let make search_phrase ~found_phrase ~found_phrase_opening_closing_symbol_match_count =
+  let len = List.length (Search_phrase.enriched_tokens search_phrase) in
   if len = 0 then (
     invalid_arg "Search_result.make search_phrase is empty"
   ) else if len <> List.length found_phrase then (
     invalid_arg "length of found_phrase does not match length of search_phrase"
   ) else (
-    let score = Score.score ~search_phrase ~found_phrase ~found_phrase_opening_closing_symbol_match_count in
+    let score = Score.score search_phrase ~found_phrase ~found_phrase_opening_closing_symbol_match_count in
     { score; search_phrase; found_phrase }
   )
 

@@ -451,7 +451,6 @@ module Search = struct
       (t : t)
     : int Seq.t =
     Eio.Fiber.yield ();
-    let search_word = ET.string token in
     let match_typ = ET.match_typ token in
     let word_ci_and_positions_to_consider =
       match around_pos with
@@ -481,10 +480,9 @@ module Search = struct
           word_ci_and_pos_s ~range_inc:(start, end_inc) t
         )
     in
-    let search_word_ci =
-      String.lowercase_ascii search_word
-    in
     let non_fuzzy_filter_pos_s
+        ~search_word
+        ~search_word_ci
         ~indexed_word_ci
         (match_typ : [ `Exact | `Prefix | `Suffix ])
         (pos_s : Int_set.t)
@@ -522,45 +520,57 @@ module Search = struct
         Eio.Fiber.yield ();
         String.length indexed_word_ci > 0
       )
-    |> Seq.filter_map (fun (indexed_word_ci, pos_s) ->
-        Eio.Fiber.yield ();
-        if Parser_components.is_space indexed_word_ci.[0] then (
-          if Parser_components.is_space search_word.[0] then (
-            Some pos_s
-          ) else (
-            None
-          )
-        ) else (
-          let indexed_word_ci_len = String.length indexed_word_ci in
-          if Parser_components.is_possibly_utf_8 indexed_word_ci.[0] then (
-            if String.equal search_word_ci indexed_word_ci then (
+    |> Seq.filter_map (
+      match ET.data token with
+      | `Explicit_spaces -> (
+          fun (indexed_word_ci, pos_s) ->
+            Eio.Fiber.yield ();
+            if Parser_components.is_space indexed_word_ci.[0] then
               Some pos_s
-            ) else (
+            else
               None
-            )
-          ) else (
-            match match_typ with
-            | `Fuzzy -> (
-                if
-                  String.equal search_word_ci indexed_word_ci
-                  || CCString.find ~sub:search_word_ci indexed_word_ci >= 0
-                  || (indexed_word_ci_len >= 2
-                      && CCString.find ~sub:indexed_word_ci search_word_ci >= 0)
-                  || (consider_edit_dist
-                      && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word_ci search_word_ci.[0]
-                      && Spelll.match_with (ET.automaton token) indexed_word_ci)
-                then (
-                  Some pos_s
-                ) else (
-                  None
-                )
-              )
-            | `Exact -> non_fuzzy_filter_pos_s ~indexed_word_ci `Exact pos_s
-            | `Prefix -> non_fuzzy_filter_pos_s ~indexed_word_ci `Prefix pos_s
-            | `Suffix -> non_fuzzy_filter_pos_s ~indexed_word_ci `Suffix pos_s
-          )
         )
-      )
+      | `String search_word -> (
+          fun (indexed_word_ci, pos_s) ->
+            Eio.Fiber.yield ();
+            let search_word_ci =
+              String.lowercase_ascii search_word
+            in
+            let indexed_word_ci_len = String.length indexed_word_ci in
+            if Parser_components.is_possibly_utf_8 indexed_word_ci.[0] then (
+              if String.equal search_word_ci indexed_word_ci then (
+                Some pos_s
+              ) else (
+                None
+              )
+            ) else (
+              match match_typ with
+              | `Fuzzy -> (
+                  if
+                    String.equal search_word_ci indexed_word_ci
+                    || CCString.find ~sub:search_word_ci indexed_word_ci >= 0
+                    || (indexed_word_ci_len >= 2
+                        && CCString.find ~sub:indexed_word_ci search_word_ci >= 0)
+                    || (consider_edit_dist
+                        && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word_ci search_word_ci.[0]
+                        && Spelll.match_with (ET.automaton token) indexed_word_ci)
+                  then (
+                    Some pos_s
+                  ) else (
+                    None
+                  )
+                )
+              | `Exact | `Prefix | `Suffix as m -> (
+                  non_fuzzy_filter_pos_s
+                    ~search_word
+                    ~search_word_ci
+                    ~indexed_word_ci
+                    (m :> [ `Exact | `Prefix | `Suffix ])
+                    pos_s
+                )
+            )
+        )
+    )
     |> Seq.flat_map (fun pos_s ->
         Eio.Fiber.yield ();
         Int_set.to_seq pos_s)
@@ -702,7 +712,7 @@ module Search = struct
                                  opening_closing_symbol_pairs
                              in
                              Search_result.make
-                               ~search_phrase:(Search_phrase.actual_search_phrase_strings phrase)
+                               phrase
                                ~found_phrase:(List.map
                                                 (fun pos ->
                                                    Search_result.{

@@ -374,7 +374,15 @@ let search_result
         if fill_in_context then (
           let non_space_word_count =
             Search_result.search_phrase search_result
-            |> List.filter word_is_not_space
+            |> Search_phrase.enriched_tokens
+            |> List.filter_map (fun token ->
+                match Search_phrase.Enriched_token.data token with
+                | `Explicit_spaces -> None
+                | `String s -> (
+                    assert (word_is_not_space s);
+                    Some s
+                  )
+              )
             |> List.length
           in
           grab_additional_lines index ~non_space_word_count x y

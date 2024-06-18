@@ -7,12 +7,12 @@ type indexed_found_word = {
 type t
 
 val make :
-  search_phrase:string list ->
+  Search_phrase.t ->
   found_phrase:indexed_found_word list ->
   found_phrase_opening_closing_symbol_match_count:int ->
   t
 
-val search_phrase : t -> string list
+val search_phrase : t -> Search_phrase.t
 
 val found_phrase : t -> indexed_found_word list
 

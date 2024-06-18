@@ -43,27 +43,37 @@ type ir0 = {
 }
 
 module Enriched_token = struct
+  type data = [ `String of string | `Explicit_spaces ]
+  [@@deriving ord]
+
+  let pp_data formatter data =
+    Fmt.pf formatter "%s"
+      (match data with
+       | `String s -> s
+       | `Explicit_spaces -> " ")
+
   type t = {
-    string : string;
+    data : data;
     is_linked_to_prev : bool;
     is_linked_to_next : bool;
     automaton : Spelll.automaton;
     match_typ : match_typ;
   }
 
-  let make ~string ~is_linked_to_prev ~is_linked_to_next automaton match_typ =
-    { string; is_linked_to_prev; is_linked_to_next; automaton; match_typ }
+  let make data ~is_linked_to_prev ~is_linked_to_next automaton match_typ =
+    { data; is_linked_to_prev; is_linked_to_next; automaton; match_typ }
 
   let pp fmt (x : t) =
-    Fmt.pf fmt "%s:%b:%b:%a"
-      x.string
+    Fmt.pf fmt "%a:%b:%b:%a"
+      pp_data
+      x.data
       x.is_linked_to_prev
       x.is_linked_to_next
       pp_match_typ
       x.match_typ
 
-  let string (t : t) =
-    t.string
+  let data (t : t) =
+    t.data
 
   let match_typ (t : t) =
     t.match_typ
@@ -78,7 +88,7 @@ module Enriched_token = struct
     t.is_linked_to_next
 
   let compare (x : t) (y : t) =
-    match String.compare x.string y.string with
+    match compare_data x.data y.data with
     | 0 -> (
         match Bool.compare x.is_linked_to_prev y.is_linked_to_prev with
         | 0 -> (
@@ -309,26 +319,32 @@ let ir0_process_suffix_match_typ_markers (ir0_s : ir0 list) : ir0 list =
 
 let enriched_tokens_of_ir0 (ir0_s : ir0 list) : Enriched_token.t list =
   List.map (fun (ir0 : ir0) ->
-      let string =
+      let data =
         match ir0.data with
-        | `String s -> s
-        | `Match_typ_marker m -> string_of_match_typ_marker m
-        | `Explicit_spaces -> " "
+        | `String s -> `String s
+        | `Match_typ_marker m ->
+          `String (string_of_match_typ_marker m)
+        | `Explicit_spaces -> `Explicit_spaces
       in
       let is_linked_to_prev = ir0.is_linked_to_prev in
       let is_linked_to_next = ir0.is_linked_to_next in
       let automaton =
-        Mutex.lock cache.mutex;
-        let automaton =
-          CCCache.with_cache cache.cache
-            (Spelll.of_string ~limit:!Params.max_fuzzy_edit_dist)
-            string
-        in
-        Mutex.unlock cache.mutex;
-        automaton
+        match data with
+        | `String string -> (
+            Mutex.lock cache.mutex;
+            let automaton =
+              CCCache.with_cache cache.cache
+                (Spelll.of_string ~limit:!Params.max_fuzzy_edit_dist)
+                string
+            in
+            Mutex.unlock cache.mutex;
+            automaton
+          )
+        | `Explicit_spaces ->
+          Spelll.of_string ~limit:0 ""
       in
       Enriched_token.make
-        ~string
+        data
         ~is_linked_to_prev
         ~is_linked_to_next
         automaton
@@ -368,6 +384,3 @@ let annotated_tokens t =
 
 let enriched_tokens t =
   t.enriched_tokens
-
-let actual_search_phrase_strings t =
-  List.map Enriched_token.string t.enriched_tokens

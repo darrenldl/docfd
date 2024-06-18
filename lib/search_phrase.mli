@@ -20,17 +20,20 @@ type annotated_token = {
 [@@deriving show]
 
 module Enriched_token : sig
+  type data = [ `String of string | `Explicit_spaces ]
+  [@@deriving ord]
+
   type t
 
   val make :
-    string:string ->
+    data ->
     is_linked_to_prev:bool ->
     is_linked_to_next:bool ->
     Spelll.automaton ->
     match_typ ->
     t
 
-  val string : t -> string
+  val data : t -> data
 
   val equal : t -> t -> bool
 
@@ -62,8 +65,6 @@ val of_tokens : string Seq.t -> t
 val make : string -> t
 
 val is_empty : t -> bool
-
-val actual_search_phrase_strings : t -> string list
 
 val annotated_tokens : t -> annotated_token list
 

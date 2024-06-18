@@ -40,6 +40,9 @@ module Alco = struct
   let atm m : Search_phrase.annotated_token =
     Search_phrase.{ data = `Match_typ_marker m; group_id = 0 }
 
+  let ats : Search_phrase.annotated_token =
+    Search_phrase.{ data = `Explicit_spaces; group_id = 0 }
+
   let et
       ?(m : Search_phrase.match_typ = `Fuzzy)
       string
