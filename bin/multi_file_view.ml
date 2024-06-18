@@ -168,10 +168,15 @@ module Top_pane = struct
             A.(fg lightblue)
           )
         in
-        Option.value ~default:"" (Document.title doc)
-        |> Tokenize.tokenize ~drop_spaces:false
-        |> List.of_seq
-        |> Content_and_search_result_render.Text_block_render.of_words ~attr ~width
+        match Document.title doc with
+        | None ->
+          I.void 0 1
+        | Some title -> (
+            title
+            |> Tokenize.tokenize ~drop_spaces:false
+            |> List.of_seq
+            |> Content_and_search_result_render.Text_block_render.of_words ~attr ~width
+          )
       in
       title
       <->
