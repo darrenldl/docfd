@@ -562,6 +562,29 @@ module Alco = struct
          ; et ~m:`Exact "kl" true false
          ])
       ];
+    test_exp "'^abcd efgh$$ ij$kl$"
+      [ ([ atm `Exact
+         ; at "^"
+         ; at "abcd"
+         ; at " "
+         ; at "efgh"
+         ; at "$"
+         ; atm `Suffix
+         ; at " "
+         ; at "ij"
+         ; at "$"
+         ; at "kl"
+         ; atm `Suffix
+         ],
+         [ et ~m:`Exact "^" false true
+         ; et ~m:`Exact "abcd" true false
+         ; et ~m:`Suffix "efgh" false true
+         ; et ~m:`Exact "$" true false
+         ; et ~m:`Suffix "ij" false true
+         ; et ~m:`Exact "$" true true
+         ; et ~m:`Exact "kl" true false
+         ])
+      ];
     ()
 
   let suite =
