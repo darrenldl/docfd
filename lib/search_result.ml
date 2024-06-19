@@ -91,11 +91,11 @@ module Score = struct
           | `Explicit_spaces -> (
               { stats with
                 total_search_char_count =
-                  stats.total_search_char_count +. found_word_len;
+                  stats.total_search_char_count +. 1.0;
                 total_found_char_count =
-                  stats.total_found_char_count +. found_word_len;
+                  stats.total_found_char_count +. 1.0;
                 exact_match_found_char_count =
-                  stats.exact_match_found_char_count +. found_word_len;
+                  stats.exact_match_found_char_count +. 1.0;
               }
             )
           | `String search_word -> (
