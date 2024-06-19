@@ -327,6 +327,13 @@ Suffix match smart case sensitivity:
 Fuzzy match explicit spaces:
   $ docfd test.txt --sample 'hel~word'
   $TESTCASE_ROOT/test.txt
+  16: efgh$
+  17: 
+  18: hello world
+      ^^^^^^^^^^^
+  19: hello   world
+  20: 
+  
   17: 
   18: hello world
   19: hello   world
@@ -334,43 +341,24 @@ Fuzzy match explicit spaces:
   20: 
   21: Hello world
   
+  19: hello   world
+  20: 
+  21: Hello world
+      ^^^^^^^^^^^
+  22: 
+  23: HELLO WORLD
+  
+  21: Hello world
+  22: 
+  23: HELLO WORLD
+      ^^^^^^^^^^^
+  
   16: efgh$
   17: 
   18: hello world
       ^^^^^
   19: hello   world
            ^^^^^^^^
-  20: 
-  21: Hello world
-  
-  17: 
-  18: hello world
-  19: hello   world
-      ^^^^^^^^
-  20: 
-  21: Hello world
-            ^^^^^
-  22: 
-  23: HELLO WORLD
-  
-  16: efgh$
-  17: 
-  18: hello world
-      ^^^^^
-  19: hello   world
-           ^^^
-  20: 
-  21: Hello world
-            ^^^^^
-  22: 
-  23: HELLO WORLD
-  
-  16: efgh$
-  17: 
-  18: hello world
-            ^^^^^
-  19: hello   world
-      ^^^^^^^^
   20: 
   21: Hello world
 
@@ -415,19 +403,19 @@ Exact match explicit spaces:
 Prefix match explicit spaces:
   $ docfd test.txt --sample '^hello~wo'
   $TESTCASE_ROOT/test.txt
-  17: 
-  18: hello world
-  19: hello   world
-      ^^^^^^^^^^^^^
-  20: 
-  21: Hello world
-  
   16: efgh$
   17: 
   18: hello world
       ^^^^^^^^^^^
   19: hello   world
   20: 
+  
+  17: 
+  18: hello world
+  19: hello   world
+      ^^^^^^^^^^^^^
+  20: 
+  21: Hello world
   
   19: hello   world
   20: 
@@ -445,19 +433,19 @@ Prefix match explicit spaces:
 Suffix match explicit spaces:
   $ docfd test.txt --sample 'lo~world$'
   $TESTCASE_ROOT/test.txt
-  17: 
-  18: hello world
-  19: hello   world
-      ^^^^^^^^^^^^^
-  20: 
-  21: Hello world
-  
   16: efgh$
   17: 
   18: hello world
       ^^^^^^^^^^^
   19: hello   world
   20: 
+  
+  17: 
+  18: hello world
+  19: hello   world
+      ^^^^^^^^^^^^^
+  20: 
+  21: Hello world
   
   19: hello   world
   20: 
