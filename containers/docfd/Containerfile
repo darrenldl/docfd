@@ -5,10 +5,11 @@ RUN apk add linux-headers
 RUN apk add poppler-utils
 
 USER opam
-RUN opam-2.2 init --disable-sandboxing
+RUN sudo ln -s $(which opam-2.2) /usr/local/bin/opam
+RUN opam init --disable-sandboxing
 SHELL ["/bin/bash", "--login" , "-c"]
-RUN opam-2.2 install dune
-RUN opam-2.2 install utop ocp-indent
+RUN opam install dune
+RUN opam install utop ocp-indent
 
 USER root
 COPY . /home/opam/docfd
@@ -17,4 +18,4 @@ RUN chown -R opam:opam /home/opam/docfd
 USER opam
 WORKDIR /home/opam/docfd
 RUN dune build docfd.opam
-RUN opam-2.2 install . --deps-only --with-test
+RUN opam install . --deps-only --with-test
