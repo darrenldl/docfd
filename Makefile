@@ -21,8 +21,8 @@ podman-build-demo-vhs:
 lock:
 	opam-2.2 lock .
 
-.PHONY: release-static
-release-static :
+.PHONY: release-statically-linked
+release-statically-linked :
 	python3 update-version-string.py
 	OCAMLPARAM='_,ccopt=-static' dune build --release bin/docfd.exe
 	mkdir -p statically-linked

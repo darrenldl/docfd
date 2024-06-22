@@ -31,7 +31,7 @@ jobs:
 
       - run: opam install --locked .
 
-      - run: eval $(opam env) && make release-static
+      - run: eval $(opam env) && make release-statically-linked
 
       - run: |
           mv statically-linked/docfd docfd
