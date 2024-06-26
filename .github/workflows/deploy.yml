@@ -31,10 +31,10 @@ jobs:
 
       - run: opam install --locked .
 
-      - run: eval $(opam env) && make release-statically-linked
+      - run: eval $(opam env) && make release-static-build
 
       - run: |
-          mv statically-linked/docfd docfd
+          mv static-build/docfd docfd
           tar -cvzf docfd-${{ env.GITHUB_TAG }}-${{ matrix.os }}.tar.gz docfd
 
       - name: Release
