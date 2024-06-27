@@ -31,6 +31,8 @@ jobs:
 
       - run: opam install --locked .
 
+      - run: eval $(opam env) && make tests
+
       - run: eval $(opam env) && make release-static-build
 
       - run: |
