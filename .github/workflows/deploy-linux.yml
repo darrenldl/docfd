@@ -35,10 +35,10 @@ jobs:
 
       - run: |
           mv static-build/docfd docfd
-          tar -cvzf docfd-${{ env.GITHUB_TAG }}-${{ matrix.os }}.tar.gz docfd
+          tar -cvzf docfd-${{ env.GITHUB_TAG }}-linux.tar.gz docfd
 
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            docfd-${{ env.GITHUB_TAG }}-${{ matrix.os }}.tar.gz
+            docfd-${{ env.GITHUB_TAG }}-linux.tar.gz
