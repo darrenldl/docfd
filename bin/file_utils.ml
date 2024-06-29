@@ -1,6 +1,13 @@
 open Misc_utils
 open Debug_utils
 
+let fix_path_for_eio (s : string) =
+  if Sys.win32 then (
+    CCString.replace ~sub:"\\" ~by:"/" s
+  ) else (
+    s
+  )
+
 let remove_cwd_from_path (s : string) =
   let pre = Params.cwd_with_trailing_sep in
   match CCString.chop_prefix ~pre s with

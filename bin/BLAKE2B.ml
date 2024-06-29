@@ -6,7 +6,7 @@ let hash_of_file ~env ~path =
   let fs = Eio.Stdenv.fs env in
   let ctx = ref B.empty in
   try
-    Eio.Path.(with_open_in (fs / path))
+    Eio.Path.(with_open_in (fs / File_utils.fix_path_for_eio path))
       (fun flow ->
          match
            Eio.Buf_read.parse ~max_size:Params.hash_chunk_size

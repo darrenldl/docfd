@@ -122,8 +122,13 @@ let save_index ~env ~hash index : (unit, string) result =
   | Some cache_dir -> (
       let fs = Eio.Stdenv.fs env in
       let path =
-        Eio.Path.(fs /
-                  Filename.concat cache_dir (Fmt.str "%s%s" hash Params.index_file_ext))
+        Eio.Path.(
+          fs /
+          File_utils.fix_path_for_eio
+            (Filename.concat
+               cache_dir
+               (Fmt.str "%s%s" hash Params.index_file_ext))
+        )
       in
       let json = Index.to_json index in
       try
@@ -142,6 +147,7 @@ let find_index ~env ~hash : Index.t option =
       try
         let path_str =
           Filename.concat cache_dir (Fmt.str "%s.index" hash)
+          |> File_utils.fix_path_for_eio
         in
         let path =
           Eio.Path.(fs / path_str)
