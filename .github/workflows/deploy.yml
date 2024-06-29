@@ -28,13 +28,13 @@ jobs:
 
       - run: echo "GITHUB_TAG=$(git describe --always --tags)" >> $GITHUB_ENV
 
-      - if: ${{ startsWith(matrix.os, "ubuntu") }}
+      - if: ${{ startsWith(matrix.os, 'ubuntu') }}
         run: echo "OS_SHORT_NAME=linux" >> $GITHUB_ENV
 
-      - if: ${{ startsWith(matrix.os, "macos") }}
+      - if: ${{ startsWith(matrix.os, 'macos') }}
         run: echo "OS_SHORT_NAME=macos" >> $GITHUB_ENV
 
-      - if: ${{ startsWith(matrix.os, "windows") }}
+      - if: ${{ startsWith(matrix.os, 'windows') }}
         run: echo "OS_SHORT_NAME=windows" >> $GITHUB_ENV
 
       - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
@@ -47,12 +47,12 @@ jobs:
       - run: opam exec -- make tests
 
       - name: Create build
-        if: ${{ env.OS_SHORT_NAME == "macos" }}
+        if: ${{ env.OS_SHORT_NAME == 'macos' }}
         run: |
           opam exec -- make release-build
 
       - name: Create static build
-        if: ${{ env.OS_SHORT_NAME == "ubuntu" || env.OS_SHORT_NAME == "windows" }}
+        if: ${{ env.OS_SHORT_NAME == 'ubuntu' || env.OS_SHORT_NAME == 'windows' }}
         run: |
           opam exec -- make release-static-build
 
