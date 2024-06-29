@@ -49,7 +49,7 @@ jobs:
           opam exec -- make release-build
 
       - name: Create static build
-        if: ${{ env.OS_SHORT_NAME == 'ubuntu' || env.OS_SHORT_NAME == 'windows' }}
+        if: ${{ env.OS_SHORT_NAME == 'linux' || env.OS_SHORT_NAME == 'windows' }}
         run: |
           opam exec -- make release-static-build
 
