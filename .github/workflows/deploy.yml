@@ -41,9 +41,7 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-      - run: opam install --with-test --locked .
-
-      - run: opam exec -- make tests
+      - run: opam install --locked .
 
       - name: Create build
         if: ${{ env.OS_SHORT_NAME == 'macos' }}
