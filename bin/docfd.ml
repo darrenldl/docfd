@@ -590,7 +590,7 @@ let run
               term
             ) else (
               let input =
-                Unix.(openfile "/dev/tty" [ O_RDWR ] 0666)
+                Unix.(openfile "/dev/tty" [ O_RDWR ] 0o666)
               in
               let term = Notty_unix.Term.create ~input () in
               term_and_tty_fd := Some (term, Some input);
