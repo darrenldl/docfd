@@ -1,10 +1,16 @@
 open Misc_utils
 
 let command_exists (cmd : string) : bool =
-  Sys.command (Fmt.str "command -v %s 2>/dev/null 1>/dev/null" (Filename.quote cmd)) = 0
+  if Sys.win32 then
+    Sys.command (Fmt.str "where %s 2>/dev/null 1>/dev/null" (Filename.quote cmd)) = 0
+  else
+    Sys.command (Fmt.str "command -v %s 2>/dev/null 1>/dev/null" (Filename.quote cmd)) = 0
 
 let run_in_background (cmd : string) =
-  Sys.command (Fmt.str "%s 2>/dev/null 1>/dev/null &" cmd)
+  if Sys.win32 then
+    Sys.command (Fmt.str {|start "" %s 2>nul 1>nul &|} cmd)
+  else
+    Sys.command (Fmt.str "%s 2>/dev/null 1>/dev/null &" cmd)
 
 let run_return_stdout ~proc_mgr ~fs (cmd : string list) : string list option =
   Eio.Path.(with_open_out ~create:`Never (fs / "/dev/null"))

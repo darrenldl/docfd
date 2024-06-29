@@ -57,16 +57,16 @@ let typ_of_path (path : string) : (typ * is_link) option =
   | _ -> None
 
 let path_of_parts parts =
-  List.rev parts
-  |> String.concat Filename.dir_sep
-  |> (fun s -> Printf.sprintf "/%s" s)
+  match List.rev parts with
+  | [ "" ] -> "/"
+  | [ _ ] -> failwith "unexpected case"
+  | l -> String.concat Filename.dir_sep l
+
+let root_path_parts = [ "" ]
 
 let cwd_path_parts =
   Params.cwd
   |> CCString.split ~by:Filename.dir_sep
-  |> (fun l -> match l with
-      | "" :: l -> l
-      | _ -> failwith "unexpected case")
   |> List.rev
 
 let normalize_path_to_absolute path =
@@ -91,8 +91,8 @@ let normalize_path_to_absolute path =
   in
   match CCString.split ~by:Filename.dir_sep path with
   | "" :: l -> (
-      (* Absolute path *)
-      aux [] l
+      (* Absolute path on Unix-like systems *)
+      aux root_path_parts l
     )
   | l -> (
       aux cwd_path_parts l
@@ -210,8 +210,8 @@ let list_files_recursive_filter_by_globs
       let glob_parts = CCString.split ~by:Filename.dir_sep glob in
       match glob_parts with
       | "" :: rest -> (
-          (* Absolute path *)
-          aux [] rest
+          (* Absolute path on Unix-like systems *)
+          aux root_path_parts rest
         )
       | _ -> (
           aux cwd_path_parts glob_parts
