@@ -83,4 +83,4 @@ let blink_on_duration : Mtime.span = Mtime.Span.(140 * ms)
 
 let cwd = Sys.getcwd ()
 
-let cwd_with_trailing_slash = cwd ^ Filename.dir_sep
+let cwd_with_trailing_sep = cwd ^ Filename.dir_sep

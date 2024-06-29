@@ -2,7 +2,7 @@ open Misc_utils
 open Debug_utils
 
 let remove_cwd_from_path (s : string) =
-  let pre = Params.cwd_with_trailing_slash in
+  let pre = Params.cwd_with_trailing_sep in
   match CCString.chop_prefix ~pre s with
   | None -> s
   | Some s -> s
@@ -58,8 +58,7 @@ let typ_of_path (path : string) : (typ * is_link) option =
 
 let path_of_parts parts =
   match List.rev parts with
-  | [ "" ] -> "/"
-  | [ _ ] -> failwith "unexpected case"
+  | [ x ] -> x ^ Filename.dir_sep
   | l -> String.concat Filename.dir_sep l
 
 let root_path_parts = [ "" ]
