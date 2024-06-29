@@ -133,18 +133,7 @@ let cache_dir_arg =
   let doc =
     "Index cache directory."
   in
-  let home_dir =
-    match Sys.getenv_opt "HOME" with
-    | None -> (
-        exit_with_error_msg "environment variable HOME is not set";
-      )
-    | Some home -> home
-  in
-  let cache_home =
-    match Sys.getenv_opt "XDG_CACHE_HOME" with
-    | None -> Filename.concat home_dir ".cache"
-    | Some x -> x
-  in
+  let cache_home = Xdg_utils.cache_home in
   Arg.(
     value
     & opt string (Filename.concat cache_home "docfd")
