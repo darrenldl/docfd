@@ -2,7 +2,7 @@ open Misc_utils
 
 let command_exists (cmd : string) : bool =
   if Sys.win32 then
-    Sys.command (Fmt.str "where %s 2>/dev/null 1>/dev/null" (Filename.quote cmd)) = 0
+    Sys.command (Fmt.str "where %s 2>nul 1>nul" (Filename.quote cmd)) = 0
   else
     Sys.command (Fmt.str "command -v %s 2>/dev/null 1>/dev/null" (Filename.quote cmd)) = 0
 
@@ -13,7 +13,9 @@ let run_in_background (cmd : string) =
     Sys.command (Fmt.str "%s 2>/dev/null 1>/dev/null &" cmd)
 
 let run_return_stdout ~proc_mgr ~fs (cmd : string list) : string list option =
-  Eio.Path.(with_open_out ~create:`Never (fs / "/dev/null"))
+  Eio.Path.(with_open_out
+              ~create:`Never
+              (fs / (if Sys.win32 then "nul" else "/dev/null")))
     (fun stderr ->
        let output =
          try

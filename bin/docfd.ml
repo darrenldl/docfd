@@ -590,7 +590,11 @@ let run
               term
             ) else (
               let input =
-                Unix.(openfile "/dev/tty" [ O_RDWR ] 0o666)
+                if Sys.win32 then (
+                  Unix.(openfile "CON" [ O_RDONLY ] 0o444)
+                ) else (
+                  Unix.(openfile "/dev/tty" [ O_RDONLY ] 0o444)
+                )
               in
               let term = Notty_unix.Term.create ~input () in
               term_and_tty_fd := Some (term, Some input);
