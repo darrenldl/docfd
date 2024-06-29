@@ -233,34 +233,41 @@ let list_files_recursive_filter_by_exts
   |> Seq.fold_left String_set.union String_set.empty
 
 let mkdir_recursive (dir : string) : unit =
-  let rec aux acc parts =
+  let rec aux first acc parts =
     match parts with
     | [] -> ()
     | "" :: xs -> (
-        aux Filename.dir_sep xs
+        if first then
+          aux false Filename.dir_sep xs
+        else
+          aux false "" xs
       )
     | x :: xs -> (
-        let acc = Filename.concat acc x in
-        match Sys.is_directory acc with
-        | true -> aux acc xs
-        | false -> (
-            exit_with_error_msg
-              (Fmt.str "%s is not a directory" (Filename.quote acc))
-          )
-        | exception (Sys_error _) -> (
-            do_if_debug (fun oc ->
-                Printf.fprintf oc "Creating directory: %s\n" (Filename.quote acc)
+        if first && Sys.win32 && x.[String.length x - 1] = ':' then (
+          aux false (x ^ Filename.dir_sep) xs
+        ) else (
+          let acc = Filename.concat acc x in
+          match Sys.is_directory acc with
+          | true -> aux false acc xs
+          | false -> (
+              exit_with_error_msg
+                (Fmt.str "%s is not a directory" (Filename.quote acc))
+            )
+          | exception (Sys_error _) -> (
+              do_if_debug (fun oc ->
+                  Printf.fprintf oc "Creating directory: %s\n" (Filename.quote acc)
+                );
+              (try
+                 Sys.mkdir acc 0o755
+               with
+               | _ -> (
+                   exit_with_error_msg
+                     (Fmt.str "failed to create directory: %s" (Filename.quote acc))
+                 )
               );
-            (try
-               Sys.mkdir acc 0o755
-             with
-             | _ -> (
-                 exit_with_error_msg
-                   (Fmt.str "failed to create directory: %s" (Filename.quote acc))
-               )
-            );
-            aux acc xs
-          )
+              aux false acc xs
+            )
+        )
       )
   in
-  aux "" (CCString.split ~by:Filename.dir_sep dir)
+  aux true "" (CCString.split ~by:Filename.dir_sep dir)
