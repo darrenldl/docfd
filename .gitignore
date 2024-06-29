@@ -13,7 +13,7 @@ fuzz-logs/
 test*.pdf
 test*.docx
 *.tar.gz
-/static-build/
+/release/
 perf.data*
 *.pdf
 .cache
