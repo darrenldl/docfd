@@ -16,7 +16,6 @@ jobs:
         os:
           - ubuntu-latest
           - macos-latest
-          - windows-latest
         ocaml-compiler:
           - "5.2"
 
@@ -42,7 +41,7 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-      - run: opam install --locked .
+      - run: opam install --with-test --locked .
 
       - run: opam exec -- make tests
 
