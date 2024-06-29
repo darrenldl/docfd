@@ -613,7 +613,11 @@ let run
     )
   in
   let rec loop () =
-    Sys.command "clear -x" |> ignore;
+    if Sys.win32 then (
+      Sys.command "cls" |> ignore;
+    ) else (
+      Sys.command "clear -x" |> ignore;
+    );
     let term = get_term () in
     Ui_base.Vars.term := Some term;
     Ui_base.Vars.action := None;
