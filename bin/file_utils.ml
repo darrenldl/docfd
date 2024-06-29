@@ -61,8 +61,6 @@ let path_of_parts parts =
   | [ x ] -> x ^ Filename.dir_sep
   | l -> String.concat Filename.dir_sep l
 
-let root_path_parts = [ "" ]
-
 let cwd_path_parts =
   Params.cwd
   |> CCString.split ~by:Filename.dir_sep
@@ -88,14 +86,17 @@ let normalize_path_to_absolute path =
           )
       )
   in
-  match CCString.split ~by:Filename.dir_sep path with
-  | "" :: l -> (
-      (* Absolute path on Unix-like systems *)
-      aux root_path_parts l
-    )
-  | l -> (
-      aux cwd_path_parts l
-    )
+  let path_parts = CCString.split ~by:Filename.dir_sep path in
+  if Filename.is_relative path then (
+    aux cwd_path_parts path_parts
+  ) else (
+    match path_parts with
+    | "" :: l -> (
+        (* Absolute path on Unix-like systems *)
+        aux [ "" ] l
+      )
+    | _ -> aux [] path_parts
+  )
 
 let read_in_channel_to_tmp_file (ic : in_channel) : (string, string) result =
   let file = Filename.temp_file "docfd-" ".txt" in
@@ -207,14 +208,18 @@ let list_files_recursive_filter_by_globs
   in
   Seq.iter (fun glob ->
       let glob_parts = CCString.split ~by:Filename.dir_sep glob in
-      match glob_parts with
-      | "" :: rest -> (
-          (* Absolute path on Unix-like systems *)
-          aux root_path_parts rest
-        )
-      | _ -> (
-          aux cwd_path_parts glob_parts
-        )
+      if Filename.is_relative glob then (
+        aux cwd_path_parts glob_parts
+      ) else (
+        match glob_parts with
+        | "" :: l -> (
+            (* Absolute path on Unix-like systems *)
+            aux [ "" ] l
+          )
+        | _ -> (
+            aux [] glob_parts
+          )
+      )
     ) globs;
   !acc
 
