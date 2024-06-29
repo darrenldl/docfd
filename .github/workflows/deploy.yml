@@ -1,4 +1,4 @@
-name: Deploy on release: Linux
+name: Deploy on release
 
 on:
   push:
