@@ -44,30 +44,32 @@ let default_desktop_file_path (typ : [ `PDF ]) =
   )
 
 let cache_home =
-  if Sys.win32 then (
-    let local_app_data = "LOCALAPPDATA" in
-    match Sys.getenv_opt local_app_data with
-    | None -> (
-        Misc_utils.exit_with_error_msg
-          (Fmt.str "environment variable %%%s%% is not set" local_app_data);
-      )
-    | Some x -> x
-  ) else (
-    let home_dir =
-      match Sys.getenv_opt "HOME" with
+  match Params.os_typ with
+  | `Windows -> (
+      let local_app_data = "LOCALAPPDATA" in
+      match Sys.getenv_opt local_app_data with
       | None -> (
-          Misc_utils.exit_with_error_msg "environment variable HOME is not set";
+          Misc_utils.exit_with_error_msg
+            (Fmt.str "environment variable %%%s%% is not set" local_app_data);
         )
-      | Some home -> home
-    in
-    match String.lowercase_ascii (CCUnix.call_stdout "uname") with
-    | "darwin" -> (
-        Filename.concat home_dir
-          (Filename.concat "Library" "Application Support")
-      )
-    | _ -> (
-        match Sys.getenv_opt "XDG_CACHE_HOME" with
-        | None -> Filename.concat home_dir ".cache"
-        | Some x -> x
-      )
-  )
+      | Some x -> x
+    )
+  | `Linux | `Darwin as x -> (
+      let home_dir =
+        match Sys.getenv_opt "HOME" with
+        | None -> (
+            Misc_utils.exit_with_error_msg "environment variable HOME is not set";
+          )
+        | Some home -> home
+      in
+      match (x :> [ `Linux | `Darwin ]) with
+      | `Linux -> (
+          match Sys.getenv_opt "XDG_CACHE_HOME" with
+          | None -> Filename.concat home_dir ".cache"
+          | Some x -> x
+        )
+      | `Darwin -> (
+          Filename.concat home_dir
+            (Filename.concat "Library" "Application Support")
+        )
+    )
