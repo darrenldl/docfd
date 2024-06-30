@@ -17,7 +17,7 @@ let run_in_background (cmd : string) =
 let run_return_stdout ~proc_mgr ~fs (cmd : string list) : string list option =
   Eio.Path.(with_open_out
               ~create:`Never
-              (fs / (if Sys.win32 then "nul" else "/dev/null")))
+              (if Sys.win32 then (fst fs, "nul") else (fs / "/dev/null")))
     (fun stderr ->
        let output =
          try

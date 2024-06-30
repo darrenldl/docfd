@@ -122,12 +122,11 @@ let save_index ~env ~hash index : (unit, string) result =
   | Some cache_dir -> (
       let fs = Eio.Stdenv.fs env in
       let path =
-        Eio.Path.(
-          fs /
-          File_utils.fix_path_for_eio
-            (Filename.concat
-               cache_dir
-               (Fmt.str "%s%s" hash Params.index_file_ext))
+        (fst fs,
+         File_utils.fix_path_for_eio
+           (Filename.concat
+              cache_dir
+              (Fmt.str "%s%s" hash Params.index_file_ext))
         )
       in
       let json = Index.to_json index in
@@ -150,7 +149,7 @@ let find_index ~env ~hash : Index.t option =
           |> File_utils.fix_path_for_eio
         in
         let path =
-          Eio.Path.(fs / path_str)
+          (fst fs, path_str)
         in
         refresh_modification_time ~path:path_str;
         let json = Yojson.Safe.from_string (Eio.Path.load path) in
@@ -163,7 +162,7 @@ module Of_path = struct
   let text ~env pool search_mode path : (t, string) result =
     let fs = Eio.Stdenv.fs env in
     try
-      Eio.Path.(with_lines (fs / path))
+      Eio.Path.(with_lines (fst fs, File_utils.fix_path_for_eio path))
         (fun lines ->
            Ok (parse_lines pool search_mode ~path lines)
         )
