@@ -84,14 +84,16 @@ for the following viewers:
 
 ## Installation
 
-Statically linked binaries are available via
+Statically linked binaries for Linux and macOS are available via
 [GitHub releases](https://github.com/darrenldl/docfd/releases).
 
-Docfd is also packaged on:
+Docfd is also packaged on the following platforms for Linux:
 
 - [opam](https://ocaml.org/p/docfd/latest)
 - [AUR](https://aur.archlinux.org/packages/docfd-bin) (as `docfd-bin`) by [kseistrup](https://github.com/kseistrup)
 - Nix (as `docfd`) by [chewblacka](https://github.com/chewblacka)
+
+The only way to use Docfd on Windows right now is via WSL.
 
 **Notes for packagers**: Outside of the OCaml toolchain for building (if you are
 packaging from source), Docfd also requires the following
