@@ -590,11 +590,7 @@ let run
               term
             ) else (
               let input =
-                if Sys.win32 then (
-                  Unix.(openfile "CON" [ O_RDONLY ] 0o444)
-                ) else (
-                  Unix.(openfile "/dev/tty" [ O_RDONLY ] 0o444)
-                )
+                Unix.(openfile "/dev/tty" [ O_RDONLY ] 0o444)
               in
               let term = Notty_unix.Term.create ~input () in
               term_and_tty_fd := Some (term, Some input);
@@ -617,11 +613,7 @@ let run
     )
   in
   let rec loop () =
-    if Sys.win32 then (
-      Sys.command "cls" |> ignore;
-    ) else (
-      Sys.command "clear -x" |> ignore;
-    );
+    Sys.command "clear -x" |> ignore;
     let term = get_term () in
     Ui_base.Vars.term := Some term;
     Ui_base.Vars.action := None;
