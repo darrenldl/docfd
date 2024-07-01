@@ -541,13 +541,15 @@ Current working directory is symlink:
   Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
-  $ docfd --debug-log - --index-only --glob '$(pwd)/**/*.txt' . 2>&1 | grep '^Using .* search mode' | sort
+  $ docfd --debug-log - --index-only --glob "$(pwd)/**/*.txt" . 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/test2/1234.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test2/56.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test2/abcd/efgh.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.txt'
+  Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
   $ cd ..
 
 './' in glob:
