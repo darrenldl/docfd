@@ -1,5 +1,9 @@
 # Changelog
 
+## 7.1.0
+
+- Added initial macOS support
+
 ## 7.0.0
 
 - Added discard mode to multi-file view
