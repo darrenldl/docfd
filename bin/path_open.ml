@@ -73,7 +73,6 @@ let pdf index ~path ~search_result =
     match Params.os_typ with
     | `Linux -> xdg_open_cmd ~path
     | `Darwin -> Fmt.str "open %s" path
-    | `Windows -> Fmt.str {|start "" %s|} path
   in
   let cmd =
     match search_result with
@@ -125,7 +124,6 @@ let pdf index ~path ~search_result =
               )
           )
         | `Darwin -> fallback
-        | `Windows -> fallback
       )
   in
   Proc_utils.run_in_background cmd |> ignore

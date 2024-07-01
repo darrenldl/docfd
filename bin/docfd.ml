@@ -767,7 +767,11 @@ let cmd ~env ~sw =
      $ files_without_match_arg
      $ paths_arg)
 
-let () = Eio_main.run (fun env ->
-    Eio.Switch.run (fun sw ->
-        exit (Cmd.eval (cmd ~env ~sw))
-      ))
+let () =
+  if Sys.win32 then (
+    exit_with_error_msg "Windows is not supported"
+  );
+  Eio_main.run (fun env ->
+      Eio.Switch.run (fun sw ->
+          exit (Cmd.eval (cmd ~env ~sw))
+        ))

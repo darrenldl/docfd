@@ -1,19 +1,6 @@
 open Misc_utils
 open Debug_utils
 
-let fix_path_for_eio (s : string) =
-  if Sys.win32 then (
-    CCString.replace ~sub:"\\" ~by:"/" s
-  ) else (
-    s
-  )
-
-let remove_cwd_from_path (s : string) =
-  let pre = Params.cwd_with_trailing_sep in
-  match CCString.chop_prefix ~pre s with
-  | None -> s
-  | Some s -> s
-
 let extension_of_file (s : string) =
   Filename.extension s
   |> String.lowercase_ascii
@@ -68,10 +55,18 @@ let path_of_parts parts =
   | [ x ] -> x ^ Filename.dir_sep
   | l -> String.concat Filename.dir_sep l
 
-let cwd_path_parts =
-  Params.cwd
+let cwd_with_trailing_sep () = Sys.getcwd () ^ Filename.dir_sep
+
+let cwd_path_parts () =
+  Sys.getcwd ()
   |> CCString.split ~by:Filename.dir_sep
   |> List.rev
+
+let remove_cwd_from_path (s : string) =
+  let pre = cwd_with_trailing_sep () in
+  match CCString.chop_prefix ~pre s with
+  | None -> s
+  | Some s -> s
 
 let normalize_path_to_absolute path =
   let rec aux acc path_parts =
@@ -94,16 +89,14 @@ let normalize_path_to_absolute path =
       )
   in
   let path_parts = CCString.split ~by:Filename.dir_sep path in
-  if Filename.is_relative path then (
-    aux cwd_path_parts path_parts
-  ) else (
-    match path_parts with
-    | "" :: l -> (
-        (* Absolute path on Unix-like systems *)
-        aux [ "" ] l
-      )
-    | _ -> aux [] path_parts
-  )
+  match path_parts with
+  | "" :: l -> (
+      (* Absolute path on Unix-like systems *)
+      aux [ "" ] l
+    )
+  | _ -> (
+      aux (cwd_path_parts ()) path_parts
+    )
 
 let read_in_channel_to_tmp_file (ic : in_channel) : (string, string) result =
   let file = Filename.temp_file "docfd-" ".txt" in
@@ -215,18 +208,14 @@ let list_files_recursive_filter_by_globs
   in
   Seq.iter (fun glob ->
       let glob_parts = CCString.split ~by:Filename.dir_sep glob in
-      if Filename.is_relative glob then (
-        aux cwd_path_parts glob_parts
-      ) else (
-        match glob_parts with
-        | "" :: l -> (
-            (* Absolute path on Unix-like systems *)
-            aux [ "" ] l
-          )
-        | _ -> (
-            aux [] glob_parts
-          )
-      )
+      match glob_parts with
+      | "" :: l -> (
+          (* Absolute path on Unix-like systems *)
+          aux [ "" ] l
+        )
+      | _ -> (
+          aux (cwd_path_parts ()) glob_parts
+        )
     ) globs;
   !acc
 
@@ -254,31 +243,27 @@ let mkdir_recursive (dir : string) : unit =
           aux false "" xs
       )
     | x :: xs -> (
-        if first && Sys.win32 && x.[String.length x - 1] = ':' then (
-          aux false (x ^ Filename.dir_sep) xs
-        ) else (
-          let acc = Filename.concat acc x in
-          match Sys.is_directory acc with
-          | true -> aux false acc xs
-          | false -> (
-              exit_with_error_msg
-                (Fmt.str "%s is not a directory" (Filename.quote acc))
-            )
-          | exception (Sys_error _) -> (
-              do_if_debug (fun oc ->
-                  Printf.fprintf oc "Creating directory: %s\n" (Filename.quote acc)
-                );
-              (try
-                 Sys.mkdir acc 0o755
-               with
-               | _ -> (
-                   exit_with_error_msg
-                     (Fmt.str "failed to create directory: %s" (Filename.quote acc))
-                 )
+        let acc = Filename.concat acc x in
+        match Sys.is_directory acc with
+        | true -> aux false acc xs
+        | false -> (
+            exit_with_error_msg
+              (Fmt.str "%s is not a directory" (Filename.quote acc))
+          )
+        | exception (Sys_error _) -> (
+            do_if_debug (fun oc ->
+                Printf.fprintf oc "Creating directory: %s\n" (Filename.quote acc)
               );
-              aux false acc xs
-            )
-        )
+            (try
+               Sys.mkdir acc 0o755
+             with
+             | _ -> (
+                 exit_with_error_msg
+                   (Fmt.str "failed to create directory: %s" (Filename.quote acc))
+               )
+            );
+            aux false acc xs
+          )
       )
   in
   aux true "" (CCString.split ~by:Filename.dir_sep dir)

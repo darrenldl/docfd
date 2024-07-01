@@ -81,15 +81,7 @@ let last_scan_format_string =
 
 let blink_on_duration : Mtime.span = Mtime.Span.(140 * ms)
 
-let cwd = Sys.getcwd ()
-
-let cwd_with_trailing_sep = cwd ^ Filename.dir_sep
-
-let os_typ : [ `Darwin | `Linux | `Windows ] =
-  if Sys.win32 then (
-    `Windows
-  ) else (
-    match String.lowercase_ascii (CCUnix.call_stdout "uname") with
-    | "darwin" -> `Darwin
-    | _ -> `Linux
-  )
+let os_typ : [ `Darwin | `Linux ] =
+  match String.lowercase_ascii (CCUnix.call_stdout "uname") with
+  | "darwin" -> `Darwin
+  | _ -> `Linux
