@@ -58,7 +58,7 @@ demo-vhs :
 
 .PHONY: profile
 profile :
-	OCAMLPARAM='_,ccopt=-static' dune build --release profile/main.exe
+	OCAMLPARAM='_,ccopt=-static' dune build --release profiling/main.exe
 
 .PHONY: format
 format :
