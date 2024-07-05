@@ -4,11 +4,12 @@
 
 - Added initial macOS support
 
-- Major speedup from letting pdftotext output everything in one pass and split
-  on Docfd side instead of asking pdftotext to output one page per invocation
+- Major speedup from letting `pdftotext` output everything in one pass and split
+  on Docfd side instead of asking `pdftotext` to output one page per invocation
 
-    - Page count will be inaccurate if the PDF page contains form feed character
-      itself, but should be rare
+    - Page count may be inaccurate if the PDF page contains form feed character
+      itself (not fully sure if `pdftotext` filters the form feed character from
+      content), but should be rare
 
 ## 7.0.0
 
