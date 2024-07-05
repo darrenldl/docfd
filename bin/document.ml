@@ -171,19 +171,17 @@ module Of_path = struct
   let pdf ~env pool search_mode path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
     let fs = Eio.Stdenv.fs env in
-    let rec aux acc page_num =
-      let page_num_string = Int.to_string page_num in
-      let cmd = [ "pdftotext"; "-f"; page_num_string; "-l"; page_num_string; path; "-" ] in
-      match Proc_utils.run_return_stdout ~proc_mgr ~fs cmd with
-      | None -> (
-          parse_pages pool search_mode ~path (acc |> List.rev |> List.to_seq)
-        )
-      | Some page -> (
-          aux (page :: acc) (page_num + 1)
-        )
-    in
     try
-      Ok (aux [] 1)
+      let cmd = [ "pdftotext"; path; "-" ] in
+      let pages =
+        match Proc_utils.run_return_stdout ~proc_mgr ~fs ~split_mode:`On_form_feed cmd with
+        | None -> Seq.empty
+        | Some pages -> (
+            List.to_seq pages
+            |> Seq.map (fun page -> String.split_on_char '\n' page)
+          )
+      in
+      Ok (parse_pages pool search_mode ~path pages)
     with
     | _ -> Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
 
@@ -211,7 +209,7 @@ module Of_path = struct
               ]
     in
     let error_msg = Fmt.str "failed to extract text from %s" (Filename.quote path) in
-    match Proc_utils.run_return_stdout ~proc_mgr ~fs cmd with
+    match Proc_utils.run_return_stdout ~proc_mgr ~fs ~split_mode:`On_line_split cmd with
     | None -> (
         Error error_msg
       )
