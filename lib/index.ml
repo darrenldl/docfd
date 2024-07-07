@@ -963,3 +963,17 @@ let of_json (json : Yojson.Safe.t) : t option =
       }
     )
   | _ -> None
+
+let to_compressed_string (t : t) : string =
+  to_json t
+  |> Yojson.Safe.to_string
+  |> GZIP.compress
+
+let of_compressed_string (s : string) : t option =
+  let open Option_syntax in
+  let* s = GZIP.decompress s in
+  try
+    Yojson.Safe.from_string s
+    |> of_json
+  with
+  | _ -> None

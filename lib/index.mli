@@ -59,3 +59,7 @@ val page_count : t -> int
 val to_json : t -> Yojson.Safe.t
 
 val of_json : Yojson.Safe.t -> t option
+
+val to_compressed_string : t -> string
+
+val of_compressed_string : string -> t option

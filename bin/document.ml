@@ -129,9 +129,9 @@ let save_index ~env ~hash index : (unit, string) result =
              (Fmt.str "%s%s" hash Params.index_file_ext))
         )
       in
-      let json = Index.to_json index in
+      let s = Index.to_compressed_string index in
       try
-        Eio.Path.save ~create:(`Or_truncate 0o644) path (Yojson.Safe.to_string json);
+        Eio.Path.save ~create:(`Or_truncate 0o644) path s;
         clean_up_cache_dir ~cache_dir;
         Ok ()
       with
@@ -151,8 +151,7 @@ let find_index ~env ~hash : Index.t option =
           (fst fs, path_str)
         in
         refresh_modification_time ~path:path_str;
-        let json = Yojson.Safe.from_string (Eio.Path.load path) in
-        Index.of_json json
+        Index.of_compressed_string (Eio.Path.load path)
       with
       | _ -> None
     )
