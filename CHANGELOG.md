@@ -11,6 +11,8 @@
       itself (not fully sure if `pdftotext` filters the form feed character from
       content), but should be rare
 
+- Added GZIP compression of indices
+
 ## 7.0.0
 
 - Added discard mode to multi-file view
