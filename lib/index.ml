@@ -323,7 +323,7 @@ let equal (x : t) (y : t) =
     y.line_loc_of_global_line_num
   &&
   CCVector.equal
-    (fun (x0, y0) (x1, y1) -> x0 = x1 && y0 = y1)
+    equal_int_int
     x.start_end_inc_pos_of_global_line_num
     y.start_end_inc_pos_of_global_line_num
   &&
@@ -863,7 +863,7 @@ module Compressed = struct
       CCVector.mapi (fun i x ->
           let y =
             if i < last_index then (
-              CCVector.get vec (i + 1)
+              (CCVector.get vec (i + 1)) - 1
             ) else (
               end_inc_of_last
             )
@@ -873,7 +873,7 @@ module Compressed = struct
         vec
     in
     let last_pos =
-      CCVector.length t.loc_of_pos - 1
+      max 0 (CCVector.length t.loc_of_pos - 1)
     in
     {
       word_db = t.word_db;
@@ -1089,9 +1089,15 @@ module Compressed = struct
     | _ -> None
 end
 
+type compressed = Compressed.t
+
+let to_compressed = Compressed.of_uncompressed
+
+let of_compressed = Compressed.to_uncompressed
+
 let to_compressed_string (t : t) : string =
   t
-  |> Compressed.of_uncompressed
+  |> to_compressed
   |> Compressed.to_json
   |> Yojson.Safe.to_string
   |> GZIP.compress
@@ -1102,6 +1108,6 @@ let of_compressed_string (s : string) : t option =
   try
     let s = Yojson.Safe.from_string s in
     let+ compressed = Compressed.of_json s in
-    Compressed.to_uncompressed compressed
+    of_compressed compressed
   with
   | _ -> None

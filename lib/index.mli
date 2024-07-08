@@ -58,6 +58,12 @@ val global_line_count : t -> int
 
 val page_count : t -> int
 
+type compressed
+
+val to_compressed : t -> compressed
+
+val of_compressed : compressed -> t
+
 val to_compressed_string : t -> string
 
 val of_compressed_string : string -> t option
