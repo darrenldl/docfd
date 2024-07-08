@@ -22,6 +22,8 @@ type t
 
 val make : unit -> t
 
+val equal : t -> t -> bool
+
 val of_lines : Task_pool.t -> string Seq.t -> t
 
 val of_pages : Task_pool.t -> string list Seq.t -> t
@@ -55,10 +57,6 @@ val search :
 val global_line_count : t -> int
 
 val page_count : t -> int
-
-val to_json : t -> Yojson.Safe.t
-
-val of_json : Yojson.Safe.t -> t option
 
 val to_compressed_string : t -> string
 

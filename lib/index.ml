@@ -4,6 +4,7 @@ module Line_loc = struct
     line_num_in_page : int;
     global_line_num : int;
   }
+  [@@deriving eq]
 
   let page_num t = t.page_num
 
@@ -29,6 +30,7 @@ module Loc = struct
     line_loc : Line_loc.t;
     pos_in_line : int;
   }
+  [@@deriving eq]
 
   let line_loc t = t.line_loc
 
@@ -302,6 +304,52 @@ let make () : t = {
   page_count = 0;
   global_line_count = 0;
 }
+
+let equal (x : t) (y : t) =
+  let equal_int_int (x0, y0) (x1, y1) =
+    x0 = x1 && y0 = y1
+  in
+  Word_db.equal x.word_db y.word_db
+  &&
+  Int_map.equal
+    Int_set.equal
+    x.pos_s_of_word_ci y.pos_s_of_word_ci
+  &&
+  CCVector.equal Loc.equal x.loc_of_pos y.loc_of_pos
+  &&
+  CCVector.equal
+    Line_loc.equal
+    x.line_loc_of_global_line_num
+    y.line_loc_of_global_line_num
+  &&
+  CCVector.equal
+    (fun (x0, y0) (x1, y1) -> x0 = x1 && y0 = y1)
+    x.start_end_inc_pos_of_global_line_num
+    y.start_end_inc_pos_of_global_line_num
+  &&
+  CCVector.equal
+    equal_int_int
+    x.start_end_inc_pos_of_page_num
+    y.start_end_inc_pos_of_page_num
+  &&
+  CCVector.equal
+    Int.equal
+    x.word_ci_of_pos
+    y.word_ci_of_pos
+  &&
+  CCVector.equal
+    Int.equal
+    x.word_of_pos
+    y.word_of_pos
+  &&
+  CCVector.equal
+    Int.equal
+    x.line_count_of_page_num
+    y.line_count_of_page_num
+  &&
+  x.page_count = y.page_count
+  &&
+  x.global_line_count = y.global_line_count
 
 let global_line_count t = t.global_line_count
 
@@ -771,201 +819,280 @@ let search
   Array.sort Search_result.compare_relevance arr;
   arr
 
-let to_json (t : t) : Yojson.Safe.t =
-  let json_of_int (x : int) = `Int x in
-  let json_of_int_int ((x, y) : int * int) = `List [ `Int x; `Int y ] in
-  let json_of_int_map
-    : 'a . ('a -> Yojson.Safe.t) -> 'a Int_map.t -> Yojson.Safe.t =
-    fun f m ->
-      let l =
-        Int_map.to_seq m
-        |> Seq.map (fun (k, v) -> `List [ `Int k; f v ])
-        |> List.of_seq
-      in
-      `List l
-  in
-  let json_of_ccvector
-    : 'a . ('a -> Yojson.Safe.t) -> ('a, _) CCVector.t -> Yojson.Safe.t =
-    fun f vec ->
-      let l =
-        CCVector.to_seq vec
-        |> Seq.map f
-        |> List.of_seq
-      in
-      `List l
-  in
-  let json_of_int_set (s : Int_set.t) =
-    let l =
-      Int_set.to_seq s
-      |> Seq.map json_of_int
-      |> List.of_seq
-    in
-    `List l
-  in
-  `Assoc [
-    ("word_db",
-     Word_db.to_json t.word_db);
-    ("pos_s_of_word_ci",
-     json_of_int_map json_of_int_set t.pos_s_of_word_ci);
-    ("loc_of_pos",
-     json_of_ccvector Loc.to_json t.loc_of_pos);
-    ("line_loc_of_global_line_num",
-     json_of_ccvector Line_loc.to_json t.line_loc_of_global_line_num);
-    ("start_end_inc_pos_of_global_line_num",
-     json_of_ccvector json_of_int_int t.start_end_inc_pos_of_global_line_num);
-    ("start_end_inc_pos_of_page_num",
-     json_of_ccvector json_of_int_int t.start_end_inc_pos_of_page_num);
-    ("word_ci_of_pos",
-     json_of_ccvector json_of_int t.word_ci_of_pos);
-    ("word_of_pos",
-     json_of_ccvector json_of_int t.word_of_pos);
-    ("line_count_of_page_num",
-     json_of_ccvector json_of_int t.line_count_of_page_num);
-    ("page_count",
-     `Int t.page_count);
-    ("global_line_count",
-     `Int t.global_line_count);
-  ]
+module Compressed = struct
+  type t' = t
 
-let of_json (json : Yojson.Safe.t) : t option =
-  let open Option_syntax in
-  let int_of_json (json : Yojson.Safe.t) : int option =
+  type t = {
+    word_db : Word_db.t;
+    pos_s_of_word_ci : Int_set.t Int_map.t;
+    loc_of_pos : Loc.t CCVector.ro_vector;
+    line_loc_of_global_line_num : Line_loc.t CCVector.ro_vector;
+    start_pos_of_global_line_num : int CCVector.ro_vector;
+    start_pos_of_page_num : int CCVector.ro_vector;
+    word_ci_of_pos : int CCVector.ro_vector;
+    word_of_pos : int CCVector.ro_vector;
+    line_count_of_page_num : int CCVector.ro_vector;
+    page_count : int;
+    global_line_count : int;
+  }
+
+  let of_uncompressed (t' : t') : t =
+    {
+      word_db = t'.word_db;
+      pos_s_of_word_ci = t'.pos_s_of_word_ci;
+      loc_of_pos = t'.loc_of_pos;
+      line_loc_of_global_line_num = t'.line_loc_of_global_line_num;
+      start_pos_of_global_line_num =
+        CCVector.map fst t'.start_end_inc_pos_of_global_line_num;
+      start_pos_of_page_num =
+        CCVector.map fst t'.start_end_inc_pos_of_page_num;
+      word_ci_of_pos = t'.word_ci_of_pos;
+      word_of_pos = t'.word_of_pos;
+      line_count_of_page_num = t'.line_count_of_page_num;
+      page_count = t'.page_count;
+      global_line_count = t'.global_line_count;
+    }
+
+  let to_uncompressed (t : t) : t' =
+    let decompress_contiguous_interval_ccvector
+        ~end_inc_of_last
+        (vec : int CCVector.ro_vector)
+      : (int * int) CCVector.ro_vector =
+      let len = CCVector.length vec in
+      let last_index = len - 1 in
+      CCVector.mapi (fun i x ->
+          let y =
+            if i < last_index then (
+              CCVector.get vec (i + 1)
+            ) else (
+              end_inc_of_last
+            )
+          in
+          (x, y)
+        )
+        vec
+    in
+    let last_pos =
+      CCVector.length t.loc_of_pos - 1
+    in
+    {
+      word_db = t.word_db;
+      pos_s_of_word_ci = t.pos_s_of_word_ci;
+      loc_of_pos = t.loc_of_pos;
+      line_loc_of_global_line_num = t.line_loc_of_global_line_num;
+      start_end_inc_pos_of_global_line_num =
+        (decompress_contiguous_interval_ccvector
+           ~end_inc_of_last:last_pos)
+          t.start_pos_of_global_line_num;
+      start_end_inc_pos_of_page_num =
+        (decompress_contiguous_interval_ccvector
+           ~end_inc_of_last:last_pos)
+          t.start_pos_of_page_num;
+      word_ci_of_pos = t.word_ci_of_pos;
+      word_of_pos = t.word_of_pos;
+      line_count_of_page_num = t.line_count_of_page_num;
+      page_count = t.page_count;
+      global_line_count = t.global_line_count;
+    }
+
+  let to_json (t : t) : Yojson.Safe.t =
+    let json_of_int (x : int) = `Int x in
+    (* let json_of_int_int ((x, y) : int * int) = `List [ `Int x; `Int y ] in *)
+    let json_of_int_map
+      : 'a . ('a -> Yojson.Safe.t) -> 'a Int_map.t -> Yojson.Safe.t =
+      fun f m ->
+        let l =
+          Int_map.to_seq m
+          |> Seq.map (fun (k, v) -> `List [ `Int k; f v ])
+          |> List.of_seq
+        in
+        `List l
+    in
+    let json_of_ccvector
+      : 'a . ('a -> Yojson.Safe.t) -> ('a, _) CCVector.t -> Yojson.Safe.t =
+      fun f vec ->
+        let l =
+          CCVector.to_seq vec
+          |> Seq.map f
+          |> List.of_seq
+        in
+        `List l
+    in
+    let json_of_int_set (s : Int_set.t) =
+      let l =
+        Int_set.to_seq s
+        |> Seq.map json_of_int
+        |> List.of_seq
+      in
+      `List l
+    in
+    `Assoc [
+      ("word_db",
+       Word_db.to_json t.word_db);
+      ("pos_s_of_word_ci",
+       json_of_int_map json_of_int_set t.pos_s_of_word_ci);
+      ("loc_of_pos",
+       json_of_ccvector Loc.to_json t.loc_of_pos);
+      ("line_loc_of_global_line_num",
+       json_of_ccvector Line_loc.to_json t.line_loc_of_global_line_num);
+      ("start_pos_of_global_line_num",
+       json_of_ccvector json_of_int t.start_pos_of_global_line_num);
+      ("start_pos_of_page_num",
+       json_of_ccvector json_of_int t.start_pos_of_page_num);
+      ("word_ci_of_pos",
+       json_of_ccvector json_of_int t.word_ci_of_pos);
+      ("word_of_pos",
+       json_of_ccvector json_of_int t.word_of_pos);
+      ("line_count_of_page_num",
+       json_of_ccvector json_of_int t.line_count_of_page_num);
+      ("page_count",
+       `Int t.page_count);
+      ("global_line_count",
+       `Int t.global_line_count);
+    ]
+
+  let of_json (json : Yojson.Safe.t) : t option =
+    let open Option_syntax in
+    let int_of_json (json : Yojson.Safe.t) : int option =
+      match json with
+      | `Int x -> Some x
+      | _ -> None
+    in
+    (*let int_int_of_json (json : Yojson.Safe.t) : (int * int) option =
+      match json with
+      | `List [ `Int x; `Int y ] -> Some (x, y)
+      | _ -> None
+      in *)
+    let int_set_of_json (json : Yojson.Safe.t) : Int_set.t option =
+      match json with
+      | `List l -> (
+          let exception Invalid in
+          let s = ref Int_set.empty in
+          try
+            List.iter (fun x ->
+                match int_of_json x with
+                | None -> raise Invalid
+                | Some x -> s := Int_set.add x !s
+              ) l;
+            Some !s
+          with
+          | Invalid -> None
+        )
+      | _ -> None
+    in
+    let ccvector_of_json
+      : 'a . (Yojson.Safe.t -> 'a option) -> Yojson.Safe.t -> 'a CCVector.ro_vector option =
+      fun f json ->
+        match json with
+        | `List l -> (
+            let exception Invalid in
+            let vec : 'a CCVector.vector = CCVector.create () in
+            try
+              List.iter (fun v ->
+                  match f v with
+                  | None -> raise Invalid
+                  | Some (v : 'a) -> (
+                      CCVector.push vec v
+                    )
+                ) l;
+              Some (CCVector.freeze vec)
+            with
+            | Invalid -> None
+          )
+        | _ -> None
+    in
+    let int_map_of_json
+      : 'a . (Yojson.Safe.t -> 'a option) -> Yojson.Safe.t -> 'a Int_map.t option =
+      fun f json ->
+        match json with
+        | `List l -> (
+            let exception Invalid in
+            let m : 'a Int_map.t ref = ref Int_map.empty in
+            try
+              List.iter (fun v ->
+                  match v with
+                  | `List [ `Int k; v ] -> (
+                      match f v with
+                      | None -> raise Invalid
+                      | Some (v : 'a) -> (
+                          m := Int_map.add k v !m;
+                        )
+                    )
+                  | _ -> raise Invalid
+                ) l;
+              Some !m
+            with
+            | Invalid -> None
+          )
+        | _ -> None
+    in
     match json with
-    | `Int x -> Some x
-    | _ -> None
-  in
-  let int_int_of_json (json : Yojson.Safe.t) : (int * int) option =
-    match json with
-    | `List [ `Int x; `Int y ] -> Some (x, y)
-    | _ -> None
-  in
-  let int_set_of_json (json : Yojson.Safe.t) : Int_set.t option =
-    match json with
-    | `List l -> (
-        let exception Invalid in
-        let s = ref Int_set.empty in
-        try
-          List.iter (fun x ->
-              match int_of_json x with
-              | None -> raise Invalid
-              | Some x -> s := Int_set.add x !s
-            ) l;
-          Some !s
-        with
-        | Invalid -> None
+    | `Assoc l -> (
+        let* word_db =
+          let* x = List.assoc_opt "word_db" l in
+          Word_db.of_json x
+        in
+        let* pos_s_of_word_ci =
+          let* x = List.assoc_opt "pos_s_of_word_ci" l in
+          int_map_of_json int_set_of_json x
+        in
+        let* loc_of_pos =
+          let* x = List.assoc_opt "loc_of_pos" l in
+          ccvector_of_json Loc.of_json x
+        in
+        let* line_loc_of_global_line_num =
+          let* x = List.assoc_opt "line_loc_of_global_line_num" l in
+          ccvector_of_json Line_loc.of_json x
+        in
+        let* start_pos_of_global_line_num =
+          let* x = List.assoc_opt "start_pos_of_global_line_num" l in
+          ccvector_of_json int_of_json x
+        in
+        let* start_pos_of_page_num =
+          let* x = List.assoc_opt "start_pos_of_page_num" l in
+          ccvector_of_json int_of_json x
+        in
+        let* word_ci_of_pos =
+          let* x = List.assoc_opt "word_ci_of_pos" l in
+          ccvector_of_json int_of_json x
+        in
+        let* word_of_pos =
+          let* x = List.assoc_opt "word_of_pos" l in
+          ccvector_of_json int_of_json x
+        in
+        let* line_count_of_page_num =
+          let* x = List.assoc_opt "line_count_of_page_num" l in
+          ccvector_of_json int_of_json x
+        in
+        let* page_count =
+          let* x = List.assoc_opt "page_count" l in
+          int_of_json x
+        in
+        let+ global_line_count =
+          let* x = List.assoc_opt "global_line_count" l in
+          int_of_json x
+        in
+        {
+          word_db;
+          pos_s_of_word_ci;
+          loc_of_pos;
+          line_loc_of_global_line_num;
+          start_pos_of_global_line_num;
+          start_pos_of_page_num;
+          word_ci_of_pos;
+          word_of_pos;
+          line_count_of_page_num;
+          page_count;
+          global_line_count;
+        }
       )
     | _ -> None
-  in
-  let ccvector_of_json
-    : 'a . (Yojson.Safe.t -> 'a option) -> Yojson.Safe.t -> 'a CCVector.ro_vector option =
-    fun f json ->
-      match json with
-      | `List l -> (
-          let exception Invalid in
-          let vec : 'a CCVector.vector = CCVector.create () in
-          try
-            List.iter (fun v ->
-                match f v with
-                | None -> raise Invalid
-                | Some (v : 'a) -> (
-                    CCVector.push vec v
-                  )
-              ) l;
-            Some (CCVector.freeze vec)
-          with
-          | Invalid -> None
-        )
-      | _ -> None
-  in
-  let int_map_of_json
-    : 'a . (Yojson.Safe.t -> 'a option) -> Yojson.Safe.t -> 'a Int_map.t option =
-    fun f json ->
-      match json with
-      | `List l -> (
-          let exception Invalid in
-          let m : 'a Int_map.t ref = ref Int_map.empty in
-          try
-            List.iter (fun v ->
-                match v with
-                | `List [ `Int k; v ] -> (
-                    match f v with
-                    | None -> raise Invalid
-                    | Some (v : 'a) -> (
-                        m := Int_map.add k v !m;
-                      )
-                  )
-                | _ -> raise Invalid
-              ) l;
-            Some !m
-          with
-          | Invalid -> None
-        )
-      | _ -> None
-  in
-  match json with
-  | `Assoc l -> (
-      let* word_db =
-        let* x = List.assoc_opt "word_db" l in
-        Word_db.of_json x
-      in
-      let* pos_s_of_word_ci =
-        let* x = List.assoc_opt "pos_s_of_word_ci" l in
-        int_map_of_json int_set_of_json x
-      in
-      let* loc_of_pos =
-        let* x = List.assoc_opt "loc_of_pos" l in
-        ccvector_of_json Loc.of_json x
-      in
-      let* line_loc_of_global_line_num =
-        let* x = List.assoc_opt "line_loc_of_global_line_num" l in
-        ccvector_of_json Line_loc.of_json x
-      in
-      let* start_end_inc_pos_of_global_line_num =
-        let* x = List.assoc_opt "start_end_inc_pos_of_global_line_num" l in
-        ccvector_of_json int_int_of_json x
-      in
-      let* start_end_inc_pos_of_page_num =
-        let* x = List.assoc_opt "start_end_inc_pos_of_page_num" l in
-        ccvector_of_json int_int_of_json x
-      in
-      let* word_ci_of_pos =
-        let* x = List.assoc_opt "word_ci_of_pos" l in
-        ccvector_of_json int_of_json x
-      in
-      let* word_of_pos =
-        let* x = List.assoc_opt "word_of_pos" l in
-        ccvector_of_json int_of_json x
-      in
-      let* line_count_of_page_num =
-        let* x = List.assoc_opt "line_count_of_page_num" l in
-        ccvector_of_json int_of_json x
-      in
-      let* page_count =
-        let* x = List.assoc_opt "page_count" l in
-        int_of_json x
-      in
-      let+ global_line_count =
-        let* x = List.assoc_opt "global_line_count" l in
-        int_of_json x
-      in
-      {
-        word_db;
-        pos_s_of_word_ci;
-        loc_of_pos;
-        line_loc_of_global_line_num;
-        start_end_inc_pos_of_global_line_num;
-        start_end_inc_pos_of_page_num;
-        word_ci_of_pos;
-        word_of_pos;
-        line_count_of_page_num;
-        page_count;
-        global_line_count;
-      }
-    )
-  | _ -> None
+end
 
 let to_compressed_string (t : t) : string =
-  to_json t
+  t
+  |> Compressed.of_uncompressed
+  |> Compressed.to_json
   |> Yojson.Safe.to_string
   |> GZIP.compress
 
@@ -973,7 +1100,8 @@ let of_compressed_string (s : string) : t option =
   let open Option_syntax in
   let* s = GZIP.decompress s in
   try
-    Yojson.Safe.from_string s
-    |> of_json
+    let s = Yojson.Safe.from_string s in
+    let+ compressed = Compressed.of_json s in
+    Compressed.to_uncompressed compressed
   with
   | _ -> None

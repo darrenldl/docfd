@@ -3,6 +3,9 @@ type t = {
   mutable index_of_word : int String_map.t;
 }
 
+let equal (x : t) (y : t) =
+  CCVector.equal String.equal x.word_of_index y.word_of_index
+
 let make () : t = {
   word_of_index = CCVector.create ();
   index_of_word = String_map.empty;
