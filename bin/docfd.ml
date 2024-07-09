@@ -685,7 +685,7 @@ let run
     (fun () ->
        let clock = Eio.Stdenv.mono_clock env in
        while true do
-         Eio.Time.Mono.sleep clock 60.0;
+         Eio.Time.Mono.sleep clock 15.0;
          Gc.compact ();
        done
     );
