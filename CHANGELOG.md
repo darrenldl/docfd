@@ -11,7 +11,11 @@
       itself (not fully sure if `pdftotext` filters the form feed character from
       content), but should be rare
 
-- Added GZIP compression of indices
+- Significant reduction of index file size by introducing two passes when serializing
+
+    - Conversion to intermediate compressed representation
+
+    - GZIP compression of string representation
 
 ## 7.0.0
 
