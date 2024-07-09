@@ -6,6 +6,13 @@ let enriched_token_testable : (module Alcotest.TESTABLE with type t = Search_phr
 let search_phrase_testable : (module Alcotest.TESTABLE with type t = Search_phrase.t) =
   (module Search_phrase)
 
+let index_testable : (module Alcotest.TESTABLE with type t = Index.t) =
+  (module struct
+    include Index
+
+    let pp _formatter _index = ()
+  end)
+
 let index_gen_from_pages task_pool =
   let open QCheck2.Gen in
   map
