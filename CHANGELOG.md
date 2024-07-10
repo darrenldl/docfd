@@ -7,8 +7,8 @@
 - Major speedup from letting `pdftotext` output everything in one pass and split
   on Docfd side instead of asking `pdftotext` to output one page per invocation
 
-    - For large PDFs the indexing duration can shrink from a few minutes to a
-      few seconds
+    - For large PDFs the indexing duration can shrink from a few minutes to
+      seconds
 
     - Page count may be inaccurate if the PDF page contains form feed character
       itself (not fully sure if `pdftotext` filters the form feed character from
