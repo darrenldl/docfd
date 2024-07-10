@@ -14,15 +14,6 @@ module Line_loc = struct
 
   let compare (x : t) (y : t) =
     Int.compare x.global_line_num y.global_line_num
-
-  let to_json (t : t) : Yojson.Safe.t =
-    `List [ `Int t.page_num; `Int t.line_num_in_page; `Int t.global_line_num ]
-
-  let of_json (json : Yojson.Safe.t) : t option =
-    match json with
-    | `List [ `Int page_num; `Int line_num_in_page; `Int global_line_num ] ->
-      Some { page_num; line_num_in_page; global_line_num }
-    | _ -> None
 end
 
 module Loc = struct
@@ -35,18 +26,6 @@ module Loc = struct
   let line_loc t = t.line_loc
 
   let pos_in_line t =  t.pos_in_line
-
-  let to_json (t : t) : Yojson.Safe.t =
-    `List [ Line_loc.to_json t.line_loc; `Int t.pos_in_line ]
-
-  let of_json (json : Yojson.Safe.t) : t option =
-    match json with
-    | `List [ line_loc; `Int pos_in_line ] -> (
-        match Line_loc.of_json line_loc with
-        | None -> None
-        | Some line_loc -> Some { line_loc; pos_in_line }
-      )
-    | _ -> None
 end
 
 module Raw = struct
@@ -822,13 +801,26 @@ let search
 module Compressed = struct
   type t' = t
 
+  type loc = {
+    global_line_num : int;
+    pos_in_line : int;
+  }
+
+  let json_of_loc (x : loc) =
+    `List [ `Int x.global_line_num; `Int x.pos_in_line ]
+
+  let loc_of_json (json : Yojson.Safe.t) : loc option =
+    match json with
+    | `List [ `Int global_line_num; `Int pos_in_line ] ->
+      Some { global_line_num; pos_in_line }
+    | _ -> None
+
   type t = {
     word_db : Word_db.t;
     pos_s_of_word_ci : Int_set.t Int_map.t;
-    loc_of_pos : Loc.t CCVector.ro_vector;
+    loc_of_pos : loc CCVector.ro_vector;
     start_pos_of_global_line_num : int CCVector.ro_vector;
     start_pos_of_page_num : int CCVector.ro_vector;
-    word_ci_of_pos : int CCVector.ro_vector;
     word_of_pos : int CCVector.ro_vector;
     line_count_of_page_num : int CCVector.ro_vector;
     page_count : int;
@@ -839,12 +831,16 @@ module Compressed = struct
     {
       word_db = t'.word_db;
       pos_s_of_word_ci = t'.pos_s_of_word_ci;
-      loc_of_pos = t'.loc_of_pos;
+      loc_of_pos =
+        CCVector.map (fun (loc : Loc.t) ->
+            { global_line_num = loc.line_loc.global_line_num;
+              pos_in_line = loc.pos_in_line;
+            })
+          t'.loc_of_pos;
       start_pos_of_global_line_num =
         CCVector.map fst t'.start_end_inc_pos_of_global_line_num;
       start_pos_of_page_num =
         CCVector.map fst t'.start_end_inc_pos_of_page_num;
-      word_ci_of_pos = t'.word_ci_of_pos;
       word_of_pos = t'.word_of_pos;
       line_count_of_page_num = t'.line_count_of_page_num;
       page_count = t'.page_count;
@@ -918,7 +914,12 @@ module Compressed = struct
     {
       word_db = t.word_db;
       pos_s_of_word_ci = t.pos_s_of_word_ci;
-      loc_of_pos = t.loc_of_pos;
+      loc_of_pos =
+        CCVector.map (fun { global_line_num; pos_in_line } ->
+            let line_loc = CCVector.get line_loc_of_global_line_num global_line_num in
+            ({ line_loc; pos_in_line; } : Loc.t)
+          )
+          t.loc_of_pos;
       line_loc_of_global_line_num;
       start_end_inc_pos_of_global_line_num =
         (decompress_contiguous_interval_ccvector
@@ -928,7 +929,12 @@ module Compressed = struct
         (decompress_contiguous_interval_ccvector
            ~end_inc_of_last:last_pos)
           t.start_pos_of_page_num;
-      word_ci_of_pos = t.word_ci_of_pos;
+      word_ci_of_pos =
+        CCVector.map (fun i ->
+            Word_db.word_of_index t.word_db i
+            |> String.lowercase_ascii
+            |> Word_db.index_of_word t.word_db
+          ) t.word_of_pos;
       word_of_pos = t.word_of_pos;
       line_count_of_page_num = t.line_count_of_page_num;
       page_count = t.page_count;
@@ -972,13 +978,11 @@ module Compressed = struct
       ("pos_s_of_word_ci",
        json_of_int_map json_of_int_set t.pos_s_of_word_ci);
       ("loc_of_pos",
-       json_of_ccvector Loc.to_json t.loc_of_pos);
+       json_of_ccvector json_of_loc t.loc_of_pos);
       ("start_pos_of_global_line_num",
        json_of_ccvector json_of_int t.start_pos_of_global_line_num);
       ("start_pos_of_page_num",
        json_of_ccvector json_of_int t.start_pos_of_page_num);
-      ("word_ci_of_pos",
-       json_of_ccvector json_of_int t.word_ci_of_pos);
       ("word_of_pos",
        json_of_ccvector json_of_int t.word_of_pos);
       ("line_count_of_page_num",
@@ -1076,7 +1080,7 @@ module Compressed = struct
         in
         let* loc_of_pos =
           let* x = List.assoc_opt "loc_of_pos" l in
-          ccvector_of_json Loc.of_json x
+          ccvector_of_json loc_of_json x
         in
         let* start_pos_of_global_line_num =
           let* x = List.assoc_opt "start_pos_of_global_line_num" l in
@@ -1084,10 +1088,6 @@ module Compressed = struct
         in
         let* start_pos_of_page_num =
           let* x = List.assoc_opt "start_pos_of_page_num" l in
-          ccvector_of_json int_of_json x
-        in
-        let* word_ci_of_pos =
-          let* x = List.assoc_opt "word_ci_of_pos" l in
           ccvector_of_json int_of_json x
         in
         let* word_of_pos =
@@ -1112,7 +1112,6 @@ module Compressed = struct
           loc_of_pos;
           start_pos_of_global_line_num;
           start_pos_of_page_num;
-          word_ci_of_pos;
           word_of_pos;
           line_count_of_page_num;
           page_count;
@@ -1137,8 +1136,8 @@ let to_compressed_string (t : t) : string =
 
 let of_compressed_string (s : string) : t option =
   let open Option_syntax in
-  let* s = GZIP.decompress s in
   try
+    let* s = GZIP.decompress s in
     let s = Yojson.Safe.from_string s in
     let+ compressed = Compressed.of_json s in
     of_compressed compressed
