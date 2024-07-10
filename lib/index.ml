@@ -826,7 +826,6 @@ module Compressed = struct
     word_db : Word_db.t;
     pos_s_of_word_ci : Int_set.t Int_map.t;
     loc_of_pos : Loc.t CCVector.ro_vector;
-    line_loc_of_global_line_num : Line_loc.t CCVector.ro_vector;
     start_pos_of_global_line_num : int CCVector.ro_vector;
     start_pos_of_page_num : int CCVector.ro_vector;
     word_ci_of_pos : int CCVector.ro_vector;
@@ -841,7 +840,6 @@ module Compressed = struct
       word_db = t'.word_db;
       pos_s_of_word_ci = t'.pos_s_of_word_ci;
       loc_of_pos = t'.loc_of_pos;
-      line_loc_of_global_line_num = t'.line_loc_of_global_line_num;
       start_pos_of_global_line_num =
         CCVector.map fst t'.start_end_inc_pos_of_global_line_num;
       start_pos_of_page_num =
@@ -853,33 +851,75 @@ module Compressed = struct
       global_line_count = t'.global_line_count;
     }
 
-  let to_uncompressed (t : t) : t' =
-    let decompress_contiguous_interval_ccvector
-        ~end_inc_of_last
-        (vec : int CCVector.ro_vector)
-      : (int * int) CCVector.ro_vector =
-      let len = CCVector.length vec in
-      let last_index = len - 1 in
-      CCVector.mapi (fun i x ->
-          let y =
-            if i < last_index then (
-              (CCVector.get vec (i + 1)) - 1
+  let decompress_contiguous_interval_ccvector
+      ~end_inc_of_last
+      (vec : int CCVector.ro_vector)
+    : (int * int) CCVector.ro_vector =
+    let len = CCVector.length vec in
+    let last_index = len - 1 in
+    CCVector.mapi (fun i x ->
+        let y =
+          if i < last_index then (
+            (CCVector.get vec (i + 1)) - 1
+          ) else (
+            end_inc_of_last
+          )
+        in
+        (x, y)
+      )
+      vec
+
+  let compute_line_loc_of_global_line_num
+      (line_count_of_page_num : int CCVector.ro_vector)
+    : Line_loc.t CCVector.ro_vector =
+    let rec aux global_line_count s : Line_loc.t Seq.t =
+      match s () with
+      | Seq.Nil -> Seq.empty
+      | Seq.Cons ((page_num, page_line_count), rest) -> (
+          let line_loc_s_in_page, global_line_count =
+            if page_line_count = 0 then (
+              let empty_line =
+                { Line_loc.page_num;
+                  line_num_in_page = 0;
+                  global_line_num = global_line_count
+                }
+              in
+              (Seq.return empty_line,
+               global_line_count + 1)
             ) else (
-              end_inc_of_last
+              (OSeq.(0 --^ page_line_count)
+               |> Seq.map (fun line_num_in_page ->
+                   { Line_loc.page_num;
+                     line_num_in_page;
+                     global_line_num = global_line_count + line_num_in_page;
+                   }
+                 ),
+               global_line_count + page_line_count)
             )
           in
-          (x, y)
+          Seq.append
+            line_loc_s_in_page
+            (aux global_line_count rest)
         )
-        vec
     in
+    CCVector.to_seq line_count_of_page_num
+    |> Seq.mapi (fun i x -> (i, x))
+    |> aux 0
+    |> CCVector.of_seq
+    |> CCVector.freeze
+
+  let to_uncompressed (t : t) : t' =
     let last_pos =
       max 0 (CCVector.length t.loc_of_pos - 1)
+    in
+    let line_loc_of_global_line_num =
+      compute_line_loc_of_global_line_num t.line_count_of_page_num
     in
     {
       word_db = t.word_db;
       pos_s_of_word_ci = t.pos_s_of_word_ci;
       loc_of_pos = t.loc_of_pos;
-      line_loc_of_global_line_num = t.line_loc_of_global_line_num;
+      line_loc_of_global_line_num;
       start_end_inc_pos_of_global_line_num =
         (decompress_contiguous_interval_ccvector
            ~end_inc_of_last:last_pos)
@@ -933,8 +973,6 @@ module Compressed = struct
        json_of_int_map json_of_int_set t.pos_s_of_word_ci);
       ("loc_of_pos",
        json_of_ccvector Loc.to_json t.loc_of_pos);
-      ("line_loc_of_global_line_num",
-       json_of_ccvector Line_loc.to_json t.line_loc_of_global_line_num);
       ("start_pos_of_global_line_num",
        json_of_ccvector json_of_int t.start_pos_of_global_line_num);
       ("start_pos_of_page_num",
@@ -1040,10 +1078,6 @@ module Compressed = struct
           let* x = List.assoc_opt "loc_of_pos" l in
           ccvector_of_json Loc.of_json x
         in
-        let* line_loc_of_global_line_num =
-          let* x = List.assoc_opt "line_loc_of_global_line_num" l in
-          ccvector_of_json Line_loc.of_json x
-        in
         let* start_pos_of_global_line_num =
           let* x = List.assoc_opt "start_pos_of_global_line_num" l in
           ccvector_of_json int_of_json x
@@ -1076,7 +1110,6 @@ module Compressed = struct
           word_db;
           pos_s_of_word_ci;
           loc_of_pos;
-          line_loc_of_global_line_num;
           start_pos_of_global_line_num;
           start_pos_of_page_num;
           word_ci_of_pos;
