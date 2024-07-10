@@ -5,6 +5,8 @@ type t = {
 
 let equal (x : t) (y : t) =
   CCVector.equal String.equal x.word_of_index y.word_of_index
+  &&
+  String_map.equal Int.equal x.index_of_word y.index_of_word
 
 let make () : t = {
   word_of_index = CCVector.create ();
