@@ -7,20 +7,15 @@
 - Major speedup from letting `pdftotext` output everything in one pass and split
   on Docfd side instead of asking `pdftotext` to output one page per invocation
 
-    - For large PDFs the indexing duration can shrink from a few minutes to
+    - For very large PDFs the indexing used to take minutes but now only takes
       seconds
 
     - Page count may be inaccurate if the PDF page contains form feed character
       itself (not fully sure if `pdftotext` filters the form feed character from
       content), but should be rare
 
-- Significant reduction of index file size (expect >70%) by introducing two
-  passes when serializing. This is unsurprising as the previous format was just
-  very inefficient. The two passes introduced are:
-
-    - Conversion to intermediate compressed representation
-
-    - GZIP compression of string representation
+- Significant reduction of index file size by adding GZIP compression of the
+  index JSON
 
 ## 7.0.0
 
