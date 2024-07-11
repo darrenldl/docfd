@@ -58,11 +58,9 @@ val global_line_count : t -> int
 
 val page_count : t -> int
 
-type compressed
+val to_json : t -> Yojson.Safe.t
 
-val to_compressed : t -> compressed
-
-val of_compressed : compressed -> t
+val of_json : Yojson.Safe.t -> t option
 
 val to_compressed_string : t -> string
 
