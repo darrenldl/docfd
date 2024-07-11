@@ -49,7 +49,7 @@ module Qc = struct
       index
       (Index.to_json index
        |> Index.of_json
-      |> Option.get)
+       |> Option.get)
 
   let to_of_json_gen_from_pages task_pool =
     QCheck2.Test.make ~count:1000 ~name:"to_of_compressed_gen_from_pages"
