@@ -16,8 +16,8 @@
       itself (not fully sure if `pdftotext` filters the form feed character from
       content), but should be rare
 
-- Significant reduction of index file size by adding GZIP compression of the
-  index JSON
+- Significant reduction of index file size by adding GZIP
+  compression to the index JSON
 
 ## 7.0.0
 
