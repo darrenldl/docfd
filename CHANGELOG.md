@@ -4,6 +4,8 @@
 
 - Added initial macOS support
 
+    - Likely to have bugs, but will need macOS users to report back
+
 - Major speedup from letting `pdftotext` output everything in one pass and split
   on Docfd side instead of asking `pdftotext` to output one page per invocation
 
