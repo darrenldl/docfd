@@ -202,8 +202,6 @@ module Of_path = struct
               ; "plain"
               ; "--wrap"
               ; "none"
-              ; "--markdown-headings"
-              ; "atx"
               ; path
               ]
     in
