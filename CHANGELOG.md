@@ -1,5 +1,10 @@
 # Changelog
 
+## 7.1.1
+
+- Removed `--markdown-headings atx` from pandoc commandline
+  arguments
+
 ## 7.1.0
 
 - Added initial macOS support
