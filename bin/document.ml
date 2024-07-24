@@ -187,7 +187,8 @@ module Of_path = struct
   let pandoc_supported_format ~env pool search_mode path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
     let fs = Eio.Stdenv.fs env in
-    let from_format = File_utils.extension_of_file path
+    let ext = File_utils.extension_of_file path in
+    let from_format = ext
                       |> String_utils.remove_leading_dots
                       |> (fun s ->
                           match s with
@@ -195,11 +196,16 @@ module Of_path = struct
                           | _ -> s
                         )
     in
-    let preprocess_cmd = [ "iconv"
-                         ; "-t"
-                         ; "utf-8"
-                         ; path
-                         ]
+    let preprocess_cmd =
+      match ext with
+      | ".html"
+      | ".htm" ->
+        Some [ "iconv"
+             ; "-t"
+             ; "utf-8"
+             ; path
+             ]
+      | _ -> None
     in
     let cmd = [ "pandoc"
               ; "--from"
@@ -209,6 +215,10 @@ module Of_path = struct
               ; "--wrap"
               ; "none"
               ]
+              @
+              (match preprocess_cmd with
+               | None -> [ path ]
+               | Some _ -> [])
     in
     let error_msg = Fmt.str "failed to extract text from %s" (Filename.quote path) in
     match
@@ -216,7 +226,7 @@ module Of_path = struct
         ~proc_mgr
         ~fs
         ~split_mode:`On_line_split
-        ~preprocess_cmd
+        ?preprocess_cmd
         cmd
     with
     | None -> (
