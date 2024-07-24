@@ -5,6 +5,9 @@
 - Removed `--markdown-headings atx` from pandoc commandline
   arguments
 
+- Added iconv preprocessing before passing off to pandoc to ensure
+  pandoc only receives UTF-8 input
+
 ## 7.1.0
 
 - Added initial macOS support

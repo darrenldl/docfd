@@ -195,6 +195,12 @@ module Of_path = struct
                           | _ -> s
                         )
     in
+    let preprocess_cmd = [ "iconv"
+                         ; "-t"
+                         ; "utf-8"
+                         ; path
+                         ]
+    in
     let cmd = [ "pandoc"
               ; "--from"
               ; from_format
@@ -202,11 +208,17 @@ module Of_path = struct
               ; "plain"
               ; "--wrap"
               ; "none"
-              ; path
               ]
     in
     let error_msg = Fmt.str "failed to extract text from %s" (Filename.quote path) in
-    match Proc_utils.run_return_stdout ~proc_mgr ~fs ~split_mode:`On_line_split cmd with
+    match
+      Proc_utils.run_return_stdout
+        ~proc_mgr
+        ~fs
+        ~split_mode:`On_line_split
+        ~preprocess_cmd
+        cmd
+    with
     | None -> (
         Error error_msg
       )
