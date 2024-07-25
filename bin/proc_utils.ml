@@ -12,45 +12,45 @@ let run_return_stdout
     ~(split_mode : [ `On_line_split | `On_form_feed ])
     (cmd : string list)
   : string list option =
-      let form_feed = Char.chr 0x0C in
-      Eio.Path.(with_open_out
-                  ~create:`Never
-                  (fs / "/dev/null"))
-        (fun stderr ->
-           let output =
-             try
-               let lines =
-                 Eio.Process.parse_out proc_mgr
-                   (match split_mode with
-                    | `On_line_split -> Eio.Buf_read.(map List.of_seq lines)
-                    | `On_form_feed -> (
-                        let p =
-                          let open Eio.Buf_read in
-                          let open Syntax in
-                          let* c = peek_char in
-                          (match c with
-                           | None -> return ()
-                           | Some c -> (
-                               if c = form_feed then (
-                                 skip 1
-                               ) else (
-                                 return ()
-                               )
-                             ))
-                          *>
-                          (take_while (fun c -> c <> form_feed))
-                        in
-                        Eio.Buf_read.(map List.of_seq (seq p))
-                      )
-                   )
-                   ~stderr cmd
-               in
-               Some lines
-             with
-             | _ -> None
+  let form_feed = Char.chr 0x0C in
+  Eio.Path.(with_open_out
+              ~create:`Never
+              (fs / "/dev/null"))
+    (fun stderr ->
+       let output =
+         try
+           let lines =
+             Eio.Process.parse_out proc_mgr
+               (match split_mode with
+                | `On_line_split -> Eio.Buf_read.(map List.of_seq lines)
+                | `On_form_feed -> (
+                    let p =
+                      let open Eio.Buf_read in
+                      let open Syntax in
+                      let* c = peek_char in
+                      (match c with
+                       | None -> return ()
+                       | Some c -> (
+                           if c = form_feed then (
+                             skip 1
+                           ) else (
+                             return ()
+                           )
+                         ))
+                      *>
+                      (take_while (fun c -> c <> form_feed))
+                    in
+                    Eio.Buf_read.(map List.of_seq (seq p))
+                  )
+               )
+               ~stderr cmd
            in
-           output
-        )
+           Some lines
+         with
+         | _ -> None
+       in
+       output
+    )
 
 let pipe_to_fzf_for_selection (lines : string Seq.t) : string list =
   if not (command_exists "fzf") then (
