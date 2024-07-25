@@ -5,9 +5,6 @@
 - Removed `--markdown-headings atx` from pandoc commandline
   arguments
 
-- Added iconv conversion to UTF-8 for `.html` and `.htm` before passing off to
-  pandoc
-
 ## 7.1.0
 
 - Added initial macOS support

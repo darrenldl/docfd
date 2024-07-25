@@ -196,17 +196,6 @@ module Of_path = struct
                           | _ -> s
                         )
     in
-    let preprocess_cmd =
-      match ext with
-      | ".html"
-      | ".htm" ->
-        Some [ "iconv"
-             ; "-t"
-             ; "utf-8"
-             ; path
-             ]
-      | _ -> None
-    in
     let cmd = [ "pandoc"
               ; "--from"
               ; from_format
@@ -214,11 +203,8 @@ module Of_path = struct
               ; "plain"
               ; "--wrap"
               ; "none"
+              ; path
               ]
-              @
-              (match preprocess_cmd with
-               | None -> [ path ]
-               | Some _ -> [])
     in
     let error_msg = Fmt.str "failed to extract text from %s" (Filename.quote path) in
     match
@@ -226,7 +212,6 @@ module Of_path = struct
         ~proc_mgr
         ~fs
         ~split_mode:`On_line_split
-        ?preprocess_cmd
         cmd
     with
     | None -> (

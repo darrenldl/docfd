@@ -10,30 +10,17 @@ let run_return_stdout
     ~proc_mgr
     ~fs
     ~(split_mode : [ `On_line_split | `On_form_feed ])
-    ?(preprocess_cmd : string list option)
     (cmd : string list)
   : string list option =
-  Eio.Switch.run (fun sw ->
       let form_feed = Char.chr 0x0C in
       Eio.Path.(with_open_out
                   ~create:`Never
                   (fs / "/dev/null"))
         (fun stderr ->
-           let preprocessor, stdin =
-             match preprocess_cmd with
-             | None -> (None, None)
-             | Some cmd -> (
-                 let stdin, stdout = Eio.Process.pipe ~sw proc_mgr in
-                 (Some (Eio.Process.spawn ~sw proc_mgr ~stdout cmd),
-                  Some stdin
-                 )
-               )
-           in
            let output =
              try
                let lines =
                  Eio.Process.parse_out proc_mgr
-                   ?stdin
                    (match split_mode with
                     | `On_line_split -> Eio.Buf_read.(map List.of_seq lines)
                     | `On_form_feed -> (
@@ -62,13 +49,8 @@ let run_return_stdout
              with
              | _ -> None
            in
-           (match preprocessor with
-            | None -> ()
-            | Some p -> Eio.Process.await_exn p
-           );
            output
         )
-    )
 
 let pipe_to_fzf_for_selection (lines : string Seq.t) : string list =
   if not (command_exists "fzf") then (

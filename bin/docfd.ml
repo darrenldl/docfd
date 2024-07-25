@@ -449,7 +449,6 @@ let run
    | Stdin _ -> ()
    | Files file_collection -> (
        let pdftotext_exists = Proc_utils.command_exists "pdftotext" in
-       let iconv_exists = Proc_utils.command_exists "iconv" in
        let pandoc_exists = Proc_utils.command_exists "pandoc" in
        let formats = Document_src.seq_of_file_collection file_collection
                      |> Seq.map format_of_file
@@ -460,10 +459,6 @@ let run
            (Fmt.str "command pdftotext not found")
        );
        if File_format_set.mem `Pandoc_supported_format formats then (
-         if not iconv_exists then (
-           exit_with_error_msg
-             (Fmt.str "command iconv not found")
-         );
          if not pandoc_exists then (
            exit_with_error_msg
              (Fmt.str "command pandoc not found")
