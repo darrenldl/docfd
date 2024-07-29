@@ -129,10 +129,16 @@ let add_document pool (doc : Document.t) (t : t) : t =
   in
   let path = Document.path doc in
   let documents_passing_filter =
-    if Re.execp t.file_path_filter_re path then
-      String_set.add path t.documents_passing_filter
-    else
-      t.documents_passing_filter
+    let add = String_set.add path in
+    match t.file_path_filter_re with
+    | None ->
+      add t.documents_passing_filter
+    | Some re -> (
+        if Re.execp re path then
+          add t.documents_passing_filter
+        else
+          t.documents_passing_filter
+      )
   in
   let search_results =
     String_map.add
