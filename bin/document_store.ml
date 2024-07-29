@@ -6,7 +6,7 @@ type document_info = Document.t * Search_result.t array
 
 type t = {
   all_documents : Document.t String_map.t;
-  file_path_filter_text : string;
+  file_path_filter_glob : string;
   file_path_filter_re : Re.re option;
   documents_passing_filter : String_set.t;
   search_exp : Search_exp.t;
@@ -20,7 +20,7 @@ let size (t : t) =
 let empty : t =
   {
     all_documents = String_map.empty;
-    file_path_filter_text = "";
+    file_path_filter_glob = "";
     file_path_filter_re = None;
     documents_passing_filter = String_set.empty;
     search_exp = Search_exp.empty;
@@ -63,9 +63,9 @@ let min_binding (t : t) =
       Some (path, (doc, search_results))
     )
 
-let update_file_path_filter file_path_filter_text (t : t) : t =
+let update_file_path_filter_glob file_path_filter_glob (t : t) : t =
   let documents_passing_filter, file_path_filter_re =
-    if String.length file_path_filter_text = 0 then (
+    if String.length file_path_filter_glob = 0 then (
       (t.all_documents
        |> String_map.to_seq
        |> Seq.map fst
@@ -73,10 +73,10 @@ let update_file_path_filter file_path_filter_text (t : t) : t =
        None)
     ) else (
       let s =
-        if file_path_filter_text.[0] = '/' then
-          file_path_filter_text
+        if file_path_filter_glob.[0] = '/' then
+          file_path_filter_glob
         else
-          Filename.concat (Sys.getcwd ()) file_path_filter_text
+          Filename.concat (Sys.getcwd ()) file_path_filter_glob
       in
       match Misc_utils.compile_glob_re s with
       | Some re -> (
@@ -91,7 +91,7 @@ let update_file_path_filter file_path_filter_text (t : t) : t =
     )
   in
   { t with
-    file_path_filter_text;
+    file_path_filter_glob;
     file_path_filter_re;
     documents_passing_filter;
   }
@@ -150,7 +150,7 @@ let of_seq pool (s : Document.t Seq.t) =
     s
 
 let usable_documents (t : t) : (Document.t * Search_result.t array) array =
-  let no_file_path_filter = String.length t.file_path_filter_text = 0 in
+  let no_file_path_filter = String.length t.file_path_filter_glob = 0 in
   let no_search_exp = Search_exp.is_empty t.search_exp in
   let arr =
     t.all_documents
@@ -208,7 +208,7 @@ let drop (choice : [ `Single of string | `Usable | `Unusable ]) (t : t) : t =
   match choice with
   | `Single path -> (
       { all_documents = String_map.remove path t.all_documents;
-        file_path_filter_text = t.file_path_filter_text;
+        file_path_filter_glob = t.file_path_filter_glob;
         file_path_filter_re = t.file_path_filter_re;
         documents_passing_filter = String_set.remove path t.documents_passing_filter;
         search_exp = t.search_exp;
@@ -234,7 +234,7 @@ let drop (choice : [ `Single of string | `Usable | `Unusable ]) (t : t) : t =
           f1 path
       in
       { all_documents = String_map.filter f2 t.all_documents;
-        file_path_filter_text = t.file_path_filter_text;
+        file_path_filter_glob = t.file_path_filter_glob;
         file_path_filter_re = t.file_path_filter_re;
         documents_passing_filter = String_set.filter f1 t.documents_passing_filter;
         search_exp = t.search_exp;
