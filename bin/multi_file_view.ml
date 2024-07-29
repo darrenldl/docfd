@@ -384,7 +384,7 @@ module Bottom_pane = struct
       let clear_grid =
         [
           [
-            { label = "/"; msg = "search field" };
+            { label = "x"; msg = "search field" };
             { label = "f"; msg = "file path filter field" };
           ];
           [
