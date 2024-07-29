@@ -1,9 +1,17 @@
 # Changelog
 
-## 7.1.1
+## 7.2.0
 
 - Removed `--markdown-headings atx` from pandoc commandline
   arguments
+
+- Removed `Alt`+`U` undo key binding
+
+- Removed `Alt`+`E` redo key binding
+
+- Added documentation for undo redo key bindings
+
+- Added file filtering field to multi file view
 
 ## 7.1.0
 

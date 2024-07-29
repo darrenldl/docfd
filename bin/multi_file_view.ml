@@ -507,7 +507,6 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'u', [])
-      | (`ASCII 'u', [`Meta])
       | (`ASCII 'Z', [`Ctrl]) -> (
           (match Stack.pop_opt Vars.document_store_undo with
            | None -> ()
@@ -520,7 +519,6 @@ let keyboard_handler
              ));
           `Handled
         )
-      | (`ASCII 'e', [`Meta])
       | (`ASCII 'R', [`Ctrl])
       | (`ASCII 'Y', [`Ctrl]) -> (
           (match Stack.pop_opt Vars.document_store_redo with

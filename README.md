@@ -384,6 +384,12 @@ Navigation mode
     - `Tab`
 - Enter discard mode
     - `d`
+- Undo document store changes
+    - `u`
+    - `Ctrl`+`Z`
+- Redo document store changes
+    - `Ctrl`+`R`
+    - `Ctrl`+`Y`
 
 Discard mode
 - Discard currently selected document
