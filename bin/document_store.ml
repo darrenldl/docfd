@@ -65,30 +65,30 @@ let min_binding (t : t) =
 
 let update_file_path_filter file_path_filter_text (t : t) : t =
   let documents_passing_filter, file_path_filter_re =
-  if String.length file_path_filter_text = 0 then (
-     (t.all_documents
-  |> String_map.to_seq
-  |> Seq.map fst
-  |> String_set.of_seq,
-  None)
-  ) else (
-    match Misc_utils.compile_glob_re file_path_filter_text with
-    | Some re -> (
+    if String.length file_path_filter_text = 0 then (
+      (t.all_documents
+       |> String_map.to_seq
+       |> Seq.map fst
+       |> String_set.of_seq,
+       None)
+    ) else (
+      match Misc_utils.compile_glob_re file_path_filter_text with
+      | Some re -> (
           (t.all_documents
-    |> String_map.to_seq
-    |> Seq.map fst
-          |> Seq.filter (Re.execp re)
-          |> String_set.of_seq,
-          Some re)
-      )
-    | None -> (String_set.empty, None)
-  )
+           |> String_map.to_seq
+           |> Seq.map fst
+           |> Seq.filter (Re.execp re)
+           |> String_set.of_seq,
+           Some re)
+        )
+      | None -> (String_set.empty, None)
+    )
   in
   { t with
-  file_path_filter_text;
-  file_path_filter_re;
-  documents_passing_filter;
-    }
+    file_path_filter_text;
+    file_path_filter_re;
+    documents_passing_filter;
+  }
 
 let update_search_exp pool stop_signal search_exp_text search_exp (t : t) : t =
   if Search_exp.equal search_exp t.search_exp then (
@@ -156,11 +156,11 @@ let usable_documents (t : t) : (Document.t * Search_result.t array) array =
       |> String_map.to_seq
       |> Seq.filter_map (fun (path, doc) ->
           if String_set.mem path t.documents_passing_filter then (
-          let search_results = String_map.find path t.search_results in
-          if Array.length search_results = 0 then
-            None
-          else
-            Some (doc, search_results)
+            let search_results = String_map.find path t.search_results in
+            if Array.length search_results = 0 then
+              None
+            else
+              Some (doc, search_results)
           ) else (
             None
           )
@@ -211,10 +211,10 @@ let drop (choice : [ `Single of string | `Usable | `Unusable ]) (t : t) : t =
         String_set.mem path usable_documents_paths
       in
       let f1 path =
-          match choice with
-          | `Usable -> not (document_is_usable path)
-          | `Unusable -> document_is_usable path
-          | _ -> failwith "unexpected case"
+        match choice with
+        | `Usable -> not (document_is_usable path)
+        | `Unusable -> document_is_usable path
+        | _ -> failwith "unexpected case"
       in
       let f2 : 'a. string -> 'a -> bool =
         fun path _ ->

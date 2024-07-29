@@ -94,11 +94,11 @@ let update_file_path_filter () =
   let s = fst @@ Lwd.peek Vars.file_path_filter_field in
   Stack.clear Vars.document_store_redo;
   let store = Lwd.peek Ui_base.Vars.document_store
-    |> Document_store.update_file_path_filter s
+              |> Document_store.update_file_path_filter s
   in
   Document_store_manager.submit_update_req
-  store
-  Ui_base.Vars.document_store
+    store
+    Ui_base.Vars.document_store
 
 let update_search_phrase () =
   reset_document_selected ();
