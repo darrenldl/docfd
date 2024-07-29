@@ -685,7 +685,7 @@ let keyboard_handler
         | (`Escape, [])
         | (`ASCII 'Q', [`Ctrl])
         | (`ASCII 'C', [`Ctrl]) -> true
-        | (`ASCII '/', []) -> (
+        | (`ASCII 'x', []) -> (
             Lwd.set Vars.search_field Ui_base.empty_text_field;
             update_search_phrase ();
             true

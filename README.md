@@ -382,6 +382,8 @@ Navigation mode
         - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
 - Switch to single file view
     - `Tab`
+- Enter clear mode
+    - `x`
 - Enter discard mode
     - `d`
 - Undo document store changes
@@ -390,6 +392,12 @@ Navigation mode
 - Redo document store changes
     - `Ctrl`+`R`
     - `Ctrl`+`Y`
+
+Clear mode
+- Clear search field
+    - `x`
+- Clear file path filter field
+    - `f`
 
 Discard mode
 - Discard currently selected document
