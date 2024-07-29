@@ -72,7 +72,13 @@ let update_file_path_filter file_path_filter_text (t : t) : t =
        |> String_set.of_seq,
        None)
     ) else (
-      match Misc_utils.compile_glob_re file_path_filter_text with
+      let s =
+        if file_path_filter_text.[0] = '/' then
+          file_path_filter_text
+        else
+          Filename.concat (Sys.getcwd ()) file_path_filter_text
+      in
+      match Misc_utils.compile_glob_re s with
       | Some re -> (
           (t.all_documents
            |> String_map.to_seq
