@@ -5,6 +5,7 @@ type input_mode =
   | Navigate
   | Search
   | Filter
+  | Clear
   | Discard
   | Print
   | Reload
@@ -242,6 +243,7 @@ module Status_bar = struct
       [ (Navigate, "NAVIGATE")
       ; (Search, "SEARCH")
       ; (Filter, "FILTER")
+      ; (Clear, "CLEAR")
       ; (Discard, "DISCARD")
       ; (Print, "PRINT")
       ; (Reload, "RELOAD")
@@ -426,14 +428,26 @@ module Key_binding_info = struct
 end
 
 module File_path_filter_bar = struct
+  let label ~(input_mode : input_mode) =
+    let attr =
+      match input_mode with
+      | Filter -> Notty.A.(st bold)
+      | _ -> Notty.A.empty
+    in
+    (Notty.I.string attr "File path filter")
+    |> Nottui.Ui.atom
+    |> Lwd.return
+
   let main
+      ~input_mode
       ~(edit_field : (string * int) Lwd.var)
       ~focus_handle
       ~f
     : Nottui.ui Lwd.t =
     Nottui_widgets.hbox
       [
-        Lwd.return (Nottui.Ui.atom (Notty.I.strf "File path filter: "));
+        label ~input_mode;
+        Lwd.return (Nottui.Ui.atom (Notty.I.strf ": "));
         Nottui_widgets.edit_field (Lwd.get edit_field)
           ~focus:focus_handle
           ~on_change:(fun (text, x) ->
@@ -448,7 +462,7 @@ module File_path_filter_bar = struct
 end
 
 module Search_bar = struct
-  let search_label ~(input_mode : input_mode) =
+  let label ~(input_mode : input_mode) =
     let attr =
       match input_mode with
       | Search -> Notty.A.(st bold)
@@ -485,7 +499,7 @@ module Search_bar = struct
     : Nottui.ui Lwd.t =
     Nottui_widgets.hbox
       [
-        search_label ~input_mode;
+        label ~input_mode;
         search_status;
         Lwd.return (Nottui.Ui.atom (Notty.I.strf ": "));
         Nottui_widgets.edit_field (Lwd.get edit_field)

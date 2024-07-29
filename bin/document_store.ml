@@ -144,35 +144,42 @@ let of_seq pool (s : Document.t Seq.t) =
     s
 
 let usable_documents (t : t) : (Document.t * Search_result.t array) array =
-  if Search_exp.is_empty t.search_exp
-  && String.length t.file_path_filter_text = 0 then (
+  let no_file_path_filter = String.length t.file_path_filter_text = 0 in
+  let no_search_exp = Search_exp.is_empty t.search_exp in
+  let arr =
     t.all_documents
     |> String_map.to_seq
-    |> Seq.map (fun (_path, doc) -> (doc, [||]))
-    |> Array.of_seq
-  ) else (
-    let arr =
-      t.all_documents
-      |> String_map.to_seq
-      |> Seq.filter_map (fun (path, doc) ->
-          if String_set.mem path t.documents_passing_filter then (
-            let search_results = String_map.find path t.search_results in
-            if Array.length search_results = 0 then
-              None
-            else
-              Some (doc, search_results)
-          ) else (
-            None
-          )
+    |> (fun s ->
+        if no_file_path_filter then (
+          s
+        ) else (
+          Seq.filter (fun (path, _doc) ->
+              String_set.mem path t.documents_passing_filter
+            ) s
         )
-      |> Array.of_seq
-    in
+      )
+    |> (fun s ->
+        if no_search_exp then (
+          Seq.map (fun (_path, doc) -> (doc, [||])) s
+        ) else (
+          Seq.filter_map (fun (path, doc) ->
+              let search_results = String_map.find path t.search_results in
+              if Array.length search_results = 0 then
+                None
+              else
+                Some (doc, search_results)
+            ) s
+        )
+      )
+    |> Array.of_seq
+  in
+  if not no_search_exp then (
     Array.sort (fun (_d0, s0) (_d1, s1) ->
         Search_result.compare_relevance s0.(0) s1.(0)
       )
-      arr;
-    arr
-  )
+      arr
+  );
+  arr
 
 let usable_documents_paths (t : t) : String_set.t =
   usable_documents t

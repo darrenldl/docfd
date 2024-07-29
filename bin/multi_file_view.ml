@@ -349,16 +349,17 @@ module Bottom_pane = struct
           [
             { label = "Enter"; msg = "open document" };
             { label = "/"; msg = "search mode" };
-            { label = "x"; msg = "clear search" };
+            { label = "x"; msg = "clear mode" };
           ];
           [
             { label = "Tab"; msg = "single file view" };
             { label = "p"; msg = "print mode" };
-            { label = "d"; msg = "discard mode" };
+            { label = "f"; msg = "filter mode" };
           ];
           [
             { label = "h"; msg = "rotate key binding info" };
             { label = "r"; msg = "reload mode" };
+            { label = "d"; msg = "discard mode" };
           ];
         ]
       in
@@ -368,6 +369,27 @@ module Bottom_pane = struct
             { label = "Enter"; msg = "exit search mode" };
           ];
           empty_row;
+          empty_row;
+        ]
+      in
+      let filter_grid =
+        [
+          [
+            { label = "Enter"; msg = "exit filter mode" };
+          ];
+          empty_row;
+          empty_row;
+        ]
+      in
+      let clear_grid =
+        [
+          [
+            { label = "/"; msg = "search field" };
+            { label = "f"; msg = "file path filter field" };
+          ];
+          [
+            { label = "Esc"; msg = "cancel" };
+          ];
           empty_row;
         ]
       in
@@ -428,6 +450,18 @@ module Bottom_pane = struct
         ({ input_mode = Search; init_ui_mode = Ui_single_file },
          search_grid
         );
+        ({ input_mode = Filter; init_ui_mode = Ui_multi_file },
+         filter_grid
+        );
+        ({ input_mode = Filter; init_ui_mode = Ui_single_file },
+         filter_grid
+        );
+        ({ input_mode = Clear; init_ui_mode = Ui_multi_file },
+         clear_grid
+        );
+        ({ input_mode = Clear; init_ui_mode = Ui_single_file },
+         clear_grid
+        );
         ({ input_mode = Discard; init_ui_mode = Ui_multi_file },
          discard_grid
         );
@@ -472,7 +506,7 @@ module Bottom_pane = struct
       [
         status_bar ~document_info_s ~input_mode;
         Key_binding_info.main ~input_mode;
-        file_path_filter_bar;
+        file_path_filter_bar ~input_mode;
         search_bar ~input_mode;
       ]
 end
@@ -614,15 +648,18 @@ let keyboard_handler
             (document_count - 1);
           `Handled
         )
+      | (`ASCII 'f', []) -> (
+          Nottui.Focus.request Vars.file_path_filter_field_focus_handle;
+          Ui_base.set_input_mode Filter;
+          `Handled
+        )
       | (`ASCII '/', []) -> (
           Nottui.Focus.request Vars.search_field_focus_handle;
           Ui_base.set_input_mode Search;
           `Handled
         )
       | (`ASCII 'x', []) -> (
-          Ui_base.Key_binding_info.blink "x";
-          Lwd.set Vars.search_field Ui_base.empty_text_field;
-          update_search_phrase ();
+          Ui_base.set_input_mode Clear;
           `Handled
         )
       | (`Enter, []) -> (
@@ -642,32 +679,54 @@ let keyboard_handler
         )
       | _ -> `Handled
     )
+  | Clear -> (
+      let exit =
+        match key with
+        | (`Escape, [])
+        | (`ASCII 'Q', [`Ctrl])
+        | (`ASCII 'C', [`Ctrl]) -> true
+        | (`ASCII '/', []) -> (
+            Lwd.set Vars.search_field Ui_base.empty_text_field;
+            update_search_phrase ();
+            true
+          )
+        | (`ASCII 'f', []) -> (
+            Lwd.set Vars.file_path_filter_field Ui_base.empty_text_field;
+            update_file_path_filter ();
+            true
+          )
+        | _ -> false
+      in
+      if exit then (
+        Ui_base.set_input_mode Navigate;
+      );
+      `Handled
+    )
   | Discard -> (
       let exit =
-        (match key with
-         | (`Escape, [])
-         | (`ASCII 'Q', [`Ctrl])
-         | (`ASCII 'C', [`Ctrl]) -> true
-         | (`ASCII 'h', []) -> (
-             Ui_base.Key_binding_info.incr_rotation ();
-             false
-           )
-         | (`ASCII 'd', []) -> (
-             Option.iter (fun (doc, _search_results) ->
-                 drop ~document_count (`Single (Document.path doc))
-               ) document_info;
-             true
-           )
-         | (`ASCII 'u', []) -> (
-             drop ~document_count `Unlisted;
-             true
-           )
-         | (`ASCII 'l', []) -> (
-             drop ~document_count `Listed;
-             true
-           )
-         | _ -> false
-        );
+        match key with
+        | (`Escape, [])
+        | (`ASCII 'Q', [`Ctrl])
+        | (`ASCII 'C', [`Ctrl]) -> true
+        | (`ASCII 'h', []) -> (
+            Ui_base.Key_binding_info.incr_rotation ();
+            false
+          )
+        | (`ASCII 'd', []) -> (
+            Option.iter (fun (doc, _search_results) ->
+                drop ~document_count (`Single (Document.path doc))
+              ) document_info;
+            true
+          )
+        | (`ASCII 'u', []) -> (
+            drop ~document_count `Unlisted;
+            true
+          )
+        | (`ASCII 'l', []) -> (
+            drop ~document_count `Listed;
+            true
+          )
+        | _ -> false
       in
       if exit then (
         Ui_base.set_input_mode Navigate;
