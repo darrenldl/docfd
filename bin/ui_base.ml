@@ -4,6 +4,7 @@ open Lwd_infix
 type input_mode =
   | Navigate
   | Search
+  | Filter
   | Discard
   | Print
   | Reload
@@ -240,6 +241,7 @@ module Status_bar = struct
     let l =
       [ (Navigate, "NAVIGATE")
       ; (Search, "SEARCH")
+      ; (Filter, "FILTER")
       ; (Discard, "DISCARD")
       ; (Print, "PRINT")
       ; (Reload, "RELOAD")
@@ -423,6 +425,28 @@ module Key_binding_info = struct
     List.assoc { input_mode; init_ui_mode = !Vars.init_ui_mode } grid_lookup
 end
 
+module File_path_filter_bar = struct
+  let main
+      ~(edit_field : (string * int) Lwd.var)
+      ~focus_handle
+      ~f
+    : Nottui.ui Lwd.t =
+    Nottui_widgets.hbox
+      [
+        Lwd.return (Nottui.Ui.atom (Notty.I.strf "File path filter: "));
+        Nottui_widgets.edit_field (Lwd.get edit_field)
+          ~focus:focus_handle
+          ~on_change:(fun (text, x) ->
+              Lwd.set edit_field (text, x);
+              f ();
+            )
+          ~on_submit:(fun _ ->
+              Nottui.Focus.release focus_handle;
+              Lwd.set Vars.input_mode Navigate
+            );
+      ]
+end
+
 module Search_bar = struct
   let search_label ~(input_mode : input_mode) =
     let attr =
@@ -430,7 +454,7 @@ module Search_bar = struct
       | Search -> Notty.A.(st bold)
       | _ -> Notty.A.empty
     in
-    (Notty.I.string attr "Search")
+    (Notty.I.string attr "Search      ")
     |> Nottui.Ui.atom
     |> Lwd.return
 

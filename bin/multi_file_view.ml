@@ -6,6 +6,10 @@ module Vars = struct
 
   let index_of_search_result_selected = Lwd.var 0
 
+  let file_path_filter_field = Lwd.var Ui_base.empty_text_field
+
+  let file_path_filter_field_focus_handle = Nottui.Focus.make ()
+
   let search_field = Lwd.var Ui_base.empty_text_field
 
   let search_field_focus_handle = Nottui.Focus.make ()
@@ -84,6 +88,17 @@ let drop ~document_count (choice : [`Single of string | `Listed | `Unlisted]) =
   Document_store_manager.submit_update_req
     (Document_store.drop choice document_store)
     Ui_base.Vars.document_store
+
+let update_file_path_filter () =
+  reset_document_selected ();
+  let s = fst @@ Lwd.peek Vars.file_path_filter_field in
+  Stack.clear Vars.document_store_redo;
+  let store = Lwd.peek Ui_base.Vars.document_store
+    |> Document_store.update_file_path_filter s
+  in
+  Document_store_manager.submit_update_req
+  store
+  Ui_base.Vars.document_store
 
 let update_search_phrase () =
   reset_document_selected ();
@@ -439,6 +454,12 @@ module Bottom_pane = struct
       Ui_base.Key_binding_info.main ~grid_lookup ~input_mode
   end
 
+  let file_path_filter_bar =
+    Ui_base.File_path_filter_bar.main
+      ~edit_field:Vars.file_path_filter_field
+      ~focus_handle:Vars.file_path_filter_field_focus_handle
+      ~f:update_file_path_filter
+
   let search_bar ~input_mode =
     Ui_base.Search_bar.main ~input_mode
       ~edit_field:Vars.search_field
@@ -451,6 +472,7 @@ module Bottom_pane = struct
       [
         status_bar ~document_info_s ~input_mode;
         Key_binding_info.main ~input_mode;
+        file_path_filter_bar;
         search_bar ~input_mode;
       ]
 end

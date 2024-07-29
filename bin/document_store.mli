@@ -10,6 +10,8 @@ val size : t -> int
 
 val empty : t
 
+val update_file_path_filter : string -> t -> t
+
 val update_search_exp :
   Task_pool.t ->
   Stop_signal.t ->

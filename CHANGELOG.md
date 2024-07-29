@@ -1,6 +1,6 @@
 # Changelog
 
-## 7.2.0
+## 8.0.0
 
 - Removed `--markdown-headings atx` from pandoc commandline
   arguments
@@ -11,7 +11,11 @@
 
 - Added documentation for undo redo key bindings
 
-- Added file filtering field to multi file view
+- Added clear mode and moved clear search field key binding
+  under this mode
+
+- Added file filtering mode to multi-file view with clear
+  file filter key binding
 
 ## 7.1.0
 
