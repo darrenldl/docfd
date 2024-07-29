@@ -127,9 +127,16 @@ let add_document pool (doc : Document.t) (t : t) : t =
     | `Single_line -> true
     | `Multiline -> false
   in
+  let path = Document.path doc in
+  let documents_passing_filter =
+    if Re.execp t.file_path_filter_re path then
+      String_set.add path t.documents_passing_filter
+    else
+      t.documents_passing_filter
+  in
   let search_results =
     String_map.add
-      (Document.path doc)
+      path
       (Index.search pool (Stop_signal.make ()) ~within_same_line t.search_exp (Document.index doc))
       t.search_results
   in
@@ -139,6 +146,7 @@ let add_document pool (doc : Document.t) (t : t) : t =
         (Document.path doc)
         doc
         t.all_documents;
+    documents_passing_filter;
     search_results;
   }
 
