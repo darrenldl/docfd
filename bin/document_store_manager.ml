@@ -83,23 +83,18 @@ let search_fiber pool =
     Eio.Stream.add stop_signal_swap_completed ();
     match req with
     | Filter (s, document_store, document_store_var) -> (
-        let file_path_filter_glob =
+        let s =
           if String.length s = 0 then (
             s
           ) else (
-            if s.[0] = '/' then
-              s
-            else
-              Filename.concat (Sys.getcwd ()) s
+            Misc_utils.normalize_glob_to_absolute s
           )
         in
-        match Misc_utils.compile_glob_re file_path_filter_glob with
+        match Misc_utils.compile_glob_re s with
         | Some re -> (
             let document_store =
               document_store
-              |> Document_store.update_file_path_filter_glob
-                file_path_filter_glob
-                re
+              |> Document_store.update_file_path_filter_glob s re
             in
             Eio.Stream.add egress_mailbox (Filtering_done (document_store, document_store_var))
           )

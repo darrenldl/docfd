@@ -42,6 +42,50 @@ let compile_glob_re s =
   with
   | _ -> None
 
+let cwd_path_parts () =
+  Sys.getcwd ()
+  |> CCString.split ~by:Filename.dir_sep
+  |> List.rev
+
+let path_of_parts parts =
+  match List.rev parts with
+  | [ "" ] -> Filename.dir_sep
+  | [ x ] -> x
+  | l -> String.concat Filename.dir_sep l
+
+let normalize_glob_to_absolute glob =
+  let rec aux acc parts =
+    match parts with
+    | [] -> path_of_parts acc
+    | x :: xs -> (
+        match x with
+        | "" | "." -> aux acc xs
+        | ".." -> (
+            let acc =
+              match acc with
+              | [] -> []
+              | _ :: xs -> xs
+            in
+            aux acc xs
+          )
+        | "**" -> (
+            aux (List.rev parts @ acc) []
+          )
+        | _ -> (
+            aux (x :: acc) xs
+          )
+      )
+  in
+  let glob_parts = CCString.split ~by:Filename.dir_sep glob in
+  match glob_parts with
+  | "" :: l -> (
+      (* Absolute path on Unix-like systems *)
+      aux [ "" ] l
+    )
+  | _ -> (
+      aux (cwd_path_parts ()) glob_parts
+    )
+
 let compute_total_recognized_exts ~exts ~additional_exts =
   let split_on_comma = String.split_on_char ',' in
   ((split_on_comma exts)

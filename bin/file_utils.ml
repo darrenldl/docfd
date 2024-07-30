@@ -50,18 +50,7 @@ let typ_of_path (path : string) : (typ * is_link) option =
   with
   | _ -> None
 
-let path_of_parts parts =
-  match List.rev parts with
-  | [ "" ] -> Filename.dir_sep
-  | [ x ] -> x
-  | l -> String.concat Filename.dir_sep l
-
 let cwd_with_trailing_sep () = Sys.getcwd () ^ Filename.dir_sep
-
-let cwd_path_parts () =
-  Sys.getcwd ()
-  |> CCString.split ~by:Filename.dir_sep
-  |> List.rev
 
 let remove_cwd_from_path (s : string) =
   let pre = cwd_with_trailing_sep () in
