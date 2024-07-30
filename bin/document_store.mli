@@ -10,7 +10,7 @@ val size : t -> int
 
 val empty : t
 
-val update_file_path_filter_glob : string -> t -> t
+val update_file_path_filter_glob : string -> Re.re -> t -> t
 
 val update_search_exp :
   Task_pool.t ->

@@ -7,7 +7,7 @@ type document_info = Document.t * Search_result.t array
 type t = {
   all_documents : Document.t String_map.t;
   file_path_filter_glob : string;
-  file_path_filter_re : Re.re option;
+  file_path_filter_re : Re.re;
   documents_passing_filter : String_set.t;
   search_exp : Search_exp.t;
   search_exp_text : string;
@@ -21,7 +21,7 @@ let empty : t =
   {
     all_documents = String_map.empty;
     file_path_filter_glob = "";
-    file_path_filter_re = None;
+    file_path_filter_re = Option.get (Misc_utils.compile_glob_re "");
     documents_passing_filter = String_set.empty;
     search_exp = Search_exp.empty;
     search_exp_text = "";
@@ -63,32 +63,23 @@ let min_binding (t : t) =
       Some (path, (doc, search_results))
     )
 
-let update_file_path_filter_glob file_path_filter_glob (t : t) : t =
-  let documents_passing_filter, file_path_filter_re =
-    if String.length file_path_filter_glob = 0 then (
-      (t.all_documents
-       |> String_map.to_seq
-       |> Seq.map fst
-       |> String_set.of_seq,
-       None)
-    ) else (
-      let s =
-        if file_path_filter_glob.[0] = '/' then
-          file_path_filter_glob
-        else
-          Filename.concat (Sys.getcwd ()) file_path_filter_glob
-      in
-      match Misc_utils.compile_glob_re s with
-      | Some re -> (
-          (t.all_documents
-           |> String_map.to_seq
-           |> Seq.map fst
-           |> Seq.filter (Re.execp re)
-           |> String_set.of_seq,
-           Some re)
+let update_file_path_filter_glob
+    file_path_filter_glob
+    file_path_filter_re
+    (t : t)
+  : t =
+  let documents_passing_filter =
+    t.all_documents
+    |> String_map.to_seq
+    |> Seq.map fst
+    |> (fun s ->
+        if String.length file_path_filter_glob = 0 then (
+          s
+        ) else (
+          Seq.filter (Re.execp file_path_filter_re) s
         )
-      | None -> (String_set.empty, None)
-    )
+      )
+    |> String_set.of_seq
   in
   { t with
     file_path_filter_glob;
@@ -129,16 +120,10 @@ let add_document pool (doc : Document.t) (t : t) : t =
   in
   let path = Document.path doc in
   let documents_passing_filter =
-    let add = String_set.add path in
-    match t.file_path_filter_re with
-    | None ->
-      add t.documents_passing_filter
-    | Some re -> (
-        if Re.execp re path then
-          add t.documents_passing_filter
-        else
-          t.documents_passing_filter
-      )
+    if Re.execp t.file_path_filter_re path then
+      String_set.add path t.documents_passing_filter
+    else
+      t.documents_passing_filter
   in
   let search_results =
     String_map.add

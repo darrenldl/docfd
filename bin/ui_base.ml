@@ -427,14 +427,47 @@ module Key_binding_info = struct
     List.assoc { input_mode; init_ui_mode = !Vars.init_ui_mode } grid_lookup
 end
 
+let file_path_filter_bar_label_string = "File path filter" 
+
+let search_bar_label_string = "Search" 
+
+let max_label_length =
+  List.fold_left (fun acc s ->
+      max acc (String.length s)
+    )
+    0
+    [ file_path_filter_bar_label_string
+    ; search_bar_label_string
+    ]
+
+let pad_label_string s =
+  CCString.pad ~side:`Right ~c:' ' max_label_length s
+
 module File_path_filter_bar = struct
+  let label_string = pad_label_string file_path_filter_bar_label_string
+
   let label ~(input_mode : input_mode) =
     let attr =
       match input_mode with
       | Filter -> Notty.A.(st bold)
       | _ -> Notty.A.empty
     in
-    (Notty.I.string attr "File path filter")
+    Notty.I.string attr label_string
+    |> Nottui.Ui.atom
+    |> Lwd.return
+
+  let status =
+    let$* status = Lwd.get Document_store_manager.filter_ui_status in
+    (match status with
+     | `Ok -> (
+         Notty.I.string Notty.A.(fg lightgreen)
+           "  OK"
+       )
+     | `Parse_error -> (
+         Notty.I.string Notty.A.(fg lightred)
+           " ERR"
+       )
+    )
     |> Nottui.Ui.atom
     |> Lwd.return
 
@@ -447,6 +480,7 @@ module File_path_filter_bar = struct
     Nottui_widgets.hbox
       [
         label ~input_mode;
+        status;
         Lwd.return (Nottui.Ui.atom (Notty.I.strf ": "));
         Nottui_widgets.edit_field (Lwd.get edit_field)
           ~focus:focus_handle
@@ -462,17 +496,19 @@ module File_path_filter_bar = struct
 end
 
 module Search_bar = struct
+  let label_string = pad_label_string search_bar_label_string
+
   let label ~(input_mode : input_mode) =
     let attr =
       match input_mode with
       | Search -> Notty.A.(st bold)
       | _ -> Notty.A.empty
     in
-    (Notty.I.string attr "Search      ")
+    Notty.I.string attr label_string
     |> Nottui.Ui.atom
     |> Lwd.return
 
-  let search_status =
+  let status =
     let$* status = Lwd.get Document_store_manager.search_ui_status in
     (match status with
      | `Idle -> (
@@ -500,7 +536,7 @@ module Search_bar = struct
     Nottui_widgets.hbox
       [
         label ~input_mode;
-        search_status;
+        status;
         Lwd.return (Nottui.Ui.atom (Notty.I.strf ": "));
         Nottui_widgets.edit_field (Lwd.get edit_field)
           ~focus:focus_handle
