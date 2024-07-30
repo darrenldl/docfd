@@ -14,7 +14,7 @@
 - Added clear mode and moved clear search field key binding
   under this mode
 
-- Added file filtering mode to multi-file view
+- Added file path filtering functionality to multi-file view
 
 ## 7.1.0
 
