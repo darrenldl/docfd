@@ -317,8 +317,6 @@ Search results are then ranked using a heuristic.
 Navigation mode
 - Switch to search mode
     - `/`
-- Clear search field
-    - `x`
 - Exit Docfd
     - `Esc`, `Ctrl+C` or `Ctrl+Q`
 - Enter print mode to print items to stderr
@@ -395,7 +393,7 @@ Navigation mode
 
 Clear mode
 - Clear search field
-    - `x`
+    - `/`
 - Clear file path filter field
     - `f`
 
@@ -473,6 +471,8 @@ Navigation mode
         - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
 - Switch to multi-file view
     - `Tab`
+- Clear search field
+    - `x`
 
 Print mode
 - Print currently selected search result

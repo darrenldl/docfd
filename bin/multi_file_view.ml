@@ -379,7 +379,7 @@ module Bottom_pane = struct
       let clear_grid =
         [
           [
-            { label = "x"; msg = "search field" };
+            { label = "/"; msg = "search field" };
             { label = "f"; msg = "file path filter field" };
           ];
           [
@@ -680,7 +680,7 @@ let keyboard_handler
         | (`Escape, [])
         | (`ASCII 'Q', [`Ctrl])
         | (`ASCII 'C', [`Ctrl]) -> true
-        | (`ASCII 'x', []) -> (
+        | (`ASCII '/', []) -> (
             Lwd.set Vars.search_field Ui_base.empty_text_field;
             update_search_phrase ();
             true
