@@ -631,10 +631,13 @@ let run
         | Ui_base.Recompute_document_src -> (
             let document_src = compute_document_src () in
             let old_document_store = Lwd.peek Ui_base.Vars.document_store in
+            let file_path_filter_glob = Document_store.file_path_filter_glob old_document_store in
+            let file_path_filter_re = Document_store.file_path_filter_re old_document_store in
             let search_exp_text = Document_store.search_exp_text old_document_store in
             let search_exp = Document_store.search_exp old_document_store in
             let document_store =
               document_store_of_document_src ~env pool document_src
+              |> Document_store.update_file_path_filter_glob file_path_filter_glob file_path_filter_re
               |> Document_store.update_search_exp pool (Stop_signal.make ()) search_exp_text search_exp
             in
             Document_store_manager.submit_update_req document_store Ui_base.Vars.document_store;

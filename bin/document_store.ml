@@ -28,6 +28,10 @@ let empty : t =
     search_results = String_map.empty;
   }
 
+let file_path_filter_glob (t : t) = t.file_path_filter_glob
+
+let file_path_filter_re (t : t) = t.file_path_filter_re
+
 let search_exp (t : t) = t.search_exp
 
 let search_exp_text (t : t) = t.search_exp_text
