@@ -44,7 +44,8 @@ tests :
 	# invoking cram tests, even if the source code has changed.
 	make clean
 	make
-	OCAMLRUNPARAM=b dune exec tests/main.exe --no-buffer --force
+	OCAMLRUNPARAM=b dune exec lib-tests/main.exe --no-buffer --force
+	OCAMLRUNPARAM=b dune exec bin-tests/main.exe --no-buffer --force
 	dune build @file-collection-tests
 	dune build @line-wrapping-tests
 	dune build @misc-behavior-tests

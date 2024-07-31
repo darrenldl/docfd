@@ -1,0 +1,47 @@
+(rule
+  (targets string_map.ml)
+  (deps ../lib/string_map.ml)
+  (action (copy %{deps} %{targets}))
+  )
+
+(rule
+  (targets char_map.ml)
+  (deps ../lib/char_map.ml)
+  (action (copy %{deps} %{targets}))
+  )
+
+(rule
+  (targets string_set.ml)
+  (deps ../lib/string_set.ml)
+  (action (copy %{deps} %{targets}))
+  )
+
+(rule
+  (targets lib_misc_utils.ml)
+  (deps ../lib/misc_utils.ml)
+  (action (copy %{deps} %{targets}))
+  )
+
+(rule
+  (copy ../bin/string_utils.ml string_utils.ml))
+
+(rule
+  (copy ../bin/misc_utils.ml misc_utils.ml))
+
+(rule
+  (copy ../bin/file_utils.ml file_utils.ml))
+
+(rule
+  (copy ../bin/params.ml params.ml))
+
+(executable
+ (flags     (-w "+a-4-9-29-37-40-42-44-48-50-70@8" -g))
+ (name main)
+ (libraries qcheck-core
+            qcheck-alcotest
+            alcotest
+            docfd_lib
+            eio
+            eio_main
+            )
+ )
