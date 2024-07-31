@@ -8,6 +8,10 @@ module Alco = struct
         expected
         (Misc_utils'.normalize_path_to_absolute input)
     in
+    let cwd = Sys.getcwd () in
+    let test' expected input =
+      test (if expected = "" then cwd else Filename.concat cwd expected) input
+    in
     test "/" "/..";
     test "/" "/..";
     test "/" "/abcd/..";
@@ -18,7 +22,11 @@ module Alco = struct
     test "/abc/def" "/abc//def";
     test "/abc/def" "/abc/./def";
     test "/abc/def" "/abc/.///def/.";
-    test "/def" "/abc/.//../def/."
+    test "/def" "/abc/.//../def/.";
+    test' "" "abc/..";
+    test' "def" "abc/../def";
+    test' "abc/def" "abc////.//./././/def";
+    ()
 
   let normalize_glob_to_absolute_corpus () =
     let test expected input =
@@ -26,6 +34,10 @@ module Alco = struct
         (Printf.sprintf "%s becomes %s" input expected)
         expected
         (Misc_utils'.normalize_glob_to_absolute input)
+    in
+    let cwd = Sys.getcwd () in
+    let test' expected input =
+      test (if expected = "" then cwd else Filename.concat cwd expected) input
     in
     test "/" "/..";
     test "/" "/..";
@@ -42,7 +54,14 @@ module Alco = struct
     test "/abc/def" "/abc//def";
     test "/abc/def" "/abc/./def";
     test "/abc/def" "/abc/.///def/.";
-    test "/def" "/abc/.//../def/."
+    test "/def" "/abc/.//../def/.";
+    test' "" "abc/..";
+    test' "def" "abc/../def";
+    test' "abc/def" "abc////.//./././/def";
+    test' "abc/**/../def" "abc/**/../def";
+    test' "abc/**/../def" "abc/*/../**/../def";
+    test' "abc/*/def" "abc/*/*/../def";
+    ()
 
   let suite =
     [
