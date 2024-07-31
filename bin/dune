@@ -28,12 +28,6 @@
   (action (copy %{deps} %{targets}))
   )
 
-(rule
-  (targets lib_misc_utils.ml)
-  (deps ../lib/misc_utils.ml)
-  (action (copy %{deps} %{targets}))
-  )
-
 (executable
  (flags     (-w "+a-4-9-29-37-40-42-44-48-50-32-30-70@8" -g))
  (name docfd)

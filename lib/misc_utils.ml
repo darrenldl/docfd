@@ -99,3 +99,77 @@ let opening_closing_symbol_pairs (l : string list) : (int * int) list =
       l
   in
   pairs
+
+let cwd_path_parts () =
+  Sys.getcwd ()
+  |> CCString.split ~by:Filename.dir_sep
+  |> List.rev
+
+let path_of_parts parts =
+  match List.rev parts with
+  | [] | [ "" ] -> Filename.dir_sep
+  | [ x ] -> x
+  | l -> String.concat Filename.dir_sep l
+
+let normalize_glob_to_absolute glob =
+  let rec aux acc parts =
+    match parts with
+    | [] -> path_of_parts acc
+    | x :: xs -> (
+        match x with
+        | "" | "." -> aux acc xs
+        | ".." -> (
+            let acc =
+              match acc with
+              | [] -> []
+              | _ :: xs -> xs
+            in
+            aux acc xs
+          )
+        | "**" -> (
+            aux (List.rev parts @ acc) []
+          )
+        | _ -> (
+            aux (x :: acc) xs
+          )
+      )
+  in
+  let glob_parts = CCString.split ~by:Filename.dir_sep glob in
+  match glob_parts with
+  | "" :: l -> (
+      (* Absolute path on Unix-like systems *)
+      aux [ "" ] l
+    )
+  | _ -> (
+      aux (cwd_path_parts ()) glob_parts
+    )
+
+let normalize_path_to_absolute path =
+  let rec aux acc path_parts =
+    match path_parts with
+    | [] -> path_of_parts acc
+    | x :: xs -> (
+        match x with
+        | "" | "." -> aux acc xs
+        | ".." -> (
+            let acc =
+              match acc with
+              | [] -> []
+              | _ :: xs -> xs
+            in
+            aux acc xs
+          )
+        | _ -> (
+            aux (x :: acc) xs
+          )
+      )
+  in
+  let path_parts = CCString.split ~by:Filename.dir_sep path in
+  match path_parts with
+  | "" :: l -> (
+      (* Absolute path on Unix-like systems *)
+      aux [ "" ] l
+    )
+  | _ -> (
+      aux (cwd_path_parts ()) path_parts
+    )

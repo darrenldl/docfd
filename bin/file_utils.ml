@@ -58,36 +58,6 @@ let remove_cwd_from_path (s : string) =
   | None -> s
   | Some s -> s
 
-let normalize_path_to_absolute path =
-  let rec aux acc path_parts =
-    match path_parts with
-    | [] -> path_of_parts acc
-    | x :: xs -> (
-        match x with
-        | "" | "." -> aux acc xs
-        | ".." -> (
-            let acc =
-              match acc with
-              | [] -> []
-              | _ :: xs -> xs
-            in
-            aux acc xs
-          )
-        | _ -> (
-            aux (x :: acc) xs
-          )
-      )
-  in
-  let path_parts = CCString.split ~by:Filename.dir_sep path in
-  match path_parts with
-  | "" :: l -> (
-      (* Absolute path on Unix-like systems *)
-      aux [ "" ] l
-    )
-  | _ -> (
-      aux (cwd_path_parts ()) path_parts
-    )
-
 let read_in_channel_to_tmp_file (ic : in_channel) : (string, string) result =
   let file = Filename.temp_file "docfd-" ".txt" in
   try

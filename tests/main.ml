@@ -8,6 +8,7 @@ let () =
             [
               ("Search_exp_tests.Alco", Search_exp_tests.Alco.suite);
               ("Index_tests.Alco", Index_tests.Alco.suite task_pool);
+              ("Utils_tests.Alco", Utils_tests.Alco.suite);
             ]
           in
           let qc_suites =
