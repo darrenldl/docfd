@@ -338,7 +338,16 @@ The default TUI is divided into four sections:
 - Bottom pane consists of:
     - Status bar
     - Key binding info
+    - File path filter bar
     - Search bar
+
+File path filter bar consists of the file path filter status indicator and the
+file path filter field.
+The file path filter status indicator shows one of the following values:
+- `OK`
+    - File path filter glob was applied successfully
+- `ERR`
+    - Docfd failed to parse the glob in the field
 
 Search bar consists of the search status indicator and the search field.
 The search status indicator shows one of the following values:
@@ -347,7 +356,7 @@ The search status indicator shows one of the following values:
 - `...`
     - Docfd is still searching
 - `ERR`
-    - Docfd failed to parse the search expression in the search field
+    - Docfd failed to parse the search expression in the field
 
 #### Controls
 
