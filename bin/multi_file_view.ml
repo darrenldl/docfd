@@ -535,7 +535,6 @@ let keyboard_handler
   | Navigate -> (
       match key with
       | (`Escape, [])
-      | (`ASCII 'Q', [`Ctrl])
       | (`ASCII 'C', [`Ctrl]) -> (
           Lwd.set Ui_base.Vars.quit true;
           Ui_base.Vars.action := None;
@@ -678,7 +677,6 @@ let keyboard_handler
       let exit =
         match key with
         | (`Escape, [])
-        | (`ASCII 'Q', [`Ctrl])
         | (`ASCII 'C', [`Ctrl]) -> true
         | (`ASCII '/', []) -> (
             Lwd.set Vars.search_field Ui_base.empty_text_field;
@@ -701,7 +699,6 @@ let keyboard_handler
       let exit =
         match key with
         | (`Escape, [])
-        | (`ASCII 'Q', [`Ctrl])
         | (`ASCII 'C', [`Ctrl]) -> true
         | (`ASCII 'h', []) -> (
             Ui_base.Key_binding_info.incr_rotation ();
@@ -738,7 +735,6 @@ let keyboard_handler
       let exit =
         (match key with
          | (`Escape, [])
-         | (`ASCII 'Q', [`Ctrl])
          | (`ASCII 'C', [`Ctrl]) -> true
          | (`ASCII 'h', []) -> (
              Ui_base.Key_binding_info.incr_rotation ();
@@ -820,7 +816,6 @@ let keyboard_handler
       let exit =
         (match key with
          | (`Escape, [])
-         | (`ASCII 'Q', [`Ctrl])
          | (`ASCII 'C', [`Ctrl]) -> true
          | (`ASCII 'h', []) -> (
              Ui_base.Key_binding_info.incr_rotation ();

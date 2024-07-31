@@ -103,9 +103,7 @@ let search_fiber pool =
           )
       )
     | Search (s, document_store, document_store_var) -> (
-        match
-          Search_exp.make s
-        with
+        match Search_exp.make s with
         | None -> (
             Eio.Stream.add egress_mailbox Search_exp_parse_error
           )

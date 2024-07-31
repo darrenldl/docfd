@@ -318,7 +318,8 @@ Navigation mode
 - Switch to search mode
     - `/`
 - Exit Docfd
-    - `Esc`, `Ctrl+C` or `Ctrl+Q`
+    - `Esc`
+    - `Ctrl`+`C`
 - Enter print mode to print items to stderr
     - `p`
 
@@ -405,7 +406,8 @@ Discard mode
 - Discard all listed documents
     - `l`
 - Cancel/exit discard mode
-    - `Esc`, `Ctrl+C` or `Ctrl+Q`
+    - `Esc`
+    - `Ctrl`+`C`
 
 Print mode
 - Print currently selected search result
@@ -415,17 +417,18 @@ Print mode
 - All results of selected document
     - `a`
 - Path of selected document
-    - `Shift+P`
+    - `Shift`+`P`
 - Paths of listed documents
     - `l`
 - Paths of unlisted documents
     - `u`
 - Samples of all documents
-    - `Shift+S`
+    - `Shift`+`S`
 - All results of all documents
-    - `Shift+A`
+    - `Shift`+`A`
 - Cancel/exit print mode
-    - `Esc`, `Ctrl+C` or `Ctrl+Q`
+    - `Esc`
+    - `Ctrl`+`C`
 
 </details>
 
@@ -482,9 +485,10 @@ Print mode
 - All results
     - `a`
 - Path
-    - `Shift+P`
+    - `Shift`+`P`
 - Cancel/exit print mode
-    - `Esc`, `Ctrl+C` or `Ctrl+Q`
+    - `Esc`
+    - `Ctrl+C`
 
 </details>
 
