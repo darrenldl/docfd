@@ -67,7 +67,42 @@ let min_binding (t : t) =
       Some (path, (doc, search_results))
     )
 
+let refresh_search_results pool stop_signal (t : t) : t =
+  let updates =
+    t.documents_passing_filter
+    |> String_set.to_list
+    |> Eio.Fiber.List.map ~max_fibers:Task_pool.size
+      (fun path ->
+         match String_map.find_opt path t.search_results with
+         | None -> (
+             let doc = String_map.find path t.all_documents in
+             let within_same_line =
+               match Document.search_mode doc with
+               | `Single_line -> true
+               | `Multiline -> false
+             in
+             (path,
+              Index.search
+                pool
+                stop_signal
+                ~within_same_line
+                t.search_exp
+                (Document.index doc))
+           )
+         | Some arr -> (path, arr)
+      )
+    |> String_map.of_list
+  in
+  let search_results =
+    String_map.union (fun _k v1 _v2 -> Some v1)
+      updates
+      t.search_results
+  in
+  { t with search_results }
+
 let update_file_path_filter_glob
+    pool
+    stop_signal
     file_path_filter_glob
     file_path_filter_re
     (t : t)
@@ -90,30 +125,18 @@ let update_file_path_filter_glob
     file_path_filter_re;
     documents_passing_filter;
   }
+  |> refresh_search_results pool stop_signal
 
 let update_search_exp pool stop_signal search_exp_text search_exp (t : t) : t =
   if Search_exp.equal search_exp t.search_exp then (
     t
   ) else (
-    let search_results =
-      t.all_documents
-      |> String_map.to_list
-      |> Eio.Fiber.List.map ~max_fibers:Task_pool.size
-        (fun (path, doc) ->
-           let within_same_line =
-             match Document.search_mode doc with
-             | `Single_line -> true
-             | `Multiline -> false
-           in
-           (path, Index.search pool stop_signal ~within_same_line search_exp (Document.index doc))
-        )
-      |> String_map.of_list
-    in
     { t with
       search_exp;
       search_exp_text;
-      search_results;
+      search_results = String_map.empty;
     }
+    |> refresh_search_results pool stop_signal
   )
 
 let add_document pool (doc : Document.t) (t : t) : t =
@@ -124,7 +147,9 @@ let add_document pool (doc : Document.t) (t : t) : t =
   in
   let path = Document.path doc in
   let documents_passing_filter =
-    if Re.execp t.file_path_filter_re path then
+    if String.length t.file_path_filter_glob = 0
+    || Re.execp t.file_path_filter_re path
+    then
       String_set.add path t.documents_passing_filter
     else
       t.documents_passing_filter
@@ -153,19 +178,12 @@ let of_seq pool (s : Document.t Seq.t) =
     s
 
 let usable_documents (t : t) : (Document.t * Search_result.t array) array =
-  let no_file_path_filter = String.length t.file_path_filter_glob = 0 in
   let no_search_exp = Search_exp.is_empty t.search_exp in
   let arr =
-    t.all_documents
-    |> String_map.to_seq
-    |> (fun s ->
-        if no_file_path_filter then (
-          s
-        ) else (
-          Seq.filter (fun (path, _doc) ->
-              String_set.mem path t.documents_passing_filter
-            ) s
-        )
+    t.documents_passing_filter
+    |> String_set.to_seq
+    |> Seq.map (fun path ->
+        (path, String_map.find path t.all_documents)
       )
     |> (fun s ->
         if no_search_exp then (
