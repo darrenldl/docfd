@@ -6,8 +6,7 @@ type document_info = Document.t * Search_result.t array
 
 type t = {
   all_documents : Document.t String_map.t;
-  file_path_filter_glob : string;
-  file_path_filter_re : Re.re;
+  file_path_filter_glob : Glob.t;
   documents_passing_filter : String_set.t;
   search_exp : Search_exp.t;
   search_exp_text : string;
@@ -20,8 +19,7 @@ let size (t : t) =
 let empty : t =
   {
     all_documents = String_map.empty;
-    file_path_filter_glob = "";
-    file_path_filter_re = Option.get (Misc_utils.compile_glob_re "");
+    file_path_filter_glob = Option.get (Glob.make "");
     documents_passing_filter = String_set.empty;
     search_exp = Search_exp.empty;
     search_exp_text = "";
@@ -29,8 +27,6 @@ let empty : t =
   }
 
 let file_path_filter_glob (t : t) = t.file_path_filter_glob
-
-let file_path_filter_re (t : t) = t.file_path_filter_re
 
 let search_exp (t : t) = t.search_exp
 
@@ -104,7 +100,6 @@ let update_file_path_filter_glob
     pool
     stop_signal
     file_path_filter_glob
-    file_path_filter_re
     (t : t)
   : t =
   let documents_passing_filter =
@@ -112,17 +107,16 @@ let update_file_path_filter_glob
     |> String_map.to_seq
     |> Seq.map fst
     |> (fun s ->
-        if String.length file_path_filter_glob = 0 then (
+        if Glob.is_empty file_path_filter_glob then (
           s
         ) else (
-          Seq.filter (Re.execp file_path_filter_re) s
+          Seq.filter (Glob.match_ file_path_filter_glob) s
         )
       )
     |> String_set.of_seq
   in
   { t with
     file_path_filter_glob;
-    file_path_filter_re;
     documents_passing_filter;
   }
   |> refresh_search_results pool stop_signal
@@ -147,8 +141,7 @@ let add_document pool (doc : Document.t) (t : t) : t =
   in
   let path = Document.path doc in
   let documents_passing_filter =
-    if String.length t.file_path_filter_glob = 0
-    || Re.execp t.file_path_filter_re path
+    if Glob.match_ t.file_path_filter_glob path
     then
       String_set.add path t.documents_passing_filter
     else
@@ -230,7 +223,6 @@ let drop (choice : [ `Single of string | `Usable | `Unusable ]) (t : t) : t =
   | `Single path -> (
       { all_documents = String_map.remove path t.all_documents;
         file_path_filter_glob = t.file_path_filter_glob;
-        file_path_filter_re = t.file_path_filter_re;
         documents_passing_filter = String_set.remove path t.documents_passing_filter;
         search_exp = t.search_exp;
         search_exp_text = t.search_exp_text;
@@ -256,7 +248,6 @@ let drop (choice : [ `Single of string | `Usable | `Unusable ]) (t : t) : t =
       in
       { all_documents = String_map.filter f2 t.all_documents;
         file_path_filter_glob = t.file_path_filter_glob;
-        file_path_filter_re = t.file_path_filter_re;
         documents_passing_filter = String_set.filter f1 t.documents_passing_filter;
         search_exp = t.search_exp;
         search_exp_text = t.search_exp_text;

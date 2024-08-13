@@ -13,8 +13,7 @@ val empty : t
 val update_file_path_filter_glob :
   Task_pool.t ->
   Stop_signal.t ->
-  string ->
-  Re.re ->
+  Glob.t ->
   t ->
   t
 
@@ -26,9 +25,7 @@ val update_search_exp :
   t ->
   t
 
-val file_path_filter_glob : t -> string
-
-val file_path_filter_re : t -> Re.re
+val file_path_filter_glob : t -> Glob.t
 
 val search_exp : t -> Search_exp.t
 

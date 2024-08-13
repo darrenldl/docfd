@@ -90,11 +90,11 @@ let search_fiber pool =
             Misc_utils.normalize_glob_to_absolute s
           )
         in
-        match Misc_utils.compile_glob_re s with
-        | Some re -> (
+        match Glob.make s with
+        | Some glob -> (
             let document_store =
               document_store
-              |> Document_store.update_file_path_filter_glob pool stop_signal' s re
+              |> Document_store.update_file_path_filter_glob pool stop_signal' glob
             in
             Eio.Stream.add egress_mailbox (Filtering_done (document_store, document_store_var))
           )

@@ -112,8 +112,8 @@ let list_files_recursive_filter_by_globs
   let add x =
     acc := String_set.add x !acc
   in
-  let compile_glob_re s =
-    match Misc_utils.compile_glob_re s with
+  let make_glob s =
+    match Glob.make s with
     | None -> (
         failwith (Fmt.str "expected subpath of a valid glob pattern to also be valid: \"%s\"" s)
       )
@@ -141,10 +141,10 @@ let list_files_recursive_filter_by_globs
             do_if_debug (fun oc ->
                 Printf.fprintf oc "Compiling glob regex using pattern: %s\n" re_string
               );
-            let re = compile_glob_re re_string in
+            let glob = make_glob re_string in
             path
             |> list_files_recursive ~filter:(fun _depth path ->
-                Re.execp re path
+                Glob.match_ glob path
               )
             |> String_set.iter (fun path ->
                 do_if_debug (fun oc ->
@@ -154,10 +154,10 @@ let list_files_recursive_filter_by_globs
               )
           )
         | _ -> (
-            let re = compile_glob_re x in
+            let glob = make_glob x in
             next_choices path
             |> Seq.iter (fun f ->
-                if Re.execp re f then (
+                if Glob.match_ glob f then (
                   aux (f :: path_parts) xs
                 )
               )

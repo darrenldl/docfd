@@ -7,7 +7,7 @@ open File_utils
 
 let compute_paths_from_globs globs =
   Seq.iter (fun s ->
-      match compile_glob_re s with
+      match Glob.make s with
       | Some _ -> ()
       | None -> (
           exit_with_error_msg
@@ -632,7 +632,6 @@ let run
             let document_src = compute_document_src () in
             let old_document_store = Lwd.peek Ui_base.Vars.document_store in
             let file_path_filter_glob = Document_store.file_path_filter_glob old_document_store in
-            let file_path_filter_re = Document_store.file_path_filter_re old_document_store in
             let search_exp_text = Document_store.search_exp_text old_document_store in
             let search_exp = Document_store.search_exp old_document_store in
             let document_store =
@@ -641,7 +640,6 @@ let run
                 pool
                 (Stop_signal.make ())
                 file_path_filter_glob
-                file_path_filter_re
               |> Document_store.update_search_exp
                 pool
                 (Stop_signal.make ())

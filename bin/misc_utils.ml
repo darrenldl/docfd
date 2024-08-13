@@ -27,21 +27,6 @@ let stdout_is_atty () =
 let stderr_is_atty () =
   Unix.isatty Unix.stderr
 
-let compile_glob_re s =
-  try
-    s
-    |> Re.Glob.glob
-      ~anchored:true
-      ~pathname:true
-      ~match_backslashes:false
-      ~period:true
-      ~expand_braces:false
-      ~double_asterisk:true
-    |> Re.compile
-    |> Option.some
-  with
-  | _ -> None
-
 let compute_total_recognized_exts ~exts ~additional_exts =
   let split_on_comma = String.split_on_char ',' in
   ((split_on_comma exts)
