@@ -19,7 +19,7 @@ module Parsers = struct
   ]
 
   let parts : part list Angstrom.t =
-    many1 (
+    many (
       (take_while1 (fun c ->
            match c with
            | '\\' -> false
