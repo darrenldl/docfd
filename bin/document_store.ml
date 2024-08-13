@@ -70,26 +70,26 @@ let min_binding (t : t) =
 let refresh_search_results pool stop_signal (t : t) : t =
   let updates =
     t.documents_passing_filter
-    |> String_set.to_list
+    |> String_set.to_seq
+    |> Seq.filter (fun path ->
+        Option.is_none (String_map.find_opt path t.search_results)
+      )
+    |> List.of_seq
     |> Eio.Fiber.List.map ~max_fibers:Task_pool.size
       (fun path ->
-         match String_map.find_opt path t.search_results with
-         | None -> (
-             let doc = String_map.find path t.all_documents in
-             let within_same_line =
-               match Document.search_mode doc with
-               | `Single_line -> true
-               | `Multiline -> false
-             in
-             (path,
-              Index.search
-                pool
-                stop_signal
-                ~within_same_line
-                t.search_exp
-                (Document.index doc))
-           )
-         | Some arr -> (path, arr)
+         let doc = String_map.find path t.all_documents in
+         let within_same_line =
+           match Document.search_mode doc with
+           | `Single_line -> true
+           | `Multiline -> false
+         in
+         (path,
+          Index.search
+            pool
+            stop_signal
+            ~within_same_line
+            t.search_exp
+            (Document.index doc))
       )
     |> String_map.of_list
   in
