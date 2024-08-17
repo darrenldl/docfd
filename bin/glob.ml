@@ -14,7 +14,7 @@ module Parsers = struct
   open Angstrom
 
   type part = [
-    | `Case_insensitivity_marker
+    | `Case_insensitive
     | `String of string
   ]
 
@@ -28,7 +28,7 @@ module Parsers = struct
        >>| fun s -> `String s)
       <|>
       (char '\\' *> any_char >>= fun c ->
-       if c = 'c' then return `Case_insensitivity_marker
+       if c = 'c' then return `Case_insensitive
        else return (`String (Printf.sprintf "%c" c)))
     )
 end
@@ -43,7 +43,7 @@ let make (s : string) : t option =
         |> List.filter_map (fun x ->
             match x with
             | `String s -> Some s
-            | `Case_insensitivity_marker -> (
+            | `Case_insensitive -> (
                 case_insensitive := true;
                 None
               )
