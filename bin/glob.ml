@@ -50,9 +50,11 @@ let make (s : string) : t option =
           )
         |> String.concat ""
       in
+      let case_sensitive = not !case_insensitive in
       try
         let re =
           s
+          |> (fun s -> if case_sensitive then s else String.lowercase_ascii s)
           |> Re.Glob.glob
             ~anchored:true
             ~pathname:true
@@ -64,7 +66,7 @@ let make (s : string) : t option =
         in
         Some
           {
-            case_sensitive = not !case_insensitive;
+            case_sensitive;
             string = s;
             re;
           }
@@ -74,4 +76,4 @@ let make (s : string) : t option =
 
 let match_ t (s : string) =
   is_empty t
-  || Re.execp t.re s
+  || Re.execp t.re (if t.case_sensitive then s else String.lowercase_ascii s)
