@@ -14,7 +14,7 @@
 - Added documentation for undo redo key bindings
 
 - Added clear mode and moved clear search field key binding
-  under this mode
+  under this mode for multi-file view
 
 - Added file path filtering functionality to multi-file view
 
