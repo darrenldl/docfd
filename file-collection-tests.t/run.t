@@ -754,3 +754,8 @@ Case insensitive marker:
   Using multiline search mode for document '$TESTCASE_ROOT/miXeD-CaSe.md'
   $ docfd --debug-log - --index-only --glob 'MixeD-CaSE.mD\c' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/miXeD-CaSe.md'
+
+Double escape characters:
+  $ docfd --debug-log - --index-only --glob '\\cMixeD-CaSE.mD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --index-only --glob 'MixeD\\c-CaSE.mD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --index-only --glob 'MixeD-CaSE.mD\\c' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
