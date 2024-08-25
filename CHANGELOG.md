@@ -11,7 +11,7 @@
 
 - Removed `Ctrl`+`Q` exit key binding
 
-- Added documentation for undo redo key bindings
+- Added documentation for undo, redo key bindings
 
 - Added clear mode and moved clear search field key binding
   under this mode for multi-file view
