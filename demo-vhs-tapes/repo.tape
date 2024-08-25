@@ -9,19 +9,19 @@ Set FontSize 15
 
 Set TypingSpeed 100ms
 
-Type@50ms "docfd --cache-dir .cache *.md # Using a local cache for the demo."
+Type@50ms "docfd *.md"
 Sleep 1s
 Enter
 
 Sleep 1s
 
-Type "j"
-Sleep 1s
-Type "j"
-Sleep 1s
-
 Type "/"
 Type "fuzz search"
+Enter
+Sleep 1s
+
+Type "f"
+Type "read\cme*"
 Enter
 Sleep 1s
 
@@ -31,10 +31,12 @@ Sleep 1s
 Tab
 Sleep 1s
 
-Type "J"
+Type "k"
 Sleep 1s
 
 Enter
+Sleep 1s
+Type "zz"
 Sleep 1s
 Type "O"
 Type@50ms "Docfd opens the editor to where the search result is when we hit Enter."
