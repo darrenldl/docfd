@@ -1,5 +1,10 @@
 # Changelog
 
+## 8.0.1
+
+- Fixed missing file path filter field update when undoing or redoing document
+  store updates
+
 ## 8.0.0
 
 - Removed `--markdown-headings atx` from pandoc commandline

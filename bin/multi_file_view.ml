@@ -62,6 +62,17 @@ let reload_document_selected
     reload_document doc;
   )
 
+let sync_input_fields_from_document_store
+    (x : Document_store.t)
+  =
+  Document_store.file_path_filter_glob x
+  |> Glob.string
+  |> (fun s ->
+      Lwd.set Vars.file_path_filter_field (s, String.length s));
+  Document_store.search_exp_text x
+  |> (fun s ->
+      Lwd.set Vars.search_field (s, String.length s))
+
 let add_to_undo (store : Document_store.t) =
   Stack.push store Vars.document_store_undo;
   Stack.clear Vars.document_store_redo
@@ -564,8 +575,7 @@ let keyboard_handler
                let cur = Lwd.peek Ui_base.Vars.document_store in
                Stack.push cur Vars.document_store_redo;
                Document_store_manager.submit_update_req prev Ui_base.Vars.document_store;
-               let s = Document_store.search_exp_text prev in
-               Lwd.set Vars.search_field (s, String.length s)
+               sync_input_fields_from_document_store prev;
              ));
           `Handled
         )
@@ -577,8 +587,7 @@ let keyboard_handler
                let cur = Lwd.peek Ui_base.Vars.document_store in
                Stack.push cur Vars.document_store_undo;
                Document_store_manager.submit_update_req next Ui_base.Vars.document_store;
-               let s = Document_store.search_exp_text next in
-               Lwd.set Vars.search_field (s, String.length s)
+               sync_input_fields_from_document_store next;
              ));
           `Handled
         )
