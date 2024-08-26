@@ -112,14 +112,14 @@ let list_files_recursive_filter_by_globs
   let add x =
     acc := String_set.add x !acc
   in
-  let make_glob s =
-    match Glob.make s with
+  let make_glob ~case_sensitive s =
+    match Glob.make ~case_sensitive s with
     | None -> (
         failwith (Fmt.str "expected subpath of a valid glob pattern to also be valid: \"%s\"" s)
       )
     | Some x -> x
   in
-  let rec aux (path_parts : string list) (glob_parts : string list) =
+  let rec aux ~case_sensitive (path_parts : string list) (glob_parts : string list) =
     let path = path_of_parts path_parts in
     match typ_of_path path, glob_parts with
     | Some (`File, _), [] -> add path
@@ -127,21 +127,21 @@ let list_files_recursive_filter_by_globs
     | Some (`Dir, _), [] -> ()
     | Some (`Dir, _), x :: xs -> (
         match x with
-        | "" | "." -> aux path_parts xs
+        | "" | "." -> aux ~case_sensitive path_parts xs
         | ".." -> (
             let path_parts =
               match path_parts with
               | [] -> []
               | _ :: xs -> xs
             in
-            aux path_parts xs
+            aux ~case_sensitive path_parts xs
           )
         | "**" -> (
             let re_string = String.concat Filename.dir_sep (path :: glob_parts) in
             do_if_debug (fun oc ->
                 Printf.fprintf oc "Compiling glob regex using pattern: %s\n" re_string
               );
-            let glob = make_glob re_string in
+            let glob = make_glob ~case_sensitive re_string in
             path
             |> list_files_recursive ~filter:(fun _depth path ->
                 Glob.match_ glob path
@@ -154,11 +154,11 @@ let list_files_recursive_filter_by_globs
               )
           )
         | _ -> (
-            let glob = make_glob x in
+            let glob = make_glob ~case_sensitive x in
             next_choices path
             |> Seq.iter (fun f ->
                 if Glob.match_ glob f then (
-                  aux (f :: path_parts) xs
+                  aux ~case_sensitive (f :: path_parts) xs
                 )
               )
           )
@@ -167,14 +167,19 @@ let list_files_recursive_filter_by_globs
     | exception _ -> ()
   in
   Seq.iter (fun glob ->
+      let case_sensitive =
+        Glob.make glob
+        |> Option.get
+        |> Glob.case_sensitive
+      in
       let glob_parts = CCString.split ~by:Filename.dir_sep glob in
       match glob_parts with
       | "" :: l -> (
           (* Absolute path on Unix-like systems *)
-          aux [ "" ] l
+          aux ~case_sensitive [ "" ] l
         )
       | _ -> (
-          aux (cwd_path_parts ()) glob_parts
+          aux ~case_sensitive (cwd_path_parts ()) glob_parts
         )
     ) globs;
   !acc

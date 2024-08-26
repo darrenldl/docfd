@@ -33,7 +33,7 @@ module Parsers = struct
     )
 end
 
-let make (s : string) : t option =
+let make ?case_sensitive (s : string) : t option =
   match Angstrom.(parse_string ~consume:Consume.All) Parsers.parts s with
   | Error _ -> None
   | Ok parts -> (
@@ -50,7 +50,11 @@ let make (s : string) : t option =
           )
         |> String.concat ""
       in
-      let case_sensitive = not !case_insensitive in
+      let case_sensitive =
+        match case_sensitive with
+        | None -> not !case_insensitive
+        | Some x -> x
+      in
       try
         let re =
           s
