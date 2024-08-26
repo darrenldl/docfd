@@ -82,19 +82,23 @@ let search_fiber pool =
     Atomic.set stop_signal stop_signal';
     Eio.Stream.add stop_signal_swap_completed ();
     match req with
-    | Filter (s, document_store, document_store_var) -> (
+    | Filter (original_string, document_store, document_store_var) -> (
         let s =
-          if String.length s = 0 then (
-            s
+          if String.length original_string = 0 then (
+            original_string
           ) else (
-            Misc_utils.normalize_glob_to_absolute s
+            Misc_utils.normalize_glob_to_absolute original_string
           )
         in
         match Glob.make s with
         | Some glob -> (
             let document_store =
               document_store
-              |> Document_store.update_file_path_filter_glob pool stop_signal' s glob
+              |> Document_store.update_file_path_filter_glob
+                pool
+                stop_signal'
+                original_string
+                glob
             in
             Eio.Stream.add egress_mailbox (Filtering_done (document_store, document_store_var))
           )
