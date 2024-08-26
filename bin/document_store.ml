@@ -103,6 +103,7 @@ let refresh_search_results pool stop_signal (t : t) : t =
 let update_file_path_filter_glob
     pool
     stop_signal
+    file_path_filter_glob_string
     file_path_filter_glob
     (t : t)
   : t =
@@ -121,6 +122,7 @@ let update_file_path_filter_glob
   in
   { t with
     file_path_filter_glob;
+    file_path_filter_glob_string;
     documents_passing_filter;
   }
   |> refresh_search_results pool stop_signal
