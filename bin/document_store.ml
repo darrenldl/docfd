@@ -7,6 +7,7 @@ type document_info = Document.t * Search_result.t array
 type t = {
   all_documents : Document.t String_map.t;
   file_path_filter_glob : Glob.t;
+  file_path_filter_glob_string : string;
   documents_passing_filter : String_set.t;
   search_exp : Search_exp.t;
   search_exp_string : string;
@@ -20,6 +21,7 @@ let empty : t =
   {
     all_documents = String_map.empty;
     file_path_filter_glob = Option.get (Glob.make "");
+    file_path_filter_glob_string = "";
     documents_passing_filter = String_set.empty;
     search_exp = Search_exp.empty;
     search_exp_string = "";
@@ -27,6 +29,8 @@ let empty : t =
   }
 
 let file_path_filter_glob (t : t) = t.file_path_filter_glob
+
+let file_path_filter_glob_string (t : t) = t.file_path_filter_glob_string
 
 let search_exp (t : t) = t.search_exp
 
@@ -223,6 +227,7 @@ let drop (choice : [ `Single of string | `Usable | `Unusable ]) (t : t) : t =
   | `Single path -> (
       { all_documents = String_map.remove path t.all_documents;
         file_path_filter_glob = t.file_path_filter_glob;
+        file_path_filter_glob_string = t.file_path_filter_glob_string;
         documents_passing_filter = String_set.remove path t.documents_passing_filter;
         search_exp = t.search_exp;
         search_exp_string = t.search_exp_string;
@@ -248,6 +253,7 @@ let drop (choice : [ `Single of string | `Usable | `Unusable ]) (t : t) : t =
       in
       { all_documents = String_map.filter f2 t.all_documents;
         file_path_filter_glob = t.file_path_filter_glob;
+        file_path_filter_glob_string = t.file_path_filter_glob_string;
         documents_passing_filter = String_set.filter f1 t.documents_passing_filter;
         search_exp = t.search_exp;
         search_exp_string = t.search_exp_string;

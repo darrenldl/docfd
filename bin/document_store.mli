@@ -27,6 +27,8 @@ val update_search_exp :
 
 val file_path_filter_glob : t -> Glob.t
 
+val file_path_filter_glob_string : t -> string
+
 val search_exp : t -> Search_exp.t
 
 val search_exp_string : t -> string
