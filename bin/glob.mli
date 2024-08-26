@@ -8,6 +8,4 @@ val case_sensitive : t -> bool
 
 val string : t -> string
 
-val original_string : t -> string
-
 val match_ : t -> string -> bool

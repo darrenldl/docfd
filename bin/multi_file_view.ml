@@ -66,7 +66,7 @@ let sync_input_fields_from_document_store
     (x : Document_store.t)
   =
   Document_store.file_path_filter_glob x
-  |> Glob.original_string
+  |> Glob.string
   |> (fun s ->
       Lwd.set Vars.file_path_filter_field (s, String.length s));
   Document_store.search_exp_string x

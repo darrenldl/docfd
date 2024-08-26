@@ -83,6 +83,13 @@ let search_fiber pool =
     Eio.Stream.add stop_signal_swap_completed ();
     match req with
     | Filter (s, document_store, document_store_var) -> (
+        let s =
+          if String.length s = 0 then (
+            s
+          ) else (
+            Misc_utils.normalize_glob_to_absolute s
+          )
+        in
         match Glob.make s with
         | Some glob -> (
             let document_store =

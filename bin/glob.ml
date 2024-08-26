@@ -1,15 +1,12 @@
 type t = {
   case_sensitive : bool;
   string : string;
-  original_string : string;
   re : Re.re;
 }
 
 let case_sensitive t = t.case_sensitive
 
 let string t = t.string
-
-let original_string t = t.original_string
 
 let is_empty t = String.length t.string = 0
 
@@ -36,18 +33,8 @@ module Parsers = struct
     )
 end
 
-let make (original_string : string) : t option =
-  let path_normalized_string =
-    if String.length original_string = 0 then
-      original_string
-    else
-      Misc_utils.normalize_glob_to_absolute original_string
-  in
-  match
-    Angstrom.(parse_string ~consume:Consume.All)
-      Parsers.parts
-      path_normalized_string
-  with
+let make (s : string) : t option =
+  match Angstrom.(parse_string ~consume:Consume.All) Parsers.parts s with
   | Error _ -> None
   | Ok parts -> (
       let case_insensitive = ref false in
@@ -81,7 +68,6 @@ let make (original_string : string) : t option =
           {
             case_sensitive;
             string = s;
-            original_string;
             re;
           }
       with
