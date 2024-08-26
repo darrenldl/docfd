@@ -69,7 +69,7 @@ let sync_input_fields_from_document_store
   |> Glob.string
   |> (fun s ->
       Lwd.set Vars.file_path_filter_field (s, String.length s));
-  Document_store.search_exp_text x
+  Document_store.search_exp_string x
   |> (fun s ->
       Lwd.set Vars.search_field (s, String.length s))
 

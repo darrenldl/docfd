@@ -9,7 +9,7 @@ type t = {
   file_path_filter_glob : Glob.t;
   documents_passing_filter : String_set.t;
   search_exp : Search_exp.t;
-  search_exp_text : string;
+  search_exp_string : string;
   search_results : Search_result.t array String_map.t;
 }
 
@@ -22,7 +22,7 @@ let empty : t =
     file_path_filter_glob = Option.get (Glob.make "");
     documents_passing_filter = String_set.empty;
     search_exp = Search_exp.empty;
-    search_exp_text = "";
+    search_exp_string = "";
     search_results = String_map.empty;
   }
 
@@ -30,7 +30,7 @@ let file_path_filter_glob (t : t) = t.file_path_filter_glob
 
 let search_exp (t : t) = t.search_exp
 
-let search_exp_text (t : t) = t.search_exp_text
+let search_exp_string (t : t) = t.search_exp_string
 
 let single_out ~path (t : t) =
   match String_map.find_opt path t.all_documents with
@@ -121,13 +121,13 @@ let update_file_path_filter_glob
   }
   |> refresh_search_results pool stop_signal
 
-let update_search_exp pool stop_signal search_exp_text search_exp (t : t) : t =
+let update_search_exp pool stop_signal search_exp_string search_exp (t : t) : t =
   if Search_exp.equal search_exp t.search_exp then (
     t
   ) else (
     { t with
       search_exp;
-      search_exp_text;
+      search_exp_string;
       search_results = String_map.empty;
     }
     |> refresh_search_results pool stop_signal
@@ -225,7 +225,7 @@ let drop (choice : [ `Single of string | `Usable | `Unusable ]) (t : t) : t =
         file_path_filter_glob = t.file_path_filter_glob;
         documents_passing_filter = String_set.remove path t.documents_passing_filter;
         search_exp = t.search_exp;
-        search_exp_text = t.search_exp_text;
+        search_exp_string = t.search_exp_string;
         search_results = String_map.remove path t.search_results;
       }
     )
@@ -250,7 +250,7 @@ let drop (choice : [ `Single of string | `Usable | `Unusable ]) (t : t) : t =
         file_path_filter_glob = t.file_path_filter_glob;
         documents_passing_filter = String_set.filter f1 t.documents_passing_filter;
         search_exp = t.search_exp;
-        search_exp_text = t.search_exp_text;
+        search_exp_string = t.search_exp_string;
         search_results = String_map.filter f2 t.search_results;
       }
     )

@@ -29,7 +29,7 @@ val file_path_filter_glob : t -> Glob.t
 
 val search_exp : t -> Search_exp.t
 
-val search_exp_text : t -> string
+val search_exp_string : t -> string
 
 val add_document : Task_pool.t -> Document.t -> t -> t
 

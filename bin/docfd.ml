@@ -489,8 +489,8 @@ let run
        exit_with_error_msg
          (Fmt.str "%s and %s cannot be used together" Args.sample_arg_name Args.search_arg_name)
      )
-   | Some search_exp_text, None
-   | None, Some search_exp_text -> (
+   | Some search_exp_string, None
+   | None, Some search_exp_string -> (
        (* Non-interactive mode *)
        let print_limit =
          match sample_search_exp with
@@ -498,7 +498,7 @@ let run
          | None -> None
        in
        match
-         Search_exp.make search_exp_text
+         Search_exp.make search_exp_string
        with
        | None -> (
            exit_with_error_msg "failed to parse search exp"
@@ -513,7 +513,7 @@ let run
              Document_store.update_search_exp
                pool
                (Stop_signal.make ())
-               search_exp_text
+               search_exp_string
                search_exp
                init_document_store
            in
@@ -632,7 +632,7 @@ let run
             let document_src = compute_document_src () in
             let old_document_store = Lwd.peek Ui_base.Vars.document_store in
             let file_path_filter_glob = Document_store.file_path_filter_glob old_document_store in
-            let search_exp_text = Document_store.search_exp_text old_document_store in
+            let search_exp_string = Document_store.search_exp_string old_document_store in
             let search_exp = Document_store.search_exp old_document_store in
             let document_store =
               document_store_of_document_src ~env pool document_src
@@ -643,7 +643,7 @@ let run
               |> Document_store.update_search_exp
                 pool
                 (Stop_signal.make ())
-                search_exp_text
+                search_exp_string
                 search_exp
             in
             Document_store_manager.submit_update_req document_store Ui_base.Vars.document_store;
