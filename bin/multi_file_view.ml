@@ -575,6 +575,7 @@ let keyboard_handler
                Stack.push cur Vars.document_store_redo;
                Document_store_manager.submit_update_req prev Ui_base.Vars.document_store;
                sync_input_fields_from_document_store prev;
+               reset_document_selected ();
              ));
           `Handled
         )
@@ -587,6 +588,7 @@ let keyboard_handler
                Stack.push cur Vars.document_store_undo;
                Document_store_manager.submit_update_req next Ui_base.Vars.document_store;
                sync_input_fields_from_document_store next;
+               reset_document_selected ();
              ));
           `Handled
         )
