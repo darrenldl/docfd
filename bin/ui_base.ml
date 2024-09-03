@@ -48,15 +48,10 @@ module Vars = struct
 
   let term_width_height : (int * int) Lwd.var = Lwd.var (0, 0)
 
-  let document_store : Document_store.t Lwd.var =
-    Lwd.var Document_store.empty
-
   module Single_file = struct
     let search_field = Lwd.var empty_text_field
 
     let index_of_search_result_selected = Lwd.var 0
-
-    let document_store : Document_store.t Lwd.var = Lwd.var Document_store.empty
   end
 end
 

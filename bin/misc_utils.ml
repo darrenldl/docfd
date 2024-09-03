@@ -60,3 +60,11 @@ let rotate_list (x : int) (l : 'a list) : 'a list =
     (array_sub_seq ~start:x ~end_exc:len arr)
     (array_sub_seq ~start:0 ~end_exc:x arr)
   |> List.of_seq
+
+let drain_eio_stream (x : 'a Eio.Stream.t) =
+  let rec aux () =
+    match Eio.Stream.take_nonblocking x with
+    | None -> ()
+    | Some _ -> aux ()
+  in
+  aux ()

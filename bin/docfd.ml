@@ -547,9 +547,10 @@ let run
          )
      )
   );
-  Lwd.set Ui_base.Vars.document_store init_document_store;
+  Document_store_manager.submit_update_req `Multi_file_view init_document_store;
   (match init_ui_mode with
-   | Ui_base.Ui_single_file -> Lwd.set Ui_base.Vars.Single_file.document_store init_document_store
+   | Ui_base.Ui_single_file ->
+     Document_store_manager.submit_update_req `Single_file_view init_document_store;
    | _ -> ()
   );
   Ui_base.Vars.eio_env := Some env;
@@ -630,7 +631,9 @@ let run
         match action with
         | Ui_base.Recompute_document_src -> (
             let document_src = compute_document_src () in
-            let old_document_store = Lwd.peek Ui_base.Vars.document_store in
+            let old_document_store =
+              Lwd.peek Document_store_manager.multi_file_view_document_store
+            in
             let file_path_filter_glob_string = Document_store.file_path_filter_glob_string old_document_store in
             let file_path_filter_glob = Document_store.file_path_filter_glob old_document_store in
             let search_exp_string = Document_store.search_exp_string old_document_store in
@@ -648,7 +651,7 @@ let run
                 search_exp_string
                 search_exp
             in
-            Document_store_manager.submit_update_req document_store Ui_base.Vars.document_store;
+            Document_store_manager.submit_update_req `Multi_file_view document_store;
             loop ()
           )
         | Open_file_and_search_result (doc, search_result) -> (
@@ -691,7 +694,7 @@ let run
   Eio.Fiber.any [
     (fun () ->
        Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env)
-         (fun () -> Document_store_manager.search_fiber pool));
+         (fun () -> Document_store_manager.worker_fiber pool));
     Document_store_manager.manager_fiber;
     Ui_base.Key_binding_info.grid_light_fiber;
     Printers.Worker.fiber;

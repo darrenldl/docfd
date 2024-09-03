@@ -14,7 +14,9 @@ let reset_search_result_selected () =
 let update_search_phrase () =
   reset_search_result_selected ();
   let s = fst @@ Lwd.peek Ui_base.Vars.Single_file.search_field in
-  Document_store_manager.submit_search_req s Ui_base.Vars.Single_file.document_store
+  Document_store_manager.submit_search_req
+    `Single_file_view
+    s
 
 let reload_document (doc : Document.t) : unit =
   let pool = Ui_base.task_pool () in
@@ -23,16 +25,20 @@ let reload_document (doc : Document.t) : unit =
   with
   | Ok doc -> (
       reset_search_result_selected ();
-      let global_document_store =
-        Lwd.peek Ui_base.Vars.document_store
+      let multi_file_view_document_store =
+        Lwd.peek Document_store_manager.multi_file_view_document_store
         |> Document_store.add_document pool doc
       in
-      Document_store_manager.submit_update_req global_document_store Ui_base.Vars.document_store;
-      let document_store =
-        Lwd.peek Ui_base.Vars.Single_file.document_store
+      Document_store_manager.submit_update_req
+        `Multi_file_view
+        multi_file_view_document_store;
+      let single_file_view_document_store =
+        Lwd.peek Document_store_manager.single_file_view_document_store
         |> Document_store.add_document pool doc
       in
-      Document_store_manager.submit_update_req document_store Ui_base.Vars.Single_file.document_store;
+      Document_store_manager.submit_update_req
+        `Single_file_view
+        single_file_view_document_store;
     )
   | Error _ -> ()
 
@@ -322,7 +328,9 @@ let keyboard_handler
   | _ -> `Unhandled
 
 let main : Nottui.ui Lwd.t =
-  let$* document_store = Lwd.get Ui_base.Vars.Single_file.document_store in
+  let$* document_store =
+    Lwd.get Document_store_manager.single_file_view_document_store
+  in
   let _, document_info =
     Option.get (Document_store.min_binding document_store)
   in

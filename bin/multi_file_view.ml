@@ -46,10 +46,12 @@ let reload_document (doc : Document.t) =
   | Ok doc -> (
       reset_document_selected ();
       let document_store =
-        Lwd.peek Ui_base.Vars.document_store
+        Lwd.peek Document_store_manager.multi_file_view_document_store
         |> Document_store.add_document pool doc
       in
-      Document_store_manager.submit_update_req document_store Ui_base.Vars.document_store;
+      Document_store_manager.submit_update_req
+        `Multi_file_view
+        document_store;
     )
   | Error _ -> ()
 
@@ -93,23 +95,25 @@ let drop ~document_count (choice : [`Single of string | `Listed | `Unlisted]) =
         `Unusable
       )
   in
-  let document_store = Lwd.peek Ui_base.Vars.document_store in
+  let document_store =
+    Lwd.peek Document_store_manager.multi_file_view_document_store
+  in
   add_to_undo document_store;
   Document_store_manager.submit_update_req
+    `Multi_file_view
     (Document_store.drop choice document_store)
-    Ui_base.Vars.document_store
 
 let update_file_path_filter () =
   reset_document_selected ();
   let s = fst @@ Lwd.peek Vars.file_path_filter_field in
   Stack.clear Vars.document_store_redo;
-  Document_store_manager.submit_filter_req s Ui_base.Vars.document_store
+  Document_store_manager.submit_filter_req `Multi_file_view s
 
 let update_search_phrase () =
   reset_document_selected ();
   let s = fst @@ Lwd.peek Vars.search_field in
   Stack.clear Vars.document_store_redo;
-  Document_store_manager.submit_search_req s Ui_base.Vars.document_store
+  Document_store_manager.submit_search_req `Multi_file_view s
 
 module Top_pane = struct
   module Document_list = struct
@@ -320,7 +324,9 @@ module Bottom_pane = struct
         let file_shown_count =
           Notty.I.strf ~attr:Ui_base.Status_bar.attr
             "%5d/%d documents listed"
-            document_count (Document_store.size (Lwd.peek Ui_base.Vars.document_store))
+            document_count
+            (Document_store.size
+               (Lwd.peek Document_store_manager.multi_file_view_document_store))
         in
         let index_of_selected =
           Notty.I.strf ~attr:Ui_base.Status_bar.attr
@@ -571,9 +577,11 @@ let keyboard_handler
           (match Stack.pop_opt Vars.document_store_undo with
            | None -> ()
            | Some prev -> (
-               let cur = Lwd.peek Ui_base.Vars.document_store in
+               let cur =
+                 Lwd.peek Document_store_manager.multi_file_view_document_store
+               in
                Stack.push cur Vars.document_store_redo;
-               Document_store_manager.submit_update_req prev Ui_base.Vars.document_store;
+               Document_store_manager.submit_update_req `Multi_file_view prev;
                sync_input_fields_from_document_store prev;
                reset_document_selected ();
              ));
@@ -584,9 +592,11 @@ let keyboard_handler
           (match Stack.pop_opt Vars.document_store_redo with
            | None -> ()
            | Some next -> (
-               let cur = Lwd.peek Ui_base.Vars.document_store in
+               let cur =
+                 Lwd.peek Document_store_manager.multi_file_view_document_store
+               in
                Stack.push cur Vars.document_store_undo;
-               Document_store_manager.submit_update_req next Ui_base.Vars.document_store;
+               Document_store_manager.submit_update_req `Multi_file_view next;
                sync_input_fields_from_document_store next;
                reset_document_selected ();
              ));
@@ -594,11 +604,15 @@ let keyboard_handler
         )
       | (`Tab, []) -> (
           Option.iter (fun (doc, _search_results) ->
-              let document_store = Lwd.peek Ui_base.Vars.document_store in
+              let document_store =
+                Lwd.peek Document_store_manager.multi_file_view_document_store
+              in
               let single_file_document_store =
                 Option.get (Document_store.single_out ~path:(Document.path doc) document_store)
               in
-              Document_store_manager.submit_update_req single_file_document_store Ui_base.Vars.Single_file.document_store;
+              Document_store_manager.submit_update_req
+                `Single_file_view
+                single_file_document_store;
               Lwd.set Ui_base.Vars.Single_file.index_of_search_result_selected
                 (Lwd.peek Vars.index_of_search_result_selected);
               Lwd.set Ui_base.Vars.Single_file.search_field
@@ -852,7 +866,9 @@ let keyboard_handler
   | _ -> `Unhandled
 
 let main : Nottui.ui Lwd.t =
-  let$* document_store = Lwd.get Ui_base.Vars.document_store in
+  let$* document_store =
+    Lwd.get Document_store_manager.multi_file_view_document_store
+  in
   let document_info_s =
     Document_store.usable_documents document_store
   in

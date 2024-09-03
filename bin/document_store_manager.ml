@@ -1,5 +1,10 @@
 open Docfd_lib
 
+type store_typ = [
+  | `Multi_file_view
+  | `Single_file_view
+]
+
 type search_status = [
   | `Idle
   | `Searching
@@ -8,39 +13,62 @@ type search_status = [
 
 type filter_status = [ `Ok | `Parse_error ]
 
-type request =
-  | Filter of string * Document_store.t * Document_store.t Lwd.var
-  | Search of string * Document_store.t * Document_store.t Lwd.var
-  | Update of Document_store.t * Document_store.t Lwd.var
-
 let search_ui_status : search_status Lwd.var = Lwd.var `Idle
 
 let filter_ui_status : filter_status Lwd.var = Lwd.var `Ok
 
-let ingress : request Eio.Stream.t =
-  Eio.Stream.create 0
+let single_file_view_search_request : string Lock_protected_cell.t =
+  Lock_protected_cell.make ()
+
+let multi_file_view_search_request : string Lock_protected_cell.t =
+  Lock_protected_cell.make ()
+
+let single_file_view_filter_request : string Lock_protected_cell.t =
+  Lock_protected_cell.make ()
+
+let multi_file_view_filter_request : string Lock_protected_cell.t =
+  Lock_protected_cell.make ()
+
+let single_file_view_update_request : Document_store.t Lock_protected_cell.t =
+  Lock_protected_cell.make ()
+
+let multi_file_view_update_request : Document_store.t Lock_protected_cell.t =
+  Lock_protected_cell.make ()
+
+let worker_ping : Ping.t = Ping.make ()
 
 type egress_payload =
   | Search_exp_parse_error
   | Searching
-  | Search_done of Document_store.t * Document_store.t Lwd.var
+  | Search_done of store_typ * Document_store.t
   | Filter_glob_parse_error
-  | Filtering_done of Document_store.t * Document_store.t Lwd.var
-  | Update of Document_store.t * Document_store.t Lwd.var
+  | Filtering_done of store_typ * Document_store.t
+  | Update of store_typ * Document_store.t
 
 let egress_mailbox : egress_payload Eio.Stream.t =
   Eio.Stream.create 1
 
-let stop_signal = Atomic.make (Stop_signal.make ())
+let search_stop_signal = Atomic.make (Stop_signal.make ())
 
-let stop_signal_swap_completed : unit Eio.Stream.t = Eio.Stream.create 0
+let signal_search_stop () =
+  let x = Atomic.exchange search_stop_signal (Stop_signal.make ()) in
+  Stop_signal.broadcast x
 
-let store_update_lock = Eio.Mutex.create ()
+let single_file_view_document_store = Lwd.var Document_store.empty
+
+let multi_file_view_document_store = Lwd.var Document_store.empty
 
 let manager_fiber () =
-  let update_store document_store_var document_store =
-    Eio.Mutex.use_rw store_update_lock ~protect:false (fun () ->
-        Lwd.set document_store_var document_store;
+  (* This fiber handles updates of Lwd.var which are not thread-safe,
+     and thus cannot be done by worker_fiber directly
+  *)
+  let update_store (store_typ : store_typ) document_store =
+    match store_typ with
+    | `Multi_file_view -> (
+        Lwd.set multi_file_view_document_store document_store;
+      )
+    | `Single_file_view -> (
+        Lwd.set single_file_view_document_store document_store;
       )
   in
   while true do
@@ -52,23 +80,23 @@ let manager_fiber () =
     | Searching -> (
         Lwd.set search_ui_status `Searching
       )
-    | Search_done (document_store, document_store_var) -> (
-        update_store document_store_var document_store;
+    | Search_done (store_typ, document_store) -> (
+        update_store store_typ document_store;
         Lwd.set search_ui_status `Idle
       )
     | Filter_glob_parse_error -> (
         Lwd.set filter_ui_status `Parse_error
       )
-    | Filtering_done (document_store, document_store_var) -> (
-        update_store document_store_var document_store;
+    | Filtering_done (store_typ, document_store) -> (
+        update_store store_typ document_store;
         Lwd.set filter_ui_status `Ok
       )
-    | Update (document_store, document_store_var) -> (
-        update_store document_store_var document_store;
+    | Update (store_typ, document_store) -> (
+        update_store store_typ document_store;
       )
   done
 
-let search_fiber pool =
+let worker_fiber pool =
   (* This fiber runs in a background domain to allow the UI code in the main
      domain to immediately continue running after key presses that trigger
      searches or search cancellations.
@@ -76,75 +104,133 @@ let search_fiber pool =
      This removes the need to make the code of document store always yield
      frequently.
   *)
-  while true do
-    let req = Eio.Stream.take ingress in
-    let stop_signal' = Stop_signal.make () in
-    Atomic.set stop_signal stop_signal';
-    Eio.Stream.add stop_signal_swap_completed ();
-    match req with
-    | Filter (original_string, document_store, document_store_var) -> (
-        let s =
-          if String.length original_string = 0 then (
-            original_string
-          ) else (
-            Misc_utils.normalize_glob_to_absolute original_string
-          )
+  let single_file_view_store = ref Document_store.empty in
+  let multi_file_view_store = ref Document_store.empty in
+  let process_search_req search_stop_signal (store_typ : store_typ) (s : string) =
+    match Search_exp.make s with
+    | None -> (
+        Eio.Stream.add egress_mailbox Search_exp_parse_error
+      )
+    | Some search_exp -> (
+        Eio.Stream.add egress_mailbox Searching;
+        let store =
+          (match store_typ with
+           | `Single_file_view -> !single_file_view_store
+           | `Multi_file_view -> !multi_file_view_store)
+          |> Document_store.update_search_exp
+            pool
+            search_stop_signal
+            s
+            search_exp
         in
-        match Glob.make s with
-        | Some glob -> (
-            let document_store =
-              document_store
-              |> Document_store.update_file_path_filter_glob
-                pool
-                stop_signal'
-                original_string
-                glob
-            in
-            Eio.Stream.add egress_mailbox (Filtering_done (document_store, document_store_var))
-          )
-        | None -> (
-            Eio.Stream.add egress_mailbox Filter_glob_parse_error
-          )
+        (match store_typ with
+         | `Single_file_view -> single_file_view_store := store
+         | `Multi_file_view -> multi_file_view_store := store);
+        Eio.Stream.add egress_mailbox
+          (Search_done (store_typ, store))
       )
-    | Search (s, document_store, document_store_var) -> (
-        match Search_exp.make s with
-        | None -> (
-            Eio.Stream.add egress_mailbox Search_exp_parse_error
-          )
-        | Some search_exp -> (
-            Eio.Stream.add egress_mailbox Searching;
-            let document_store =
-              document_store
-              |> Document_store.update_search_exp pool stop_signal' s search_exp
-            in
-            Eio.Stream.add egress_mailbox
-              (Search_done (document_store, document_store_var))
-          )
+  in
+  let process_filter_req search_stop_signal (store_typ : store_typ) (original_string : string) =
+    let s =
+      if String.length original_string = 0 then (
+        original_string
+      ) else (
+        Misc_utils.normalize_glob_to_absolute original_string
       )
-    | Update (document_store, document_store_var) -> (
-        Eio.Stream.add egress_mailbox (Update (document_store, document_store_var))
+    in
+    match Glob.make s with
+    | Some glob -> (
+        let store =
+          (match store_typ with
+           | `Single_file_view -> !single_file_view_store
+           | `Multi_file_view -> !multi_file_view_store)
+          |> Document_store.update_file_path_filter_glob
+            pool
+            search_stop_signal
+            original_string
+            glob
+        in
+        (match store_typ with
+         | `Single_file_view -> single_file_view_store := store
+         | `Multi_file_view -> multi_file_view_store := store);
+        Eio.Stream.add egress_mailbox (Filtering_done (store_typ, store))
       )
+    | None -> (
+        Eio.Stream.add egress_mailbox Filter_glob_parse_error
+      )
+  in
+  let process_update_req (store_typ : store_typ) store =
+    (match store_typ with
+     | `Single_file_view -> single_file_view_store := store
+     | `Multi_file_view -> multi_file_view_store := store
+    );
+    Eio.Stream.add egress_mailbox (Update (store_typ, store))
+  in
+  while true do
+    Ping.wait worker_ping;
+    let search_stop_signal' = Atomic.get search_stop_signal in
+    (match Lock_protected_cell.get single_file_view_filter_request with
+     | None -> ()
+     | Some s -> process_filter_req search_stop_signal' `Single_file_view s
+    );
+    (match Lock_protected_cell.get multi_file_view_filter_request with
+     | None -> ()
+     | Some s -> process_filter_req search_stop_signal' `Multi_file_view s
+    );
+    (match Lock_protected_cell.get single_file_view_search_request with
+     | None -> ()
+     | Some s -> process_search_req search_stop_signal' `Single_file_view s
+    );
+    (match Lock_protected_cell.get multi_file_view_search_request with
+     | None -> ()
+     | Some s -> process_search_req search_stop_signal' `Multi_file_view s
+    );
+    (match Lock_protected_cell.get single_file_view_update_request with
+     | None -> ()
+     | Some store -> process_update_req `Single_file_view store
+    );
+    (match Lock_protected_cell.get multi_file_view_update_request with
+     | None -> ()
+     | Some store -> process_update_req `Multi_file_view store
+    );
   done
 
-let submit_filter_req (s : string) (store_var : Document_store.t Lwd.var) =
-  Eio.Mutex.use_rw store_update_lock ~protect:false (fun () ->
-      let store = Lwd.peek store_var in
-      Stop_signal.broadcast (Atomic.get stop_signal);
-      Eio.Stream.add ingress (Filter (s, store, store_var));
-      Eio.Stream.take stop_signal_swap_completed;
-    )
+let submit_filter_req (store_typ : store_typ) (s : string) =
+  signal_search_stop ();
+  (match store_typ with
+   | `Multi_file_view -> (
+       Lock_protected_cell.set multi_file_view_filter_request s;
+     )
+   | `Single_file_view -> (
+       Lock_protected_cell.set single_file_view_filter_request s;
+     )
+  );
+  Ping.ping worker_ping
 
-let submit_search_req (s : string) (store_var : Document_store.t Lwd.var) =
-  Eio.Mutex.use_rw store_update_lock ~protect:false (fun () ->
-      let store = Lwd.peek store_var in
-      Stop_signal.broadcast (Atomic.get stop_signal);
-      Eio.Stream.add ingress (Search (s, store, store_var));
-      Eio.Stream.take stop_signal_swap_completed;
-    )
+let submit_search_req (store_typ : store_typ) (s : string) =
+  signal_search_stop ();
+  (match store_typ with
+   | `Multi_file_view -> (
+       Lock_protected_cell.set multi_file_view_search_request s;
+     )
+   | `Single_file_view -> (
+       Lock_protected_cell.set single_file_view_search_request s;
+     )
+  );
+  Ping.ping worker_ping
 
-let submit_update_req (store : Document_store.t) (store_var : Document_store.t Lwd.var) =
-  Eio.Mutex.use_rw store_update_lock ~protect:false (fun () ->
-      Stop_signal.broadcast (Atomic.get stop_signal);
-      Eio.Stream.add ingress (Update (store, store_var));
-      Eio.Stream.take stop_signal_swap_completed;
-    )
+let submit_update_req (store_typ : store_typ) (store : Document_store.t) =
+  signal_search_stop ();
+  (match store_typ with
+   | `Multi_file_view -> (
+       Lock_protected_cell.unset multi_file_view_search_request;
+       Lock_protected_cell.unset multi_file_view_filter_request;
+       Lock_protected_cell.set multi_file_view_update_request store;
+     )
+   | `Single_file_view -> (
+       Lock_protected_cell.unset single_file_view_search_request;
+       Lock_protected_cell.unset single_file_view_filter_request;
+       Lock_protected_cell.set single_file_view_update_request store;
+     )
+  );
+  Ping.ping worker_ping
