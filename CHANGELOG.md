@@ -8,7 +8,7 @@
     - Previously there was still a lockstep somewhere that would prevent UI
       from progressing if previous search was still being cancelled
 
-    - The current implementation allows newest requests to override older requests entirely
+    - The current implementation allows newest requests to override older requests entirely, and not wait for cancellations at all
 
 ## 8.0.1
 
