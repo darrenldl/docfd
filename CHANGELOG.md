@@ -1,5 +1,15 @@
 # Changelog
 
+## 8.0.2
+
+- Reworked asynchronous search/filter UI code to avoid noticeable lag due to
+  waiting for cancellations that take too long
+
+    - Previously there was still a lockstep somewhere that would prevent UI
+      from progressing if previous search was still being cancelled
+
+    - The current implementation allows newest requests to override older requests entirely
+
 ## 8.0.1
 
 - Fixed missing file path filter field update when undoing or redoing document
