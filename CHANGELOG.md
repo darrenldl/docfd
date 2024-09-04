@@ -8,7 +8,11 @@
     - Previously there was still a lockstep somewhere that would prevent UI
       from progressing if previous search was still being cancelled
 
-    - The current implementation allows newest requests to override older requests entirely, and not wait for cancellations at all
+    - The current implementation allows newest requests to override older
+      requests entirely, and not wait for cancellations at all
+
+- Adjusted document counter in multi-file view to be visible even when no files
+  are listed
 
 ## 8.0.1
 

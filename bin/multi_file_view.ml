@@ -318,16 +318,22 @@ module Bottom_pane = struct
       List.assoc input_mode Ui_base.Status_bar.input_mode_images
     in
     let content =
-      if document_count = 0 then
-        Nottui.Ui.atom input_mode_image
-      else (
-        let file_shown_count =
-          Notty.I.strf ~attr:Ui_base.Status_bar.attr
-            "%5d/%d documents listed"
-            document_count
-            (Document_store.size
-               (Lwd.peek Document_store_manager.multi_file_view_document_store))
-        in
+      let file_shown_count =
+        Notty.I.strf ~attr:Ui_base.Status_bar.attr
+          "%5d/%d documents listed"
+          document_count
+          (Document_store.size
+             (Lwd.peek Document_store_manager.multi_file_view_document_store))
+      in
+      if document_count = 0 then (
+        Notty.I.hcat
+          [
+            input_mode_image;
+            Ui_base.Status_bar.element_spacer;
+            file_shown_count;
+          ]
+        |> Nottui.Ui.atom
+      ) else (
         let index_of_selected =
           Notty.I.strf ~attr:Ui_base.Status_bar.attr
             "Index of document selected: %d"
@@ -335,7 +341,7 @@ module Bottom_pane = struct
         in
         Notty.I.hcat
           [
-            List.assoc input_mode Ui_base.Status_bar.input_mode_images;
+            input_mode_image;
             Ui_base.Status_bar.element_spacer;
             file_shown_count;
             Ui_base.Status_bar.element_spacer;
