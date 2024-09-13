@@ -798,10 +798,45 @@ module Search = struct
       (exp : Search_exp.t)
       (t : t)
     : Search_result_heap.t =
-    Search_exp.flattened exp
-    |> List.to_seq
-    |> Seq.map (fun phrase -> search_single pool stop_signal ~within_same_line ~consider_edit_dist phrase t)
-    |> Seq.fold_left search_result_heap_merge_with_yield Search_result_heap.empty
+    let flattened = Search_exp.flattened exp in
+    let f phrase =
+      search_single
+        pool
+        stop_signal
+        ~within_same_line
+        ~consider_edit_dist
+        phrase
+        t
+    in
+    let hidden_phrase_collection_satisfied =
+      flattened.hidden
+      |> List.for_all (fun phrases ->
+          List.exists (fun phrase ->
+              not (Search_result_heap.is_empty (f phrase))
+            )
+            phrases
+        )
+    in
+    if hidden_phrase_collection_satisfied then (
+      let heaps =
+        flattened.visible
+        |> List.map (fun phrases ->
+            List.to_seq phrases
+            |> Seq.map f
+            |> Seq.fold_left search_result_heap_merge_with_yield Search_result_heap.empty
+          )
+      in
+      if List.for_all (fun x -> not (Search_result_heap.is_empty x)) heaps then (
+        List.fold_left
+          search_result_heap_merge_with_yield
+          Search_result_heap.empty
+          heaps
+      ) else (
+        Search_result_heap.empty
+      )
+    ) else (
+      Search_result_heap.empty
+    )
 end
 
 let search
