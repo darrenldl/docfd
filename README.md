@@ -117,6 +117,19 @@ when source of document is piped stdin.
 No paths should be supplied as arguments in this case.
 If any paths are specified, then stdin is ignored.
 
+#### Handling a large collection of files
+
+In this case, the default cache size limit might not be enough
+
+The following script template may be handy in this situation to create the
+collection specific cache
+
+```
+#!/usr/bin/env bash
+
+docfd --cache-dir /big/collection/.cache --cache-size 10000 /big/collection
+```
+
 #### Scan for files
 
 ```
