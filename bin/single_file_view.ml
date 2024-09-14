@@ -331,24 +331,25 @@ let main : Nottui.ui Lwd.t =
   let$* document_store =
     Lwd.get Document_store_manager.single_file_view_document_store
   in
-  let _, document_info =
-    Option.get (Document_store.min_binding document_store)
-  in
-  let$* bottom_pane = Bottom_pane.main ~document_info in
-  let bottom_pane_height = Nottui.Ui.layout_height bottom_pane in
-  let$* (term_width, term_height) = Lwd.get Ui_base.Vars.term_width_height in
-  let top_pane_height = term_height - bottom_pane_height in
-  let$* top_pane =
-    Top_pane.main
-      ~width:term_width
-      ~height:top_pane_height
-      ~document_info
-  in
-  Nottui_widgets.vbox
-    [
-      Lwd.return (
-        Nottui.Ui.keyboard_area
-          (keyboard_handler ~document_info)
-          top_pane);
-      Lwd.return bottom_pane;
-    ]
+  match Document_store.min_binding document_store with
+  | None -> Lwd.return (Nottui.Ui.atom (Notty.I.void 0 0))
+  | Some (_, document_info) -> (
+      let$* bottom_pane = Bottom_pane.main ~document_info in
+      let bottom_pane_height = Nottui.Ui.layout_height bottom_pane in
+      let$* (term_width, term_height) = Lwd.get Ui_base.Vars.term_width_height in
+      let top_pane_height = term_height - bottom_pane_height in
+      let$* top_pane =
+        Top_pane.main
+          ~width:term_width
+          ~height:top_pane_height
+          ~document_info
+      in
+      Nottui_widgets.vbox
+        [
+          Lwd.return (
+            Nottui.Ui.keyboard_area
+              (keyboard_handler ~document_info)
+              top_pane);
+          Lwd.return bottom_pane;
+        ]
+    )

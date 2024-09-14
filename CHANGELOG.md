@@ -1,5 +1,9 @@
 # Changelog
 
+## 8.0.3
+
+- Fixed single file view crash
+
 ## 8.0.2
 
 - Reworked asynchronous search/filter UI code to avoid noticeable lag due to
