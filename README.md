@@ -127,7 +127,7 @@ collection specific cache
 ```
 #!/usr/bin/env bash
 
-docfd --cache-dir /big/collection/.cache --cache-size 10000 /big/collection
+docfd --cache-dir /large/collection/.cache --cache-size 10000 /large/collection
 ```
 
 #### Scan for files
