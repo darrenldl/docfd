@@ -1,5 +1,15 @@
 # Changelog
 
+## 9.0.0
+
+- Changed default cache size from 100 to 10000
+
+    - Index after compression doesn't take up that much space, and storage is
+      generally cheap enough these days
+
+- Adjusted cache eviction behaviour to be less strict on when eviction happens
+  and thus less expensive
+
 ## 8.0.3
 
 - Fixed single file view crash
