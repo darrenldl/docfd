@@ -89,29 +89,29 @@ let refresh_modification_time ~path =
 let clean_up_cache_dir ~cache_dir =
   let all_files =
     Sys.readdir cache_dir
-    |> Array.to_list
-    |> List.map (fun x ->
+    |> Array.to_seq
+    |> Seq.map (fun x ->
         Filename.concat cache_dir x)
-    |> List.filter (fun x ->
+    |> Seq.filter (fun x ->
         match File_utils.typ_of_path x with
         | Some (`File, _) -> File_utils.extension_of_file x = Params.index_file_ext
         | _ -> false
       )
+    |> Array.of_seq
   in
-  let all_files_arr =
-    all_files
-    |> List.map (fun x ->
-        let stat = Unix.stat x in
-        let modification_time = stat.st_mtime in
-        (x, modification_time)
-      )
-    |> Array.of_list
-  in
-  let file_count = Array.length all_files_arr in
+  let file_count = Array.length all_files in
   if file_count > !Params.cache_size + 100 then (
-    Array.sort (fun (_x1, x2) (_y1, y2) -> Float.compare y2 x2) all_files_arr;
+    let all_files =
+      all_files
+      |> Array.map (fun x ->
+          let stat = Unix.stat x in
+          let modification_time = stat.st_mtime in
+          (x, modification_time)
+        )
+    in
+    Array.sort (fun (_x1, x2) (_y1, y2) -> Float.compare y2 x2) all_files;
     for i = !Params.cache_size to file_count - 1 do
-      let path, _mtime = all_files_arr.(i) in
+      let path, _mtime = all_files.(i) in
       Sys.remove path
     done
   )
