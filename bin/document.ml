@@ -108,7 +108,7 @@ let clean_up_cache_dir ~cache_dir =
     |> Array.of_list
   in
   let file_count = Array.length all_files_arr in
-  if file_count > !Params.cache_size then (
+  if file_count > !Params.cache_size + 100 then (
     Array.sort (fun (_x1, x2) (_y1, y2) -> Float.compare y2 x2) all_files_arr;
     for i = !Params.cache_size to file_count - 1 do
       let path, _mtime = all_files_arr.(i) in
