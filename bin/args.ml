@@ -144,7 +144,8 @@ let cache_size_arg_name = "cache-size"
 
 let cache_size_arg =
   let doc =
-    "Maximum number of indices to cache. One index corresponds to one file."
+    "Rough maximum number of indices to cache. One index corresponds to one file.
+For performance reasons this limit is not strictly adhered to."
   in
   Arg.(
     value
