@@ -18,5 +18,12 @@ val of_path :
   env:Eio_unix.Stdenv.base ->
   Task_pool.t ->
   Search_mode.t ->
+  ?hash:string ->
+  ?index:Index.t ->
   string ->
   (t, string) result
+
+val find_index :
+  env:Eio_unix.Stdenv.base ->
+  hash:string ->
+  Index.t option

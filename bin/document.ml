@@ -227,9 +227,13 @@ module Of_path = struct
       )
 end
 
-let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode path : (t, string) result =
-  let* hash = BLAKE2B.hash_of_file ~env ~path in
-  match find_index ~env ~hash with
+let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?hash ?index path : (t, string) result =
+  let* hash =
+    match hash with
+    | Some x -> Ok x
+    | None -> BLAKE2B.hash_of_file ~env ~path
+  in
+  match index with
   | Some index -> (
       let title =
         if Index.global_line_count index = 0 then

@@ -158,17 +158,17 @@ let document_store_of_document_src ~env pool (document_src : Document_src.t) =
       ; const "ETA: " ++ eta file_count
       ]
   in
-  let all_documents : Document.t list =
+  let all_documents : Document.t list list =
     match document_src with
     | Document_src.Stdin path -> (
         match Document.of_path ~env pool !Params.default_search_mode path with
-        | Ok x -> [ x ]
+        | Ok x -> [ [ x ] ]
         | Error msg ->  (
             exit_with_error_msg msg
           )
       )
     | Files { default_search_mode_files; single_line_search_mode_files } -> (
-        let file_count, files =
+        let total_file_count, files =
           Seq.append
             (Seq.map (fun path -> (!Params.default_search_mode, path))
                (String_set.to_seq default_search_mode_files))
@@ -176,55 +176,126 @@ let document_store_of_document_src ~env pool (document_src : Document_src.t) =
                (String_set.to_seq single_line_search_mode_files))
           |> Misc_utils.length_and_list_of_seq
         in
-        Printf.eprintf "File count: %d\n" file_count;
-        Progress.with_reporter (bar ~file_count) (fun report_progress ->
-            let report_progress =
-              let lock = Eio.Mutex.create () in
-              fun x ->
-                Eio.Mutex.use_rw lock ~protect:false (fun () ->
-                    report_progress x
-                  )
-            in
-            files
-            |> Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size (fun (search_mode, path) ->
-                do_if_debug (fun oc ->
-                    Printf.fprintf oc "Loading document: %s\n" (Filename.quote path);
-                  );
-                do_if_debug (fun oc ->
-                    Printf.fprintf oc "Using %s search mode for document %s\n"
-                      (match search_mode with
-                       | `Single_line -> "single line"
-                       | `Multiline -> "multiline"
-                      )
-                      (Filename.quote path)
-                  );
-                if Random.int 10 = 0 then (
-                  Gc.full_major ();
+        Printf.eprintf "File count: %d\n" total_file_count;
+        let progress_with_reporter ~file_count f =
+          Progress.with_reporter (bar ~file_count) (fun report_progress ->
+              let report_progress =
+                let lock = Eio.Mutex.create () in
+                fun x ->
+                  Eio.Mutex.use_rw lock ~protect:false (fun () ->
+                      report_progress x
+                    )
+              in
+              f report_progress
+            )
+        in
+        let files_with_index, files_without_index =
+          files
+          |> (fun l ->
+              Printf.eprintf "Hashing\n";
+              progress_with_reporter ~file_count:total_file_count
+                (fun report_progress ->
+                   Task_pool.filter_map_list pool (fun (search_mode, path) ->
+                       do_if_debug (fun oc ->
+                           Printf.fprintf oc "Hashing document: %s\n" (Filename.quote path);
+                         );
+                       report_progress 1;
+                       match BLAKE2B.hash_of_file ~env ~path with
+                       | Ok hash -> Some (search_mode, path, hash)
+                       | Error msg -> (
+                           do_if_debug (fun oc ->
+                               Printf.fprintf oc "Error: %s\n" msg
+                             );
+                           None
+                         )
+                     )
+                     l
+                )
+            )
+          |> (fun l ->
+              Printf.eprintf "Finding indices\n";
+              progress_with_reporter ~file_count:total_file_count
+                (fun report_progress ->
+                   Task_pool.map_list pool (fun (search_mode, path, hash) ->
+                       do_if_debug (fun oc ->
+                           Printf.fprintf oc "Finding index for document: %s, hash: %s\n" (Filename.quote path) hash;
+                         );
+                       if Random.int 20 = 0 then (
+                         Gc.full_major ();
+                       );
+                       let res = (search_mode, path, hash, Document.find_index ~env ~hash) in
+                       report_progress 1;
+                       res
+                     )
+                     l
+                )
+            )
+          |> List.partition_map (fun (search_mode, path, hash, index) ->
+              match index with
+              | Some index -> Left (search_mode, path, hash, index)
+              | None -> Right (search_mode, path, hash)
+            )
+        in
+        let load_document ~env pool search_mode ~hash ?index path =
+          do_if_debug (fun oc ->
+              Printf.fprintf oc "Loading document: %s\n" (Filename.quote path);
+            );
+          do_if_debug (fun oc ->
+              Printf.fprintf oc "Using %s search mode for document %s\n"
+                (match search_mode with
+                 | `Single_line -> "single line"
+                 | `Multiline -> "multiline"
+                )
+                (Filename.quote path)
+            );
+          match Document.of_path ~env pool search_mode ~hash ?index path with
+          | Ok x -> (
+              do_if_debug (fun oc ->
+                  Printf.fprintf oc "Document %s loaded successfully\n" (Filename.quote path);
                 );
-                let res =
-                  match Document.of_path ~env pool search_mode path with
-                  | Ok x -> (
-                      do_if_debug (fun oc ->
-                          Printf.fprintf oc "Document %s loaded successfully\n" (Filename.quote path);
-                        );
-                      Some x
-                    )
-                  | Error msg -> (
-                      do_if_debug (fun oc ->
-                          Printf.fprintf oc "Error: %s\n" msg
-                        );
-                      None
-                    )
-                in
-                report_progress 1;
-                res
-              )
-          )
+              Some x
+            )
+          | Error msg -> (
+              do_if_debug (fun oc ->
+                  Printf.fprintf oc "Error: %s\n" msg
+                );
+              None
+            )
+        in
+        Printf.eprintf "Processing files with index\n";
+        let files_with_index_count = List.length files_with_index in
+        let files_with_index =
+          progress_with_reporter ~file_count:files_with_index_count
+            (fun report_progress ->
+               files_with_index
+               |> List.filter_map (fun (search_mode, path, hash, index) ->
+                   let res = load_document ~env pool search_mode ~hash ~index path in
+                   report_progress 1;
+                   res
+                 )
+            )
+        in
+        Printf.eprintf "Indexing remaining files\n";
+        let files_without_index =
+          progress_with_reporter
+            ~file_count:(total_file_count - files_with_index_count)
+            (fun report_progress ->
+               files_without_index
+               |> Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size
+                 (fun (search_mode, path, hash) ->
+                    let res = load_document ~env pool search_mode ~hash path in
+                    report_progress 1;
+                    res
+                 )
+            )
+        in
+        [ files_with_index; files_without_index ]
       )
   in
   let store =
     all_documents
     |> List.to_seq
+    |> Seq.flat_map List.to_seq
     |> Document_store.of_seq pool
   in
   Gc.compact ();
