@@ -59,6 +59,7 @@ Features:
    (re (>= "1.11.0"))
    (ppx_deriving (>= "5.0"))
    decompress
+   progress
    (alcotest :with-test)
    (qcheck-alcotest :with-test)
    (qcheck :with-test)

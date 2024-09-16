@@ -51,5 +51,6 @@
             timedesc-tzlocal.unix
             timedesc-tzdb.full
             re
+            progress
  )
 )

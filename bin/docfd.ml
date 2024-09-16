@@ -147,6 +147,17 @@ let files_satisfying_constraints (cons : file_constraints) : Document_src.file_c
   }
 
 let document_store_of_document_src ~env pool (document_src : Document_src.t) =
+  let bar ~file_count =
+    let open Progress.Line in
+    list
+      [ brackets (elapsed ())
+      ; bar ~width:(`Fixed 20) file_count
+      ; percentage_of file_count
+      ; rate (Progress.Printer.create ~to_string:(Fmt.str "%6.1f file") ~string_len:11 ())
+      (* ; sum ~width:10 () ++ const (Fmt.str "/%d" file_count) *)
+      ; const "ETA: " ++ eta file_count
+      ]
+  in
   let all_documents : Document.t list =
     match document_src with
     | Document_src.Stdin path -> (
@@ -157,39 +168,56 @@ let document_store_of_document_src ~env pool (document_src : Document_src.t) =
           )
       )
     | Files { default_search_mode_files; single_line_search_mode_files } -> (
-        Seq.append
-          (Seq.map (fun path -> (!Params.default_search_mode, path))
-             (String_set.to_seq default_search_mode_files))
-          (Seq.map (fun path -> (`Single_line, path))
-             (String_set.to_seq single_line_search_mode_files))
-        |> List.of_seq
-        |> Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size (fun (search_mode, path) ->
-            do_if_debug (fun oc ->
-                Printf.fprintf oc "Loading document: %s\n" (Filename.quote path);
-              );
-            do_if_debug (fun oc ->
-                Printf.fprintf oc "Using %s search mode for document %s\n"
-                  (match search_mode with
-                   | `Single_line -> "single line"
-                   | `Multiline -> "multiline"
+        let file_count, files =
+          Seq.append
+            (Seq.map (fun path -> (!Params.default_search_mode, path))
+               (String_set.to_seq default_search_mode_files))
+            (Seq.map (fun path -> (`Single_line, path))
+               (String_set.to_seq single_line_search_mode_files))
+          |> Misc_utils.length_and_list_of_seq
+        in
+        Printf.eprintf "File count: %d\n" file_count;
+        Progress.with_reporter (bar ~file_count) (fun report_progress ->
+            let report_progress =
+              let lock = Eio.Mutex.create () in
+              fun x ->
+                Eio.Mutex.use_rw lock ~protect:false (fun () ->
+                    report_progress x
                   )
-                  (Filename.quote path)
-              );
-            if Random.int 10 = 0 then (
-              Gc.compact ();
-            );
-            match Document.of_path ~env pool search_mode path with
-            | Ok x -> (
+            in
+            files
+            |> Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size (fun (search_mode, path) ->
                 do_if_debug (fun oc ->
-                    Printf.fprintf oc "Document %s loaded successfully\n" (Filename.quote path);
+                    Printf.fprintf oc "Loading document: %s\n" (Filename.quote path);
                   );
-                Some x
-              )
-            | Error msg -> (
                 do_if_debug (fun oc ->
-                    Printf.fprintf oc "Error: %s\n" msg
+                    Printf.fprintf oc "Using %s search mode for document %s\n"
+                      (match search_mode with
+                       | `Single_line -> "single line"
+                       | `Multiline -> "multiline"
+                      )
+                      (Filename.quote path)
                   );
-                None
+                if Random.int 10 = 0 then (
+                  Gc.compact ();
+                );
+                let res =
+                  match Document.of_path ~env pool search_mode path with
+                  | Ok x -> (
+                      do_if_debug (fun oc ->
+                          Printf.fprintf oc "Document %s loaded successfully\n" (Filename.quote path);
+                        );
+                      Some x
+                    )
+                  | Error msg -> (
+                      do_if_debug (fun oc ->
+                          Printf.fprintf oc "Error: %s\n" msg
+                        );
+                      None
+                    )
+                in
+                report_progress 1;
+                res
               )
           )
       )
