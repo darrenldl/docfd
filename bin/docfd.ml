@@ -199,7 +199,7 @@ let document_store_of_document_src ~env pool (document_src : Document_src.t) =
                       (Filename.quote path)
                   );
                 if Random.int 10 = 0 then (
-                  Gc.compact ();
+                  Gc.full_major ();
                 );
                 let res =
                   match Document.of_path ~env pool search_mode path with
@@ -723,13 +723,6 @@ let run
     Document_store_manager.manager_fiber;
     Ui_base.Key_binding_info.grid_light_fiber;
     Printers.Worker.fiber;
-    (fun () ->
-       let clock = Eio.Stdenv.mono_clock env in
-       while true do
-         Eio.Time.Mono.sleep clock 15.0;
-         Gc.compact ();
-       done
-    );
     (fun () ->
        (match start_with_search with
         | None -> ()

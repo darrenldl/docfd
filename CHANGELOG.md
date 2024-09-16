@@ -10,6 +10,12 @@
 - Adjusted cache eviction behaviour to be less strict on when eviction happens
   and thus less expensive
 
+- Removed periodic GC compact call to avoid freezes when working with many
+  files
+
+- Changed GC compact call during file indexing to a full major collection call
+  to reduce overhead
+
 ## 8.0.3
 
 - Fixed single file view crash
