@@ -146,7 +146,7 @@ let files_satisfying_constraints (cons : file_constraints) : Document_src.file_c
     single_line_search_mode_files;
   }
 
-let document_store_of_document_src ~env pool (document_src : Document_src.t) =
+let document_store_of_document_src ~env ~interactive pool (document_src : Document_src.t) =
   let bar ~file_count =
     let open Progress.Line in
     list
@@ -154,7 +154,6 @@ let document_store_of_document_src ~env pool (document_src : Document_src.t) =
       ; bar ~width:(`Fixed 20) file_count
       ; percentage_of file_count
       ; rate (Progress.Printer.create ~to_string:(Fmt.str "%6.1f file") ~string_len:11 ())
-      (* ; sum ~width:10 () ++ const (Fmt.str "/%d" file_count) *)
       ; const "ETA: " ++ eta file_count
       ]
   in
@@ -176,23 +175,31 @@ let document_store_of_document_src ~env pool (document_src : Document_src.t) =
                (String_set.to_seq single_line_search_mode_files))
           |> Misc_utils.length_and_list_of_seq
         in
-        Printf.eprintf "File count: %d\n" total_file_count;
+        if interactive then (
+          Printf.eprintf "File count: %d\n" total_file_count
+        );
         let progress_with_reporter ~file_count f =
-          Progress.with_reporter (bar ~file_count) (fun report_progress ->
-              let report_progress =
-                let lock = Eio.Mutex.create () in
-                fun x ->
-                  Eio.Mutex.use_rw lock ~protect:false (fun () ->
-                      report_progress x
-                    )
-              in
-              f report_progress
-            )
+          if interactive then (
+            Progress.with_reporter (bar ~file_count) (fun report_progress ->
+                let report_progress =
+                  let lock = Eio.Mutex.create () in
+                  fun x ->
+                    Eio.Mutex.use_rw lock ~protect:false (fun () ->
+                        report_progress x
+                      )
+                in
+                f report_progress
+              )
+          ) else (
+            f (fun _ -> ())
+          )
         in
         let files_with_index, files_without_index =
           files
           |> (fun l ->
-              Printf.eprintf "Hashing\n";
+              if interactive then (
+                Printf.eprintf "Hashing\n"
+              );
               progress_with_reporter ~file_count:total_file_count
                 (fun report_progress ->
                    Task_pool.filter_map_list pool (fun (search_mode, path) ->
@@ -213,7 +220,9 @@ let document_store_of_document_src ~env pool (document_src : Document_src.t) =
                 )
             )
           |> (fun l ->
-              Printf.eprintf "Finding indices\n";
+              if interactive then (
+                Printf.eprintf "Finding indices\n"
+              );
               progress_with_reporter ~file_count:total_file_count
                 (fun report_progress ->
                    Task_pool.map_list pool (fun (search_mode, path, hash) ->
@@ -262,7 +271,9 @@ let document_store_of_document_src ~env pool (document_src : Document_src.t) =
               None
             )
         in
-        Printf.eprintf "Processing files with index\n";
+        if interactive then (
+          Printf.eprintf "Processing files with index\n"
+        );
         let files_with_index_count = List.length files_with_index in
         let files_with_index =
           progress_with_reporter ~file_count:files_with_index_count
@@ -275,7 +286,9 @@ let document_store_of_document_src ~env pool (document_src : Document_src.t) =
                  )
             )
         in
-        Printf.eprintf "Indexing remaining files\n";
+        if interactive then (
+          Printf.eprintf "Indexing remaining files\n"
+        );
         let files_without_index =
           progress_with_reporter
             ~file_count:(total_file_count - files_with_index_count)
@@ -572,8 +585,13 @@ let run
      )
   );
   Ui_base.Vars.init_ui_mode := init_ui_mode;
+  let interactive =
+    Option.is_none sample_search_exp
+    &&
+    Option.is_none search_exp
+  in
   let init_document_store =
-    document_store_of_document_src ~env pool init_document_src
+    document_store_of_document_src ~env pool ~interactive init_document_src
   in
   if index_only then (
     clean_up ();
@@ -735,7 +753,7 @@ let run
             let search_exp_string = Document_store.search_exp_string old_document_store in
             let search_exp = Document_store.search_exp old_document_store in
             let document_store =
-              document_store_of_document_src ~env pool document_src
+              document_store_of_document_src ~env ~interactive pool document_src
               |> Document_store.update_file_path_filter_glob
                 pool
                 (Stop_signal.make ())
