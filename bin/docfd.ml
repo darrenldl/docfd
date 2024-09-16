@@ -221,7 +221,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             )
           |> (fun l ->
               if interactive then (
-                Printf.eprintf "Finding indices\n"
+                Printf.eprintf "Finding and loading indices\n"
               );
               progress_with_reporter ~file_count:total_file_count
                 (fun report_progress ->
