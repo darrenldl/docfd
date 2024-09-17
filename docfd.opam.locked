@@ -41,6 +41,7 @@ depends: [
   "fmt" {= "0.9.0"}
   "hmap" {= "0.8.1"}
   "iomux" {= "0.3"}
+  "logs" {= "0.7.0"}
   "lwd" {= "0.3"}
   "lwt" {= "5.7.0"}
   "lwt-dllist" {= "1.0.1"}
@@ -62,6 +63,7 @@ depends: [
   "ppx_derivers" {= "1.2.1"}
   "ppx_deriving" {= "5.2.1"}
   "ppxlib" {= "0.32.1"}
+  "progress" {= "0.4.0"}
   "psq" {= "0.2.1"}
   "ptime" {= "1.1.0"}
   "qcheck" {= "0.21.3" & with-test}
@@ -74,13 +76,16 @@ depends: [
   "sexplib0" {= "v0.17.0"}
   "spelll" {= "0.4"}
   "stdlib-shims" {= "0.3.0"}
+  "terminal" {= "0.4.0"}
   "thread-table" {= "1.0.0"}
   "timedesc" {= "3.1.0"}
   "timedesc-tzdb" {= "3.1.0"}
   "timedesc-tzlocal" {= "3.1.0"}
   "topkg" {= "1.0.7"}
   "uring" {= "0.9"}
+  "uucp" {= "15.1.0"}
   "uutf" {= "1.0.3"}
+  "vector" {= "1.0.0"}
   "yojson" {= "2.1.2"}
 ]
 build: [
