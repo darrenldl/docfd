@@ -1,31 +1,31 @@
 (rule
   (targets int_map.ml)
   (deps ../lib/int_map.ml)
-  (action (copy %{deps} %{targets}))
+  (action (copy# %{deps} %{targets}))
   )
 
 (rule
   (targets int_set.ml)
   (deps ../lib/int_set.ml)
-  (action (copy %{deps} %{targets}))
+  (action (copy# %{deps} %{targets}))
   )
 
 (rule
   (targets string_map.ml)
   (deps ../lib/string_map.ml)
-  (action (copy %{deps} %{targets}))
+  (action (copy# %{deps} %{targets}))
   )
 
 (rule
   (targets char_map.ml)
   (deps ../lib/char_map.ml)
-  (action (copy %{deps} %{targets}))
+  (action (copy# %{deps} %{targets}))
   )
 
 (rule
   (targets string_set.ml)
   (deps ../lib/string_set.ml)
-  (action (copy %{deps} %{targets}))
+  (action (copy# %{deps} %{targets}))
   )
 
 (executable
