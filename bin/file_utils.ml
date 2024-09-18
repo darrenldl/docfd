@@ -232,3 +232,10 @@ let mkdir_recursive (dir : string) : unit =
       )
   in
   aux true "" (CCString.split ~by:Filename.dir_sep dir)
+
+let file_size (path : string) : int option =
+  try
+    let st = Unix.stat path in
+    Some st.st_size
+  with
+  | _ -> None

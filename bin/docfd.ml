@@ -147,14 +147,14 @@ let files_satisfying_constraints (cons : file_constraints) : Document_src.file_c
   }
 
 let document_store_of_document_src ~env ~interactive pool (document_src : Document_src.t) =
-  let bar ~file_count =
+  let bar ~total_byte_count =
     let open Progress.Line in
     list
       [ brackets (elapsed ())
-      ; bar ~width:(`Fixed 20) file_count
-      ; percentage_of file_count
-      ; rate (Progress.Printer.create ~to_string:(Fmt.str "%6.1f file") ~string_len:11 ())
-      ; const "ETA: " ++ eta file_count
+      ; bar ~width:(`Fixed 20) total_byte_count
+      ; percentage_of total_byte_count
+      ; bytes_per_sec
+      ; const "ETA: " ++ eta total_byte_count
       ]
   in
   let all_documents : Document.t list list =
@@ -176,11 +176,11 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
           |> Misc_utils.length_and_list_of_seq
         in
         if interactive then (
-          Printf.eprintf "File count: %d\n" total_file_count
+          Printf.eprintf "Scanning\n";
         );
-        let progress_with_reporter ~file_count f =
+        let progress_with_reporter ~total_byte_count f =
           if interactive then (
-            Progress.with_reporter (bar ~file_count) (fun report_progress ->
+            Progress.with_reporter (bar ~total_byte_count) (fun report_progress ->
                 let report_progress =
                   let lock = Eio.Mutex.create () in
                   fun x ->
@@ -194,36 +194,74 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             f (fun _ -> ())
           )
         in
-        let files_with_index, files_without_index =
+        let document_total_byte_count, document_sizes =
+          List.fold_left (fun (total_size, m) (_, path) ->
+              match File_utils.file_size path with
+              | None -> (total_size, m)
+              | Some x -> (total_size + x, String_map.add path x m)
+            )
+            (0, String_map.empty)
+            files
+        in
+        if interactive then (
+          Printf.eprintf "- File count: %6d\n" total_file_count;
+          Printf.eprintf "- MiB:        %8.1f\n"
+            (Misc_utils.mib_of_bytes document_total_byte_count)
+        );
+        if interactive then (
+          Printf.eprintf "Hashing\n"
+        );
+        let file_and_hash_list =
           files
           |> (fun l ->
-              if interactive then (
-                Printf.eprintf "Hashing\n"
-              );
-              progress_with_reporter ~file_count:total_file_count
+              progress_with_reporter ~total_byte_count:document_total_byte_count
                 (fun report_progress ->
                    Task_pool.filter_map_list pool (fun (search_mode, path) ->
                        do_if_debug (fun oc ->
                            Printf.fprintf oc "Hashing document: %s\n" (Filename.quote path);
                          );
-                       report_progress 1;
-                       match BLAKE2B.hash_of_file ~env ~path with
-                       | Ok hash -> Some (search_mode, path, hash)
-                       | Error msg -> (
-                           do_if_debug (fun oc ->
-                               Printf.fprintf oc "Error: %s\n" msg
-                             );
-                           None
-                         )
+                       let res =
+                         match BLAKE2B.hash_of_file ~env ~path with
+                         | Ok hash -> Some (search_mode, path, hash)
+                         | Error msg -> (
+                             do_if_debug (fun oc ->
+                                 Printf.fprintf oc "Error: %s\n" msg
+                               );
+                             None
+                           )
+                       in
+                       (match String_map.find_opt path document_sizes with
+                        | None -> ()
+                        | Some x -> report_progress x);
+                       res
                      )
                      l
                 )
             )
+        in
+        let index_count, indices_total_byte_count, index_sizes =
+          List.fold_left (fun (index_count, total_size, m) (_, _, hash) ->
+              match Document.compute_index_path ~hash with
+              | None -> (index_count, total_size, m)
+              | Some path -> (
+                  match File_utils.file_size path with
+                  | None -> (index_count, total_size, m)
+                  | Some x -> (index_count, total_size + x, String_map.add hash x m)
+                )
+            )
+            (0, 0, String_map.empty)
+            file_and_hash_list
+        in
+        if interactive then (
+          Printf.eprintf "Finding and loading indices\n";
+          Printf.eprintf "- File count: %6d\n" index_count;
+          Printf.eprintf "- MiB:        %6.1f\n"
+            (Misc_utils.mib_of_bytes indices_total_byte_count);
+        );
+        let indexed_files, unindexed_files =
+          file_and_hash_list
           |> (fun l ->
-              if interactive then (
-                Printf.eprintf "Finding and loading indices\n"
-              );
-              progress_with_reporter ~file_count:total_file_count
+              progress_with_reporter ~total_byte_count:indices_total_byte_count
                 (fun report_progress ->
                    Task_pool.map_list pool (fun (search_mode, path, hash) ->
                        do_if_debug (fun oc ->
@@ -233,7 +271,10 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
                          Gc.full_major ();
                        );
                        let res = (search_mode, path, hash, Document.find_index ~env ~hash) in
-                       report_progress 1;
+                       (match String_map.find_opt hash index_sizes with
+                        | None -> ()
+                        | Some x -> report_progress x
+                       );
                        res
                      )
                      l
@@ -274,35 +315,49 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
         if interactive then (
           Printf.eprintf "Processing files with index\n"
         );
-        let files_with_index_count = List.length files_with_index in
-        let files_with_index =
-          progress_with_reporter ~file_count:files_with_index_count
-            (fun report_progress ->
-               files_with_index
-               |> List.filter_map (fun (search_mode, path, hash, index) ->
-                   let res = load_document ~env pool search_mode ~hash ~index path in
-                   report_progress 1;
-                   res
-                 )
+        let indexed_files =
+          indexed_files
+          |> List.filter_map (fun (search_mode, path, hash, index) ->
+              load_document ~env pool search_mode ~hash ~index path
             )
         in
         if interactive then (
           Printf.eprintf "Indexing remaining files\n"
         );
-        let files_without_index =
-          progress_with_reporter
-            ~file_count:(total_file_count - files_with_index_count)
-            (fun report_progress ->
-               files_without_index
-               |> Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size
-                 (fun (search_mode, path, hash) ->
-                    let res = load_document ~env pool search_mode ~hash path in
-                    report_progress 1;
-                    res
-                 )
+        let unindexed_file_count, unindexed_files_byte_count =
+          List.fold_left (fun (file_count, byte_count) (_, path, _) ->
+              (file_count + 1,
+               byte_count + Option.value ~default:0 (String_map.find_opt path document_sizes))
+            )
+            (0, 0)
+            unindexed_files
+        in
+        if interactive then (
+          Printf.eprintf "- File count: %6d\n" unindexed_file_count;
+          Printf.eprintf "- MiB:        %8.1f\n"
+            (Misc_utils.mib_of_bytes unindexed_files_byte_count);
+        );
+        let unindexed_files =
+          match unindexed_files with
+          | [] -> []
+          | _ -> (
+              progress_with_reporter
+                ~total_byte_count:unindexed_files_byte_count
+                (fun report_progress ->
+                   unindexed_files
+                   |> Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size
+                     (fun (search_mode, path, hash) ->
+                        let res = load_document ~env pool search_mode ~hash path in
+                        (match String_map.find_opt path document_sizes with
+                         | None -> ()
+                         | Some x -> report_progress x
+                        );
+                        res
+                     )
+                )
             )
         in
-        [ files_with_index; files_without_index ]
+        [ indexed_files; unindexed_files ]
       )
   in
   let store =

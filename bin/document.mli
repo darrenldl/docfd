@@ -23,6 +23,10 @@ val of_path :
   string ->
   (t, string) result
 
+val compute_index_path :
+  hash:string ->
+  string option
+
 val find_index :
   env:Eio_unix.Stdenv.base ->
   hash:string ->

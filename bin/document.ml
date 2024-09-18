@@ -138,15 +138,19 @@ let save_index ~env ~hash index : (unit, string) result =
       | _ -> Error (Fmt.str "failed to save index to %s" hash)
     )
 
-let find_index ~env ~hash : Index.t option =
+let compute_index_path ~hash =
   match !Params.cache_dir with
   | None -> None
   | Some cache_dir -> (
+      Some (Filename.concat cache_dir (Fmt.str "%s.index" hash))
+    )
+
+let find_index ~env ~hash : Index.t option =
+  match compute_index_path ~hash with
+  | None -> None
+  | Some path_str -> (
       let fs = Eio.Stdenv.fs env in
       try
-        let path_str =
-          Filename.concat cache_dir (Fmt.str "%s.index" hash)
-        in
         let path =
           (fst fs, path_str)
         in

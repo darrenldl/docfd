@@ -68,3 +68,6 @@ let drain_eio_stream (x : 'a Eio.Stream.t) =
     | Some _ -> aux ()
   in
   aux ()
+
+let mib_of_bytes (x : int) =
+  (Int.to_float x) /. (1024.0 *. 1024.0)
