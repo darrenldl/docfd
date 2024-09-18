@@ -175,6 +175,11 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
                (String_set.to_seq single_line_search_mode_files))
           |> Misc_utils.length_and_list_of_seq
         in
+        let print_stage_stats ~file_count ~total_byte_count =
+          Printf.eprintf "- File count: %6d\n" file_count;
+          Printf.eprintf "- MiB:        %8.1f\n"
+            (Misc_utils.mib_of_bytes total_byte_count);
+        in
         if interactive then (
           Printf.eprintf "Scanning\n";
         );
@@ -194,7 +199,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             f (fun _ -> ())
           )
         in
-        let document_total_byte_count, document_sizes =
+        let documents_total_byte_count, document_sizes =
           List.fold_left (fun (total_size, m) (_, path) ->
               match File_utils.file_size path with
               | None -> (total_size, m)
@@ -204,38 +209,42 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             files
         in
         if interactive then (
-          Printf.eprintf "- File count: %6d\n" total_file_count;
-          Printf.eprintf "- MiB:        %8.1f\n"
-            (Misc_utils.mib_of_bytes document_total_byte_count)
+          print_stage_stats
+            ~file_count:total_file_count
+            ~total_byte_count:documents_total_byte_count
         );
         if interactive then (
           Printf.eprintf "Hashing\n"
         );
         let file_and_hash_list =
-          files
-          |> (fun l ->
-              progress_with_reporter ~total_byte_count:document_total_byte_count
-                (fun report_progress ->
-                   Task_pool.filter_map_list pool (fun (search_mode, path) ->
-                       do_if_debug (fun oc ->
-                           Printf.fprintf oc "Hashing document: %s\n" (Filename.quote path);
-                         );
-                       let res =
-                         match BLAKE2B.hash_of_file ~env ~path with
-                         | Ok hash -> Some (search_mode, path, hash)
-                         | Error msg -> (
-                             do_if_debug (fun oc ->
-                                 Printf.fprintf oc "Error: %s\n" msg
-                               );
-                             None
-                           )
-                       in
-                       (match String_map.find_opt path document_sizes with
-                        | None -> ()
-                        | Some x -> report_progress x);
-                       res
-                     )
-                     l
+          match files with
+          | [] -> []
+          | _ -> (
+              files
+              |> (fun l ->
+                  progress_with_reporter ~total_byte_count:documents_total_byte_count
+                    (fun report_progress ->
+                       Task_pool.filter_map_list pool (fun (search_mode, path) ->
+                           do_if_debug (fun oc ->
+                               Printf.fprintf oc "Hashing document: %s\n" (Filename.quote path);
+                             );
+                           let res =
+                             match BLAKE2B.hash_of_file ~env ~path with
+                             | Ok hash -> Some (search_mode, path, hash)
+                             | Error msg -> (
+                                 do_if_debug (fun oc ->
+                                     Printf.fprintf oc "Error: %s\n" msg
+                                   );
+                                 None
+                               )
+                           in
+                           (match String_map.find_opt path document_sizes with
+                            | None -> ()
+                            | Some x -> report_progress x);
+                           res
+                         )
+                         l
+                    )
                 )
             )
         in
@@ -246,7 +255,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
               | Some path -> (
                   match File_utils.file_size path with
                   | None -> (index_count, total_size, m)
-                  | Some x -> (index_count, total_size + x, String_map.add hash x m)
+                  | Some x -> (index_count + 1, total_size + x, String_map.add hash x m)
                 )
             )
             (0, 0, String_map.empty)
@@ -254,36 +263,40 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
         in
         if interactive then (
           Printf.eprintf "Finding and loading indices\n";
-          Printf.eprintf "- File count: %6d\n" index_count;
-          Printf.eprintf "- MiB:        %6.1f\n"
-            (Misc_utils.mib_of_bytes indices_total_byte_count);
+          print_stage_stats
+            ~file_count:index_count
+            ~total_byte_count:indices_total_byte_count;
         );
         let indexed_files, unindexed_files =
-          file_and_hash_list
-          |> (fun l ->
-              progress_with_reporter ~total_byte_count:indices_total_byte_count
-                (fun report_progress ->
-                   Task_pool.map_list pool (fun (search_mode, path, hash) ->
-                       do_if_debug (fun oc ->
-                           Printf.fprintf oc "Finding index for document: %s, hash: %s\n" (Filename.quote path) hash;
-                         );
-                       if Random.int 20 = 0 then (
-                         Gc.full_major ();
-                       );
-                       let res = (search_mode, path, hash, Document.find_index ~env ~hash) in
-                       (match String_map.find_opt hash index_sizes with
-                        | None -> ()
-                        | Some x -> report_progress x
-                       );
-                       res
-                     )
-                     l
+          match file_and_hash_list with
+          | [] -> ([], [])
+          | _ -> (
+              file_and_hash_list
+              |> (fun l ->
+                  progress_with_reporter ~total_byte_count:indices_total_byte_count
+                    (fun report_progress ->
+                       Task_pool.map_list pool (fun (search_mode, path, hash) ->
+                           do_if_debug (fun oc ->
+                               Printf.fprintf oc "Finding index for document: %s, hash: %s\n" (Filename.quote path) hash;
+                             );
+                           if Random.int 20 = 0 then (
+                             Gc.full_major ();
+                           );
+                           let res = (search_mode, path, hash, Document.find_index ~env ~hash) in
+                           (match String_map.find_opt hash index_sizes with
+                            | None -> ()
+                            | Some x -> report_progress x
+                           );
+                           res
+                         )
+                         l
+                    )
                 )
-            )
-          |> List.partition_map (fun (search_mode, path, hash, index) ->
-              match index with
-              | Some index -> Left (search_mode, path, hash, index)
-              | None -> Right (search_mode, path, hash)
+              |> List.partition_map (fun (search_mode, path, hash, index) ->
+                  match index with
+                  | Some index -> Left (search_mode, path, hash, index)
+                  | None -> Right (search_mode, path, hash)
+                )
             )
         in
         let load_document ~env pool search_mode ~hash ?index path =
@@ -333,9 +346,9 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             unindexed_files
         in
         if interactive then (
-          Printf.eprintf "- File count: %6d\n" unindexed_file_count;
-          Printf.eprintf "- MiB:        %8.1f\n"
-            (Misc_utils.mib_of_bytes unindexed_files_byte_count);
+          print_stage_stats
+            ~file_count:unindexed_file_count
+            ~total_byte_count:unindexed_files_byte_count;
         );
         let unindexed_files =
           match unindexed_files with
