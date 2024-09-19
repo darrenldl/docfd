@@ -314,9 +314,11 @@ end
 
 module Bottom_pane = struct
   let status_bar
+      ~width
       ~(document_info_s : Document_store.document_info array)
       ~(input_mode : Ui_base.input_mode)
     : Nottui.Ui.t Lwd.t =
+    let open Notty.Infix in
     let$* index_of_document_selected = Lwd.get Vars.index_of_document_selected in
     let document_count = Array.length document_info_s in
     let input_mode_image =
@@ -333,18 +335,22 @@ module Bottom_pane = struct
       in
       let version =
         Notty.I.strf ~attr:Ui_base.Status_bar.attr
-          "Version: %d"
+          "[Version %d]"
           cur_ver
       in
+      let version_overlay =
+        let ver_len = Notty.I.width version in
+        Notty.I.void (width - ver_len) 1 <|> version
+      in
       if document_count = 0 then (
-        Notty.I.hcat
-          [
-            input_mode_image;
-            Ui_base.Status_bar.element_spacer;
-            file_shown_count;
-            Ui_base.Status_bar.element_spacer;
-            version;
-          ]
+        (Notty.I.hcat
+           [
+             input_mode_image;
+             Ui_base.Status_bar.element_spacer;
+             file_shown_count;
+           ]
+         </>
+         version_overlay)
         |> Nottui.Ui.atom
       ) else (
         let index_of_selected =
@@ -352,16 +358,16 @@ module Bottom_pane = struct
             "Index of document selected: %d"
             index_of_document_selected
         in
-        Notty.I.hcat
-          [
-            input_mode_image;
-            Ui_base.Status_bar.element_spacer;
-            file_shown_count;
-            Ui_base.Status_bar.element_spacer;
-            index_of_selected;
-            Ui_base.Status_bar.element_spacer;
-            version;
-          ]
+        (Notty.I.hcat
+           [
+             input_mode_image;
+             Ui_base.Status_bar.element_spacer;
+             file_shown_count;
+             Ui_base.Status_bar.element_spacer;
+             index_of_selected;
+           ]
+         </>
+         version_overlay)
         |> Nottui.Ui.atom
       )
     in
@@ -532,11 +538,11 @@ module Bottom_pane = struct
       ~focus_handle:Vars.search_field_focus_handle
       ~f:update_search_phrase
 
-  let main ~document_info_s =
+  let main ~width ~document_info_s =
     let$* input_mode = Lwd.get Ui_base.Vars.input_mode in
     Nottui_widgets.vbox
       [
-        status_bar ~document_info_s ~input_mode;
+        status_bar ~width ~document_info_s ~input_mode;
         Key_binding_info.main ~input_mode;
         file_path_filter_bar ~input_mode;
         search_bar ~input_mode;
@@ -908,9 +914,13 @@ let main : Nottui.ui Lwd.t =
   let document_info_s =
     Document_store.usable_documents document_store
   in
-  let$* bottom_pane = Bottom_pane.main ~document_info_s in
-  let bottom_pane_height = Nottui.Ui.layout_height bottom_pane in
   let$* (term_width, term_height) = Lwd.get Ui_base.Vars.term_width_height in
+  let$* bottom_pane =
+    Bottom_pane.main
+      ~width:term_width
+      ~document_info_s
+  in
+  let bottom_pane_height = Nottui.Ui.layout_height bottom_pane in
   let top_pane_height = term_height - bottom_pane_height in
   let$* top_pane =
     Top_pane.main
