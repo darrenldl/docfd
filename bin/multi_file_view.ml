@@ -18,11 +18,10 @@ module Vars = struct
 
   let require_field_focus_handle = Nottui.Focus.make ()
 
-  let document_store_undo : Document_store.t Stack.t =
-    Stack.create ()
+  let document_store_versions : Document_store.t Dynarray.t =
+    Dynarray.create ()
 
-  let document_store_redo : Document_store.t Stack.t =
-    Stack.create ()
+  let document_store_cur_ver = Lwd.var 0
 end
 
 let set_document_selected ~choice_count n =
@@ -74,9 +73,15 @@ let sync_input_fields_from_document_store
   |> (fun s ->
       Lwd.set Vars.search_field (s, String.length s))
 
-let add_to_undo (store : Document_store.t) =
-  Stack.push store Vars.document_store_undo;
-  Stack.clear Vars.document_store_redo
+let clear_document_store_later_versions () =
+  let cur_ver = Lwd.peek Vars.document_store_cur_ver in
+  Dynarray.truncate Vars.document_store_versions (cur_ver + 1)
+
+let add_document_store_version (store : Document_store.t) =
+  clear_document_store_later_versions ();
+  Dynarray.add_last Vars.document_store_versions store;
+  let new_ver = Lwd.peek Vars.document_store_cur_ver + 1 in
+  Lwd.set Vars.document_store_cur_ver new_ver
 
 let drop ~document_count (choice : [`Single of string | `Listed | `Unlisted]) =
   let choice =
@@ -98,7 +103,7 @@ let drop ~document_count (choice : [`Single of string | `Listed | `Unlisted]) =
   let document_store =
     Lwd.peek Document_store_manager.multi_file_view_document_store
   in
-  add_to_undo document_store;
+  add_document_store_version document_store;
   Document_store_manager.submit_update_req
     `Multi_file_view
     (Document_store.drop choice document_store)
@@ -106,13 +111,13 @@ let drop ~document_count (choice : [`Single of string | `Listed | `Unlisted]) =
 let update_file_path_filter () =
   reset_document_selected ();
   let s = fst @@ Lwd.peek Vars.file_path_filter_field in
-  Stack.clear Vars.document_store_redo;
+  clear_document_store_later_versions ();
   Document_store_manager.submit_filter_req `Multi_file_view s
 
 let update_search_phrase () =
   reset_document_selected ();
   let s = fst @@ Lwd.peek Vars.search_field in
-  Stack.clear Vars.document_store_redo;
+  clear_document_store_later_versions ();
   Document_store_manager.submit_search_req `Multi_file_view s
 
 module Top_pane = struct
@@ -317,6 +322,7 @@ module Bottom_pane = struct
     let input_mode_image =
       List.assoc input_mode Ui_base.Status_bar.input_mode_images
     in
+    let$* cur_ver = Lwd.get Vars.document_store_cur_ver in
     let content =
       let file_shown_count =
         Notty.I.strf ~attr:Ui_base.Status_bar.attr
@@ -325,12 +331,19 @@ module Bottom_pane = struct
           (Document_store.size
              (Lwd.peek Document_store_manager.multi_file_view_document_store))
       in
+      let version =
+        Notty.I.strf ~attr:Ui_base.Status_bar.attr
+          "Version: %d"
+          cur_ver
+      in
       if document_count = 0 then (
         Notty.I.hcat
           [
             input_mode_image;
             Ui_base.Status_bar.element_spacer;
             file_shown_count;
+            Ui_base.Status_bar.element_spacer;
+            version;
           ]
         |> Nottui.Ui.atom
       ) else (
@@ -346,6 +359,8 @@ module Bottom_pane = struct
             file_shown_count;
             Ui_base.Status_bar.element_spacer;
             index_of_selected;
+            Ui_base.Status_bar.element_spacer;
+            version;
           ]
         |> Nottui.Ui.atom
       )
@@ -578,34 +593,40 @@ let keyboard_handler
           Ui_base.set_input_mode Print;
           `Handled
         )
+      | (`Arrow `Left, [])
       | (`ASCII 'u', [])
       | (`ASCII 'Z', [`Ctrl]) -> (
-          (match Stack.pop_opt Vars.document_store_undo with
-           | None -> ()
-           | Some prev -> (
-               let cur =
-                 Lwd.peek Document_store_manager.multi_file_view_document_store
-               in
-               Stack.push cur Vars.document_store_redo;
-               Document_store_manager.submit_update_req `Multi_file_view prev;
-               sync_input_fields_from_document_store prev;
-               reset_document_selected ();
-             ));
+          let cur_ver = Lwd.peek Vars.document_store_cur_ver in
+          let new_ver = cur_ver - 1 in
+          if new_ver >= 0 then (
+            let cur_store =
+              Lwd.peek Document_store_manager.multi_file_view_document_store
+            in
+            Dynarray.set Vars.document_store_versions cur_ver cur_store;
+            Lwd.set Vars.document_store_cur_ver new_ver;
+            let store = Dynarray.get Vars.document_store_versions new_ver in
+            Document_store_manager.submit_update_req `Multi_file_view store;
+            sync_input_fields_from_document_store store;
+            reset_document_selected ();
+          );
           `Handled
         )
+      | (`Arrow `Right, [])
       | (`ASCII 'R', [`Ctrl])
       | (`ASCII 'Y', [`Ctrl]) -> (
-          (match Stack.pop_opt Vars.document_store_redo with
-           | None -> ()
-           | Some next -> (
-               let cur =
-                 Lwd.peek Document_store_manager.multi_file_view_document_store
-               in
-               Stack.push cur Vars.document_store_undo;
-               Document_store_manager.submit_update_req `Multi_file_view next;
-               sync_input_fields_from_document_store next;
-               reset_document_selected ();
-             ));
+          let cur_ver = Lwd.peek Vars.document_store_cur_ver in
+          let new_ver = cur_ver + 1 in
+          if new_ver < Dynarray.length Vars.document_store_versions then (
+            let cur_store =
+              Lwd.peek Document_store_manager.multi_file_view_document_store
+            in
+            Dynarray.set Vars.document_store_versions cur_ver cur_store;
+            Lwd.set Vars.document_store_cur_ver new_ver;
+            let store = Dynarray.get Vars.document_store_versions new_ver in
+            Document_store_manager.submit_update_req `Multi_file_view store;
+            sync_input_fields_from_document_store store;
+            reset_document_selected ();
+          );
           `Handled
         )
       | (`Tab, []) -> (
@@ -875,6 +896,15 @@ let main : Nottui.ui Lwd.t =
   let$* document_store =
     Lwd.get Document_store_manager.multi_file_view_document_store
   in
+  let cur_ver = Lwd.peek Vars.document_store_cur_ver in
+  if
+    cur_ver = 0
+    && Dynarray.length Vars.document_store_versions = 0
+  then (
+    Dynarray.add_last Vars.document_store_versions document_store
+  ) else (
+    Dynarray.set Vars.document_store_versions cur_ver document_store
+  );
   let document_info_s =
     Document_store.usable_documents document_store
   in
