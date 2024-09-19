@@ -335,7 +335,7 @@ module Bottom_pane = struct
       in
       let version =
         Notty.I.strf ~attr:Ui_base.Status_bar.attr
-          "[Version %d]"
+          "v%d "
           cur_ver
       in
       let version_overlay =
