@@ -45,7 +45,7 @@
             oseq
             eio
             eio_main
-            digestif.ocaml
+            digestif.c
             digestif
             timedesc
             timedesc-tzlocal.unix
