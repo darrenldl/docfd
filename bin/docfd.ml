@@ -176,24 +176,27 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
           |> Misc_utils.length_and_list_of_seq
         in
         let print_stage_stats ~file_count ~total_byte_count =
-          Printf.eprintf "- File count: %6d\n" file_count;
-          Printf.eprintf "- MiB:        %8.1f\n"
+          Printf.printf "- File count: %6d\n" file_count;
+          Printf.printf "- MiB:        %8.1f\n"
             (Misc_utils.mib_of_bytes total_byte_count);
         in
         if interactive then (
-          Printf.eprintf "Scanning\n";
+          Printf.printf "Scanning\n";
         );
         let progress_with_reporter ~total_byte_count f =
           if interactive then (
-            Progress.with_reporter (bar ~total_byte_count) (fun report_progress ->
-                let report_progress =
-                  let lock = Eio.Mutex.create () in
-                  fun x ->
-                    Eio.Mutex.use_rw lock ~protect:false (fun () ->
-                        report_progress x
-                      )
-                in
-                f report_progress
+            Progress.with_reporter
+              ~config:(Progress.Config.v ~ppf:Format.std_formatter ())
+              (bar ~total_byte_count)
+              (fun report_progress ->
+                 let report_progress =
+                   let lock = Eio.Mutex.create () in
+                   fun x ->
+                     Eio.Mutex.use_rw lock ~protect:false (fun () ->
+                         report_progress x
+                       )
+                 in
+                 f report_progress
               )
           ) else (
             f (fun _ -> ())
@@ -214,7 +217,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             ~total_byte_count:documents_total_byte_count
         );
         if interactive then (
-          Printf.eprintf "Hashing\n"
+          Printf.printf "Hashing\n"
         );
         let file_and_hash_list =
           match files with
@@ -262,7 +265,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             file_and_hash_list
         in
         if interactive then (
-          Printf.eprintf "Finding and loading indices\n";
+          Printf.printf "Finding and loading indices\n";
           print_stage_stats
             ~file_count:index_count
             ~total_byte_count:indices_total_byte_count;
@@ -326,7 +329,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             )
         in
         if interactive then (
-          Printf.eprintf "Processing files with index\n"
+          Printf.printf "Processing files with index\n"
         );
         let indexed_files =
           indexed_files
@@ -335,7 +338,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             )
         in
         if interactive then (
-          Printf.eprintf "Indexing remaining files\n"
+          Printf.printf "Indexing remaining files\n"
         );
         let unindexed_file_count, unindexed_files_byte_count =
           List.fold_left (fun (file_count, byte_count) (_, path, _) ->
