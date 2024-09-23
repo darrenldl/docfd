@@ -147,7 +147,16 @@ let files_satisfying_constraints (cons : file_constraints) : Document_src.file_c
   }
 
 let document_store_of_document_src ~env ~interactive pool (document_src : Document_src.t) =
-  let bar ~total_byte_count =
+  let file_bar ~total_file_count =
+    let open Progress.Line in
+    list
+      [ brackets (elapsed ())
+      ; bar ~width:(`Fixed 20) total_file_count
+      ; percentage_of total_file_count
+      ; const "ETA: " ++ eta total_file_count
+      ]
+  in
+  let byte_bar ~total_byte_count =
     let open Progress.Line in
     list
       [ brackets (elapsed ())
@@ -167,27 +176,16 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
           )
       )
     | Files { default_search_mode_files; single_line_search_mode_files } -> (
-        let total_file_count, files =
-          Seq.append
-            (Seq.map (fun path -> (!Params.default_search_mode, path))
-               (String_set.to_seq default_search_mode_files))
-            (Seq.map (fun path -> (`Single_line, path))
-               (String_set.to_seq single_line_search_mode_files))
-          |> Misc_utils.length_and_list_of_seq
-        in
         let print_stage_stats ~file_count ~total_byte_count =
           Printf.printf "- File count: %6d\n" file_count;
           Printf.printf "- MiB:        %8.1f\n"
             (Misc_utils.mib_of_bytes total_byte_count);
         in
-        if interactive then (
-          Printf.printf "Scanning\n";
-        );
-        let progress_with_reporter ~total_byte_count f =
+        let progress_with_reporter bar f =
           if interactive then (
             Progress.with_reporter
               ~config:(Progress.Config.v ~ppf:Format.std_formatter ())
-              (bar ~total_byte_count)
+              bar
               (fun report_progress ->
                  let report_progress =
                    let lock = Eio.Mutex.create () in
@@ -202,14 +200,33 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             f (fun _ -> ())
           )
         in
+        let total_file_count, files =
+          Seq.append
+            (Seq.map (fun path -> (!Params.default_search_mode, path))
+               (String_set.to_seq default_search_mode_files))
+            (Seq.map (fun path -> (`Single_line, path))
+               (String_set.to_seq single_line_search_mode_files))
+          |> Misc_utils.length_and_list_of_seq
+        in
+        if interactive then (
+          Printf.printf "Collecting file stats\n";
+        );
         let documents_total_byte_count, document_sizes =
-          List.fold_left (fun (total_size, m) (_, path) ->
-              match File_utils.file_size path with
-              | None -> (total_size, m)
-              | Some x -> (total_size + x, String_map.add path x m)
+          progress_with_reporter
+            (file_bar ~total_file_count)
+            (fun report_progress ->
+               List.fold_left (fun (total_size, m) (_, path) ->
+                   let res =
+                     match File_utils.file_size path with
+                     | None -> (total_size, m)
+                     | Some x -> (total_size + x, String_map.add path x m)
+                   in
+                   report_progress 1;
+                   res
+                 )
+                 (0, String_map.empty)
+                 files
             )
-            (0, String_map.empty)
-            files
         in
         if interactive then (
           print_stage_stats
@@ -225,7 +242,8 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
           | _ -> (
               files
               |> (fun l ->
-                  progress_with_reporter ~total_byte_count:documents_total_byte_count
+                  progress_with_reporter
+                    (byte_bar ~total_byte_count:documents_total_byte_count)
                     (fun report_progress ->
                        Task_pool.filter_map_list pool (fun (search_mode, path) ->
                            do_if_debug (fun oc ->
@@ -276,7 +294,8 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
           | _ -> (
               file_and_hash_list
               |> (fun l ->
-                  progress_with_reporter ~total_byte_count:indices_total_byte_count
+                  progress_with_reporter
+                    (byte_bar ~total_byte_count:indices_total_byte_count)
                     (fun report_progress ->
                        Task_pool.map_list pool (fun (search_mode, path, hash) ->
                            do_if_debug (fun oc ->
@@ -358,7 +377,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
           | [] -> []
           | _ -> (
               progress_with_reporter
-                ~total_byte_count:unindexed_files_byte_count
+                (byte_bar ~total_byte_count:unindexed_files_byte_count)
                 (fun report_progress ->
                    unindexed_files
                    |> Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size
