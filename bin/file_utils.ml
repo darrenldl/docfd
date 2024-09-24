@@ -78,7 +78,7 @@ let next_choices path : string Seq.t =
   | _ -> Seq.empty
 
 let list_files_recursive
-~(report_progress : unit -> unit)
+    ~(report_progress : unit -> unit)
     ~(filter : int -> string -> bool)
     (path : string)
   : String_set.t =
@@ -108,7 +108,7 @@ let list_files_recursive
   !acc
 
 let list_files_recursive_filter_by_globs
-~(report_progress : unit -> unit)
+    ~(report_progress : unit -> unit)
     (globs : string Seq.t)
   : String_set.t =
   let acc = ref String_set.empty in
@@ -148,10 +148,10 @@ let list_files_recursive_filter_by_globs
             let glob = make_glob ~case_sensitive re_string in
             path
             |> list_files_recursive
-            ~report_progress
-            ~filter:(fun _depth path ->
-                Glob.match_ glob path
-              )
+              ~report_progress
+              ~filter:(fun _depth path ->
+                  Glob.match_ glob path
+                )
             |> String_set.iter (fun path ->
                 do_if_debug (fun oc ->
                     Printf.fprintf oc "Glob regex %s matches path %s\n" re_string path
@@ -191,7 +191,7 @@ let list_files_recursive_filter_by_globs
   !acc
 
 let list_files_recursive_filter_by_exts
-~report_progress
+    ~report_progress
     ~(exts : string list)
     (paths : string Seq.t)
   : String_set.t =

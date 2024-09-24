@@ -65,102 +65,102 @@ let make_file_constraints
     )
 
 let files_satisfying_constraints
-~interactive
-(cons : file_constraints)
-: Document_src.file_collection =
+    ~interactive
+    (cons : file_constraints)
+  : Document_src.file_collection =
   let bar =
     let open Progress.Line in
     list
-    [ const "Scanning"
-    ; spinner ()
-    ]
+      [ const "Scanning"
+      ; spinner ()
+      ]
   in
   progress_with_reporter
-  ~interactive
-  bar
-  (fun report_progress : Document_src.file_collection ->
-  let single_line_search_mode_applies file =
-    List.mem (extension_of_file file) cons.single_line_exts
-  in
-  let single_line_search_mode_paths_by_exts, default_search_mode_paths_by_exts =
-    cons.directly_specified_paths
-    |> String_set.to_seq 
-    |> list_files_recursive_filter_by_exts
-    ~report_progress
-      ~exts:(cons.exts @ cons.single_line_exts)
-    |> String_set.partition single_line_search_mode_applies
-  in
-  let paths_from_single_line_globs =
-    cons.single_line_globs
-    |> String_set.to_seq
-    |> compute_paths_from_globs ~report_progress
-  in
-  let single_line_search_mode_paths_from_globs, default_search_mode_paths_from_globs =
-    cons.globs
-    |> String_set.to_seq
-    |> compute_paths_from_globs ~report_progress
-    |> String_set.partition single_line_search_mode_applies
-  in
-  let single_line_search_mode_files =
-    single_line_search_mode_paths_by_exts
-    |> String_set.union paths_from_single_line_globs
-    |> String_set.union single_line_search_mode_paths_from_globs
-  in
-  let default_search_mode_files =
-    default_search_mode_paths_by_exts
-    |> String_set.union default_search_mode_paths_from_globs
-    |> (fun s -> String_set.diff s single_line_search_mode_files)
-  in
-  do_if_debug (fun oc ->
-      Printf.fprintf oc "Checking if single line search mode files and default search mode files are disjoint\n";
-      if String_set.is_empty
-          (String_set.inter
-             single_line_search_mode_files
-             default_search_mode_files)
-      then (
-        Printf.fprintf oc "Check successful\n"
-      ) else (
-        failwith "check failed"
-      );
-      let all_files =
-        single_line_search_mode_paths_by_exts
-        |> String_set.union default_search_mode_paths_by_exts
-        |> String_set.union paths_from_single_line_globs
-        |> String_set.union single_line_search_mode_paths_from_globs
-        |> String_set.union default_search_mode_paths_from_globs
-      in
-      let single_line_search_mode_files', default_search_mode_files' =
-        String_set.partition (fun s ->
-            single_line_search_mode_applies s
-            ||
-            String_set.mem s paths_from_single_line_globs
-          )
-          all_files
-      in
-      Printf.fprintf oc "Checking if efficiently computed and naively computed results for single line search mode files are consistent\n";
-      if String_set.equal
-          single_line_search_mode_files
-          single_line_search_mode_files'
-      then (
-        Printf.fprintf oc "Check successful\n"
-      ) else (
-        failwith "check failed"
-      );
-      Printf.fprintf oc "Checking if efficiently computed and naively computed results for default search mode files are consistent\n";
-      if String_set.equal
-          default_search_mode_files
-          default_search_mode_files'
-      then (
-        Printf.fprintf oc "Check successful\n"
-      ) else (
-        failwith "check failed"
-      )
-    );
-  {
-    default_search_mode_files;
-    single_line_search_mode_files;
-  }
-  )
+    ~interactive
+    bar
+    (fun report_progress : Document_src.file_collection ->
+       let single_line_search_mode_applies file =
+         List.mem (extension_of_file file) cons.single_line_exts
+       in
+       let single_line_search_mode_paths_by_exts, default_search_mode_paths_by_exts =
+         cons.directly_specified_paths
+         |> String_set.to_seq
+         |> list_files_recursive_filter_by_exts
+           ~report_progress
+           ~exts:(cons.exts @ cons.single_line_exts)
+         |> String_set.partition single_line_search_mode_applies
+       in
+       let paths_from_single_line_globs =
+         cons.single_line_globs
+         |> String_set.to_seq
+         |> compute_paths_from_globs ~report_progress
+       in
+       let single_line_search_mode_paths_from_globs, default_search_mode_paths_from_globs =
+         cons.globs
+         |> String_set.to_seq
+         |> compute_paths_from_globs ~report_progress
+         |> String_set.partition single_line_search_mode_applies
+       in
+       let single_line_search_mode_files =
+         single_line_search_mode_paths_by_exts
+         |> String_set.union paths_from_single_line_globs
+         |> String_set.union single_line_search_mode_paths_from_globs
+       in
+       let default_search_mode_files =
+         default_search_mode_paths_by_exts
+         |> String_set.union default_search_mode_paths_from_globs
+         |> (fun s -> String_set.diff s single_line_search_mode_files)
+       in
+       do_if_debug (fun oc ->
+           Printf.fprintf oc "Checking if single line search mode files and default search mode files are disjoint\n";
+           if String_set.is_empty
+               (String_set.inter
+                  single_line_search_mode_files
+                  default_search_mode_files)
+           then (
+             Printf.fprintf oc "Check successful\n"
+           ) else (
+             failwith "check failed"
+           );
+           let all_files =
+             single_line_search_mode_paths_by_exts
+             |> String_set.union default_search_mode_paths_by_exts
+             |> String_set.union paths_from_single_line_globs
+             |> String_set.union single_line_search_mode_paths_from_globs
+             |> String_set.union default_search_mode_paths_from_globs
+           in
+           let single_line_search_mode_files', default_search_mode_files' =
+             String_set.partition (fun s ->
+                 single_line_search_mode_applies s
+                 ||
+                 String_set.mem s paths_from_single_line_globs
+               )
+               all_files
+           in
+           Printf.fprintf oc "Checking if efficiently computed and naively computed results for single line search mode files are consistent\n";
+           if String_set.equal
+               single_line_search_mode_files
+               single_line_search_mode_files'
+           then (
+             Printf.fprintf oc "Check successful\n"
+           ) else (
+             failwith "check failed"
+           );
+           Printf.fprintf oc "Checking if efficiently computed and naively computed results for default search mode files are consistent\n";
+           if String_set.equal
+               default_search_mode_files
+               default_search_mode_files'
+           then (
+             Printf.fprintf oc "Check successful\n"
+           ) else (
+             failwith "check failed"
+           )
+         );
+       {
+         default_search_mode_files;
+         single_line_search_mode_files;
+       }
+    )
 
 let document_store_of_document_src ~env ~interactive pool (document_src : Document_src.t) =
   let file_bar ~total_file_count =
@@ -210,7 +210,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
         );
         let documents_total_byte_count, document_sizes =
           progress_with_reporter
-          ~interactive
+            ~interactive
             (file_bar ~total_file_count)
             (fun report_progress ->
                List.fold_left (fun (total_size, m) (_, path) ->
@@ -241,7 +241,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
               files
               |> (fun l ->
                   progress_with_reporter
-                  ~interactive
+                    ~interactive
                     (byte_bar ~total_byte_count:documents_total_byte_count)
                     (fun report_progress ->
                        Task_pool.filter_map_list pool (fun (search_mode, path) ->
@@ -294,7 +294,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
               file_and_hash_list
               |> (fun l ->
                   progress_with_reporter
-                  ~interactive
+                    ~interactive
                     (byte_bar ~total_byte_count:indices_total_byte_count)
                     (fun report_progress ->
                        Task_pool.map_list pool (fun (search_mode, path, hash) ->
@@ -377,7 +377,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
           | [] -> []
           | _ -> (
               progress_with_reporter
-              ~interactive
+                ~interactive
                 (byte_bar ~total_byte_count:unindexed_files_byte_count)
                 (fun report_progress ->
                    unindexed_files
