@@ -78,6 +78,7 @@ let next_choices path : string Seq.t =
   | _ -> Seq.empty
 
 let list_files_recursive
+~(report_progress : unit -> unit)
     ~(filter : int -> string -> bool)
     (path : string)
   : String_set.t =
@@ -86,6 +87,7 @@ let list_files_recursive
     acc := String_set.add x !acc
   in
   let rec aux depth path =
+    report_progress ();
     if depth <= !Params.max_file_tree_scan_depth then (
       match typ_of_path path with
       | Some (`Dir, _) -> (
@@ -106,6 +108,7 @@ let list_files_recursive
   !acc
 
 let list_files_recursive_filter_by_globs
+~(report_progress : unit -> unit)
     (globs : string Seq.t)
   : String_set.t =
   let acc = ref String_set.empty in
@@ -120,6 +123,7 @@ let list_files_recursive_filter_by_globs
     | Some x -> x
   in
   let rec aux ~case_sensitive (path_parts : string list) (glob_parts : string list) =
+    report_progress ();
     let path = path_of_parts path_parts in
     match typ_of_path path, glob_parts with
     | Some (`File, _), [] -> add path
@@ -143,7 +147,9 @@ let list_files_recursive_filter_by_globs
               );
             let glob = make_glob ~case_sensitive re_string in
             path
-            |> list_files_recursive ~filter:(fun _depth path ->
+            |> list_files_recursive
+            ~report_progress
+            ~filter:(fun _depth path ->
                 Glob.match_ glob path
               )
             |> String_set.iter (fun path ->
@@ -185,6 +191,7 @@ let list_files_recursive_filter_by_globs
   !acc
 
 let list_files_recursive_filter_by_exts
+~report_progress
     ~(exts : string list)
     (paths : string Seq.t)
   : String_set.t =
@@ -194,7 +201,7 @@ let list_files_recursive_filter_by_exts
   in
   paths
   |> Seq.map normalize_path_to_absolute
-  |> Seq.map (list_files_recursive ~filter)
+  |> Seq.map (list_files_recursive ~report_progress ~filter)
   |> Seq.fold_left String_set.union String_set.empty
 
 let mkdir_recursive (dir : string) : unit =

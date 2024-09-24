@@ -71,3 +71,22 @@ let drain_eio_stream (x : 'a Eio.Stream.t) =
 
 let mib_of_bytes (x : int) =
   (Int.to_float x) /. (1024.0 *. 1024.0)
+
+        let progress_with_reporter ~interactive bar f =
+          if interactive then (
+            Progress.with_reporter
+              ~config:(Progress.Config.v ~ppf:Format.std_formatter ())
+              bar
+              (fun report_progress ->
+                 let report_progress =
+                   let lock = Eio.Mutex.create () in
+                   fun x ->
+                     Eio.Mutex.use_rw lock ~protect:false (fun () ->
+                         report_progress x
+                       )
+                 in
+                 f report_progress
+              )
+          ) else (
+            f (fun _ -> ())
+          )

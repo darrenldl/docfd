@@ -5,7 +5,7 @@ open Debug_utils
 open Misc_utils
 open File_utils
 
-let compute_paths_from_globs globs =
+let compute_paths_from_globs ~report_progress globs =
   Seq.iter (fun s ->
       match Glob.make s with
       | Some _ -> ()
@@ -14,7 +14,7 @@ let compute_paths_from_globs globs =
             (Fmt.str "failed to parse glob pattern: \"%s\"" s)
         )
     ) globs;
-  list_files_recursive_filter_by_globs globs
+  list_files_recursive_filter_by_globs ~report_progress globs
 
 type file_constraints = {
   paths_were_originally_specified_by_user : bool;
@@ -64,7 +64,21 @@ let make_file_constraints
       }
     )
 
-let files_satisfying_constraints (cons : file_constraints) : Document_src.file_collection =
+let files_satisfying_constraints
+~interactive
+(cons : file_constraints)
+: Document_src.file_collection =
+  let bar =
+    let open Progress.Line in
+    list
+    [ const "Scanning"
+    ; spinner ()
+    ]
+  in
+  progress_with_reporter
+  ~interactive
+  bar
+  (fun report_progress : Document_src.file_collection ->
   let single_line_search_mode_applies file =
     List.mem (extension_of_file file) cons.single_line_exts
   in
@@ -72,18 +86,19 @@ let files_satisfying_constraints (cons : file_constraints) : Document_src.file_c
     cons.directly_specified_paths
     |> String_set.to_seq 
     |> list_files_recursive_filter_by_exts
+    ~report_progress
       ~exts:(cons.exts @ cons.single_line_exts)
     |> String_set.partition single_line_search_mode_applies
   in
   let paths_from_single_line_globs =
     cons.single_line_globs
     |> String_set.to_seq
-    |> compute_paths_from_globs
+    |> compute_paths_from_globs ~report_progress
   in
   let single_line_search_mode_paths_from_globs, default_search_mode_paths_from_globs =
     cons.globs
     |> String_set.to_seq
-    |> compute_paths_from_globs
+    |> compute_paths_from_globs ~report_progress
     |> String_set.partition single_line_search_mode_applies
   in
   let single_line_search_mode_files =
@@ -145,6 +160,7 @@ let files_satisfying_constraints (cons : file_constraints) : Document_src.file_c
     default_search_mode_files;
     single_line_search_mode_files;
   }
+  )
 
 let document_store_of_document_src ~env ~interactive pool (document_src : Document_src.t) =
   let file_bar ~total_file_count =
@@ -181,25 +197,6 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
           Printf.printf "- MiB:        %8.1f\n"
             (Misc_utils.mib_of_bytes total_byte_count);
         in
-        let progress_with_reporter bar f =
-          if interactive then (
-            Progress.with_reporter
-              ~config:(Progress.Config.v ~ppf:Format.std_formatter ())
-              bar
-              (fun report_progress ->
-                 let report_progress =
-                   let lock = Eio.Mutex.create () in
-                   fun x ->
-                     Eio.Mutex.use_rw lock ~protect:false (fun () ->
-                         report_progress x
-                       )
-                 in
-                 f report_progress
-              )
-          ) else (
-            f (fun _ -> ())
-          )
-        in
         let total_file_count, files =
           Seq.append
             (Seq.map (fun path -> (!Params.default_search_mode, path))
@@ -213,6 +210,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
         );
         let documents_total_byte_count, document_sizes =
           progress_with_reporter
+          ~interactive
             (file_bar ~total_file_count)
             (fun report_progress ->
                List.fold_left (fun (total_size, m) (_, path) ->
@@ -243,6 +241,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
               files
               |> (fun l ->
                   progress_with_reporter
+                  ~interactive
                     (byte_bar ~total_byte_count:documents_total_byte_count)
                     (fun report_progress ->
                        Task_pool.filter_map_list pool (fun (search_mode, path) ->
@@ -295,6 +294,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
               file_and_hash_list
               |> (fun l ->
                   progress_with_reporter
+                  ~interactive
                     (byte_bar ~total_byte_count:indices_total_byte_count)
                     (fun report_progress ->
                        Task_pool.map_list pool (fun (search_mode, path, hash) ->
@@ -377,6 +377,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
           | [] -> []
           | _ -> (
               progress_with_reporter
+              ~interactive
                 (byte_bar ~total_byte_count:unindexed_files_byte_count)
                 (fun report_progress ->
                    unindexed_files
@@ -540,6 +541,11 @@ let run
         |> Option.some
       )
   in
+  let interactive =
+    Option.is_none sample_search_exp
+    &&
+    Option.is_none search_exp
+  in
   let file_constraints =
     make_file_constraints
       ~exts:recognized_exts
@@ -551,9 +557,6 @@ let run
   in
   let pool = Task_pool.make ~sw (Eio.Stdenv.domain_mgr env) in
   Ui_base.Vars.pool := Some pool;
-  do_if_debug (fun oc ->
-      Printf.fprintf oc "Scanning for documents\n"
-    );
   let compute_init_ui_mode_and_document_src : unit -> Ui_base.ui_mode * Document_src.t =
     let stdin_tmp_file = ref None in
     (fun () ->
@@ -564,7 +567,7 @@ let run
            )
          )
          file_constraints.directly_specified_paths;
-       let file_collection = files_satisfying_constraints file_constraints in
+       let file_collection = files_satisfying_constraints ~interactive file_constraints in
        let file_collection =
          match question_marks with
          | [] -> file_collection
@@ -675,11 +678,6 @@ let run
      )
   );
   Ui_base.Vars.init_ui_mode := init_ui_mode;
-  let interactive =
-    Option.is_none sample_search_exp
-    &&
-    Option.is_none search_exp
-  in
   let init_document_store =
     document_store_of_document_src ~env pool ~interactive init_document_src
   in
