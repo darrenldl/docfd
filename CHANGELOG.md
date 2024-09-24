@@ -16,6 +16,12 @@
 - Changed GC compact call during file indexing to a full major collection call
   to reduce overhead
 
+- Added progress bars to initial document processing stage
+
+- Swapped to using C backend for BLAKE2B hashing, this gives >20x speedup depending on CPU
+
+- Swapped to binary serialization for indices
+
 ## 8.0.3
 
 - Fixed single file view crash
