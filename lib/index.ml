@@ -818,34 +818,55 @@ let search
   Array.sort Search_result.compare_relevance arr;
   arr
 
-let encode (t : t) (encoder : Pbrt.Encoder.t) : unit =
-  let encode_int (x : int) = Pbrt.Encoder.int_as_bits32 x encoder in
+let encode (t : t) (encoder : Pbrt.Encoder.t) (buf : Buffer.t) : unit =
+  let flush_encoder () =
+    Buffer.add_string buf (Pbrt.Encoder.to_string encoder)
+  in
+  let encode_int (x : int) =
+    Pbrt.Encoder.clear encoder;
+    Pbrt.Encoder.int_as_bits32 x encoder;
+    flush_encoder ();
+  in
   let encode_int_int ((x, y) : int * int) =
+    Pbrt.Encoder.clear encoder;
     Pbrt.Encoder.int_as_bits32 x encoder;
     Pbrt.Encoder.int_as_bits32 y encoder;
+    flush_encoder ();
   in
   let encode_int_map
     : 'a. ('a -> unit) -> 'a Int_map.t -> unit =
     fun f m ->
+      Pbrt.Encoder.clear encoder;
       encode_int (Int_map.cardinal m);
       Int_map.iter (fun k v ->
           encode_int k;
           f v;
-        ) m
+      ) m;
+    flush_encoder ();
   in
   let encode_ccvector
     : 'a. ('a -> unit) -> ('a, _) CCVector.t -> unit =
     fun f vec ->
+      Pbrt.Encoder.clear encoder;
       encode_int (CCVector.length vec);
-      CCVector.iter f vec
+      CCVector.iter f vec;
+    flush_encoder ();
   in
   let encode_int_set (s : Int_set.t) =
+      Pbrt.Encoder.clear encoder;
     encode_int (Int_set.cardinal s);
-    Int_set.iter encode_int s
+    Int_set.iter encode_int s;
+    flush_encoder ();
   in
+  encode_int 0xFF;
+  encode_int 0;
+  encode_int 1;
+  encode_int 2;
+  encode_int 3;
+  encode_int 0xFF;
   Word_db.encode t.word_db encoder;
-  encode_int_map encode_int_set t.pos_s_of_word_ci;
   encode_ccvector (fun loc -> Loc.encode loc encoder) t.loc_of_pos;
+  encode_int_map encode_int_set t.pos_s_of_word_ci;
   encode_ccvector
     (fun line_loc -> Line_loc.encode line_loc encoder )
     t.line_loc_of_global_line_num;
@@ -896,13 +917,17 @@ let decode (decoder : Pbrt.Decoder.t) : t option =
     done;
     !s
   in
-  try
+  (* try *)
+    Printf.eprintf "test0: %d\n" (decode_int ());
+    Printf.eprintf "test1: %d\n" (decode_int ());
+    Printf.eprintf "test2: %d\n" (decode_int ());
+    Printf.eprintf "test3: %d\n" (decode_int ());
     let word_db = Word_db.decode decoder in
-    let pos_s_of_word_ci =
-      decode_int_map decode_int_set
-    in
     let loc_of_pos =
       decode_ccvector (fun () -> Loc.decode decoder)
+    in
+    let pos_s_of_word_ci =
+      decode_int_map decode_int_set
     in
     let line_loc_of_global_line_num =
       decode_ccvector (fun () -> Line_loc.decode decoder)
@@ -941,13 +966,13 @@ let decode (decoder : Pbrt.Decoder.t) : t option =
       page_count;
       global_line_count;
     }
-  with
-  | _ -> None
+  (* with
+  | _ -> None *)
 
 let to_compressed_string (t : t) : string =
-  let encoder = Pbrt.Encoder.create () in
-  encode t encoder;
-  Pbrt.Encoder.to_string encoder
+  let buf = Buffer.create () in
+  encode t buf;
+  Buffer.to_string encoder
   |> GZIP.compress
 
 let of_compressed_string (s : string) : t option =

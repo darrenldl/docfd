@@ -7,5 +7,7 @@
             docfd_lib
             eio
             eio_main
+            pbrt
+            hex
             )
  )

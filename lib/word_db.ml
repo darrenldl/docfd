@@ -29,8 +29,13 @@ let word_of_index t i : string =
 let index_of_word t s : int =
   String_map.find s t.index_of_word
 
-let encode (t : t) (encoder : Pbrt.Encoder.t) =
+let size t = CCVector.length t.word_of_index
+
+let encode (t : t) (encoder : Pbrt.Encoder.t) (buf : Buffer.t) =
+  Pbrt.Encoder.clear encoder;
   Pbrt.Encoder.int_as_bits32 (CCVector.length t.word_of_index) encoder;
+  Buffer.add_string buf (Pbrt.Encoder.to_string encoder);
+  Pbrt.Encoder.clear encoder;
   CCVector.iter (fun x ->
       Pbrt.Encoder.string x encoder;
     )
