@@ -31,13 +31,14 @@ let index_of_word t s : int =
 
 let size t = CCVector.length t.word_of_index
 
-let encode (t : t) (encoder : Pbrt.Encoder.t) (buf : Buffer.t) =
-  Pbrt.Encoder.clear encoder;
-  Pbrt.Encoder.int_as_bits32 (CCVector.length t.word_of_index) encoder;
-  Buffer.add_string buf (Pbrt.Encoder.to_string encoder);
-  Pbrt.Encoder.clear encoder;
+let encode (encoder : Pbrt.Encoder.t) (buf : Buffer.t) (t : t) =
+  let encode_stage =
+    Protobuf_utils.encode_stage encoder buf
+  in
+  encode_stage
+  (Pbrt.Encoder.int_as_bits32 (CCVector.length t.word_of_index));
   CCVector.iter (fun x ->
-      Pbrt.Encoder.string x encoder;
+    encode_stage (Pbrt.Encoder.string x);
     )
     t.word_of_index
 

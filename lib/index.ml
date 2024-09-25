@@ -818,61 +818,46 @@ let search
   Array.sort Search_result.compare_relevance arr;
   arr
 
-let encode (t : t) (encoder : Pbrt.Encoder.t) (buf : Buffer.t) : unit =
-  let flush_encoder () =
-    Buffer.add_string buf (Pbrt.Encoder.to_string encoder)
+let encode (encoder : Pbrt.Encoder.t) (buf : Buffer.t) (t : t) : unit =
+  let encode_stage =
+    Protobuf_utils.encode_stage encoder buf
   in
   let encode_int (x : int) =
-    Pbrt.Encoder.clear encoder;
-    Pbrt.Encoder.int_as_bits32 x encoder;
-    flush_encoder ();
+    encode_stage (Pbrt.Encoder.int_as_bits32 x);
   in
   let encode_int_int ((x, y) : int * int) =
-    Pbrt.Encoder.clear encoder;
-    Pbrt.Encoder.int_as_bits32 x encoder;
-    Pbrt.Encoder.int_as_bits32 y encoder;
-    flush_encoder ();
+    encode_int x;
+    encode_int y;
   in
   let encode_int_map
     : 'a. ('a -> unit) -> 'a Int_map.t -> unit =
     fun f m ->
-      Pbrt.Encoder.clear encoder;
       encode_int (Int_map.cardinal m);
       Int_map.iter (fun k v ->
           encode_int k;
           f v;
       ) m;
-    flush_encoder ();
   in
   let encode_ccvector
     : 'a. ('a -> unit) -> ('a, _) CCVector.t -> unit =
     fun f vec ->
-      Pbrt.Encoder.clear encoder;
       encode_int (CCVector.length vec);
       CCVector.iter f vec;
-    flush_encoder ();
   in
   let encode_int_set (s : Int_set.t) =
-      Pbrt.Encoder.clear encoder;
     encode_int (Int_set.cardinal s);
     Int_set.iter encode_int s;
-    flush_encoder ();
   in
-  encode_int 0xFF;
-  encode_int 0;
-  encode_int 1;
-  encode_int 2;
-  encode_int 3;
-  encode_int 0xFF;
-  Word_db.encode t.word_db encoder;
-  encode_ccvector (fun loc -> Loc.encode loc encoder) t.loc_of_pos;
+  Word_db.encode encoder buf t.word_db;
   encode_int_map encode_int_set t.pos_s_of_word_ci;
+  encode_ccvector (fun loc -> Loc.encode loc encoder) t.loc_of_pos;
   encode_ccvector
     (fun line_loc -> Line_loc.encode line_loc encoder )
     t.line_loc_of_global_line_num;
   encode_ccvector encode_int_int t.start_end_inc_pos_of_global_line_num;
   encode_ccvector encode_int_int t.start_end_inc_pos_of_page_num;
   encode_ccvector encode_int t.word_ci_of_pos;
+  encode_int 0xFF;
   encode_ccvector encode_int t.word_of_pos;
   encode_ccvector encode_int t.line_count_of_page_num;
   encode_int t.page_count;
@@ -881,8 +866,8 @@ let encode (t : t) (encoder : Pbrt.Encoder.t) (buf : Buffer.t) : unit =
 let decode (decoder : Pbrt.Decoder.t) : t option =
   let decode_int () = Pbrt.Decoder.int_as_bits32 decoder in
   let decode_int_int () =
-    let x = Pbrt.Decoder.int_as_bits32 decoder in
-    let y = Pbrt.Decoder.int_as_bits32 decoder in
+    let x = decode_int () in
+    let y = decode_int () in
     (x, y)
   in
   let decode_int_map
@@ -918,16 +903,12 @@ let decode (decoder : Pbrt.Decoder.t) : t option =
     !s
   in
   (* try *)
-    Printf.eprintf "test0: %d\n" (decode_int ());
-    Printf.eprintf "test1: %d\n" (decode_int ());
-    Printf.eprintf "test2: %d\n" (decode_int ());
-    Printf.eprintf "test3: %d\n" (decode_int ());
     let word_db = Word_db.decode decoder in
-    let loc_of_pos =
-      decode_ccvector (fun () -> Loc.decode decoder)
-    in
     let pos_s_of_word_ci =
       decode_int_map decode_int_set
+    in
+    let loc_of_pos =
+      decode_ccvector (fun () -> Loc.decode decoder)
     in
     let line_loc_of_global_line_num =
       decode_ccvector (fun () -> Line_loc.decode decoder)
@@ -970,9 +951,10 @@ let decode (decoder : Pbrt.Decoder.t) : t option =
   | _ -> None *)
 
 let to_compressed_string (t : t) : string =
-  let buf = Buffer.create () in
-  encode t buf;
-  Buffer.to_string encoder
+  let encoder = Pbrt.Encoder.create () in
+  let buf = Buffer.create 4096 in
+  encode encoder buf t;
+  Buffer.contents buf
   |> GZIP.compress
 
 let of_compressed_string (s : string) : t option =

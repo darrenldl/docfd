@@ -3,8 +3,9 @@ open Test_utils
 
 let encode index =
   let encoder = Pbrt.Encoder.create () in
-  Index.encode index encoder;
-  Pbrt.Encoder.to_string encoder
+  let buf = Buffer.create 4096 in
+  Index.encode encoder buf index;
+  Buffer.contents buf
 
 let decode s =
   let decoder = Pbrt.Decoder.of_string s in

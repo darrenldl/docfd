@@ -12,6 +12,6 @@ val word_of_index : t -> int -> string
 
 val index_of_word : t -> string -> int
 
-val encode : t -> Pbrt.Encoder.t -> unit
+val encode : Pbrt.Encoder.t -> Buffer.t -> t -> unit
 
 val decode : Pbrt.Decoder.t -> t

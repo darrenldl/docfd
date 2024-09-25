@@ -58,7 +58,7 @@ val global_line_count : t -> int
 
 val page_count : t -> int
 
-val encode : t -> Pbrt.Encoder.t -> unit
+val encode : Pbrt.Encoder.t -> Buffer.t -> t -> unit
 
 val decode : Pbrt.Decoder.t -> t option
 
