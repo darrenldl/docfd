@@ -19,3 +19,4 @@ USER opam
 WORKDIR /home/opam/docfd
 RUN dune build docfd.opam
 RUN opam install . --deps-only --with-test
+RUN opam install ocaml-protoc

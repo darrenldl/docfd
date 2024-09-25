@@ -58,9 +58,9 @@ val global_line_count : t -> int
 
 val page_count : t -> int
 
-val to_json : t -> Yojson.Safe.t
+val encode : t -> Pbrt.Encoder.t -> unit
 
-val of_json : Yojson.Safe.t -> t option
+val decode : Pbrt.Decoder.t -> t option
 
 val to_compressed_string : t -> string
 

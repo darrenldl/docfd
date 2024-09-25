@@ -60,6 +60,7 @@ Features:
    (ppx_deriving (>= "5.0"))
    decompress
    progress
+   pbrt
    (alcotest :with-test)
    (qcheck-alcotest :with-test)
    (qcheck :with-test)
