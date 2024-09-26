@@ -4,8 +4,8 @@ open Test_utils
 module Alco = struct
   let test_index name index =
     let index' = index
-                 |> Index.to_json
-                 |> Index.of_json
+                 |> Index.to_cbor
+                 |> Index.of_cbor
                  |> Option.get
     in
     let index'' = index
@@ -44,22 +44,22 @@ module Alco = struct
 end
 
 module Qc = struct
-  let to_of_json_check index =
+  let to_of_cbor_check index =
     Index.equal
       index
-      (Index.to_json index
-       |> Index.of_json
+      (Index.to_cbor index
+       |> Index.of_cbor
        |> Option.get)
 
-  let to_of_json_gen_from_pages task_pool =
-    QCheck2.Test.make ~count:1000 ~name:"to_of_json_gen_from_pages"
+  let to_of_cbor_gen_from_pages task_pool =
+    QCheck2.Test.make ~count:1000 ~name:"to_of_cbor_gen_from_pages"
       (index_gen_from_pages task_pool)
-      to_of_json_check
+      to_of_cbor_check
 
-  let to_of_json_gen_from_lines task_pool =
-    QCheck2.Test.make ~count:1000 ~name:"to_of_json_gen_from_lines"
+  let to_of_cbor_gen_from_lines task_pool =
+    QCheck2.Test.make ~count:1000 ~name:"to_of_cbor_gen_from_lines"
       (index_gen_from_lines task_pool)
-      to_of_json_check
+      to_of_cbor_check
 
   let to_of_compressed_string_check index =
     match
@@ -83,8 +83,8 @@ module Qc = struct
 
   let suite task_pool =
     [
-      to_of_json_gen_from_pages task_pool;
-      to_of_json_gen_from_lines task_pool;
+      to_of_cbor_gen_from_pages task_pool;
+      to_of_cbor_gen_from_lines task_pool;
       to_of_compressed_string_gen_from_pages task_pool;
       to_of_compressed_string_gen_from_lines task_pool;
     ]

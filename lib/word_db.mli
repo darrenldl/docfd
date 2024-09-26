@@ -10,6 +10,6 @@ val word_of_index : t -> int -> string
 
 val index_of_word : t -> string -> int
 
-val to_json : t -> Yojson.Safe.t
+val to_cbor : t -> CBOR.Simple.t
 
-val of_json : Yojson.Safe.t -> t option
+val of_cbor : CBOR.Simple.t -> t option

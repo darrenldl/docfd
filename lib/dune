@@ -13,9 +13,9 @@
             spelll
             oseq
             eio
-            yojson
             decompress.gz
             bigstringaf
             unix
+            cbor
  )
 )

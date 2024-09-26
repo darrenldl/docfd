@@ -29,23 +29,23 @@ let word_of_index t i : string =
 let index_of_word t s : int =
   String_map.find s t.index_of_word
 
-let to_json (t : t) : Yojson.Safe.t =
+let to_cbor (t : t) : CBOR.Simple.t =
   let l =
     CCVector.to_seq t.word_of_index
-    |> Seq.map (fun s -> `String s)
+    |> Seq.map (fun s -> `Bytes s)
     |> List.of_seq
   in
-  `List l
+  `Array l
 
-let of_json (json : Yojson.Safe.t) : t option =
-  match json with
-  | `List l -> (
+let of_cbor (cbor : CBOR.Simple.t) : t option =
+  match cbor with
+  | `Array l -> (
       let db = make () in
       let exception Invalid in
       try
         List.iter (fun x ->
             match x with
-            | `String s -> (
+            | `Bytes s -> (
                 add db s |> ignore
               )
             | _ -> raise Invalid
