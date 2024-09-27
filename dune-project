@@ -52,7 +52,6 @@ Features:
    (cmdliner (>= "1.1.0"))
    (eio (>= "0.14"))
    digestif
-   (yojson (>= "2.0.2"))
    eio_main
    containers-data
    (timedesc (>= "2.0.0"))

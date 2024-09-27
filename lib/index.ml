@@ -15,14 +15,18 @@ module Line_loc = struct
   let compare (x : t) (y : t) =
     Int.compare x.global_line_num y.global_line_num
 
-  let to_json (t : t) : Yojson.Safe.t =
-    `List [ `Int t.page_num; `Int t.line_num_in_page; `Int t.global_line_num ]
+  let encode (buf : Buffer.t) (t : t) : unit =
+    let encode_int = Misc_utils.encode_int buf in
+    encode_int t.page_num;
+    encode_int t.line_num_in_page;
+    encode_int t.global_line_num
 
-  let of_json (json : Yojson.Safe.t) : t option =
-    match json with
-    | `List [ `Int page_num; `Int line_num_in_page; `Int global_line_num ] ->
-      Some { page_num; line_num_in_page; global_line_num }
-    | _ -> None
+  let decode (s : string) (pos : int ref) : t =
+    let decode_int () = Misc_utils.decode_int s pos in
+    let page_num = decode_int () in
+    let line_num_in_page = decode_int () in
+    let global_line_num = decode_int () in
+    { page_num; line_num_in_page; global_line_num }
 end
 
 module Loc = struct
@@ -36,17 +40,14 @@ module Loc = struct
 
   let pos_in_line t =  t.pos_in_line
 
-  let to_json (t : t) : Yojson.Safe.t =
-    `List [ Line_loc.to_json t.line_loc; `Int t.pos_in_line ]
+  let encode (buf : Buffer.t) (t : t) : unit =
+    Line_loc.encode buf t.line_loc;
+    Misc_utils.encode_int buf t.pos_in_line
 
-  let of_json (json : Yojson.Safe.t) : t option =
-    match json with
-    | `List [ line_loc; `Int pos_in_line ] -> (
-        match Line_loc.of_json line_loc with
-        | None -> None
-        | Some line_loc -> Some { line_loc; pos_in_line }
-      )
-    | _ -> None
+  let decode (s : string) (pos : int ref) : t =
+    let line_loc = Line_loc.decode s pos in
+    let pos_in_line = Misc_utils.decode_int s pos in
+    { line_loc; pos_in_line }
 end
 
 module Raw = struct
@@ -819,209 +820,136 @@ let search
   Array.sort Search_result.compare_relevance arr;
   arr
 
-let to_json (t : t) : Yojson.Safe.t =
-  let json_of_int (x : int) = `Int x in
-  let json_of_int_int ((x, y) : int * int) = `List [ `Int x; `Int y ] in
-  let json_of_int_map
-    : 'a . ('a -> Yojson.Safe.t) -> 'a Int_map.t -> Yojson.Safe.t =
+let encode (buf : Buffer.t) (t : t) : unit =
+  let encode_int = Misc_utils.encode_int buf in
+  let encode_int_int ((x, y) : int * int) = encode_int x; encode_int y in
+  let encode_int_map
+    : 'a. ('a -> unit) -> 'a Int_map.t -> unit =
     fun f m ->
-      let l =
-        Int_map.to_seq m
-        |> Seq.map (fun (k, v) -> `List [ `Int k; f v ])
-        |> List.of_seq
-      in
-      `List l
+      encode_int (Int_map.cardinal m);
+      Int_map.iter (fun k v ->
+          encode_int k;
+          f v
+        ) m
   in
-  let json_of_ccvector
-    : 'a . ('a -> Yojson.Safe.t) -> ('a, _) CCVector.t -> Yojson.Safe.t =
+  let encode_ccvector
+    : 'a. ('a -> unit) -> ('a, _) CCVector.t -> unit =
     fun f vec ->
-      let l =
-        CCVector.to_seq vec
-        |> Seq.map f
-        |> List.of_seq
-      in
-      `List l
+      encode_int (CCVector.length vec);
+      CCVector.iter f vec
   in
-  let json_of_int_set (s : Int_set.t) =
-    let l =
-      Int_set.to_seq s
-      |> Seq.map json_of_int
-      |> List.of_seq
-    in
-    `List l
+  let encode_int_set (s : Int_set.t) =
+    encode_int (Int_set.cardinal s);
+    Int_set.iter encode_int s
   in
-  `Assoc [
-    ("word_db",
-     Word_db.to_json t.word_db);
-    ("pos_s_of_word_ci",
-     json_of_int_map json_of_int_set t.pos_s_of_word_ci);
-    ("loc_of_pos",
-     json_of_ccvector Loc.to_json t.loc_of_pos);
-    ("line_loc_of_global_line_num",
-     json_of_ccvector Line_loc.to_json t.line_loc_of_global_line_num);
-    ("start_end_inc_pos_of_global_line_num",
-     json_of_ccvector json_of_int_int t.start_end_inc_pos_of_global_line_num);
-    ("start_end_inc_pos_of_page_num",
-     json_of_ccvector json_of_int_int t.start_end_inc_pos_of_page_num);
-    ("word_ci_of_pos",
-     json_of_ccvector json_of_int t.word_ci_of_pos);
-    ("word_of_pos",
-     json_of_ccvector json_of_int t.word_of_pos);
-    ("line_count_of_page_num",
-     json_of_ccvector json_of_int t.line_count_of_page_num);
-    ("page_count",
-     `Int t.page_count);
-    ("global_line_count",
-     `Int t.global_line_count);
-  ]
+  Word_db.encode buf t.word_db;
+  encode_int_map encode_int_set t.pos_s_of_word_ci;
+  encode_ccvector (Loc.encode buf) t.loc_of_pos;
+  encode_ccvector (Line_loc.encode buf) t.line_loc_of_global_line_num;
+  encode_ccvector encode_int_int t.start_end_inc_pos_of_global_line_num;
+  encode_ccvector encode_int_int t.start_end_inc_pos_of_page_num;
+  encode_ccvector encode_int t.word_ci_of_pos;
+  encode_ccvector encode_int t.word_of_pos;
+  encode_ccvector encode_int t.line_count_of_page_num;
+  encode_int t.page_count;
+  encode_int t.global_line_count
 
-let of_json (json : Yojson.Safe.t) : t option =
-  let open Option_syntax in
-  let int_of_json (json : Yojson.Safe.t) : int option =
-    match json with
-    | `Int x -> Some x
-    | _ -> None
+let decode (s : string) (pos : int ref) : t =
+  let decode_int () = Misc_utils.decode_int s pos in
+  let decode_int_int () : (int * int) =
+    let x = decode_int () in
+    let y = decode_int () in
+    (x, y)
   in
-  let int_int_of_json (json : Yojson.Safe.t) : (int * int) option =
-    match json with
-    | `List [ `Int x; `Int y ] -> Some (x, y)
-    | _ -> None
+  let decode_int_set () : Int_set.t =
+    let len = decode_int () in
+    let s = ref Int_set.empty in
+    for _=0 to len-1 do
+      let x = decode_int () in
+      s := Int_set.add x !s
+    done;
+    !s
   in
-  let int_set_of_json (json : Yojson.Safe.t) : Int_set.t option =
-    match json with
-    | `List l -> (
-        let exception Invalid in
-        let s = ref Int_set.empty in
-        try
-          List.iter (fun x ->
-              match int_of_json x with
-              | None -> raise Invalid
-              | Some x -> s := Int_set.add x !s
-            ) l;
-          Some !s
-        with
-        | Invalid -> None
-      )
-    | _ -> None
+  let decode_ccvector
+    : 'a. (unit -> 'a) -> 'a CCVector.ro_vector =
+    fun f ->
+      let len = decode_int () in
+      let vec = CCVector.create () in
+      for _=0 to len-1 do
+        let v = f () in
+        CCVector.push vec v
+      done;
+      CCVector.freeze vec
   in
-  let ccvector_of_json
-    : 'a . (Yojson.Safe.t -> 'a option) -> Yojson.Safe.t -> 'a CCVector.ro_vector option =
-    fun f json ->
-      match json with
-      | `List l -> (
-          let exception Invalid in
-          let vec : 'a CCVector.vector = CCVector.create () in
-          try
-            List.iter (fun v ->
-                match f v with
-                | None -> raise Invalid
-                | Some (v : 'a) -> (
-                    CCVector.push vec v
-                  )
-              ) l;
-            Some (CCVector.freeze vec)
-          with
-          | Invalid -> None
-        )
-      | _ -> None
+  let decode_int_map
+    : 'a. (unit -> 'a) -> 'a Int_map.t =
+    fun f ->
+      let len = decode_int () in
+      let m = ref Int_map.empty in
+      for _=0 to len-1 do
+        let k = decode_int () in
+        let v = f () in
+        m := Int_map.add k v !m;
+      done;
+      !m
   in
-  let int_map_of_json
-    : 'a . (Yojson.Safe.t -> 'a option) -> Yojson.Safe.t -> 'a Int_map.t option =
-    fun f json ->
-      match json with
-      | `List l -> (
-          let exception Invalid in
-          let m : 'a Int_map.t ref = ref Int_map.empty in
-          try
-            List.iter (fun v ->
-                match v with
-                | `List [ `Int k; v ] -> (
-                    match f v with
-                    | None -> raise Invalid
-                    | Some (v : 'a) -> (
-                        m := Int_map.add k v !m;
-                      )
-                  )
-                | _ -> raise Invalid
-              ) l;
-            Some !m
-          with
-          | Invalid -> None
-        )
-      | _ -> None
+  let word_db =
+    Word_db.decode s pos
   in
-  match json with
-  | `Assoc l -> (
-      let* word_db =
-        let* x = List.assoc_opt "word_db" l in
-        Word_db.of_json x
-      in
-      let* pos_s_of_word_ci =
-        let* x = List.assoc_opt "pos_s_of_word_ci" l in
-        int_map_of_json int_set_of_json x
-      in
-      let* loc_of_pos =
-        let* x = List.assoc_opt "loc_of_pos" l in
-        ccvector_of_json Loc.of_json x
-      in
-      let* line_loc_of_global_line_num =
-        let* x = List.assoc_opt "line_loc_of_global_line_num" l in
-        ccvector_of_json Line_loc.of_json x
-      in
-      let* start_end_inc_pos_of_global_line_num =
-        let* x = List.assoc_opt "start_end_inc_pos_of_global_line_num" l in
-        ccvector_of_json int_int_of_json x
-      in
-      let* start_end_inc_pos_of_page_num =
-        let* x = List.assoc_opt "start_end_inc_pos_of_page_num" l in
-        ccvector_of_json int_int_of_json x
-      in
-      let* word_ci_of_pos =
-        let* x = List.assoc_opt "word_ci_of_pos" l in
-        ccvector_of_json int_of_json x
-      in
-      let* word_of_pos =
-        let* x = List.assoc_opt "word_of_pos" l in
-        ccvector_of_json int_of_json x
-      in
-      let* line_count_of_page_num =
-        let* x = List.assoc_opt "line_count_of_page_num" l in
-        ccvector_of_json int_of_json x
-      in
-      let* page_count =
-        let* x = List.assoc_opt "page_count" l in
-        int_of_json x
-      in
-      let+ global_line_count =
-        let* x = List.assoc_opt "global_line_count" l in
-        int_of_json x
-      in
-      {
-        word_db;
-        pos_s_of_word_ci;
-        loc_of_pos;
-        line_loc_of_global_line_num;
-        start_end_inc_pos_of_global_line_num;
-        start_end_inc_pos_of_page_num;
-        word_ci_of_pos;
-        word_of_pos;
-        line_count_of_page_num;
-        page_count;
-        global_line_count;
-      }
-    )
-  | _ -> None
+  let pos_s_of_word_ci =
+    decode_int_map decode_int_set
+  in
+  let loc_of_pos =
+    decode_ccvector (fun () -> Loc.decode s pos)
+  in
+  let line_loc_of_global_line_num =
+    decode_ccvector (fun () -> Line_loc.decode s pos)
+  in
+  let start_end_inc_pos_of_global_line_num =
+    decode_ccvector decode_int_int
+  in
+  let start_end_inc_pos_of_page_num =
+    decode_ccvector decode_int_int
+  in
+  let word_ci_of_pos =
+    decode_ccvector decode_int
+  in
+  let word_of_pos =
+    decode_ccvector decode_int
+  in
+  let line_count_of_page_num =
+    decode_ccvector decode_int
+  in
+  let page_count =
+    decode_int ()
+  in
+  let global_line_count =
+    decode_int ()
+  in
+  {
+    word_db;
+    pos_s_of_word_ci;
+    loc_of_pos;
+    line_loc_of_global_line_num;
+    start_end_inc_pos_of_global_line_num;
+    start_end_inc_pos_of_page_num;
+    word_ci_of_pos;
+    word_of_pos;
+    line_count_of_page_num;
+    page_count;
+    global_line_count;
+  }
 
 let to_compressed_string (t : t) : string =
-  to_json t
-  |> Yojson.Safe.to_string
+  let buf = Buffer.create 4096 in
+  encode buf t;
+  Buffer.contents buf
   |> GZIP.compress
 
 let of_compressed_string (s : string) : t option =
   let open Option_syntax in
   try
-    let* s = GZIP.decompress s in
-    Yojson.Safe.from_string s
-    |> of_json
+    let+ s = GZIP.decompress s in
+    decode s (ref 0)
   with
   | _ -> None

@@ -3,10 +3,10 @@ open Test_utils
 
 module Alco = struct
   let test_index name index =
-    let index' = index
-                 |> Index.to_json
-                 |> Index.of_json
-                 |> Option.get
+    let index' =
+      let buf = Buffer.create 4096 in
+      Index.encode buf index;
+      Index.decode (Buffer.contents buf) (ref 0)
     in
     let index'' = index
                   |> Index.to_compressed_string
@@ -44,22 +44,25 @@ module Alco = struct
 end
 
 module Qc = struct
-  let to_of_json_check index =
+  let encode_decode_check index =
+    let index' =
+      let buf = Buffer.create 4096 in
+      Index.encode buf index;
+      Index.decode (Buffer.contents buf) (ref 0)
+    in
     Index.equal
       index
-      (Index.to_json index
-       |> Index.of_json
-       |> Option.get)
+      index'
 
-  let to_of_json_gen_from_pages task_pool =
-    QCheck2.Test.make ~count:1000 ~name:"to_of_json_gen_from_pages"
+  let encode_decode_gen_from_pages task_pool =
+    QCheck2.Test.make ~count:1000 ~name:"encode_decode_gen_from_pages"
       (index_gen_from_pages task_pool)
-      to_of_json_check
+      encode_decode_check
 
-  let to_of_json_gen_from_lines task_pool =
-    QCheck2.Test.make ~count:1000 ~name:"to_of_json_gen_from_lines"
+  let encode_decode_gen_from_lines task_pool =
+    QCheck2.Test.make ~count:1000 ~name:"encode_decode_gen_from_lines"
       (index_gen_from_lines task_pool)
-      to_of_json_check
+      encode_decode_check
 
   let to_of_compressed_string_check index =
     match
@@ -83,8 +86,8 @@ module Qc = struct
 
   let suite task_pool =
     [
-      to_of_json_gen_from_pages task_pool;
-      to_of_json_gen_from_lines task_pool;
+      encode_decode_gen_from_pages task_pool;
+      encode_decode_gen_from_lines task_pool;
       to_of_compressed_string_gen_from_pages task_pool;
       to_of_compressed_string_gen_from_lines task_pool;
     ]

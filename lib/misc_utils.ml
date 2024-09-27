@@ -173,3 +173,27 @@ let normalize_path_to_absolute path =
   | _ -> (
       aux (cwd_path_parts ()) path_parts
     )
+
+let encode_int (buf : Buffer.t) (x : int) =
+  Buffer.add_int64_be buf (Int64.of_int x)
+
+let encode_string (buf : Buffer.t) (x : string) =
+  let len = String.length x in
+  encode_int buf len;
+  Buffer.add_string buf x
+
+let decode_int (s : string) (pos : int ref) : int =
+  let res = 
+    String.get_int64_be s !pos
+    |> Int64.to_int
+  in
+  pos := !pos + 8;
+  res
+
+let decode_string (s : string) (pos : int ref) : string =
+  let len = decode_int s pos in
+  let res =
+    String.sub s !pos len
+  in
+  pos := !pos + len;
+  res

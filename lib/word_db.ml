@@ -29,29 +29,16 @@ let word_of_index t i : string =
 let index_of_word t s : int =
   String_map.find s t.index_of_word
 
-let to_json (t : t) : Yojson.Safe.t =
-  let l =
-    CCVector.to_seq t.word_of_index
-    |> Seq.map (fun s -> `String s)
-    |> List.of_seq
-  in
-  `List l
+let encode (buf : Buffer.t) (t : t) : unit =
+  Misc_utils.encode_int buf (CCVector.length t.word_of_index);
+  CCVector.iter (Misc_utils.encode_string buf) t.word_of_index
 
-let of_json (json : Yojson.Safe.t) : t option =
-  match json with
-  | `List l -> (
-      let db = make () in
-      let exception Invalid in
-      try
-        List.iter (fun x ->
-            match x with
-            | `String s -> (
-                add db s |> ignore
-              )
-            | _ -> raise Invalid
-          ) l;
-        Some db
-      with
-      | Invalid -> None
-    )
-  | _ -> None
+let decode (s : string) (pos : int ref) : t =
+  let len = Misc_utils.decode_int s pos in
+  let decode_string () = Misc_utils.decode_string s pos in
+  let db = make () in
+  for _=0 to len-1 do
+    let s = decode_string () in
+    add db s |> ignore
+  done;
+  db
