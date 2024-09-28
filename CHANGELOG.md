@@ -13,7 +13,7 @@
 - Removed periodic GC compact call to avoid freezes when working with many
   files
 
-- Removed GC compact call during file indexing to reduce overhead
+- Removed GC compact call during file indexing core loops to reduce overhead
 
 - Added progress bars to initial document processing stage
 
