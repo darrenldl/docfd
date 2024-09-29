@@ -119,7 +119,8 @@ If any paths are specified, then stdin is ignored.
 
 #### Handling a large collection of files
 
-In this case, the default cache size limit might not be enough
+In this case, the default cache soft limit might not be enough
+or you might want to keep a stable cache for this collection of files
 
 The following script template may be handy in this situation to create the
 collection specific cache
@@ -127,7 +128,7 @@ collection specific cache
 ```
 #!/usr/bin/env bash
 
-docfd --cache-dir /large/collection/.cache --cache-size 10000 /large/collection
+docfd --cache-dir /large/collection/.cache --cache-soft-limit 20000 /large/collection
 ```
 
 #### Scan for files
