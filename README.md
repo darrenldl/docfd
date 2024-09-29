@@ -122,7 +122,7 @@ If any paths are specified, then stdin is ignored.
 In this case, the default cache soft limit might not be enough
 or you might want to keep a stable cache for this collection of files
 
-The following script template may be handy in this situation to create the
+The following script template may be handy in this situation for creating a
 collection specific cache
 
 ```
