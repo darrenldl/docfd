@@ -416,7 +416,7 @@ let run
     (additional_exts : string)
     (single_line_additional_exts : string)
     (cache_dir : string)
-    (cache_size : int)
+    (cache_soft_limit : int)
     (no_cache : bool)
     (index_only : bool)
     (start_with_search : string option)
@@ -442,7 +442,7 @@ let run
     ~max_token_search_dist
     ~max_linked_token_search_dist
     ~index_chunk_token_count
-    ~cache_size
+    ~cache_soft_limit
     ~sample_count_per_doc
     ~search_result_print_text_width
     ~search_result_print_snippet_min_size
@@ -472,7 +472,7 @@ let run
   Params.max_token_search_dist := max_token_search_dist;
   Params.max_linked_token_search_dist := max_linked_token_search_dist;
   Params.index_chunk_token_count := index_chunk_token_count;
-  Params.cache_size := cache_size;
+  Params.cache_soft_limit := cache_soft_limit;
   Params.print_color_mode := print_color_mode;
   Params.print_underline_mode := print_underline_mode;
   Params.search_result_print_text_width := search_result_print_text_width;
@@ -664,11 +664,11 @@ let run
          );
        );
        let file_count = Document_src.file_collection_size file_collection in
-       if file_count > !Params.cache_size then (
+       if file_count > !Params.cache_soft_limit then (
          do_if_debug (fun oc ->
-             Printf.fprintf oc "File count %d exceeds cache size %d, caching disabled\n"
+             Printf.fprintf oc "File count %d exceeds cache soft_limit %d, caching disabled\n"
                file_count
-               !Params.cache_size
+               !Params.cache_soft_limit
            );
          Params.cache_dir := None
        )
@@ -947,7 +947,7 @@ let cmd ~env ~sw =
      $ add_exts_arg
      $ single_line_add_exts_arg
      $ cache_dir_arg
-     $ cache_size_arg
+     $ cache_soft_limit_arg
      $ no_cache_arg
      $ index_only_arg
      $ start_with_search_arg

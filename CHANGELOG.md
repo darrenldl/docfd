@@ -10,6 +10,8 @@
 - Adjusted cache eviction behaviour to be less strict on when eviction happens
   and thus less expensive
 
+- Renamed `--cache-size` to `--cache-soft-limit`
+
 - Removed periodic GC compact call to avoid freezes when working with many
   files
 
@@ -19,7 +21,7 @@
 
 - Swapped to using C backend for BLAKE2B hashing, this gives >20x speedup depending on CPU
 
-- Swapped to binary serialization for indices
+- Swapped from JSON+GZIP to CBOR+GZIP serialization for indices
 
 ## 8.0.3
 

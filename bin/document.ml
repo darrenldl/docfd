@@ -100,7 +100,7 @@ let clean_up_cache_dir ~cache_dir =
     |> Array.of_seq
   in
   let file_count = Array.length all_files in
-  if file_count > !Params.cache_size + 100 then (
+  if file_count > !Params.cache_soft_limit + 100 then (
     let all_files =
       all_files
       |> Array.map (fun x ->
@@ -110,7 +110,7 @@ let clean_up_cache_dir ~cache_dir =
         )
     in
     Array.sort (fun (_x1, x2) (_y1, y2) -> Float.compare y2 x2) all_files;
-    for i = !Params.cache_size to file_count - 1 do
+    for i = !Params.cache_soft_limit to file_count - 1 do
       let path, _mtime = all_files.(i) in
       Sys.remove path
     done

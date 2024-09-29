@@ -140,17 +140,17 @@ let cache_dir_arg =
     & info [ "cache-dir" ] ~doc ~docv:"DIR"
   )
 
-let cache_size_arg_name = "cache-size"
+let cache_soft_limit_arg_name = "cache-soft-limit"
 
-let cache_size_arg =
+let cache_soft_limit_arg =
   let doc =
     "Rough maximum number of indices to cache. One index corresponds to one file.
-For performance reasons this limit is not strictly adhered to."
+For performance reasons Docfd does not adhere to a strict limit."
   in
   Arg.(
     value
-    & opt int Params.default_cache_size
-    & info [ cache_size_arg_name ] ~doc ~docv:"N"
+    & opt int Params.default_cache_soft_limit
+    & info [ cache_soft_limit_arg_name ] ~doc ~docv:"N"
   )
 
 let no_cache_arg =
@@ -400,7 +400,7 @@ let check
     ~max_token_search_dist
     ~max_linked_token_search_dist
     ~index_chunk_token_count
-    ~cache_size
+    ~cache_soft_limit
     ~sample_count_per_doc
     ~search_result_print_text_width
     ~search_result_print_snippet_min_size
@@ -428,9 +428,9 @@ let check
     exit_with_error_msg
       (Fmt.str "invalid %s: cannot be < 1" index_chunk_token_count_arg_name)
   );
-  if cache_size < 1 then (
+  if cache_soft_limit < 1 then (
     exit_with_error_msg
-      (Fmt.str "invalid %s: cannot be < 1" cache_size_arg_name)
+      (Fmt.str "invalid %s: cannot be < 1" cache_soft_limit_arg_name)
   );
   if sample_count_per_doc < 1 then (
     exit_with_error_msg
