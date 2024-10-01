@@ -50,4 +50,4 @@ val min_binding : t -> (key * document_info) option
 
 val single_out : path:string -> t -> t option
 
-val drop : [ `Single of string | `Usable | `Unusable ] -> t -> t
+val drop : [ `Path of string | `Usable | `Unusable ] -> t -> t

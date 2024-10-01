@@ -746,10 +746,10 @@ let run
          )
      )
   );
-  Document_store_manager.submit_update_req `Multi_file_view init_document_store;
+  Document_store_manager.submit_update_req `Multi_file_view "" init_document_store;
   (match init_ui_mode with
    | Ui_base.Ui_single_file ->
-     Document_store_manager.submit_update_req `Single_file_view init_document_store;
+     Document_store_manager.submit_update_req `Single_file_view "" init_document_store;
    | _ -> ()
   );
   Ui_base.Vars.eio_env := Some env;
@@ -830,7 +830,7 @@ let run
         match action with
         | Ui_base.Recompute_document_src -> (
             let document_src = compute_document_src () in
-            let old_document_store =
+            let _, old_document_store =
               Lwd.peek Document_store_manager.multi_file_view_document_store
             in
             let file_path_filter_glob_string = Document_store.file_path_filter_glob_string old_document_store in
@@ -850,7 +850,7 @@ let run
                 search_exp_string
                 search_exp
             in
-            Document_store_manager.submit_update_req `Multi_file_view document_store;
+            Document_store_manager.submit_update_req `Multi_file_view "reload all" document_store;
             loop ()
           )
         | Open_file_and_search_result (doc, search_result) -> (

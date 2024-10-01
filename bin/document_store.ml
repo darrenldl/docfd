@@ -224,9 +224,9 @@ let unusable_documents_paths (t : t) =
   |> Seq.filter (fun path ->
       not (String_set.mem path s))
 
-let drop (choice : [ `Single of string | `Usable | `Unusable ]) (t : t) : t =
+let drop (choice : [ `Path of string | `Usable | `Unusable ]) (t : t) : t =
   match choice with
-  | `Single path -> (
+  | `Path path -> (
       { all_documents = String_map.remove path t.all_documents;
         file_path_filter_glob = t.file_path_filter_glob;
         file_path_filter_glob_string = t.file_path_filter_glob_string;

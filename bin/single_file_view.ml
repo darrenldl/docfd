@@ -20,24 +20,29 @@ let update_search_phrase () =
 
 let reload_document (doc : Document.t) : unit =
   let pool = Ui_base.task_pool () in
+  let path = Document.path doc in
   match
-    Document.of_path ~env:(Ui_base.eio_env ()) pool (Document.search_mode doc) (Document.path doc)
+    Document.of_path ~env:(Ui_base.eio_env ()) pool (Document.search_mode doc) path
   with
   | Ok doc -> (
       reset_search_result_selected ();
       let multi_file_view_document_store =
         Lwd.peek Document_store_manager.multi_file_view_document_store
+        |> snd
         |> Document_store.add_document pool doc
       in
       Document_store_manager.submit_update_req
         `Multi_file_view
+        ""
         multi_file_view_document_store;
       let single_file_view_document_store =
         Lwd.peek Document_store_manager.single_file_view_document_store
+        |> snd
         |> Document_store.add_document pool doc
       in
       Document_store_manager.submit_update_req
         `Single_file_view
+        ""
         single_file_view_document_store;
     )
   | Error _ -> ()
@@ -328,7 +333,7 @@ let keyboard_handler
   | _ -> `Unhandled
 
 let main : Nottui.ui Lwd.t =
-  let$* document_store =
+  let$* _, document_store =
     Lwd.get Document_store_manager.single_file_view_document_store
   in
   match Document_store.min_binding document_store with
