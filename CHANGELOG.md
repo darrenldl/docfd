@@ -23,6 +23,8 @@
 
 - Swapped from JSON+GZIP to CBOR+GZIP serialization for indices
 
+- Changed help info rotation key from `h` to `?`
+
 ## 8.0.3
 
 - Fixed single file view crash
