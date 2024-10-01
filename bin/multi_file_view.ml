@@ -449,7 +449,7 @@ module Bottom_pane = struct
             { label = "f"; msg = "filter mode" };
           ];
           [
-            { label = "h"; msg = "rotate key binding info" };
+            { label = "?"; msg = "rotate key binding info" };
             { label = "r"; msg = "reload mode" };
             { label = "d"; msg = "discard mode" };
           ];
@@ -637,7 +637,7 @@ let keyboard_handler
           Ui_base.Vars.action := None;
           `Handled
         )
-      | (`ASCII 'h', []) -> (
+      | (`ASCII '?', []) -> (
           Ui_base.Key_binding_info.incr_rotation ();
           `Handled
         )
@@ -814,7 +814,7 @@ let keyboard_handler
         match key with
         | (`Escape, [])
         | (`ASCII 'C', [`Ctrl]) -> true
-        | (`ASCII 'h', []) -> (
+        | (`ASCII '?', []) -> (
             Ui_base.Key_binding_info.incr_rotation ();
             false
           )
@@ -850,7 +850,7 @@ let keyboard_handler
         (match key with
          | (`Escape, [])
          | (`ASCII 'C', [`Ctrl]) -> true
-         | (`ASCII 'h', []) -> (
+         | (`ASCII '?', []) -> (
              Ui_base.Key_binding_info.incr_rotation ();
              false
            )
@@ -931,7 +931,7 @@ let keyboard_handler
         (match key with
          | (`Escape, [])
          | (`ASCII 'C', [`Ctrl]) -> true
-         | (`ASCII 'h', []) -> (
+         | (`ASCII '?', []) -> (
              Ui_base.Key_binding_info.incr_rotation ();
              false
            )
