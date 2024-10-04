@@ -746,12 +746,6 @@ let run
          )
      )
   );
-  Document_store_manager.submit_update_req `Multi_file_view "" init_document_store;
-  (match init_ui_mode with
-   | Ui_base.Ui_single_file ->
-     Document_store_manager.submit_update_req `Single_file_view "" init_document_store;
-   | _ -> ()
-  );
   Ui_base.Vars.eio_env := Some env;
   Lwd.set Ui_base.Vars.ui_mode init_ui_mode;
   let root : Nottui.ui Lwd.t =
@@ -850,7 +844,11 @@ let run
                 search_exp_string
                 search_exp
             in
-            Document_store_manager.submit_update_req `Multi_file_view "reload all" document_store;
+            Document_store_manager.submit_update_req
+              ~wait_for_completion:true
+              `Multi_file_view
+              "reload all"
+              document_store;
             loop ()
           )
         | Open_file_and_search_result (doc, search_result) -> (
@@ -898,6 +896,20 @@ let run
     Ui_base.Key_binding_info.grid_light_fiber;
     Printers.Worker.fiber;
     (fun () ->
+       Document_store_manager.submit_update_req
+         ~wait_for_completion:true
+         `Multi_file_view
+         ""
+         init_document_store;
+       (match init_ui_mode with
+        | Ui_base.Ui_single_file ->
+          Document_store_manager.submit_update_req
+            ~wait_for_completion:true
+            `Single_file_view
+            ""
+            init_document_store;
+        | _ -> ()
+       );
        (match start_with_search with
         | None -> ()
         | Some start_with_search -> (

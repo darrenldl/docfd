@@ -37,6 +37,8 @@ let multi_file_view_update_request : (string * Document_store.t) Lock_protected_
 
 let worker_ping : Ping.t = Ping.make ()
 
+let requester_ping : Ping.t = Ping.make ()
+
 type egress_payload =
   | Search_exp_parse_error
   | Searching
@@ -184,6 +186,7 @@ let worker_fiber pool =
   in
   while true do
     Ping.wait worker_ping;
+    Ping.clear requester_ping;
     let search_stop_signal' = Atomic.get search_stop_signal in
     (match Lock_protected_cell.get single_file_view_filter_request with
      | None -> ()
@@ -209,6 +212,7 @@ let worker_fiber pool =
      | None -> ()
      | Some (desc, store) -> process_update_req `Multi_file_view desc store
     );
+    Ping.ping requester_ping
   done
 
 let submit_filter_req (store_typ : store_typ) (s : string) =
@@ -235,7 +239,7 @@ let submit_search_req (store_typ : store_typ) (s : string) =
   );
   Ping.ping worker_ping
 
-let submit_update_req (store_typ : store_typ) (desc : string) (store : Document_store.t) =
+let submit_update_req ?(wait_for_completion = false) (store_typ : store_typ) (desc : string) (store : Document_store.t) =
   signal_search_stop ();
   (match store_typ with
    | `Multi_file_view -> (
@@ -249,4 +253,8 @@ let submit_update_req (store_typ : store_typ) (desc : string) (store : Document_
        Lock_protected_cell.set single_file_view_update_request (desc, store);
      )
   );
-  Ping.ping worker_ping
+  Ping.clear requester_ping;
+  Ping.ping worker_ping;
+  if wait_for_completion then (
+    Ping.wait requester_ping
+  )

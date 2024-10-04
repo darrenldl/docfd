@@ -13,3 +13,6 @@ let ping (t : t) =
 let wait (t : t) =
   Eio.Stream.take t.queue;
   Misc_utils.drain_eio_stream t.queue
+
+let clear (t : t) =
+  Misc_utils.drain_eio_stream t.queue
