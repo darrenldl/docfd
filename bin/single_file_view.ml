@@ -27,23 +27,27 @@ let reload_document (doc : Document.t) : unit =
   | Ok doc -> (
       reset_search_result_selected ();
       let multi_file_view_document_store =
-        Lwd.peek Document_store_manager.multi_file_view_document_store
-        |> snd
+        Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
+        |> (fun x -> x.store)
         |> Document_store.add_document pool doc
       in
       Document_store_manager.submit_update_req
         `Multi_file_view
+        (Document_store_snapshot.make
         ""
-        multi_file_view_document_store;
+        None
+        multi_file_view_document_store);
       let single_file_view_document_store =
-        Lwd.peek Document_store_manager.single_file_view_document_store
-        |> snd
+        Lwd.peek Document_store_manager.single_file_view_document_store_snapshot
+        |> (fun x -> x.store)
         |> Document_store.add_document pool doc
       in
       Document_store_manager.submit_update_req
         `Single_file_view
+        (Document_store_snapshot.make
         ""
-        single_file_view_document_store;
+        None
+        single_file_view_document_store);
     )
   | Error _ -> ()
 
@@ -333,9 +337,10 @@ let keyboard_handler
   | _ -> `Unhandled
 
 let main : Nottui.ui Lwd.t =
-  let$* _, document_store =
-    Lwd.get Document_store_manager.single_file_view_document_store
+  let$* snapshot =
+    Lwd.get Document_store_manager.single_file_view_document_store_snapshot
   in
+  let document_store = snapshot.store in
   match Document_store.min_binding document_store with
   | None -> Lwd.return (Nottui.Ui.atom (Notty.I.void 0 0))
   | Some (_, document_info) -> (

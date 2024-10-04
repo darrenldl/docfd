@@ -824,9 +824,10 @@ let run
         match action with
         | Ui_base.Recompute_document_src -> (
             let document_src = compute_document_src () in
-            let _, old_document_store =
-              Lwd.peek Document_store_manager.multi_file_view_document_store
+            let old_snapshot =
+              Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
             in
+            let old_document_store = old_snapshot.store in
             let file_path_filter_glob_string = Document_store.file_path_filter_glob_string old_document_store in
             let file_path_filter_glob = Document_store.file_path_filter_glob old_document_store in
             let search_exp_string = Document_store.search_exp_string old_document_store in
@@ -847,8 +848,10 @@ let run
             Document_store_manager.submit_update_req
               ~wait_for_completion:true
               `Multi_file_view
+              (Document_store_snapshot.make
               "reload all"
-              document_store;
+              None
+              document_store);
             loop ()
           )
         | Open_file_and_search_result (doc, search_result) -> (
@@ -899,15 +902,19 @@ let run
        Document_store_manager.submit_update_req
          ~wait_for_completion:true
          `Multi_file_view
+         (Document_store_snapshot.make
          ""
-         init_document_store;
+         None
+         init_document_store);
        (match init_ui_mode with
         | Ui_base.Ui_single_file ->
           Document_store_manager.submit_update_req
             ~wait_for_completion:true
             `Single_file_view
+            (Document_store_snapshot.make
             ""
-            init_document_store;
+            None
+            init_document_store);
         | _ -> ()
        );
        (match start_with_search with

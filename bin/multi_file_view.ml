@@ -18,7 +18,7 @@ module Vars = struct
 
   let require_field_focus_handle = Nottui.Focus.make ()
 
-  let document_store_versions : (string * Document_store.t) Dynarray.t =
+  let document_store_snapshots : Document_store_snapshot.t Dynarray.t =
     Dynarray.create ()
 
   let document_store_cur_ver = Lwd.var 0
@@ -46,14 +46,19 @@ let reload_document (doc : Document.t) =
   | Ok doc -> (
       reset_document_selected ();
       let document_store =
-        Lwd.peek Document_store_manager.multi_file_view_document_store
-        |> snd
+        Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
+        |> (fun x -> x.store)
         |> Document_store.add_document pool doc
+      in
+      let snapshot =
+        Document_store_snapshot.make
+        (Fmt.str "reload \"%s\"" (File_utils.remove_cwd_from_path path))
+        None
+        document_store
       in
       Document_store_manager.submit_update_req
         `Multi_file_view
-        (Fmt.str "reload \"%s\"" (File_utils.remove_cwd_from_path path))
-        document_store;
+        snapshot;
     )
   | Error _ -> ()
 
@@ -76,40 +81,40 @@ let sync_input_fields_from_document_store
   |> (fun s ->
       Lwd.set Vars.search_field (s, String.length s))
 
-let clear_document_store_later_versions () =
+let clear_document_store_later_snapshots () =
   let cur_ver = Lwd.peek Vars.document_store_cur_ver in
-  Dynarray.truncate Vars.document_store_versions (cur_ver + 1)
+  Dynarray.truncate Vars.document_store_snapshots (cur_ver + 1)
 
-let add_document_store_version action_desc (store : Document_store.t) =
-  clear_document_store_later_versions ();
-  Dynarray.add_last Vars.document_store_versions (action_desc, store);
+let add_document_store_snapshot snapshot =
+  clear_document_store_later_snapshots ();
+  Dynarray.add_last Vars.document_store_snapshots snapshot;
   let new_ver = Lwd.peek Vars.document_store_cur_ver + 1 in
   Lwd.set Vars.document_store_cur_ver new_ver
 
 let add_document_store_current_version () =
-  let desc, document_store =
-    Lwd.peek Document_store_manager.multi_file_view_document_store
+  let snapshot =
+    Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
   in
-  add_document_store_version desc document_store
+  add_document_store_snapshot snapshot
 
 let add_document_store_current_version_if_input_fields_changed () =
   let cur_ver = Lwd.peek Vars.document_store_cur_ver in
   if cur_ver = 0 then (
     add_document_store_current_version ()
   ) else (
-    let _, prev_store =
-      Dynarray.get Vars.document_store_versions (cur_ver - 1)
+    let prev_snapshot =
+      Dynarray.get Vars.document_store_snapshots (cur_ver - 1)
     in
-    let _, cur_store =
-      Lwd.peek Document_store_manager.multi_file_view_document_store
+    let cur_snapshot =
+      Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
     in
     let filter_changed =
-      Document_store.file_path_filter_glob_string prev_store
-      <> Document_store.file_path_filter_glob_string cur_store
+      Document_store.file_path_filter_glob_string prev_snapshot.store
+      <> Document_store.file_path_filter_glob_string cur_snapshot.store
     in
     let search_changed =
-      Document_store.search_exp_string prev_store
-      <> Document_store.search_exp_string cur_store
+      Document_store.search_exp_string prev_snapshot.store
+      <> Document_store.search_exp_string cur_snapshot.store
     in
     if filter_changed || search_changed then (
       add_document_store_current_version ()
@@ -117,41 +122,46 @@ let add_document_store_current_version_if_input_fields_changed () =
   )
 
 let drop ~document_count (choice : [`Path of string | `Listed | `Unlisted]) =
-  let choice, new_desc =
+  let choice, new_desc, new_action =
     match choice with
     | `Path path -> (
         let n = Lwd.peek Vars.index_of_document_selected in
         set_document_selected ~choice_count:(document_count - 1) n;
-        (`Path path, Fmt.str "drop \"%s\"" path)
+        (`Path path, Fmt.str "drop \"%s\"" path, `Drop_path path)
       )
     | `Listed -> (
         reset_document_selected ();
-        (`Usable, "drop listed")
+        (`Usable, "drop listed", `Drop_listed)
       )
     | `Unlisted -> (
         reset_document_selected ();
-        (`Unusable, "drop unlisted")
+        (`Unusable, "drop unlisted", `Drop_unlisted)
       )
   in
-  let desc, document_store =
-    Lwd.peek Document_store_manager.multi_file_view_document_store
+  let cur_snapshot =
+    Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
   in
-  add_document_store_version desc document_store;
+  add_document_store_snapshot cur_snapshot;
+  let new_snapshot =
+    Document_store_snapshot.make
+    new_desc
+    (Some new_action)
+    (Document_store.drop choice cur_snapshot.store)
+  in
   Document_store_manager.submit_update_req
     `Multi_file_view
-    new_desc
-    (Document_store.drop choice document_store)
+    new_snapshot
 
 let update_file_path_filter () =
   reset_document_selected ();
   let s = fst @@ Lwd.peek Vars.file_path_filter_field in
-  clear_document_store_later_versions ();
+  clear_document_store_later_snapshots ();
   Document_store_manager.submit_filter_req `Multi_file_view s
 
 let update_search_phrase () =
   reset_document_selected ();
   let s = fst @@ Lwd.peek Vars.search_field in
-  clear_document_store_later_versions ();
+  clear_document_store_later_snapshots ();
   Document_store_manager.submit_search_req `Multi_file_view s
 
 module Top_pane = struct
@@ -359,15 +369,15 @@ module Bottom_pane = struct
       List.assoc input_mode Ui_base.Status_bar.input_mode_images
     in
     let$* cur_ver = Lwd.get Vars.document_store_cur_ver in
-    let$* desc, store =
-      Lwd.get Document_store_manager.multi_file_view_document_store
+    let$* snapshot =
+      Lwd.get Document_store_manager.multi_file_view_document_store_snapshot
     in
     let content =
       let file_shown_count =
         Notty.I.strf ~attr:Ui_base.Status_bar.attr
           "%5d/%d documents listed"
           document_count
-          (Document_store.size store)
+          (Document_store.size snapshot.store)
       in
       let version =
         Notty.I.strf ~attr:Ui_base.Status_bar.attr
@@ -377,7 +387,7 @@ module Bottom_pane = struct
       let desc =
         Notty.I.strf ~attr:Ui_base.Status_bar.attr
           "Last action: %s"
-          desc
+          snapshot.desc
       in
       let ver_len = Notty.I.width version in
       let desc_len = Notty.I.width desc in
@@ -659,14 +669,14 @@ let keyboard_handler
           let cur_ver = Lwd.peek Vars.document_store_cur_ver in
           let new_ver = cur_ver - 1 in
           if new_ver >= 0 then (
-            let cur_store =
-              Lwd.peek Document_store_manager.multi_file_view_document_store
+            let cur_snapshot =
+              Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
             in
-            Dynarray.set Vars.document_store_versions cur_ver cur_store;
+            Dynarray.set Vars.document_store_snapshots cur_ver cur_snapshot;
             Lwd.set Vars.document_store_cur_ver new_ver;
-            let desc, store = Dynarray.get Vars.document_store_versions new_ver in
-            Document_store_manager.submit_update_req `Multi_file_view desc store;
-            sync_input_fields_from_document_store store;
+            let new_snapshot = Dynarray.get Vars.document_store_snapshots new_ver in
+            Document_store_manager.submit_update_req `Multi_file_view new_snapshot;
+            sync_input_fields_from_document_store new_snapshot.store;
             reset_document_selected ();
           );
           `Handled
@@ -676,31 +686,30 @@ let keyboard_handler
       | (`ASCII 'Y', [`Ctrl]) -> (
           let cur_ver = Lwd.peek Vars.document_store_cur_ver in
           let new_ver = cur_ver + 1 in
-          if new_ver < Dynarray.length Vars.document_store_versions then (
-            let cur_store =
-              Lwd.peek Document_store_manager.multi_file_view_document_store
+          if new_ver < Dynarray.length Vars.document_store_snapshots then (
+            let cur_snapshot =
+              Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
             in
-            Dynarray.set Vars.document_store_versions cur_ver cur_store;
+            Dynarray.set Vars.document_store_snapshots cur_ver cur_snapshot;
             Lwd.set Vars.document_store_cur_ver new_ver;
-            let desc, store = Dynarray.get Vars.document_store_versions new_ver in
-            Document_store_manager.submit_update_req `Multi_file_view desc store;
-            sync_input_fields_from_document_store store;
+            let new_snapshot = Dynarray.get Vars.document_store_snapshots new_ver in
+            Document_store_manager.submit_update_req `Multi_file_view new_snapshot;
+            sync_input_fields_from_document_store new_snapshot.store;
             reset_document_selected ();
           );
           `Handled
         )
       | (`Tab, []) -> (
           Option.iter (fun (doc, _search_results) ->
-              let desc, document_store =
-                Lwd.peek Document_store_manager.multi_file_view_document_store
+              let snapshot =
+                Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
               in
               let single_file_document_store =
-                Option.get (Document_store.single_out ~path:(Document.path doc) document_store)
+                Option.get (Document_store.single_out ~path:(Document.path doc) snapshot.store)
               in
               Document_store_manager.submit_update_req
                 `Single_file_view
-                desc
-                single_file_document_store;
+                { snapshot with store = single_file_document_store };
               Lwd.set Ui_base.Vars.Single_file.index_of_search_result_selected
                 (Lwd.peek Vars.index_of_search_result_selected);
               Lwd.set Ui_base.Vars.Single_file.search_field
@@ -956,18 +965,19 @@ let keyboard_handler
   | _ -> `Unhandled
 
 let main : Nottui.ui Lwd.t =
-  let$* desc, document_store =
-    Lwd.get Document_store_manager.multi_file_view_document_store
+  let$* snapshot =
+    Lwd.get Document_store_manager.multi_file_view_document_store_snapshot
   in
   let cur_ver = Lwd.peek Vars.document_store_cur_ver in
   if
     cur_ver = 0
-    && Dynarray.length Vars.document_store_versions = 0
+    && Dynarray.length Vars.document_store_snapshots = 0
   then (
-    Dynarray.add_last Vars.document_store_versions (desc, document_store)
+    Dynarray.add_last Vars.document_store_snapshots snapshot
   ) else (
-    Dynarray.set Vars.document_store_versions cur_ver (desc, document_store)
+    Dynarray.set Vars.document_store_snapshots cur_ver snapshot
   );
+  let document_store = snapshot.store in
   let document_info_s =
     Document_store.usable_documents document_store
   in
