@@ -6,13 +6,16 @@ type t = [
   | `Filter of string
 ]
 
-let to_string (t : t) =
+let pp fmt (t : t) =
   match t with
-  | `Drop_path s -> Fmt.str "drop path %s" s
-  | `Drop_listed -> "drop listed"
-  | `Drop_unlisted -> "drop unlisted"
-  | `Search s -> Fmt.str "search %s" s
-  | `Filter s -> Fmt.str "filter %s" s
+  | `Drop_path s -> Fmt.pf fmt "drop path %s" s
+  | `Drop_listed -> Fmt.pf fmt "drop listed"
+  | `Drop_unlisted -> Fmt.pf fmt "drop unlisted"
+  | `Search s -> Fmt.pf fmt "search %s" s
+  | `Filter s -> Fmt.pf fmt "filter %s" s
+
+let to_string (t : t) =
+  Fmt.str "%a" pp t
 
 let of_string (s : string) : t option =
   let skip_spaces l =

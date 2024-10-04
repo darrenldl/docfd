@@ -142,13 +142,7 @@ let worker_fiber pool =
       )
   in
   let process_filter_req search_stop_signal (store_typ : store_typ) (original_string : string) =
-    let s =
-      if String.length original_string = 0 then (
-        original_string
-      ) else (
-        Misc_utils.normalize_glob_to_absolute original_string
-      )
-    in
+    let s = Misc_utils.normalize_filter_glob_if_not_empty original_string in
     match Glob.make s with
     | Some glob -> (
         let store =

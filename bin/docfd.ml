@@ -889,6 +889,107 @@ let run
             );
             loop ()
           )
+        | Edit_history -> (
+            let file = Filename.temp_file "docfd-history-" ".txt" in
+            (try
+               CCIO.with_out file (fun oc ->
+                   Dynarray.iter (fun (snapshot : Document_store_snapshot.t) ->
+                       match snapshot.last_action with
+                       | None -> ()
+                       | Some action -> (
+                           CCIO.write_line oc (Action.to_string action)
+                         )
+                     ) Multi_file_view.Vars.document_store_snapshots
+                 );
+               let old_stats = Unix.stat file in
+               close_term ();
+               Sys.command (Fmt.str "%s %s" !Params.text_editor (Filename.quote file)) |> ignore;
+               let new_stats = Unix.stat file in
+               let snapshots = Multi_file_view.Vars.document_store_snapshots in
+               if
+                 Float.abs
+                   (new_stats.st_mtime -. old_stats.st_mtime) >= Params.float_compare_margin
+               then (
+                 Dynarray.clear snapshots;
+                 Lwd.set Multi_file_view.Vars.document_store_cur_ver 0;
+                 Dynarray.add_last
+                   snapshots
+                   { Document_store_snapshot.empty with store = init_document_store };
+                 let store = ref init_document_store in
+                 CCIO.with_in file (fun ic ->
+                     CCIO.read_lines_l ic
+                     |> List.iter (fun line ->
+                         (match Action.of_string line with
+                          | None -> ()
+                          | Some action -> (
+                              (match action with
+                               | `Drop_path s -> (
+                                   store := Document_store.drop (`Path s) !store
+                                 )
+                               | `Drop_listed -> (
+                                   store := Document_store.drop `Usable !store
+                                 )
+                               | `Drop_unlisted -> (
+                                   store := Document_store.drop `Unusable !store
+                                 )
+                               | `Search s -> (
+                                   match Search_exp.make s with
+                                   | None -> ()
+                                   | Some search_exp -> (
+                                       store := Document_store.update_search_exp
+                                           pool
+                                           (Stop_signal.make ())
+                                           s
+                                           search_exp
+                                           !store
+                                     )
+                                 )
+                               | `Filter original_string -> (
+                                   let s = Misc_utils.normalize_filter_glob_if_not_empty original_string in
+                                   match Glob.make s with
+                                   | None -> ()
+                                   | Some glob -> (
+                                       store := Document_store.update_file_path_filter_glob
+                                           pool
+                                           (Stop_signal.make ())
+                                           original_string
+                                           glob
+                                           !store
+                                     )
+                                 )
+                              );
+                              let snapshot =
+                                Document_store_snapshot.make
+                                  ""
+                                  (Some action)
+                                  !store
+                              in
+                              Dynarray.add_last
+                                snapshots
+                                snapshot
+                            ));
+                       )
+                   )
+               );
+               (try
+                  Sys.remove file;
+                with
+                | _ -> ()
+               );
+               Lwd.set
+                 Multi_file_view.Vars.document_store_cur_ver
+                 (Dynarray.length snapshots - 1);
+               Document_store_manager.submit_update_req
+                 ~wait_for_completion:true
+                 `Multi_file_view
+                 (Dynarray.get_last snapshots);
+             with
+             | _ -> (
+                 exit_with_error_msg
+                   (Fmt.str "failed to read or write temporary history file %s" (Filename.quote file))
+               ));
+            loop ()
+          )
       )
   in
   Eio.Fiber.any [
