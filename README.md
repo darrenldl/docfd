@@ -425,7 +425,7 @@ Navigation mode
     - `Tab`
 - Enter clear mode
     - `x`
-- Enter discard mode
+- Enter drop mode
     - `d`
 - Undo document store changes
     - `u`
@@ -440,14 +440,14 @@ Clear mode
 - Clear file path filter field
     - `f`
 
-Discard mode
-- Discard currently selected document
+Drop mode
+- Drop currently selected document
     - `d`
-- Discard all unlisted documents
+- Drop all unlisted documents
     - `u`
-- Discard all listed documents
+- Drop all listed documents
     - `l`
-- Cancel/exit discard mode
+- Cancel/exit drop mode
     - `Esc`
     - `Ctrl`+`C`
 

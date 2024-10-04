@@ -25,6 +25,8 @@
 
 - Changed help info rotation key from `h` to `?`
 
+- Renamed discard mode to drop mode
+
 ## 8.0.3
 
 - Fixed single file view crash

@@ -451,7 +451,7 @@ module Bottom_pane = struct
           [
             { label = "?"; msg = "rotate key binding info" };
             { label = "r"; msg = "reload mode" };
-            { label = "d"; msg = "discard mode" };
+            { label = "d"; msg = "drop mode" };
           ];
         ]
       in
@@ -485,7 +485,7 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
-      let discard_grid =
+      let drop_grid =
         [
           [
             { label = "d"; msg = "selected" };
@@ -554,11 +554,11 @@ module Bottom_pane = struct
         ({ input_mode = Clear; init_ui_mode = Ui_single_file },
          clear_grid
         );
-        ({ input_mode = Discard; init_ui_mode = Ui_multi_file },
-         discard_grid
+        ({ input_mode = Drop; init_ui_mode = Ui_multi_file },
+         drop_grid
         );
-        ({ input_mode = Discard; init_ui_mode = Ui_single_file },
-         discard_grid
+        ({ input_mode = Drop; init_ui_mode = Ui_single_file },
+         drop_grid
         );
         ({ input_mode = Print; init_ui_mode = Ui_multi_file },
          print_grid
@@ -642,7 +642,7 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'd', []) -> (
-          Ui_base.set_input_mode Discard;
+          Ui_base.set_input_mode Drop;
           `Handled
         )
       | (`ASCII 'r', []) -> (
@@ -809,7 +809,7 @@ let keyboard_handler
       );
       `Handled
     )
-  | Discard -> (
+  | Drop -> (
       let exit =
         match key with
         | (`Escape, [])

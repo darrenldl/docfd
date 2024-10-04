@@ -6,7 +6,7 @@ type input_mode =
   | Search
   | Filter
   | Clear
-  | Discard
+  | Drop
   | Print
   | Reload
 
@@ -239,7 +239,7 @@ module Status_bar = struct
       ; (Search, "SEARCH")
       ; (Filter, "FILTER")
       ; (Clear, "CLEAR")
-      ; (Discard, "DISCARD")
+      ; (Drop, "DROP")
       ; (Print, "PRINT")
       ; (Reload, "RELOAD")
       ]
