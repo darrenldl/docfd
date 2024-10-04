@@ -52,9 +52,9 @@ let reload_document (doc : Document.t) =
       in
       let snapshot =
         Document_store_snapshot.make
-        (Fmt.str "reload \"%s\"" (File_utils.remove_cwd_from_path path))
-        None
-        document_store
+          (Fmt.str "reload \"%s\"" (File_utils.remove_cwd_from_path path))
+          None
+          document_store
       in
       Document_store_manager.submit_update_req
         `Multi_file_view
@@ -144,9 +144,9 @@ let drop ~document_count (choice : [`Path of string | `Listed | `Unlisted]) =
   add_document_store_snapshot cur_snapshot;
   let new_snapshot =
     Document_store_snapshot.make
-    new_desc
-    (Some new_action)
-    (Document_store.drop choice cur_snapshot.store)
+      new_desc
+      (Some new_action)
+      (Document_store.drop choice cur_snapshot.store)
   in
   Document_store_manager.submit_update_req
     `Multi_file_view

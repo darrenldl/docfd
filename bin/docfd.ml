@@ -849,9 +849,9 @@ let run
               ~wait_for_completion:true
               `Multi_file_view
               (Document_store_snapshot.make
-              "reload all"
-              None
-              document_store);
+                 "reload all"
+                 None
+                 document_store);
             loop ()
           )
         | Open_file_and_search_result (doc, search_result) -> (
@@ -903,18 +903,18 @@ let run
          ~wait_for_completion:true
          `Multi_file_view
          (Document_store_snapshot.make
-         ""
-         None
-         init_document_store);
+            ""
+            None
+            init_document_store);
        (match init_ui_mode with
         | Ui_base.Ui_single_file ->
           Document_store_manager.submit_update_req
             ~wait_for_completion:true
             `Single_file_view
             (Document_store_snapshot.make
-            ""
-            None
-            init_document_store);
+               ""
+               None
+               init_document_store);
         | _ -> ()
        );
        (match start_with_search with

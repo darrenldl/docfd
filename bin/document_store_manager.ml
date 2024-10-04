@@ -243,10 +243,10 @@ let submit_search_req (store_typ : store_typ) (s : string) =
   Ping.ping worker_ping
 
 let submit_update_req
-?(wait_for_completion = false)
-(store_typ : store_typ)
-snapshot
-=
+    ?(wait_for_completion = false)
+    (store_typ : store_typ)
+    snapshot
+  =
   signal_search_stop ();
   (match store_typ with
    | `Multi_file_view -> (

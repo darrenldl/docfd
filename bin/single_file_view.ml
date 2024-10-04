@@ -34,9 +34,9 @@ let reload_document (doc : Document.t) : unit =
       Document_store_manager.submit_update_req
         `Multi_file_view
         (Document_store_snapshot.make
-        ""
-        None
-        multi_file_view_document_store);
+           ""
+           None
+           multi_file_view_document_store);
       let single_file_view_document_store =
         Lwd.peek Document_store_manager.single_file_view_document_store_snapshot
         |> (fun x -> x.store)
@@ -45,9 +45,9 @@ let reload_document (doc : Document.t) : unit =
       Document_store_manager.submit_update_req
         `Single_file_view
         (Document_store_snapshot.make
-        ""
-        None
-        single_file_view_document_store);
+           ""
+           None
+           single_file_view_document_store);
     )
   | Error _ -> ()
 
