@@ -849,7 +849,6 @@ let run
               ~wait_for_completion:true
               `Multi_file_view
               (Document_store_snapshot.make
-                 "reload all"
                  None
                  document_store);
             loop ()
@@ -960,7 +959,6 @@ let run
                               );
                               let snapshot =
                                 Document_store_snapshot.make
-                                  ""
                                   (Some action)
                                   !store
                               in
@@ -1004,7 +1002,6 @@ let run
          ~wait_for_completion:true
          `Multi_file_view
          (Document_store_snapshot.make
-            ""
             None
             init_document_store);
        (match init_ui_mode with
@@ -1013,7 +1010,6 @@ let run
             ~wait_for_completion:true
             `Single_file_view
             (Document_store_snapshot.make
-               ""
                None
                init_document_store);
         | _ -> ()

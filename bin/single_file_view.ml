@@ -26,28 +26,28 @@ let reload_document (doc : Document.t) : unit =
   with
   | Ok doc -> (
       reset_search_result_selected ();
-      let multi_file_view_document_store =
+      let multi_file_view_document_store_snapshot =
         Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
-        |> (fun x -> x.store)
+      in
+      let multi_file_view_document_store =
+        multi_file_view_document_store_snapshot.store
         |> Document_store.add_document pool doc
       in
       Document_store_manager.submit_update_req
         `Multi_file_view
-        (Document_store_snapshot.make
-           ""
-           None
-           multi_file_view_document_store);
-      let single_file_view_document_store =
+        { multi_file_view_document_store_snapshot with
+          store = multi_file_view_document_store };
+      let single_file_view_document_store_snapshot =
         Lwd.peek Document_store_manager.single_file_view_document_store_snapshot
-        |> (fun x -> x.store)
+      in
+      let single_file_view_document_store =
+        single_file_view_document_store_snapshot.store
         |> Document_store.add_document pool doc
       in
       Document_store_manager.submit_update_req
         `Single_file_view
-        (Document_store_snapshot.make
-           ""
-           None
-           single_file_view_document_store);
+        { single_file_view_document_store_snapshot with
+          store = single_file_view_document_store };
     )
   | Error _ -> ()
 

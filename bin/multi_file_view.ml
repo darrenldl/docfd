@@ -52,7 +52,6 @@ let reload_document (doc : Document.t) =
       in
       let snapshot =
         Document_store_snapshot.make
-          (Fmt.str "reload \"%s\"" (File_utils.remove_cwd_from_path path))
           None
           document_store
       in
@@ -122,20 +121,20 @@ let add_document_store_current_version_if_input_fields_changed () =
   )
 
 let drop ~document_count (choice : [`Path of string | `Listed | `Unlisted]) =
-  let choice, new_desc, new_action =
+  let choice, new_action =
     match choice with
     | `Path path -> (
         let n = Lwd.peek Vars.index_of_document_selected in
         set_document_selected ~choice_count:(document_count - 1) n;
-        (`Path path, Fmt.str "drop \"%s\"" path, `Drop_path path)
+        (`Path path, `Drop_path path)
       )
     | `Listed -> (
         reset_document_selected ();
-        (`Usable, "drop listed", `Drop_listed)
+        (`Usable, `Drop_listed)
       )
     | `Unlisted -> (
         reset_document_selected ();
-        (`Unusable, "drop unlisted", `Drop_unlisted)
+        (`Unusable, `Drop_unlisted)
       )
   in
   let cur_snapshot =
@@ -144,7 +143,6 @@ let drop ~document_count (choice : [`Path of string | `Listed | `Unlisted]) =
   add_document_store_snapshot cur_snapshot;
   let new_snapshot =
     Document_store_snapshot.make
-      new_desc
       (Some new_action)
       (Document_store.drop choice cur_snapshot.store)
   in
@@ -387,7 +385,9 @@ module Bottom_pane = struct
       let desc =
         Notty.I.strf ~attr:Ui_base.Status_bar.attr
           "Last action: %s"
-          snapshot.desc
+          (match snapshot.last_action with
+           | None -> "N/A"
+           | Some action -> Action.to_string action)
       in
       let ver_len = Notty.I.width version in
       let desc_len = Notty.I.width desc in

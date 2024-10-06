@@ -126,15 +126,8 @@ let worker_fiber pool =
             s
             search_exp
         in
-        let desc =
-          if String.length s = 0 then (
-            "clear search"
-          ) else (
-            Fmt.str "search \"%s\"" s
-          )
-        in
         let action = Some (`Search s) in
-        let snapshot = Document_store_snapshot.make desc action store in
+        let snapshot = Document_store_snapshot.make action store in
         (match store_typ with
          | `Single_file_view -> single_file_view_store_snapshot := snapshot
          | `Multi_file_view -> multi_file_view_store_snapshot := snapshot);
@@ -156,15 +149,8 @@ let worker_fiber pool =
             original_string
             glob
         in
-        let desc =
-          if String.length original_string = 0 then (
-            Fmt.str "clear filter"
-          ) else (
-            Fmt.str "filter \"%s\"" original_string
-          )
-        in
         let action = Some (`Filter original_string) in
-        let snapshot = Document_store_snapshot.make desc action store in
+        let snapshot = Document_store_snapshot.make action store in
         (match store_typ with
          | `Single_file_view -> single_file_view_store_snapshot := snapshot
          | `Multi_file_view -> multi_file_view_store_snapshot := snapshot);

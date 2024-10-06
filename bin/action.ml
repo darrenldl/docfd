@@ -11,8 +11,20 @@ let pp fmt (t : t) =
   | `Drop_path s -> Fmt.pf fmt "drop path %s" s
   | `Drop_listed -> Fmt.pf fmt "drop listed"
   | `Drop_unlisted -> Fmt.pf fmt "drop unlisted"
-  | `Search s -> Fmt.pf fmt "search %s" s
-  | `Filter s -> Fmt.pf fmt "filter %s" s
+  | `Search s -> (
+      if String.length s = 0 then (
+        Fmt.pf fmt "clear search"
+      ) else (
+        Fmt.pf fmt "search %s" s
+      )
+    )
+  | `Filter s -> (
+      if String.length s = 0 then (
+        Fmt.pf fmt "clear filter"
+      ) else (
+        Fmt.pf fmt "filter %s" s
+      )
+    )
 
 let to_string (t : t) =
   Fmt.str "%a" pp t
@@ -37,7 +49,9 @@ let of_string (s : string) : t option =
       | "unlisted" :: [] -> Some `Drop_unlisted
       | _ -> None
     )
+  | "clear" :: "search" :: [] -> Some (`Search "")
   | "search" :: l -> Some (`Search (f l))
+  | "clear" :: "filter" :: [] -> Some (`Filter "")
   | "filter" :: l -> Some (`Filter (f l))
   | _ -> None
 
