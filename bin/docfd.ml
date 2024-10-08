@@ -921,42 +921,9 @@ let run
                          (match Action.of_string line with
                           | None -> ()
                           | Some action -> (
-                              (match action with
-                               | `Drop_path s -> (
-                                   store := Document_store.drop (`Path s) !store
-                                 )
-                               | `Drop_listed -> (
-                                   store := Document_store.drop `Usable !store
-                                 )
-                               | `Drop_unlisted -> (
-                                   store := Document_store.drop `Unusable !store
-                                 )
-                               | `Search s -> (
-                                   match Search_exp.make s with
-                                   | None -> ()
-                                   | Some search_exp -> (
-                                       store := Document_store.update_search_exp
-                                           pool
-                                           (Stop_signal.make ())
-                                           s
-                                           search_exp
-                                           !store
-                                     )
-                                 )
-                               | `Filter original_string -> (
-                                   let s = Misc_utils.normalize_filter_glob_if_not_empty original_string in
-                                   match Glob.make s with
-                                   | None -> ()
-                                   | Some glob -> (
-                                       store := Document_store.update_file_path_filter_glob
-                                           pool
-                                           (Stop_signal.make ())
-                                           original_string
-                                           glob
-                                           !store
-                                     )
-                                 )
-                              );
+                              (match Document_store.play_action pool action !store with
+                               | None -> ()
+                               | Some x -> store := x);
                               let snapshot =
                                 Document_store_snapshot.make
                                   (Some action)

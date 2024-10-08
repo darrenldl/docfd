@@ -262,3 +262,44 @@ let drop (choice : [ `Path of string | `Usable | `Unusable ]) (t : t) : t =
         search_results = String_map.filter f2 t.search_results;
       }
     )
+
+let play_action pool (action : Action.t) (t : t) : t option =
+  match action with
+  | `Drop_path s -> (
+      Some (drop (`Path s) t)
+    )
+  | `Drop_listed -> (
+      Some (drop `Usable t)
+    )
+  | `Drop_unlisted -> (
+      Some (drop `Unusable t)
+    )
+  | `Search s -> (
+      match Search_exp.make s with
+      | None -> None
+      | Some search_exp -> (
+          Some (
+            update_search_exp
+              pool
+              (Stop_signal.make ())
+              s
+              search_exp
+              t
+          )
+        )
+    )
+  | `Filter original_string -> (
+      let s = Misc_utils.normalize_filter_glob_if_not_empty original_string in
+      match Glob.make s with
+      | None -> None
+      | Some glob -> (
+          Some (
+            update_file_path_filter_glob
+              pool
+              (Stop_signal.make ())
+              original_string
+              glob
+              t
+          )
+        )
+    )
