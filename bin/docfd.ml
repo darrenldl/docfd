@@ -823,34 +823,14 @@ let run
     | Some action -> (
         match action with
         | Ui_base.Recompute_document_src -> (
-            let document_src = compute_document_src () in
-            let old_snapshot =
-              Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
+            close_term ();
+            let new_starting_snapshot =
+              compute_document_src ()
+              |> document_store_of_document_src ~env ~interactive pool
+              |> Document_store_snapshot.make None
             in
-            let old_document_store = old_snapshot.store in
-            let file_path_filter_glob_string = Document_store.file_path_filter_glob_string old_document_store in
-            let file_path_filter_glob = Document_store.file_path_filter_glob old_document_store in
-            let search_exp_string = Document_store.search_exp_string old_document_store in
-            let search_exp = Document_store.search_exp old_document_store in
-            let document_store =
-              document_store_of_document_src ~env ~interactive pool document_src
-              |> Document_store.update_file_path_filter_glob
-                pool
-                (Stop_signal.make ())
-                file_path_filter_glob_string
-                file_path_filter_glob
-              |> Document_store.update_search_exp
-                pool
-                (Stop_signal.make ())
-                search_exp_string
-                search_exp
-            in
-            Document_store_manager.submit_update_req
-              ~wait_for_completion:true
-              `Multi_file_view
-              (Document_store_snapshot.make
-                 None
-                 document_store);
+            Multi_file_view.update_starting_snapshot_and_recompute_rest
+              new_starting_snapshot;
             loop ()
           )
         | Open_file_and_search_result (doc, search_result) -> (

@@ -37,6 +37,32 @@ let set_search_result_selected ~choice_count n =
   let n = Misc_utils.bound_selection ~choice_count n in
   Lwd.set Vars.index_of_search_result_selected n
 
+let update_starting_snapshot_and_recompute_rest
+    (starting_snapshot : Document_store_snapshot.t)
+  =
+  let pool = Ui_base.task_pool () in
+  let snapshots = Vars.document_store_snapshots in
+  Dynarray.set snapshots 0 starting_snapshot;
+  for i=1 to Dynarray.length snapshots - 1 do
+    let prev = Dynarray.get snapshots (i - 1) in
+    let cur = Dynarray.get snapshots i in
+    let store =
+      match cur.last_action with
+      | None -> prev.store
+      | Some action ->
+        Option.value ~default:prev.store
+          (Document_store.play_action pool action prev.store)
+    in
+    Dynarray.set snapshots i Document_store_snapshot.{ cur with store }
+  done;
+  let cur_snapshot =
+    Dynarray.get snapshots (Lwd.peek Vars.document_store_cur_ver)
+  in
+  Document_store_manager.submit_update_req
+    ~wait_for_completion:true
+    `Multi_file_view
+    cur_snapshot
+
 let reload_document (doc : Document.t) =
   let pool = Ui_base.task_pool () in
   let path = Document.path doc in
@@ -46,7 +72,7 @@ let reload_document (doc : Document.t) =
   | Ok doc -> (
       reset_document_selected ();
       let document_store =
-        Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
+        Dynarray.get Vars.document_store_snapshots 0
         |> (fun x -> x.store)
         |> Document_store.add_document pool doc
       in
@@ -55,9 +81,7 @@ let reload_document (doc : Document.t) =
           None
           document_store
       in
-      Document_store_manager.submit_update_req
-        `Multi_file_view
-        snapshot;
+      update_starting_snapshot_and_recompute_rest snapshot
     )
   | Error _ -> ()
 
