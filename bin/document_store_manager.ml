@@ -47,8 +47,8 @@ type egress_payload =
   | Filtering_done of store_typ * Document_store_snapshot.t
   | Update of store_typ * Document_store_snapshot.t
 
-let egress_mailbox : egress_payload Eio.Stream.t =
-  Eio.Stream.create 1
+let egress : egress_payload Eio.Stream.t =
+  Eio.Stream.create 0
 
 let search_stop_signal = Atomic.make (Stop_signal.make ())
 
@@ -74,7 +74,7 @@ let manager_fiber () =
       )
   in
   while true do
-    let payload = Eio.Stream.take egress_mailbox in
+    let payload = Eio.Stream.take egress in
     match payload with
     | Search_exp_parse_error -> (
         Lwd.set search_ui_status `Parse_error
@@ -111,10 +111,10 @@ let worker_fiber pool =
   let process_search_req search_stop_signal (store_typ : store_typ) (s : string) =
     match Search_exp.make s with
     | None -> (
-        Eio.Stream.add egress_mailbox Search_exp_parse_error
+        Eio.Stream.add egress Search_exp_parse_error
       )
     | Some search_exp -> (
-        Eio.Stream.add egress_mailbox Searching;
+        Eio.Stream.add egress Searching;
         let store =
           (match store_typ with
            | `Single_file_view -> !single_file_view_store_snapshot
@@ -131,7 +131,7 @@ let worker_fiber pool =
         (match store_typ with
          | `Single_file_view -> single_file_view_store_snapshot := snapshot
          | `Multi_file_view -> multi_file_view_store_snapshot := snapshot);
-        Eio.Stream.add egress_mailbox (Search_done (store_typ, snapshot))
+        Eio.Stream.add egress (Search_done (store_typ, snapshot))
       )
   in
   let process_filter_req search_stop_signal (store_typ : store_typ) (original_string : string) =
@@ -154,10 +154,10 @@ let worker_fiber pool =
         (match store_typ with
          | `Single_file_view -> single_file_view_store_snapshot := snapshot
          | `Multi_file_view -> multi_file_view_store_snapshot := snapshot);
-        Eio.Stream.add egress_mailbox (Filtering_done (store_typ, snapshot))
+        Eio.Stream.add egress (Filtering_done (store_typ, snapshot))
       )
     | None -> (
-        Eio.Stream.add egress_mailbox Filter_glob_parse_error
+        Eio.Stream.add egress Filter_glob_parse_error
       )
   in
   let process_update_req (store_typ : store_typ) snapshot =
@@ -165,7 +165,7 @@ let worker_fiber pool =
      | `Single_file_view -> single_file_view_store_snapshot := snapshot
      | `Multi_file_view -> multi_file_view_store_snapshot := snapshot
     );
-    Eio.Stream.add egress_mailbox (Update (store_typ, snapshot))
+    Eio.Stream.add egress (Update (store_typ, snapshot))
   in
   while true do
     Ping.wait worker_ping;
@@ -223,7 +223,6 @@ let submit_search_req (store_typ : store_typ) (s : string) =
   Ping.ping worker_ping
 
 let submit_update_req
-    ?(wait_for_completion = false)
     (store_typ : store_typ)
     snapshot
   =
@@ -242,6 +241,4 @@ let submit_update_req
   );
   Ping.clear requester_ping;
   Ping.ping worker_ping;
-  if wait_for_completion then (
-    Ping.wait requester_ping
-  )
+  Ping.wait requester_ping

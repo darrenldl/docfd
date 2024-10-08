@@ -925,7 +925,6 @@ let run
                  Multi_file_view.Vars.document_store_cur_ver
                  (Dynarray.length snapshots - 1);
                Document_store_manager.submit_update_req
-                 ~wait_for_completion:true
                  `Multi_file_view
                  (Dynarray.get_last snapshots);
              with
@@ -946,7 +945,6 @@ let run
     Printers.Worker.fiber;
     (fun () ->
        Document_store_manager.submit_update_req
-         ~wait_for_completion:true
          `Multi_file_view
          (Document_store_snapshot.make
             None
@@ -954,7 +952,6 @@ let run
        (match init_ui_mode with
         | Ui_base.Ui_single_file ->
           Document_store_manager.submit_update_req
-            ~wait_for_completion:true
             `Single_file_view
             (Document_store_snapshot.make
                None

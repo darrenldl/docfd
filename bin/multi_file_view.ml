@@ -59,7 +59,6 @@ let update_starting_snapshot_and_recompute_rest
     Dynarray.get snapshots (Lwd.peek Vars.document_store_cur_ver)
   in
   Document_store_manager.submit_update_req
-    ~wait_for_completion:true
     `Multi_file_view
     cur_snapshot
 
