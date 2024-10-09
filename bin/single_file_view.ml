@@ -344,6 +344,9 @@ let main : Nottui.ui Lwd.t =
   match Document_store.min_binding document_store with
   | None -> Lwd.return (Nottui.Ui.atom (Notty.I.void 0 0))
   | Some (_, document_info) -> (
+      set_search_result_selected
+        ~choice_count:(Array.length (snd document_info))
+        (Lwd.peek Ui_base.Vars.Single_file.index_of_search_result_selected);
       let$* bottom_pane = Bottom_pane.main ~document_info in
       let bottom_pane_height = Nottui.Ui.layout_height bottom_pane in
       let$* (term_width, term_height) = Lwd.get Ui_base.Vars.term_width_height in
