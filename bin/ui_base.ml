@@ -31,11 +31,7 @@ let render_mode_of_document (doc : Document.t)
 module Vars = struct
   let quit = Lwd.var false
 
-  let pool : Task_pool.t option ref = ref None
-
   let action : top_level_action option ref = ref None
-
-  let eio_env : Eio_unix.Stdenv.base option ref = ref None
 
   let input_mode : input_mode Lwd.var = Lwd.var Navigate
 
@@ -45,8 +41,6 @@ module Vars = struct
 
   let document_src : Document_src.t ref = ref (Document_src.(Files empty_file_collection))
 
-  let term : Notty_unix.Term.t option ref = ref None
-
   let term_width_height : (int * int) Lwd.var = Lwd.var (0, 0)
 
   module Single_file = struct
@@ -55,15 +49,6 @@ module Vars = struct
     let index_of_search_result_selected = Lwd.var 0
   end
 end
-
-let task_pool () =
-  Option.get !Vars.pool
-
-let eio_env () =
-  Option.get !Vars.eio_env
-
-let term () =
-  Option.get !Vars.term
 
 let full_term_sized_background =
   let$ (term_width, term_height) = Lwd.get Vars.term_width_height in
@@ -299,7 +284,7 @@ module Key_binding_info = struct
     Eio.Stream.add grid_light_on_req label
 
   let grid_light_fiber () =
-    let clock = Eio.Stdenv.mono_clock (eio_env ()) in
+    let clock = Eio.Stdenv.mono_clock (Global_vars.eio_env ()) in
     Eio.Fiber.both
       (fun () ->
          while true do
@@ -547,7 +532,7 @@ module Search_bar = struct
       ]
 end
 
-let term' : unit -> Notty_unix.Term.t = term
+let term' : unit -> Notty_unix.Term.t = Global_vars.term
 
 let ui_loop ~quit ~term root =
   let renderer = Nottui.Renderer.make () in

@@ -17,11 +17,6 @@ module Vars = struct
   let require_field = Lwd.var Ui_base.empty_text_field
 
   let require_field_focus_handle = Nottui.Focus.make ()
-
-  let document_store_snapshots : Document_store_snapshot.t Dynarray.t =
-    Dynarray.create ()
-
-  let document_store_cur_ver = Lwd.var 0
 end
 
 let set_document_selected ~choice_count n =
@@ -37,7 +32,7 @@ let set_search_result_selected ~choice_count n =
   let n = Misc_utils.bound_selection ~choice_count n in
   Lwd.set Vars.index_of_search_result_selected n
 
-let update_starting_snapshot_and_recompute_rest
+(*let update_starting_snapshot_and_recompute_rest
     (starting_snapshot : Document_store_snapshot.t)
   =
   let pool = Ui_base.task_pool () in
@@ -61,17 +56,18 @@ let update_starting_snapshot_and_recompute_rest
   Document_store_manager.submit_update_req
     `Multi_file_view
     cur_snapshot
+    *)
 
 let reload_document (doc : Document.t) =
-  let pool = Ui_base.task_pool () in
+  let pool = Global_vars.task_pool () in
   let path = Document.path doc in
   match
-    Document.of_path ~env:(Ui_base.eio_env ()) pool (Document.search_mode doc) path
+    Document.of_path ~env:(Global_vars.eio_env ()) pool (Document.search_mode doc) path
   with
   | Ok doc -> (
       reset_document_selected ();
       let document_store =
-        Dynarray.get Vars.document_store_snapshots 0
+        Dynarray.get Document_store_manager.multi_file_view_store_snapshots 0
         |> (fun x -> x.store)
         |> Document_store.add_document pool doc
       in
@@ -80,7 +76,9 @@ let reload_document (doc : Document.t) =
           None
           document_store
       in
-      update_starting_snapshot_and_recompute_rest snapshot
+      Document_store_manager.submit_update_starting_snapshot_req
+      `Multi_file_view
+      snapshot
     )
   | Error _ -> ()
 
@@ -103,23 +101,23 @@ let sync_input_fields_from_document_store
   |> (fun s ->
       Lwd.set Vars.search_field (s, String.length s))
 
-let clear_document_store_later_snapshots () =
+(* let clear_document_store_later_snapshots () =
   let cur_ver = Lwd.peek Vars.document_store_cur_ver in
-  Dynarray.truncate Vars.document_store_snapshots (cur_ver + 1)
+  Dynarray.truncate Vars.document_store_snapshots (cur_ver + 1) *)
 
-let add_document_store_snapshot snapshot =
+(* let add_document_store_snapshot snapshot =
   clear_document_store_later_snapshots ();
   Dynarray.add_last Vars.document_store_snapshots snapshot;
   let new_ver = Lwd.peek Vars.document_store_cur_ver + 1 in
-  Lwd.set Vars.document_store_cur_ver new_ver
+  Lwd.set Vars.document_store_cur_ver new_ver *)
 
-let add_document_store_current_version () =
+(* let add_document_store_current_version () =
   let snapshot =
     Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
   in
-  add_document_store_snapshot snapshot
+  add_document_store_snapshot snapshot *)
 
-let add_document_store_current_version_if_input_fields_changed () =
+(* let add_document_store_current_version_if_input_fields_changed () =
   let cur_ver = Lwd.peek Vars.document_store_cur_ver in
   if cur_ver = 0 then (
     add_document_store_current_version ()
@@ -141,7 +139,7 @@ let add_document_store_current_version_if_input_fields_changed () =
     if filter_changed || search_changed then (
       add_document_store_current_version ()
     )
-  )
+  ) *)
 
 let drop ~document_count (choice : [`Path of string | `Listed | `Unlisted]) =
   let choice, new_action =
@@ -161,9 +159,9 @@ let drop ~document_count (choice : [`Path of string | `Listed | `Unlisted]) =
       )
   in
   let cur_snapshot =
-    Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
+    Lwd.peek Document_store_manager.multi_file_view_store_snapshot
   in
-  add_document_store_snapshot cur_snapshot;
+  Document_store_manager.submit_snapshot_req `Multi_file_view;
   let new_snapshot =
     Document_store_snapshot.make
       (Some new_action)

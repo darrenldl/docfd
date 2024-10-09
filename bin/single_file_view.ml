@@ -19,15 +19,15 @@ let update_search_phrase () =
     s
 
 let reload_document (doc : Document.t) : unit =
-  let pool = Ui_base.task_pool () in
+  let pool = Global_vars.task_pool () in
   let path = Document.path doc in
   match
-    Document.of_path ~env:(Ui_base.eio_env ()) pool (Document.search_mode doc) path
+    Document.of_path ~env:(Global_vars.eio_env ()) pool (Document.search_mode doc) path
   with
   | Ok doc -> (
       reset_search_result_selected ();
       let multi_file_view_document_store_snapshot =
-        Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
+        Lwd.peek Document_store_manager.multi_file_view_store_snapshot
       in
       let multi_file_view_document_store =
         multi_file_view_document_store_snapshot.store
