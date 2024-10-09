@@ -700,6 +700,7 @@ let keyboard_handler
             Lwd.set Vars.document_store_cur_ver new_ver;
             let new_snapshot = Dynarray.get Vars.document_store_snapshots new_ver in
             Document_store_manager.submit_update_req `Multi_file_view new_snapshot;
+            sync_input_fields_from_document_store new_snapshot.store;
             reset_document_selected ();
           );
           `Handled
@@ -717,6 +718,7 @@ let keyboard_handler
             Lwd.set Vars.document_store_cur_ver new_ver;
             let new_snapshot = Dynarray.get Vars.document_store_snapshots new_ver in
             Document_store_manager.submit_update_req `Multi_file_view new_snapshot;
+            sync_input_fields_from_document_store new_snapshot.store;
             reset_document_selected ();
           );
           `Handled
@@ -1004,7 +1006,6 @@ let main : Nottui.ui Lwd.t =
   ) else (
     Dynarray.set Vars.document_store_snapshots cur_ver snapshot
   );
-  sync_input_fields_from_document_store snapshot.store;
   let document_store = snapshot.store in
   let document_info_s =
     Document_store.usable_documents document_store
