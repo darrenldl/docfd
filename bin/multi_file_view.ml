@@ -475,7 +475,7 @@ module Bottom_pane = struct
             { label = "Enter"; msg = "open document" };
             { label = "/"; msg = "search mode" };
             { label = "x"; msg = "clear mode" };
-            { label = "h"; msg = "edit history" };
+            { label = "h"; msg = "edit action history" };
           ];
           [
             { label = "Tab"; msg = "single file view" };

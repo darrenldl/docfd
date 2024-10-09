@@ -869,7 +869,7 @@ let run
             loop ()
           )
         | Edit_history -> (
-            let file = Filename.temp_file "docfd-history-" ".txt" in
+            let file = Filename.temp_file "docfd-action-history-" ".txt" in
             (try
                CCIO.with_out file (fun oc ->
                    Dynarray.iter (fun (snapshot : Document_store_snapshot.t) ->
