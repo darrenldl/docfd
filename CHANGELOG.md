@@ -27,6 +27,18 @@
 
 - Renamed discard mode to drop mode
 
+- Added edit action history functionality
+
+- Concurrency related bug fixes
+
+    - Unlikely to encounter in normal workflows with human input speed
+
+    - https://github.com/darrenldl/docfd/commit/14fcc45b746e6156f29eb989d70700476977a3d7
+
+    - https://github.com/darrenldl/docfd/commit/bfd63d93562f8785ecad8152005aa0f823185699
+
+    - https://github.com/darrenldl/docfd/commit/4e0aa6785ce80630d0cd3cda6e316b7b15a4fb4b
+
 ## 8.0.3
 
 - Fixed single file view crash
