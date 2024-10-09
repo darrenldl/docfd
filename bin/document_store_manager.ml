@@ -37,6 +37,8 @@ let multi_file_view_update_request : Document_store_snapshot.t Lock_protected_ce
 
 let worker_ping : Ping.t = Ping.make ()
 
+let requester_lock = Eio.Mutex.create ()
+
 let requester_ping : Ping.t = Ping.make ()
 
 type egress_payload =
@@ -48,6 +50,9 @@ type egress_payload =
   | Update of store_typ * Document_store_snapshot.t
 
 let egress : egress_payload Eio.Stream.t =
+  Eio.Stream.create 0
+
+let egress_ack : unit Eio.Stream.t =
   Eio.Stream.create 0
 
 let search_stop_signal = Atomic.make (Stop_signal.make ())
@@ -95,6 +100,7 @@ let manager_fiber () =
       )
     | Update (store_typ, snapshot) -> (
         update_store store_typ snapshot;
+        Eio.Stream.add egress_ack ();
       )
   done
 
@@ -165,7 +171,8 @@ let worker_fiber pool =
      | `Single_file_view -> single_file_view_store_snapshot := snapshot
      | `Multi_file_view -> multi_file_view_store_snapshot := snapshot
     );
-    Eio.Stream.add egress (Update (store_typ, snapshot))
+    Eio.Stream.add egress (Update (store_typ, snapshot));
+    Eio.Stream.take egress_ack;
   in
   while true do
     Ping.wait worker_ping;
@@ -199,46 +206,52 @@ let worker_fiber pool =
   done
 
 let submit_filter_req (store_typ : store_typ) (s : string) =
-  signal_search_stop ();
-  (match store_typ with
-   | `Multi_file_view -> (
-       Lock_protected_cell.set multi_file_view_filter_request s;
-     )
-   | `Single_file_view -> (
-       Lock_protected_cell.set single_file_view_filter_request s;
-     )
-  );
-  Ping.ping worker_ping
+  Eio.Mutex.use_rw requester_lock ~protect:false (fun () ->
+      signal_search_stop ();
+      (match store_typ with
+       | `Multi_file_view -> (
+           Lock_protected_cell.set multi_file_view_filter_request s;
+         )
+       | `Single_file_view -> (
+           Lock_protected_cell.set single_file_view_filter_request s;
+         )
+      );
+      Ping.ping worker_ping
+    )
 
 let submit_search_req (store_typ : store_typ) (s : string) =
-  signal_search_stop ();
-  (match store_typ with
-   | `Multi_file_view -> (
-       Lock_protected_cell.set multi_file_view_search_request s;
-     )
-   | `Single_file_view -> (
-       Lock_protected_cell.set single_file_view_search_request s;
-     )
-  );
-  Ping.ping worker_ping
+  Eio.Mutex.use_rw requester_lock ~protect:false (fun () ->
+      signal_search_stop ();
+      (match store_typ with
+       | `Multi_file_view -> (
+           Lock_protected_cell.set multi_file_view_search_request s;
+         )
+       | `Single_file_view -> (
+           Lock_protected_cell.set single_file_view_search_request s;
+         )
+      );
+      Ping.ping worker_ping
+    )
 
 let submit_update_req
     (store_typ : store_typ)
     snapshot
   =
-  signal_search_stop ();
-  (match store_typ with
-   | `Multi_file_view -> (
-       Lock_protected_cell.unset multi_file_view_search_request;
-       Lock_protected_cell.unset multi_file_view_filter_request;
-       Lock_protected_cell.set multi_file_view_update_request snapshot;
-     )
-   | `Single_file_view -> (
-       Lock_protected_cell.unset single_file_view_search_request;
-       Lock_protected_cell.unset single_file_view_filter_request;
-       Lock_protected_cell.set single_file_view_update_request snapshot;
-     )
-  );
-  Ping.clear requester_ping;
-  Ping.ping worker_ping;
-  Ping.wait requester_ping
+  Eio.Mutex.use_rw requester_lock ~protect:false (fun () ->
+      signal_search_stop ();
+      (match store_typ with
+       | `Multi_file_view -> (
+           Lock_protected_cell.unset multi_file_view_search_request;
+           Lock_protected_cell.unset multi_file_view_filter_request;
+           Lock_protected_cell.set multi_file_view_update_request snapshot;
+         )
+       | `Single_file_view -> (
+           Lock_protected_cell.unset single_file_view_search_request;
+           Lock_protected_cell.unset single_file_view_filter_request;
+           Lock_protected_cell.set single_file_view_update_request snapshot;
+         )
+      );
+      Ping.clear requester_ping;
+      Ping.ping worker_ping;
+      Ping.wait requester_ping
+    )
