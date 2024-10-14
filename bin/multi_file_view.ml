@@ -1010,13 +1010,16 @@ let main : Nottui.ui Lwd.t =
   let document_info_s =
     Document_store.usable_documents document_store
   in
+  let document_count = Array.length document_info_s in
   set_document_selected
-    ~choice_count:(Array.length document_info_s)
+    ~choice_count:document_count
     (Lwd.peek Vars.index_of_document_selected);
-  set_search_result_selected
-    ~choice_count:(Array.length
-                     (snd document_info_s.(Lwd.peek Vars.index_of_document_selected)))
-    (Lwd.peek Vars.index_of_search_result_selected);
+  if document_count > 0 then (
+    set_search_result_selected
+      ~choice_count:(Array.length
+                       (snd document_info_s.(Lwd.peek Vars.index_of_document_selected)))
+      (Lwd.peek Vars.index_of_search_result_selected)
+  );
   let$* (term_width, term_height) = Lwd.get Ui_base.Vars.term_width_height in
   let$* bottom_pane =
     Bottom_pane.main
