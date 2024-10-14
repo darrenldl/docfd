@@ -870,73 +870,113 @@ let run
           )
         | Edit_action_history -> (
             let file = Filename.temp_file "docfd-action-history-" ".txt" in
+            let snapshots = Multi_file_view.Vars.document_store_snapshots in
+            let lines =
+              Seq.append
+                (
+                  snapshots
+                  |> Dynarray.to_seq
+                  |> Seq.filter_map  (fun (snapshot : Document_store_snapshot.t) ->
+                      Option.map Action.to_string snapshot.last_action
+                    )
+                )
+                (
+                  List.to_seq
+                    [
+                      "";
+                      "# You are viewing/editing Docfd action history.";
+                      "# If any change is made to this file, Docfd will replay the actions from the start.";
+                      "#";
+                      "# Starting point is v0, the full document store.";
+                      "# Each action adds one to the version number.";
+                      "# Action at the top is oldest, action at bottom is the newest.";
+                      "#";
+                      "# Note that \"\" is not used to delimit strings,";
+                      "# all text following the commands drop path, search, filter are used.";
+                      "#";
+                      "# Possible actions:";
+                      Fmt.str "# - %a" Action.pp (`Drop_path "/path/to/document");
+                      Fmt.str "# - %a" Action.pp `Drop_listed;
+                      Fmt.str "# - %a" Action.pp `Drop_unlisted;
+                      Fmt.str "# - %a" Action.pp (`Search "search phrase");
+                      Fmt.str "# - %a" Action.pp (`Filter "file.*pattern");
+                    ]
+                )
+              |> List.of_seq
+            in
+            let rec aux rerun lines =
+              CCIO.with_out file (fun oc ->
+                  CCIO.write_lines_l oc lines;
+                );
+              let old_stats = Unix.stat file in
+              close_term ();
+              Sys.command (Fmt.str "%s %s" !Params.text_editor (Filename.quote file)) |> ignore;
+              let new_stats = Unix.stat file in
+              if
+                rerun
+                ||
+                Float.abs
+                  (new_stats.st_mtime -. old_stats.st_mtime) >= Params.float_compare_margin
+              then (
+                Dynarray.clear snapshots;
+                Lwd.set Multi_file_view.Vars.document_store_cur_ver 0;
+                Dynarray.add_last
+                  snapshots
+                  { Document_store_snapshot.empty with store = init_document_store };
+                let store = ref init_document_store in
+                let rerun = ref false in
+                let lines =
+                  CCIO.with_in file (fun ic ->
+                      CCIO.read_lines_l ic
+                      |> CCList.flat_map (fun line ->
+                          if
+                            CCString.starts_with ~prefix:"#" line
+                            ||
+                            String.length (String.trim line) = 0
+                          then (
+                            [ line ]
+                          ) else (
+                            match Action.of_string line with
+                            | None -> (
+                                rerun := true;
+                                [
+                                  line;
+                                  "# Failed to parse above action"
+                                ]
+                              )
+                            | Some action -> (
+                                match Document_store.play_action pool action !store with
+                                | None -> (
+                                    rerun := true;
+                                    [
+                                      line;
+                                      "# Failed to play above action, check if arguments are correct"
+                                    ]
+                                  )
+                                | Some x -> (
+                                    store := x;
+                                    let snapshot =
+                                      Document_store_snapshot.make
+                                        (Some action)
+                                        !store
+                                    in
+                                    Dynarray.add_last
+                                      snapshots
+                                      snapshot;
+                                    [ line ]
+                                  )
+                              )
+                          )
+                        )
+                    )
+                in
+                if !rerun then (
+                  aux true lines
+                )
+              )
+            in
             (try
-               CCIO.with_out file (fun oc ->
-                   Dynarray.iter (fun (snapshot : Document_store_snapshot.t) ->
-                       match snapshot.last_action with
-                       | None -> ()
-                       | Some action -> (
-                           CCIO.write_line oc (Action.to_string action)
-                         )
-                     ) Multi_file_view.Vars.document_store_snapshots;
-                   CCIO.write_lines_l oc [
-                     "";
-                     "# You are viewing/editing Docfd action history.";
-                     "# If any change is made to this file, Docfd will replay the actions from the start.";
-                     "#";
-                     "# Starting point is v0, the full document store.";
-                     "# Each action adds one to the version number.";
-                     "# Action at the top is oldest, action at bottom is the newest.";
-                     "#";
-                     "# Note that \"\" is not used to delimit strings,";
-                     "# all text following the commands drop path, search, filter are used.";
-                     "#";
-                     "# Possible actions:";
-                     Fmt.str "# - %a" Action.pp (`Drop_path "/path/to/document");
-                     Fmt.str "# - %a" Action.pp `Drop_listed;
-                     Fmt.str "# - %a" Action.pp `Drop_unlisted;
-                     Fmt.str "# - %a" Action.pp (`Search "search phrase");
-                     Fmt.str "# - %a" Action.pp (`Filter "file.*pattern");
-                   ];
-                 );
-               let old_stats = Unix.stat file in
-               close_term ();
-               Sys.command (Fmt.str "%s %s" !Params.text_editor (Filename.quote file)) |> ignore;
-               let new_stats = Unix.stat file in
-               let snapshots = Multi_file_view.Vars.document_store_snapshots in
-               if
-                 Float.abs
-                   (new_stats.st_mtime -. old_stats.st_mtime) >= Params.float_compare_margin
-               then (
-                 Dynarray.clear snapshots;
-                 Lwd.set Multi_file_view.Vars.document_store_cur_ver 0;
-                 Dynarray.add_last
-                   snapshots
-                   { Document_store_snapshot.empty with store = init_document_store };
-                 let store = ref init_document_store in
-                 CCIO.with_in file (fun ic ->
-                     CCIO.read_lines_l ic
-                     |> List.iter (fun line ->
-                         if not (CCString.starts_with ~prefix:"#" line) then (
-                           match Action.of_string line with
-                           | None -> ()
-                           | Some action -> (
-                               (match Document_store.play_action pool action !store with
-                                | None -> ()
-                                | Some x -> store := x);
-                               let snapshot =
-                                 Document_store_snapshot.make
-                                   (Some action)
-                                   !store
-                               in
-                               Dynarray.add_last
-                                 snapshots
-                                 snapshot
-                             )
-                         )
-                       )
-                   )
-               );
+               aux false lines;
                (try
                   Sys.remove file;
                 with
