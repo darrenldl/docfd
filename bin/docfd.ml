@@ -868,7 +868,7 @@ let run
             );
             loop ()
           )
-        | Edit_history -> (
+        | Edit_action_history -> (
             let file = Filename.temp_file "docfd-action-history-" ".txt" in
             (try
                CCIO.with_out file (fun oc ->
@@ -878,7 +878,26 @@ let run
                        | Some action -> (
                            CCIO.write_line oc (Action.to_string action)
                          )
-                     ) Multi_file_view.Vars.document_store_snapshots
+                     ) Multi_file_view.Vars.document_store_snapshots;
+                   CCIO.write_lines_l oc [
+                     "";
+                     "# You are viewing/editing Docfd action history.";
+                     "# If any change is made to this file, Docfd will replay the actions from the start.";
+                     "#";
+                     "# Starting point is v0, the full document store.";
+                     "# Each action adds one to the version number.";
+                     "# Action at the top is oldest, action at bottom is the newest.";
+                     "#";
+                     "# Note that \"\" is not used to delimit strings,";
+                     "# all text following the commands drop path, search, filter are used.";
+                     "#";
+                     "# Possible actions:";
+                     Fmt.str "# - %a" Action.pp (`Drop_path "/path/to/document");
+                     Fmt.str "# - %a" Action.pp `Drop_listed;
+                     Fmt.str "# - %a" Action.pp `Drop_unlisted;
+                     Fmt.str "# - %a" Action.pp (`Search "search phrase");
+                     Fmt.str "# - %a" Action.pp (`Filter "file.*pattern");
+                   ];
                  );
                let old_stats = Unix.stat file in
                close_term ();
@@ -898,21 +917,23 @@ let run
                  CCIO.with_in file (fun ic ->
                      CCIO.read_lines_l ic
                      |> List.iter (fun line ->
-                         (match Action.of_string line with
-                          | None -> ()
-                          | Some action -> (
-                              (match Document_store.play_action pool action !store with
-                               | None -> ()
-                               | Some x -> store := x);
-                              let snapshot =
-                                Document_store_snapshot.make
-                                  (Some action)
-                                  !store
-                              in
-                              Dynarray.add_last
-                                snapshots
-                                snapshot
-                            ));
+                         if not (CCString.starts_with ~prefix:"#" line) then (
+                           match Action.of_string line with
+                           | None -> ()
+                           | Some action -> (
+                               (match Document_store.play_action pool action !store with
+                                | None -> ()
+                                | Some x -> store := x);
+                               let snapshot =
+                                 Document_store_snapshot.make
+                                   (Some action)
+                                   !store
+                               in
+                               Dynarray.add_last
+                                 snapshots
+                                 snapshot
+                             )
+                         )
                        )
                    )
                );
@@ -930,7 +951,7 @@ let run
              with
              | _ -> (
                  exit_with_error_msg
-                   (Fmt.str "failed to read or write temporary history file %s" (Filename.quote file))
+                   (Fmt.str "failed to read or write temporary action history file %s" (Filename.quote file))
                ));
             loop ()
           )

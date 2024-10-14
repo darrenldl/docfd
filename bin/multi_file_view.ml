@@ -475,7 +475,7 @@ module Bottom_pane = struct
             { label = "Enter"; msg = "open document" };
             { label = "/"; msg = "search mode" };
             { label = "x"; msg = "clear mode" };
-            { label = "h"; msg = "edit action history" };
+            { label = "h"; msg = "view/edit action history" };
           ];
           [
             { label = "Tab"; msg = "single file view" };
@@ -801,7 +801,7 @@ let keyboard_handler
         )
       | (`ASCII 'h', []) -> (
           Lwd.set Ui_base.Vars.quit true;
-          Ui_base.Vars.action := Some Ui_base.Edit_history;
+          Ui_base.Vars.action := Some Ui_base.Edit_action_history;
           `Handled
         )
       | (`ASCII 'x', []) -> (
