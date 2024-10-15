@@ -985,9 +985,12 @@ let run
                Lwd.set
                  Multi_file_view.Vars.document_store_cur_ver
                  (Dynarray.length snapshots - 1);
+               let final_snapshot = Dynarray.get_last snapshots in
                Document_store_manager.submit_update_req
                  `Multi_file_view
-                 (Dynarray.get_last snapshots);
+                 final_snapshot;
+               Multi_file_view.sync_input_fields_from_document_store
+                 final_snapshot.store;
              with
              | _ -> (
                  exit_with_error_msg
