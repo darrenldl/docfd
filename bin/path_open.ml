@@ -142,7 +142,7 @@ let text index document_src ~editor ~path ~search_result =
                        |> Index.Line_loc.line_num_in_page
                        |> (fun x -> x + 1)
         in
-        Misc_utils.gen_command_to_open_text_file_at_line_num
+        Misc_utils.gen_command_to_open_text_file_to_line_num
           ~editor ~path ~line_num
       )
   in

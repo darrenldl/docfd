@@ -529,7 +529,7 @@
 
 - Added real time refresh of search
 
-- Added code to open selected text file at selected search result for:
+- Added code to open selected text file to selected search result for:
 
     - nano
     - neovim/vim/vi

@@ -98,7 +98,7 @@ let normalize_filter_glob_if_not_empty (s : string) =
     normalize_glob_to_absolute s
   )
 
-let gen_command_to_open_text_file_at_line_num ~editor ~path ~line_num =
+let gen_command_to_open_text_file_to_line_num ~editor ~path ~line_num =
   let path = Filename.quote path in
   let fallback = Fmt.str "%s %s" editor path in
   match Filename.basename editor with

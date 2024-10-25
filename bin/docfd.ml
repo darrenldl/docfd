@@ -910,7 +910,7 @@ let run
                 );
               let old_stats = Unix.stat file in
               close_term ();
-              Misc_utils.gen_command_to_open_text_file_at_line_num
+              Misc_utils.gen_command_to_open_text_file_to_line_num
                 ~editor:!Params.text_editor
                 ~path:file
                 ~line_num:(max 1 (Dynarray.length snapshots - 1))
