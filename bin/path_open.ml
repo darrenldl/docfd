@@ -142,23 +142,8 @@ let text index document_src ~editor ~path ~search_result =
                        |> Index.Line_loc.line_num_in_page
                        |> (fun x -> x + 1)
         in
-        match Filename.basename editor with
-        | "nano" ->
-          Fmt.str "%s +%d %s" editor line_num path
-        | "nvim" | "vim" | "vi" ->
-          Fmt.str "%s +%d %s" editor line_num path
-        | "kak" ->
-          Fmt.str "%s +%d %s" editor line_num path
-        | "hx" ->
-          Fmt.str "%s %s:%d" editor path line_num
-        | "emacs" ->
-          Fmt.str "%s +%d %s" editor line_num path
-        | "micro" ->
-          Fmt.str "%s %s:%d" editor path line_num
-        | "jed" | "xjed" ->
-          Fmt.str "%s %s -g %d" editor path line_num
-        | _ ->
-          fallback
+        Misc_utils.gen_command_to_open_text_file_at_line_num
+          ~editor ~path ~line_num
       )
   in
   let cmd =

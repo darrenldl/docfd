@@ -910,7 +910,12 @@ let run
                 );
               let old_stats = Unix.stat file in
               close_term ();
-              Sys.command (Fmt.str "%s %s" !Params.text_editor (Filename.quote file)) |> ignore;
+              Misc_utils.gen_command_to_open_text_file_at_line_num
+                ~editor:!Params.text_editor
+                ~path:file
+                ~line_num:(max 1 (Dynarray.length snapshots - 1))
+              |> Sys.command
+              |> ignore;
               let new_stats = Unix.stat file in
               if
                 rerun
