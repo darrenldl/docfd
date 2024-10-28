@@ -129,7 +129,6 @@ let pdf index ~path ~search_result =
   Proc_utils.run_in_background cmd |> ignore
 
 let text index document_src ~editor ~path ~search_result =
-  let path = Filename.quote path in
   let fallback = Fmt.str "%s %s" editor path in
   let cmd =
     match search_result with
