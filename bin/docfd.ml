@@ -887,12 +887,15 @@ let run
                       "# You are viewing/editing Docfd action history.";
                       "# If any change is made to this file, Docfd will replay the actions from the start.";
                       "#";
+                      "# If a line is not blank and does not start with #,";
+                      "# then the line should contain exactly one action.";
+                      "#";
                       "# Starting point is v0, the full document store.";
                       "# Each action adds one to the version number.";
                       "# Action at the top is oldest, action at bottom is the newest.";
                       "#";
-                      "# Note that \"\" is not used to delimit strings,";
-                      "# all text following the commands drop path, search, filter are used.";
+                      "# Note that \"\" and '' are treated literally and are not used to delimit strings,";
+                      "# i.e. all text following the commands drop path, search, filter are used.";
                       "#";
                       "# Possible actions:";
                       Fmt.str "# - %a" Action.pp (`Drop_path "/path/to/document");
