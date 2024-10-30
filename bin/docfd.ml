@@ -869,7 +869,7 @@ let run
             loop ()
           )
         | Edit_action_history -> (
-            let file = Filename.temp_file "docfd-action-history-" ".txt" in
+            let file = Filename.temp_file "" ".docfd_actions" in
             let snapshots = Multi_file_view.Vars.document_store_snapshots in
             let lines =
               Seq.append
