@@ -894,7 +894,7 @@ let run
                       "# Each action adds one to the version number.";
                       "# Action at the top is oldest, action at bottom is the newest.";
                       "#";
-                      "# Note that \"\" and '' are treated literally and are not used to delimit strings,";
+                      "# Note that \" and ' are treated literally and are not used to delimit strings,";
                       "# i.e. all text following the commands drop path, search, filter are used.";
                       "#";
                       "# Possible actions:";
