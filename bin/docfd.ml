@@ -889,6 +889,7 @@ let run
                       "#";
                       "# If a line is not blank and does not start with #,";
                       "# then the line should contain exactly one action.";
+                      "# An action cannot be written across multiple lines.";
                       "#";
                       "# Starting point is v0, the full document store.";
                       "# Each action adds one to the version number.";
