@@ -16,3 +16,8 @@ let remove_leading_dots (s : string) =
     in
     aux 0
   )
+
+let line_is_blank_or_comment line =
+  CCString.starts_with ~prefix:"#" line
+  ||
+  String.length (String.trim line) = 0

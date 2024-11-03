@@ -178,6 +178,8 @@ Otherwise FILE is opened in append mode for log writing."
     & info [ "debug-log" ] ~doc ~docv:"FILE"
   )
 
+let start_with_search_arg_name = "start-with-search"
+
 let start_with_search_arg =
   let doc =
     Fmt.str "Start interactive mode with search expression EXP."
@@ -185,7 +187,7 @@ let start_with_search_arg =
   Arg.(
     value
     & opt (some string) None
-    & info [ "start-with-search" ] ~doc ~docv:"EXP"
+    & info [ start_with_search_arg_name ] ~doc ~docv:"EXP"
   )
 
 let sample_arg_name = "sample"
@@ -292,6 +294,18 @@ Docfd can add in each direction."
     value
     & opt int Params.default_search_result_print_snippet_max_additional_lines_each_direction
     & info [ search_result_print_snippet_max_add_lines_arg_name ] ~doc ~docv:"N"
+  )
+
+let actions_from_arg_name = "actions-from"
+
+let actions_from_arg =
+  let doc =
+    Fmt.str "Read and play action file FILE."
+  in
+  Arg.(
+    value
+    & opt (some string) None
+    & info [ actions_from_arg_name ] ~doc ~docv:"FILE"
   )
 
 let paths_from_arg_name = "paths-from"

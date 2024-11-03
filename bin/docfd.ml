@@ -428,6 +428,7 @@ let run
     (search_result_print_text_width : int)
     (search_result_print_snippet_min_size : int)
     (search_result_print_max_add_lines : int)
+    (actions_from : string option)
     (paths_from : string list)
     (globs : string list)
     (single_line_globs : string list)
@@ -681,6 +682,20 @@ let run
   if index_only then (
     clean_up ();
     exit 0
+  );
+  if Option.is_some actions_from then (
+    if Option.is_some sample_search_exp then (
+      exit_with_error_msg
+        (Fmt.str "%s and %s cannot be used together" Args.actions_from_arg_name Args.sample_arg_name)
+    );
+    if Option.is_some search_exp then (
+      exit_with_error_msg
+        (Fmt.str "%s and %s cannot be used together" Args.actions_from_arg_name Args.search_arg_name)
+    );
+    if Option.is_some start_with_search then (
+      exit_with_error_msg
+        (Fmt.str "%s and %s cannot be used together" Args.actions_from_arg_name Args.start_with_search_arg_name)
+    );
   );
   (match sample_search_exp, search_exp with
    | None, None -> ()
@@ -939,9 +954,7 @@ let run
                       CCIO.read_lines_l ic
                       |> CCList.flat_map (fun line ->
                           if
-                            CCString.starts_with ~prefix:"#" line
-                            ||
-                            String.length (String.trim line) = 0
+                            String_utils.line_is_blank_or_comment line
                           then (
                             [ line ]
                           ) else (
@@ -1009,6 +1022,60 @@ let run
           )
       )
   in
+  (match actions_from with
+   | None -> ()
+   | Some actions_from -> (
+       let snapshots = Multi_file_view.Vars.document_store_snapshots in
+       let lines =
+         try
+           CCIO.with_in actions_from CCIO.read_lines_l
+         with
+         | _ -> (
+             exit_with_error_msg
+               (Fmt.str "failed to read action file %s" (Filename.quote actions_from))
+           )
+       in
+       Dynarray.clear snapshots;
+       Dynarray.add_last
+         snapshots
+         { Document_store_snapshot.empty with store = init_document_store };
+       lines
+       |> CCList.foldi (fun store i line ->
+           let line_num_in_error_msg = i + 1 in
+           if String_utils.line_is_blank_or_comment line then (
+             store
+           ) else (
+             match Action.of_string line with
+             | None -> (
+                 exit_with_error_msg
+                   (Fmt.str "failed to parse action on line %d: %s"
+                      line_num_in_error_msg line)
+               )
+             | Some action -> (
+                 match Document_store.play_action pool action store with
+                 | None -> (
+                     exit_with_error_msg
+                       (Fmt.str "failed to play action on line %d: %s"
+                          line_num_in_error_msg line)
+                   )
+                 | Some store -> (
+                     let snapshot =
+                       Document_store_snapshot.make
+                         (Some action)
+                         store
+                     in
+                     Dynarray.add_last
+                       snapshots
+                       snapshot;
+                     store
+                   )
+               )
+           )
+         )
+         init_document_store
+       |> ignore
+     )
+  );
   Eio.Fiber.any [
     (fun () ->
        Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env)
@@ -1017,18 +1084,29 @@ let run
     Ui_base.Key_binding_info.grid_light_fiber;
     Printers.Worker.fiber;
     (fun () ->
+       let snapshots = Multi_file_view.Vars.document_store_snapshots in
+       let snapshot =
+         if Dynarray.length snapshots = 0 then (
+           Document_store_snapshot.make
+             None
+             init_document_store
+         ) else (
+           let last_index = Dynarray.length snapshots - 1 in
+           Lwd.set Multi_file_view.Vars.document_store_cur_ver last_index;
+           let snapshot = Dynarray.get snapshots last_index in
+           Multi_file_view.sync_input_fields_from_document_store
+             snapshot.store;
+           snapshot
+         )
+       in
        Document_store_manager.submit_update_req
          `Multi_file_view
-         (Document_store_snapshot.make
-            None
-            init_document_store);
+         snapshot;
        (match init_ui_mode with
         | Ui_base.Ui_single_file ->
           Document_store_manager.submit_update_req
             `Single_file_view
-            (Document_store_snapshot.make
-               None
-               init_document_store);
+            snapshot;
         | _ -> ()
        );
        (match start_with_search with
@@ -1092,6 +1170,7 @@ let cmd ~env ~sw =
      $ search_result_print_text_width_arg
      $ search_result_print_snippet_min_size_arg
      $ search_result_print_snippet_max_add_lines_arg
+     $ actions_from_arg
      $ paths_from_arg
      $ glob_arg
      $ single_line_glob_arg
