@@ -8,52 +8,65 @@ type t = [
 
 let pp fmt (t : t) =
   match t with
-  | `Drop_path s -> Fmt.pf fmt "drop path %s" s
+  | `Drop_path s -> Fmt.pf fmt "drop path: %s" s
   | `Drop_listed -> Fmt.pf fmt "drop listed"
   | `Drop_unlisted -> Fmt.pf fmt "drop unlisted"
   | `Search s -> (
       if String.length s = 0 then (
         Fmt.pf fmt "clear search"
       ) else (
-        Fmt.pf fmt "search %s" s
+        Fmt.pf fmt "search: %s" s
       )
     )
   | `Filter s -> (
       if String.length s = 0 then (
         Fmt.pf fmt "clear filter"
       ) else (
-        Fmt.pf fmt "filter %s" s
+        Fmt.pf fmt "filter: %s" s
       )
     )
 
 let to_string (t : t) =
   Fmt.str "%a" pp t
 
+module Parsers = struct
+  type t' = t
+
+  open Angstrom
+  open Parser_components
+
+  let p : t' Angstrom.t =
+    choice [
+      string "drop" *> skip_spaces *> (
+        choice [
+          string "path" *> skip_spaces *>
+          char ':' *> any_string >>|
+          (fun s -> (`Drop_path (String.trim s)));
+          string "listed" *> skip_spaces *> return `Drop_listed;
+          string "unlisted" *> skip_spaces *> return `Drop_unlisted;
+        ]
+      );
+      string "clear" *> skip_spaces *> (
+        choice [
+          string "search" *> skip_spaces *> return (`Search "");
+          string "filter" *> skip_spaces *> return (`Filter "");
+        ]
+      );
+      string "search" *> skip_spaces *>
+      char ':' *> skip_spaces *> (
+        any_string >>| (fun s -> (`Search s))
+      );
+      string "filter" *> skip_spaces *>
+      char ':' *> skip_spaces *> (
+        any_string >>| (fun s -> (`Filter s))
+      );
+    ]
+end
+
 let of_string (s : string) : t option =
-  let skip_spaces l =
-    let rec aux l =
-      match l with
-      | "" :: l -> aux l
-      | _ -> l
-    in
-    aux l
-  in
-  let f l = skip_spaces l |> String.concat " " in
-  let l = String.split_on_char ' ' s in
-  match skip_spaces l with
-  | "drop" :: l -> (
-      match skip_spaces l with
-      | "path" :: [] -> None
-      | "path" :: l -> Some (`Drop_path (f l))
-      | "listed" :: [] -> Some `Drop_listed
-      | "unlisted" :: [] -> Some `Drop_unlisted
-      | _ -> None
-    )
-  | "clear" :: "search" :: [] -> Some (`Search "")
-  | "search" :: l -> Some (`Search (f l))
-  | "clear" :: "filter" :: [] -> Some (`Filter "")
-  | "filter" :: l -> Some (`Filter (f l))
-  | _ -> None
+  match Angstrom.(parse_string ~consume:Consume.All) Parsers.p s with
+  | Ok t -> Some t
+  | Error _ -> None
 
 let equal (x : t) (y : t) =
   match x, y with
