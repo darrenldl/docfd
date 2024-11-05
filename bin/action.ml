@@ -40,8 +40,8 @@ module Parsers = struct
       string "drop" *> skip_spaces *> (
         choice [
           string "path" *> skip_spaces *>
-          char ':' *> any_string >>|
-          (fun s -> (`Drop_path (String.trim s)));
+          char ':' *> skip_spaces *>
+          any_string >>| (fun s -> (`Drop_path s));
           string "listed" *> skip_spaces *> return `Drop_listed;
           string "unlisted" *> skip_spaces *> return `Drop_unlisted;
         ]
@@ -53,13 +53,11 @@ module Parsers = struct
         ]
       );
       string "search" *> skip_spaces *>
-      char ':' *> skip_spaces *> (
-        any_string >>| (fun s -> (`Search s))
-      );
+      char ':' *> skip_spaces *>
+      any_string >>| (fun s -> (`Search s));
       string "filter" *> skip_spaces *>
-      char ':' *> skip_spaces *> (
-        any_string >>| (fun s -> (`Filter s))
-      );
+      char ':' *> skip_spaces *>
+      any_string >>| (fun s -> (`Filter s));
     ]
 end
 
