@@ -1011,6 +1011,7 @@ let run
                Document_store_manager.submit_update_req
                  `Multi_file_view
                  final_snapshot;
+               Multi_file_view.reset_document_selected ();
                Multi_file_view.sync_input_fields_from_document_store
                  final_snapshot.store;
              with
