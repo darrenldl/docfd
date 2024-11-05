@@ -910,8 +910,9 @@ let run
                       "# Each action adds one to the version number.";
                       "# Action at the top is oldest, action at bottom is the newest.";
                       "#";
-                      "# Note that \" and ' are treated literally and are not used to delimit strings,";
-                      "# specifically all text following the commands drop path, search, filter are trimmed and then used.";
+                      "# Note that all text following the commands drop path, search, filter";
+                      "# are trimmed and then used in full.";
+                      "# This means \" and ' are treated literally and are not used to delimit strings.";
                       "#";
                       "# Possible actions:";
                       Fmt.str "# - %a" Action.pp (`Drop_path "/path/to/document");
