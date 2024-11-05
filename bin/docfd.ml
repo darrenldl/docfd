@@ -923,7 +923,7 @@ let run
                 )
               |> List.of_seq
             in
-            let rec aux rerun lines =
+            let rec aux rerun lines : [ `No_changes | `Changes_made ] =
               CCIO.with_out file (fun oc ->
                   CCIO.write_lines_l oc lines;
                 );
@@ -994,26 +994,35 @@ let run
                 in
                 if !rerun then (
                   aux true lines
+                ) else (
+                  `Changes_made
                 )
+              ) else (
+                `No_changes
               )
             in
             (try
-               aux false lines;
+               let res = aux false lines in
                (try
                   Sys.remove file;
                 with
                 | _ -> ()
                );
-               Lwd.set
-                 Multi_file_view.Vars.document_store_cur_ver
-                 (Dynarray.length snapshots - 1);
-               let final_snapshot = Dynarray.get_last snapshots in
-               Document_store_manager.submit_update_req
-                 `Multi_file_view
-                 final_snapshot;
-               Multi_file_view.reset_document_selected ();
-               Multi_file_view.sync_input_fields_from_document_store
-                 final_snapshot.store;
+               (match res with
+                | `No_changes -> ()
+                | `Changes_made -> (
+                    Lwd.set
+                      Multi_file_view.Vars.document_store_cur_ver
+                      (Dynarray.length snapshots - 1);
+                    let final_snapshot = Dynarray.get_last snapshots in
+                    Document_store_manager.submit_update_req
+                      `Multi_file_view
+                      final_snapshot;
+                    Multi_file_view.reset_document_selected ();
+                    Multi_file_view.sync_input_fields_from_document_store
+                      final_snapshot.store;
+                  )
+               );
              with
              | _ -> (
                  exit_with_error_msg
