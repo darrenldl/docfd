@@ -910,8 +910,7 @@ let run
                       "# Each action adds one to the version number.";
                       "# Action at the top is oldest, action at bottom is the newest.";
                       "#";
-                      "# Note that all text following the commands drop path, search, filter";
-                      "# are trimmed and then used in full.";
+                      "# Note that for commands that accept text, all trailing text is trimmed and then used in full.";
                       "# This means \" and ' are treated literally and are not used to delimit strings.";
                       "#";
                       "# Possible actions:";
