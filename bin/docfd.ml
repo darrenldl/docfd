@@ -911,7 +911,7 @@ let run
                       "# Action at the top is oldest, action at bottom is the newest.";
                       "#";
                       "# Note that \" and ' are treated literally and are not used to delimit strings,";
-                      "# i.e. all text following the commands drop path, search, filter are used.";
+                      "# specifically all text following the commands drop path, search, filter are trimmed and then used.";
                       "#";
                       "# Possible actions:";
                       Fmt.str "# - %a" Action.pp (`Drop_path "/path/to/document");
