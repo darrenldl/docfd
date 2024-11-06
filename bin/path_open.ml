@@ -129,6 +129,7 @@ let pdf index ~path ~search_result =
   Proc_utils.run_in_background cmd |> ignore
 
 let text index document_src ~editor ~path ~search_result =
+  let path = Filename.quote path in
   let fallback = Fmt.str "%s %s" editor path in
   let cmd =
     match search_result with
@@ -142,7 +143,7 @@ let text index document_src ~editor ~path ~search_result =
                        |> (fun x -> x + 1)
         in
         Misc_utils.gen_command_to_open_text_file_to_line_num
-          ~editor ~path ~line_num
+          ~editor ~quote_path:false ~path ~line_num
       )
   in
   let cmd =

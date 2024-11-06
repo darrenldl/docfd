@@ -931,6 +931,7 @@ let run
               close_term ();
               Misc_utils.gen_command_to_open_text_file_to_line_num
                 ~editor:!Params.text_editor
+                ~quote_path:true
                 ~path:file
                 ~line_num:(max 1 (Dynarray.length snapshots - 1))
               |> Sys.command
