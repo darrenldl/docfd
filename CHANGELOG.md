@@ -29,6 +29,8 @@
 
 - Added edit action history functionality
 
+- Added `--actions-from` command line argument
+
 - Concurrency related bug fixes
 
     - Unlikely to encounter in normal workflows with human input speed
