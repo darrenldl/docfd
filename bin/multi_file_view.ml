@@ -113,22 +113,23 @@ let add_document_store_snapshot snapshot =
   let new_ver = Lwd.peek Vars.document_store_cur_ver + 1 in
   Lwd.set Vars.document_store_cur_ver new_ver
 
-let add_document_store_current_version () =
+let commit_cur_document_store_snapshot () =
+  let cur_ver = Lwd.peek Vars.document_store_cur_ver in
   let snapshot =
-    Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
+    Dynarray.get Vars.document_store_snapshots cur_ver
   in
   add_document_store_snapshot snapshot
 
-let add_document_store_current_version_if_input_fields_changed () =
+let commit_cur_document_store_snapshot_if_ver_is_first_or_input_fields_changed () =
   let cur_ver = Lwd.peek Vars.document_store_cur_ver in
   if cur_ver = 0 then (
-    add_document_store_current_version ()
+    commit_cur_document_store_snapshot ()
   ) else (
     let prev_snapshot =
       Dynarray.get Vars.document_store_snapshots (cur_ver - 1)
     in
     let cur_snapshot =
-      Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
+      Dynarray.get Vars.document_store_snapshots cur_ver
     in
     let filter_changed =
       Document_store.file_path_filter_glob_string prev_snapshot.store
@@ -139,7 +140,7 @@ let add_document_store_current_version_if_input_fields_changed () =
       <> Document_store.search_exp_string cur_snapshot.store
     in
     if filter_changed || search_changed then (
-      add_document_store_current_version ()
+      commit_cur_document_store_snapshot ()
     )
   )
 
@@ -176,13 +177,11 @@ let drop ~document_count (choice : [`Path of string | `Listed | `Unlisted]) =
 let update_file_path_filter () =
   reset_document_selected ();
   let s = fst @@ Lwd.peek Vars.file_path_filter_field in
-  clear_document_store_later_snapshots ();
   Document_store_manager.submit_filter_req `Multi_file_view s
 
 let update_search_phrase () =
   reset_document_selected ();
   let s = fst @@ Lwd.peek Vars.search_field in
-  clear_document_store_later_snapshots ();
   Document_store_manager.submit_search_req `Multi_file_view s
 
 module Top_pane = struct
@@ -788,13 +787,13 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'f', []) -> (
-          add_document_store_current_version_if_input_fields_changed ();
+          commit_cur_document_store_snapshot_if_ver_is_first_or_input_fields_changed ();
           Nottui.Focus.request Vars.file_path_filter_field_focus_handle;
           Ui_base.set_input_mode Filter;
           `Handled
         )
       | (`ASCII '/', []) -> (
-          add_document_store_current_version_if_input_fields_changed ();
+          commit_cur_document_store_snapshot_if_ver_is_first_or_input_fields_changed ();
           Nottui.Focus.request Vars.search_field_focus_handle;
           Ui_base.set_input_mode Search;
           `Handled
@@ -831,11 +830,13 @@ let keyboard_handler
         | (`Escape, [])
         | (`ASCII 'C', [`Ctrl]) -> true
         | (`ASCII '/', []) -> (
+            commit_cur_document_store_snapshot_if_ver_is_first_or_input_fields_changed ();
             Lwd.set Vars.search_field Ui_base.empty_text_field;
             update_search_phrase ();
             true
           )
         | (`ASCII 'f', []) -> (
+            commit_cur_document_store_snapshot_if_ver_is_first_or_input_fields_changed ();
             Lwd.set Vars.file_path_filter_field Ui_base.empty_text_field;
             update_file_path_filter ();
             true
