@@ -132,8 +132,8 @@ let worker_fiber pool =
             s
             search_exp
         in
-        let action = Some (`Search s) in
-        let snapshot = Document_store_snapshot.make action store in
+        let command = Some (`Search s) in
+        let snapshot = Document_store_snapshot.make command store in
         (match store_typ with
          | `Single_file_view -> single_file_view_store_snapshot := snapshot
          | `Multi_file_view -> multi_file_view_store_snapshot := snapshot);
@@ -155,8 +155,8 @@ let worker_fiber pool =
             original_string
             glob
         in
-        let action = Some (`Filter original_string) in
-        let snapshot = Document_store_snapshot.make action store in
+        let command = Some (`Filter original_string) in
+        let snapshot = Document_store_snapshot.make command store in
         (match store_typ with
          | `Single_file_view -> single_file_view_store_snapshot := snapshot
          | `Multi_file_view -> multi_file_view_store_snapshot := snapshot);

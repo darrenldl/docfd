@@ -428,7 +428,7 @@ let run
     (search_result_print_text_width : int)
     (search_result_print_snippet_min_size : int)
     (search_result_print_max_add_lines : int)
-    (actions_from : string option)
+    (commands_from : string option)
     (paths_from : string list)
     (globs : string list)
     (single_line_globs : string list)
@@ -683,18 +683,18 @@ let run
     clean_up ();
     exit 0
   );
-  if Option.is_some actions_from then (
+  if Option.is_some commands_from then (
     if Option.is_some sample_search_exp then (
       exit_with_error_msg
-        (Fmt.str "%s and %s cannot be used together" Args.actions_from_arg_name Args.sample_arg_name)
+        (Fmt.str "%s and %s cannot be used together" Args.commands_from_arg_name Args.sample_arg_name)
     );
     if Option.is_some search_exp then (
       exit_with_error_msg
-        (Fmt.str "%s and %s cannot be used together" Args.actions_from_arg_name Args.search_arg_name)
+        (Fmt.str "%s and %s cannot be used together" Args.commands_from_arg_name Args.search_arg_name)
     );
     if Option.is_some start_with_search then (
       exit_with_error_msg
-        (Fmt.str "%s and %s cannot be used together" Args.actions_from_arg_name Args.start_with_search_arg_name)
+        (Fmt.str "%s and %s cannot be used together" Args.commands_from_arg_name Args.start_with_search_arg_name)
     );
   );
   (match sample_search_exp, search_exp with
@@ -883,8 +883,8 @@ let run
             );
             loop ()
           )
-        | Edit_action_history -> (
-            let file = Filename.temp_file "" ".docfd_actions" in
+        | Edit_command_history -> (
+            let file = Filename.temp_file "" ".docfd_commands" in
             let snapshots = Multi_file_view.Vars.document_store_snapshots in
             let lines =
               Seq.append
@@ -892,33 +892,33 @@ let run
                   snapshots
                   |> Dynarray.to_seq
                   |> Seq.filter_map  (fun (snapshot : Document_store_snapshot.t) ->
-                      Option.map Action.to_string snapshot.last_action
+                      Option.map Command.to_string snapshot.last_command
                     )
                 )
                 (
                   List.to_seq
                     [
                       "";
-                      "# You are viewing/editing Docfd action history.";
-                      "# If any change is made to this file, Docfd will replay the actions from the start.";
+                      "# You are viewing/editing Docfd command history.";
+                      "# If any change is made to this file, Docfd will replay the commands from the start.";
                       "#";
                       "# If a line is not blank and does not start with #,";
-                      "# then the line should contain exactly one action.";
-                      "# An action cannot be written across multiple lines.";
+                      "# then the line should contain exactly one command.";
+                      "# A command cannot be written across multiple lines.";
                       "#";
                       "# Starting point is v0, the full document store.";
-                      "# Each action adds one to the version number.";
-                      "# Action at the top is oldest, action at bottom is the newest.";
+                      "# Each command adds one to the version number.";
+                      "# Command at the top is oldest, command at bottom is the newest.";
                       "#";
                       "# Note that for commands that accept text, all trailing text is trimmed and then used in full.";
                       "# This means \" and ' are treated literally and are not used to delimit strings.";
                       "#";
-                      "# Possible actions:";
-                      Fmt.str "# - %a" Action.pp (`Drop_path "/path/to/document");
-                      Fmt.str "# - %a" Action.pp `Drop_listed;
-                      Fmt.str "# - %a" Action.pp `Drop_unlisted;
-                      Fmt.str "# - %a" Action.pp (`Search "search phrase");
-                      Fmt.str "# - %a" Action.pp (`Filter "file.*pattern");
+                      "# Possible commands:";
+                      Fmt.str "# - %a" Command.pp (`Drop_path "/path/to/document");
+                      Fmt.str "# - %a" Command.pp `Drop_listed;
+                      Fmt.str "# - %a" Command.pp `Drop_unlisted;
+                      Fmt.str "# - %a" Command.pp (`Search "search phrase");
+                      Fmt.str "# - %a" Command.pp (`Filter "file.*pattern");
                     ]
                 )
               |> List.of_seq
@@ -959,28 +959,28 @@ let run
                           then (
                             [ line ]
                           ) else (
-                            match Action.of_string line with
+                            match Command.of_string line with
                             | None -> (
                                 rerun := true;
                                 [
                                   line;
-                                  "# Failed to parse above action"
+                                  "# Failed to parse above command"
                                 ]
                               )
-                            | Some action -> (
-                                match Document_store.play_action pool action !store with
+                            | Some command -> (
+                                match Document_store.run_command pool command !store with
                                 | None -> (
                                     rerun := true;
                                     [
                                       line;
-                                      "# Failed to play above action, check if arguments are correct"
+                                      "# Failed to play above command, check if arguments are correct"
                                     ]
                                   )
                                 | Some x -> (
                                     store := x;
                                     let snapshot =
                                       Document_store_snapshot.make
-                                        (Some action)
+                                        (Some command)
                                         !store
                                     in
                                     Dynarray.add_last
@@ -1027,23 +1027,23 @@ let run
              with
              | _ -> (
                  exit_with_error_msg
-                   (Fmt.str "failed to read or write temporary action history file %s" (Filename.quote file))
+                   (Fmt.str "failed to read or write temporary command history file %s" (Filename.quote file))
                ));
             loop ()
           )
       )
   in
-  (match actions_from with
+  (match commands_from with
    | None -> ()
-   | Some actions_from -> (
+   | Some commands_from -> (
        let snapshots = Multi_file_view.Vars.document_store_snapshots in
        let lines =
          try
-           CCIO.with_in actions_from CCIO.read_lines_l
+           CCIO.with_in commands_from CCIO.read_lines_l
          with
          | _ -> (
              exit_with_error_msg
-               (Fmt.str "failed to read action file %s" (Filename.quote actions_from))
+               (Fmt.str "failed to read command file %s" (Filename.quote commands_from))
            )
        in
        Dynarray.clear snapshots;
@@ -1056,23 +1056,23 @@ let run
            if String_utils.line_is_blank_or_comment line then (
              store
            ) else (
-             match Action.of_string line with
+             match Command.of_string line with
              | None -> (
                  exit_with_error_msg
-                   (Fmt.str "failed to parse action on line %d: %s"
+                   (Fmt.str "failed to parse command on line %d: %s"
                       line_num_in_error_msg line)
                )
-             | Some action -> (
-                 match Document_store.play_action pool action store with
+             | Some command -> (
+                 match Document_store.run_command pool command store with
                  | None -> (
                      exit_with_error_msg
-                       (Fmt.str "failed to play action on line %d: %s"
+                       (Fmt.str "failed to play command on line %d: %s"
                           line_num_in_error_msg line)
                    )
                  | Some store -> (
                      let snapshot =
                        Document_store_snapshot.make
-                         (Some action)
+                         (Some command)
                          store
                      in
                      Dynarray.add_last
@@ -1181,7 +1181,7 @@ let cmd ~env ~sw =
      $ search_result_print_text_width_arg
      $ search_result_print_snippet_min_size_arg
      $ search_result_print_snippet_max_add_lines_arg
-     $ actions_from_arg
+     $ commands_from_arg
      $ paths_from_arg
      $ glob_arg
      $ single_line_glob_arg

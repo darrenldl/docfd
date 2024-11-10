@@ -296,16 +296,16 @@ Docfd can add in each direction."
     & info [ search_result_print_snippet_max_add_lines_arg_name ] ~doc ~docv:"N"
   )
 
-let actions_from_arg_name = "actions-from"
+let commands_from_arg_name = "commands-from"
 
-let actions_from_arg =
+let commands_from_arg =
   let doc =
-    Fmt.str "Read and play action file FILE."
+    Fmt.str "Read and run command file FILE."
   in
   Arg.(
     value
     & opt (some string) None
-    & info [ actions_from_arg_name ] ~doc ~docv:"FILE"
+    & info [ commands_from_arg_name ] ~doc ~docv:"FILE"
   )
 
 let paths_from_arg_name = "paths-from"

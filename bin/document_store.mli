@@ -52,4 +52,4 @@ val single_out : path:string -> t -> t option
 
 val drop : [ `Path of string | `Usable | `Unusable ] -> t -> t
 
-val play_action : Task_pool.t -> Action.t -> t -> t option
+val run_command : Task_pool.t -> Command.t -> t -> t option

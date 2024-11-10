@@ -263,8 +263,8 @@ let drop (choice : [ `Path of string | `Usable | `Unusable ]) (t : t) : t =
       }
     )
 
-let play_action pool (action : Action.t) (t : t) : t option =
-  match action with
+let run_command pool (command : Command.t) (t : t) : t option =
+  match command with
   | `Drop_path s -> (
       Some (drop (`Path s) t)
     )

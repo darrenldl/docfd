@@ -1,13 +1,13 @@
 type t = {
-  last_action : Action.t option;
+  last_command : Command.t option;
   store : Document_store.t;
 }
 
-let make last_action store : t =
-  { last_action; store }
+let make last_command store : t =
+  { last_command; store }
 
 let empty : t =
   {
-    last_action = None;
+    last_command = None;
     store = Document_store.empty;
   }

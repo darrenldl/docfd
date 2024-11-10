@@ -47,11 +47,11 @@ let update_starting_snapshot_and_recompute_rest
     let prev = Dynarray.get snapshots (i - 1) in
     let cur = Dynarray.get snapshots i in
     let store =
-      match cur.last_action with
+      match cur.last_command with
       | None -> prev.store
-      | Some action ->
+      | Some command ->
         Option.value ~default:prev.store
-          (Document_store.play_action pool action prev.store)
+          (Document_store.run_command pool command prev.store)
     in
     Dynarray.set snapshots i Document_store_snapshot.{ cur with store }
   done;
@@ -145,7 +145,7 @@ let commit_cur_document_store_snapshot_if_ver_is_first_or_input_fields_changed (
   )
 
 let drop ~document_count (choice : [`Path of string | `Listed | `Unlisted]) =
-  let choice, new_action =
+  let choice, new_command =
     match choice with
     | `Path path -> (
         let n = Lwd.peek Vars.index_of_document_selected in
@@ -167,7 +167,7 @@ let drop ~document_count (choice : [`Path of string | `Listed | `Unlisted]) =
   add_document_store_snapshot cur_snapshot;
   let new_snapshot =
     Document_store_snapshot.make
-      (Some new_action)
+      (Some new_command)
       (Document_store.drop choice cur_snapshot.store)
   in
   Document_store_manager.submit_update_req
@@ -406,10 +406,10 @@ module Bottom_pane = struct
       in
       let desc =
         Notty.I.strf ~attr:Ui_base.Status_bar.attr
-          "Last action: %s"
-          (match snapshot.last_action with
+          "Last command: %s"
+          (match snapshot.last_command with
            | None -> "N/A"
-           | Some action -> Action.to_string action)
+           | Some command -> Command.to_string command)
       in
       let ver_len = Notty.I.width version in
       let desc_len = Notty.I.width desc in
@@ -474,7 +474,7 @@ module Bottom_pane = struct
             { label = "Enter"; msg = "open document" };
             { label = "/"; msg = "search mode" };
             { label = "x"; msg = "clear mode" };
-            { label = "h"; msg = "view/edit action history" };
+            { label = "h"; msg = "view/edit command history" };
           ];
           [
             { label = "Tab"; msg = "single file view" };
@@ -800,7 +800,7 @@ let keyboard_handler
         )
       | (`ASCII 'h', []) -> (
           Lwd.set Ui_base.Vars.quit true;
-          Ui_base.Vars.action := Some Ui_base.Edit_action_history;
+          Ui_base.Vars.action := Some Ui_base.Edit_command_history;
           `Handled
         )
       | (`ASCII 'x', []) -> (
