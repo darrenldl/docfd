@@ -109,9 +109,9 @@ module Bottom_pane = struct
           { label = "x"; msg = "clear search" };
         ]
       in
-      let print_items =
+      let copy_items =
         [
-          { label = "p"; msg = "print mode" };
+          { label = "y"; msg = "copy/yank mode" };
         ]
       in
       let navigate_line2 =
@@ -129,7 +129,7 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
-      let print_grid =
+      let copy_grid =
         [
           [
             { label = "p"; msg = "selected search result" };
@@ -147,14 +147,14 @@ module Bottom_pane = struct
         ({ input_mode = Navigate; init_ui_mode = Ui_multi_file },
          [
            navigate_line0;
-           ({ label = "Tab"; msg = "multi-file view" } :: print_items);
+           ({ label = "Tab"; msg = "multi-file view" } :: copy_items);
            navigate_line2;
          ]
         );
         ({ input_mode = Navigate; init_ui_mode = Ui_single_file },
          [
            navigate_line0;
-           print_items;
+           copy_items;
            navigate_line2;
          ]
         );
@@ -164,11 +164,11 @@ module Bottom_pane = struct
         ({ input_mode = Search; init_ui_mode = Ui_single_file },
          search_grid
         );
-        ({ input_mode = Print; init_ui_mode = Ui_multi_file },
-         print_grid
+        ({ input_mode = Copy; init_ui_mode = Ui_multi_file },
+         copy_grid
         );
-        ({ input_mode = Print; init_ui_mode = Ui_single_file },
-         print_grid
+        ({ input_mode = Copy; init_ui_mode = Ui_single_file },
+         copy_grid
         );
       ]
 
@@ -221,8 +221,8 @@ let keyboard_handler
           Ui_base.Key_binding_info.incr_rotation ();
           `Handled
         )
-      | (`ASCII 'p', []) -> (
-          Ui_base.set_input_mode Print;
+      | (`ASCII 'y', []) -> (
+          Ui_base.set_input_mode Copy;
           `Handled
         )
       | (`ASCII 'r', []) -> (
@@ -286,7 +286,7 @@ let keyboard_handler
         )
       | _ -> `Handled
     )
-  | Print -> (
+  | Copy -> (
       let submit_search_results_print_req doc s =
         Printers.Worker.submit_search_results_print_req `Stderr doc s
       in

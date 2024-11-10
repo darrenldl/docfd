@@ -478,7 +478,7 @@ module Bottom_pane = struct
           ];
           [
             { label = "Tab"; msg = "single file view" };
-            { label = "p"; msg = "print mode" };
+            { label = "y"; msg = "copy/yank mode" };
             { label = "f"; msg = "filter mode" };
           ];
           [
@@ -531,7 +531,7 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
-      let print_grid =
+      let copy_grid =
         [
           [
             { label = "p"; msg = "selected search result" };
@@ -593,11 +593,11 @@ module Bottom_pane = struct
         ({ input_mode = Drop; init_ui_mode = Ui_single_file },
          drop_grid
         );
-        ({ input_mode = Print; init_ui_mode = Ui_multi_file },
-         print_grid
+        ({ input_mode = Copy; init_ui_mode = Ui_multi_file },
+         copy_grid
         );
-        ({ input_mode = Print; init_ui_mode = Ui_single_file },
-         print_grid
+        ({ input_mode = Copy; init_ui_mode = Ui_single_file },
+         copy_grid
         );
         ({ input_mode = Reload; init_ui_mode = Ui_multi_file },
          reload_grid
@@ -682,8 +682,8 @@ let keyboard_handler
           Ui_base.set_input_mode Reload;
           `Handled
         )
-      | (`ASCII 'p', []) -> (
-          Ui_base.set_input_mode Print;
+      | (`ASCII 'y', []) -> (
+          Ui_base.set_input_mode Copy;
           `Handled
         )
       | (`Arrow `Left, [])
@@ -878,7 +878,7 @@ let keyboard_handler
       );
       `Handled
     )
-  | Print -> (
+  | Copy -> (
       let submit_search_results_print_req doc s =
         Printers.Worker.submit_search_results_print_req `Stderr doc s
       in

@@ -7,7 +7,7 @@ type input_mode =
   | Filter
   | Clear
   | Drop
-  | Print
+  | Copy
   | Reload
 
 type ui_mode =
@@ -241,7 +241,7 @@ module Status_bar = struct
       ; (Filter, "FILTER")
       ; (Clear, "CLEAR")
       ; (Drop, "DROP")
-      ; (Print, "PRINT")
+      ; (Copy, "COPY")
       ; (Reload, "RELOAD")
       ]
     in
