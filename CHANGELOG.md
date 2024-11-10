@@ -27,9 +27,9 @@
 
 - Renamed discard mode to drop mode
 
-- Added edit action history functionality
+- Added command history editing functionality
 
-- Added `--actions-from` command line argument
+- Added `--commands-from` command line argument
 
 - Concurrency related bug fixes
 
