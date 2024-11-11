@@ -287,8 +287,15 @@ let keyboard_handler
       | _ -> `Handled
     )
   | Copy -> (
-      let submit_search_results_print_req doc s =
-        Printers.Worker.submit_search_results_print_req `Stderr doc s
+      let copy_search_results doc results =
+        Clipboard.pipe_to_clipboard (fun oc ->
+            Printers.search_results
+              ~color:false
+              ~underline:true
+              oc
+              doc
+              results
+          )
       in
       let exit =
         (match key with
@@ -304,26 +311,26 @@ let keyboard_handler
                 Seq.return search_results.(search_result_current_choice)
               else
                 Seq.empty)
-             |> submit_search_results_print_req doc;
+             |> copy_search_results doc;
              true
            )
          | (`ASCII 's', []) -> (
              let (doc, search_results) = document_info in
              Array.to_seq search_results
              |> OSeq.take !Params.sample_count_per_document
-             |> submit_search_results_print_req doc;
+             |> copy_search_results doc;
              true
            )
          | (`ASCII 'a', []) -> (
              let (doc, search_results) = document_info in
              Array.to_seq search_results
-             |> submit_search_results_print_req doc;
+             |> copy_search_results doc;
              true
            )
          | (`ASCII 'P', []) -> (
              let (doc, _search_results) = document_info in
              Seq.empty
-             |> submit_search_results_print_req doc;
+             |> copy_search_results doc;
              true
            )
          | _ -> false

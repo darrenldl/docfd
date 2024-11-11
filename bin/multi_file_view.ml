@@ -534,12 +534,12 @@ module Bottom_pane = struct
       let copy_grid =
         [
           [
-            { label = "p"; msg = "selected search result" };
+            { label = "y"; msg = "selected search result" };
             { label = "s"; msg = "samples of selected document" };
             { label = "a"; msg = "results of selected document" };
           ];
           [
-            { label = "Shift+P"; msg = "path of selected document" };
+            { label = "p"; msg = "path of selected document" };
             { label = "l"; msg = "paths of listed" };
             { label = "u"; msg = "paths of unlisted" };
           ];
@@ -879,11 +879,22 @@ let keyboard_handler
       `Handled
     )
   | Copy -> (
-      let submit_search_results_print_req doc s =
-        Printers.Worker.submit_search_results_print_req `Stderr doc s
+      let copy_search_results_batches (s : (Document.t * Search_result.t Seq.t) Seq.t) =
+        Clipboard.pipe_to_clipboard (fun oc ->
+            Printers.search_results_batches
+              ~color:false
+              ~underline:true
+              oc
+              s
+          )
       in
-      let submit_paths_print_req s =
-        Printers.Worker.submit_paths_print_req `Stderr s
+      let copy_search_results doc results =
+        copy_search_results_batches (Seq.return (doc, results))
+      in
+      let copy_paths s =
+        Clipboard.pipe_to_clipboard (fun oc ->
+            Seq.iter (Printers.path_image ~color:false oc) s
+          )
       in
       let exit =
         (match key with
@@ -893,13 +904,13 @@ let keyboard_handler
              Ui_base.Key_binding_info.incr_rotation ();
              false
            )
-         | (`ASCII 'p', []) -> (
+         | (`ASCII 'y', []) -> (
              Option.iter (fun (doc, search_results) ->
                  (if search_result_current_choice < Array.length search_results then
                     Seq.return search_results.(search_result_current_choice)
                   else
                     Seq.empty)
-                 |> submit_search_results_print_req doc
+                 |> copy_search_results doc
                )
                document_info;
              true
@@ -908,7 +919,7 @@ let keyboard_handler
              Option.iter (fun (doc, search_results) ->
                  Array.to_seq search_results
                  |> OSeq.take !Params.sample_count_per_document
-                 |> submit_search_results_print_req doc
+                 |> copy_search_results doc
                )
                document_info;
              true
@@ -916,15 +927,14 @@ let keyboard_handler
          | (`ASCII 'a', []) -> (
              Option.iter (fun (doc, search_results) ->
                  Array.to_seq search_results
-                 |> submit_search_results_print_req doc
+                 |> copy_search_results doc
                )
                document_info;
              true
            )
-         | (`ASCII 'P', []) -> (
+         | (`ASCII 'p', []) -> (
              Option.iter (fun (doc, _search_results) ->
-                 Seq.empty
-                 |> submit_search_results_print_req doc
+                 copy_search_results doc Seq.empty
                )
                document_info;
              true
@@ -932,29 +942,32 @@ let keyboard_handler
          | (`ASCII 'l', []) -> (
              Document_store.usable_documents_paths document_store
              |> String_set.to_seq
-             |> submit_paths_print_req;
+             |> copy_paths;
              true
            )
          | (`ASCII 'u', []) -> (
              Document_store.unusable_documents_paths document_store
-             |> submit_paths_print_req;
+             |> copy_paths;
              true
            )
          | (`ASCII 'S', []) -> (
-             Array.iter (fun (doc, search_results) ->
-                 Array.to_seq search_results
-                 |> OSeq.take !Params.sample_count_per_document
-                 |> submit_search_results_print_req doc
+             document_info_s
+             |> Array.to_seq
+             |> Seq.map (fun (doc, s) ->
+                 let s =
+                   Array.to_seq s
+                   |> OSeq.take !Params.sample_count_per_document
+                 in
+                 (doc, s)
                )
-               document_info_s;
+             |> copy_search_results_batches;
              true
            )
          | (`ASCII 'A', []) -> (
-             Array.iter (fun (doc, search_results) ->
-                 Array.to_seq search_results
-                 |> submit_search_results_print_req doc
-               )
-               document_info_s;
+             document_info_s
+             |> Array.to_seq
+             |> Seq.map (fun (doc, s) -> (doc, Array.to_seq s))
+             |> copy_search_results_batches;
              true
            )
          | _ -> false

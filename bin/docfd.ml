@@ -474,8 +474,6 @@ let run
   Params.max_linked_token_search_dist := max_linked_token_search_dist;
   Params.index_chunk_token_count := index_chunk_token_count;
   Params.cache_soft_limit := cache_soft_limit;
-  Params.print_color_mode := print_color_mode;
-  Params.print_underline_mode := print_underline_mode;
   Params.search_result_print_text_width := search_result_print_text_width;
   Params.search_result_print_snippet_min_size := search_result_print_snippet_min_size;
   Params.search_result_print_snippet_max_additional_lines_each_direction :=
@@ -731,30 +729,41 @@ let run
                search_exp
                init_document_store
            in
-           let out = `Stdout in
+           let oc = stdout in
+           let color =
+             match print_color_mode with
+             | `Never -> false
+             | `Always -> true
+             | `Auto -> Out_channel.isatty oc
+           in
+           let underline =
+             match print_underline_mode with
+             | `Never -> false
+             | `Always -> true
+             | `Auto -> not (Out_channel.isatty oc)
+           in
            if print_files_with_match then (
              Document_store.usable_documents_paths document_store
-             |> String_set.iter (Printers.path_image out)
+             |> String_set.iter (Printers.path_image ~color oc)
            ) else if print_files_without_match then (
              Document_store.unusable_documents_paths document_store
-             |> Seq.iter (Printers.path_image out)
+             |> Seq.iter (Printers.path_image ~color oc)
            ) else (
              let document_info_s =
                Document_store.usable_documents document_store
              in
-             Array.iteri (fun i (document, search_results) ->
-                 if Array.length search_results > 0 then (
-                   if i > 0 then (
-                     Printers.newline_image out;
-                   );
-                   Array.to_seq search_results
-                   |> (fun s ->
-                       match print_limit with
-                       | None -> s
-                       | Some end_exc -> OSeq.take end_exc s)
-                   |> Printers.search_results out document
-                 )
-               ) document_info_s;
+             document_info_s
+             |> Array.to_seq
+             |> Seq.map (fun (doc, s) ->
+                 let s = Array.to_seq s in
+                 let s =
+                   match print_limit with
+                   | None -> s
+                   | Some n -> OSeq.take n s
+                 in
+                 (doc, s)
+               )
+             |> Printers.search_results_batches ~color ~underline oc
            );
            clean_up ();
            exit 0
@@ -1066,7 +1075,7 @@ let run
                  match Document_store.run_command pool command store with
                  | None -> (
                      exit_with_error_msg
-                       (Fmt.str "failed to play command on line %d: %s"
+                       (Fmt.str "failed to run command on line %d: %s"
                           line_num_in_error_msg line)
                    )
                  | Some store -> (
@@ -1093,7 +1102,6 @@ let run
          (fun () -> Document_store_manager.worker_fiber pool));
     Document_store_manager.manager_fiber;
     Ui_base.Key_binding_info.grid_light_fiber;
-    Printers.Worker.fiber;
     (fun () ->
        let snapshots = Multi_file_view.Vars.document_store_snapshots in
        let snapshot =
@@ -1135,7 +1143,6 @@ let run
               )
           ));
        loop ();
-       Printers.Worker.stop ();
     );
   ];
   close_term ();

@@ -45,10 +45,6 @@ let sample_count_per_document = ref default_sample_count_per_document
 
 type style_mode = [ `Never | `Always | `Auto ]
 
-let print_color_mode : style_mode ref = ref `Auto
-
-let print_underline_mode : style_mode ref = ref `Auto
-
 let default_search_result_print_text_width = 80
 
 let search_result_print_text_width = ref default_search_result_print_text_width
@@ -85,3 +81,17 @@ let os_typ : [ `Darwin | `Linux ] =
   match String.lowercase_ascii (CCUnix.call_stdout "uname") with
   | "darwin" -> `Darwin
   | _ -> `Linux
+
+let clipboard_copy_cmd_and_args =
+  match os_typ with
+  | `Darwin -> Some ("pbcopy", [||])
+  | `Linux -> (
+      match Sys.getenv_opt "XDG_SESSION_TYPE" with
+      | None -> None
+      | Some s -> (
+          match String.lowercase_ascii s with
+          | "x11" -> Some ("xclip", [| "-sel"; "clip" |])
+          | "wayland" -> Some ("wl-copy", [|"-n"|])
+          | _ -> None
+        )
+    )

@@ -52,6 +52,19 @@ let run_return_stdout
        output
     )
 
+let pipe_to_command (f : out_channel -> unit) command args =
+  if not (command_exists command) then (
+    exit_with_error_msg
+      (Fmt.str "command %s not found" command)
+  );
+  let oc =
+    Unix.open_process_args_out
+      command (Array.append [|command|] args)
+  in
+  f oc;
+  Out_channel.flush oc;
+  Out_channel.close oc
+
 let pipe_to_fzf_for_selection (lines : string Seq.t) : string list =
   if not (command_exists "fzf") then (
     exit_with_error_msg
