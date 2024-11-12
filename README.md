@@ -34,11 +34,15 @@ result via PDF viewer integration:
 
 - Multiline fuzzy search of multiple files or a single file
 
-- Swap between multi-file view and single file view on the fly
-
 - Content view pane that shows the snippet surrounding the search result selected
 
 - Text editor and PDF viewer integration
+
+- Command history - rewrite/plan your actions in text editor
+
+- Search scope narrowing - limit scope of next search based on current search results
+
+- Swap between multi-file view and single file view on the fly
 
 <details>
 
