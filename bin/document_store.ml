@@ -88,6 +88,7 @@ let refresh_search_results pool stop_signal (t : t) : t =
             pool
             stop_signal
             ~within_same_line
+            (Document.search_scope doc)
             t.search_exp
             (Document.index doc))
       )
@@ -156,7 +157,13 @@ let add_document pool (doc : Document.t) (t : t) : t =
   let search_results =
     String_map.add
       path
-      (Index.search pool (Stop_signal.make ()) ~within_same_line t.search_exp (Document.index doc))
+      (Index.search
+         pool
+         (Stop_signal.make ())
+         ~within_same_line
+         (Document.search_scope doc)
+         t.search_exp
+         (Document.index doc))
       t.search_results
   in
   { t with
@@ -263,6 +270,44 @@ let drop (choice : [ `Path of string | `Usable | `Unusable ]) (t : t) : t =
       }
     )
 
+let narrow_search_scope ~level (t : t) : t =
+  let all_documents =
+    String_map.mapi (fun path doc ->
+        let index = Document.index doc in
+        let search_results = String_map.find path t.search_results in
+        let search_scope =
+          Array.to_seq search_results
+          |> Seq.fold_left (fun scope search_result ->
+              let s, e =
+                List.fold_left (fun s_e Search_result.{ found_word_pos; _ } ->
+                    match s_e with
+                    | None -> Some (found_word_pos, found_word_pos)
+                    | Some (s, e) -> (
+                        Some (min s found_word_pos, max found_word_pos e)
+                      )
+                  )
+                  None
+                  (Search_result.found_phrase search_result)
+                |> Option.get
+              in
+              let offset = level * !Params.search_scope_words_per_level in
+              let s, e =
+                (max 0 (s - offset), min (Index.max_pos index) (e + offset))
+              in
+              Diet.Int.add
+                (Diet.Int.Interval.make s e)
+                scope
+            )
+            Diet.Int.empty
+        in
+        Document.inter_search_scope
+          search_scope
+          doc
+      )
+      t.all_documents
+  in
+  { t with all_documents }
+
 let run_command pool (command : Command.t) (t : t) : t option =
   match command with
   | `Drop_path s -> (
@@ -273,6 +318,9 @@ let run_command pool (command : Command.t) (t : t) : t option =
     )
   | `Drop_unlisted -> (
       Some (drop `Unusable t)
+    )
+  | `Narrow_level level -> (
+      Some (narrow_search_scope ~level t)
     )
   | `Search s -> (
       match Search_exp.make s with

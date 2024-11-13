@@ -478,6 +478,9 @@ let line_loc_of_global_line_num x t =
 let loc_of_pos pos t : Loc.t =
   CCVector.get t.loc_of_pos pos
 
+let max_pos t =
+  CCVector.length t.word_of_pos
+
 let line_count_of_page_num page t : int =
   CCVector.get t.line_count_of_page_num page
 
@@ -658,7 +661,7 @@ module Search = struct
       stop_signal
       ~within_same_line
       ~consider_edit_dist
-      (search_scope : Diet.Int.t)
+      (search_scope : Diet.Int.t option)
       (phrase : Search_phrase.t)
       (t : t)
     : Search_result_heap.t =
@@ -673,13 +676,13 @@ module Search = struct
           let possible_start_count, possible_starts =
             usable_positions ~consider_edit_dist first_word t
             |> (fun s ->
-                if Diet.Int.is_empty search_scope then (
-                  s
-                ) else (
-                  Seq.filter (fun x ->
-                      Diet.Int.mem x search_scope
-                    ) s
-                )
+                match search_scope with
+                | None -> s
+                | Some search_scope -> (
+                    Seq.filter (fun x ->
+                        Diet.Int.mem x search_scope
+                      ) s
+                  )
               )
             |> Misc_utils.length_and_list_of_seq
           in

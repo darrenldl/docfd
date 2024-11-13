@@ -8,6 +8,10 @@ let max_file_tree_scan_depth = ref default_max_file_tree_scan_depth
 
 let preview_line_count = 5
 
+let default_search_scope_words_per_level = 100
+
+let search_scope_words_per_level = ref default_search_scope_words_per_level
+
 let pandoc_supported_exts =
   [ ".epub"
   ; ".odt"

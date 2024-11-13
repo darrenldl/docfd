@@ -12,7 +12,7 @@ val title : t -> string option
 
 val index : t -> Index.t
 
-val search_scope : t -> Diet.Int.t
+val search_scope : t -> Diet.Int.t option
 
 val last_scan : t -> Timedesc.t
 
@@ -33,3 +33,5 @@ val find_index :
   env:Eio_unix.Stdenv.base ->
   hash:string ->
   Index.t option
+
+val inter_search_scope : Diet.Int.t -> t -> t

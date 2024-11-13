@@ -7,6 +7,7 @@ type input_mode =
   | Filter
   | Clear
   | Drop
+  | Narrow
   | Copy
   | Reload
 
@@ -241,6 +242,7 @@ module Status_bar = struct
       ; (Filter, "FILTER")
       ; (Clear, "CLEAR")
       ; (Drop, "DROP")
+      ; (Narrow, "NARROW")
       ; (Copy, "COPY")
       ; (Reload, "RELOAD")
       ]

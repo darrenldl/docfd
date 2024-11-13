@@ -42,6 +42,8 @@ val line_loc_of_global_line_num : int -> t -> Line_loc.t
 
 val loc_of_pos : int -> t -> Loc.t
 
+val max_pos : t -> int
+
 val words_of_page_num : int -> t -> string Seq.t
 
 val line_count_of_page_num : int -> t -> int
@@ -50,7 +52,7 @@ val search :
   Task_pool.t ->
   Stop_signal.t ->
   within_same_line:bool ->
-  Diet.Int.t ->
+  Diet.Int.t option ->
   Search_exp.t ->
   t ->
   Search_result.t array

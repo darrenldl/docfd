@@ -37,6 +37,11 @@ let set_search_result_selected ~choice_count n =
   let n = Misc_utils.bound_selection ~choice_count n in
   Lwd.set Vars.index_of_search_result_selected n
 
+let get_cur_document_store_snapshot () =
+  Dynarray.get
+    Vars.document_store_snapshots
+    (Lwd.peek Vars.document_store_cur_ver)
+
 let update_starting_snapshot_and_recompute_rest
     (starting_snapshot : Document_store_snapshot.t)
   =
@@ -55,9 +60,7 @@ let update_starting_snapshot_and_recompute_rest
     in
     Dynarray.set snapshots i Document_store_snapshot.{ cur with store }
   done;
-  let cur_snapshot =
-    Dynarray.get snapshots (Lwd.peek Vars.document_store_cur_ver)
-  in
+  let cur_snapshot = get_cur_document_store_snapshot () in
   Document_store_manager.submit_update_req
     `Multi_file_view
     cur_snapshot
@@ -103,22 +106,14 @@ let sync_input_fields_from_document_store
   |> (fun s ->
       Lwd.set Vars.search_field (s, String.length s))
 
-let clear_document_store_later_snapshots () =
-  let cur_ver = Lwd.peek Vars.document_store_cur_ver in
-  Dynarray.truncate Vars.document_store_snapshots (cur_ver + 1)
-
-let add_document_store_snapshot snapshot =
-  clear_document_store_later_snapshots ();
-  Dynarray.add_last Vars.document_store_snapshots snapshot;
-  let new_ver = Lwd.peek Vars.document_store_cur_ver + 1 in
-  Lwd.set Vars.document_store_cur_ver new_ver
-
 let commit_cur_document_store_snapshot () =
   let cur_ver = Lwd.peek Vars.document_store_cur_ver in
-  let snapshot =
+  let cur_snapshot =
     Dynarray.get Vars.document_store_snapshots cur_ver
   in
-  add_document_store_snapshot snapshot
+  Dynarray.truncate Vars.document_store_snapshots (cur_ver + 1);
+  Dynarray.add_last Vars.document_store_snapshots cur_snapshot;
+  Lwd.set Vars.document_store_cur_ver (cur_ver + 1)
 
 let commit_cur_document_store_snapshot_if_ver_is_first_or_input_fields_changed () =
   let cur_ver = Lwd.peek Vars.document_store_cur_ver in
@@ -161,14 +156,24 @@ let drop ~document_count (choice : [`Path of string | `Listed | `Unlisted]) =
         (`Unusable, `Drop_unlisted)
       )
   in
-  let cur_snapshot =
-    Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
-  in
-  add_document_store_snapshot cur_snapshot;
+  let cur_snapshot = get_cur_document_store_snapshot () in
+  commit_cur_document_store_snapshot ();
   let new_snapshot =
     Document_store_snapshot.make
       (Some new_command)
       (Document_store.drop choice cur_snapshot.store)
+  in
+  Document_store_manager.submit_update_req
+    `Multi_file_view
+    new_snapshot
+
+let narrow_search_scope ~level =
+  let cur_snapshot = get_cur_document_store_snapshot () in
+  commit_cur_document_store_snapshot ();
+  let new_snapshot =
+    Document_store_snapshot.make
+      (Some (`Narrow_level level))
+      (Document_store.narrow_search_scope ~level cur_snapshot.store)
   in
   Document_store_manager.submit_update_req
     `Multi_file_view
@@ -480,11 +485,12 @@ module Bottom_pane = struct
             { label = "Tab"; msg = "single file view" };
             { label = "y"; msg = "copy/yank mode" };
             { label = "f"; msg = "filter mode" };
+            { label = "d"; msg = "drop mode" };
           ];
           [
             { label = "?"; msg = "rotate key binding info" };
             { label = "r"; msg = "reload mode" };
-            { label = "d"; msg = "drop mode" };
+            { label = "n"; msg = "narrow mode" };
           ];
         ]
       in
@@ -550,6 +556,17 @@ module Bottom_pane = struct
           ];
         ]
       in
+      let narrow_grid =
+        [
+          [
+            { label = "1-9"; msg = "narrow search scope to level N" };
+          ];
+          [
+            { label = "Esc"; msg = "cancel" };
+          ];
+          empty_row;
+        ]
+      in
       let reload_grid =
         [
           [
@@ -592,6 +609,12 @@ module Bottom_pane = struct
         );
         ({ input_mode = Drop; init_ui_mode = Ui_single_file },
          drop_grid
+        );
+        ({ input_mode = Narrow; init_ui_mode = Ui_multi_file },
+         narrow_grid
+        );
+        ({ input_mode = Narrow; init_ui_mode = Ui_single_file },
+         narrow_grid
         );
         ({ input_mode = Copy; init_ui_mode = Ui_multi_file },
          copy_grid
@@ -678,6 +701,10 @@ let keyboard_handler
           Ui_base.set_input_mode Drop;
           `Handled
         )
+      | (`ASCII 'n', []) -> (
+          Ui_base.set_input_mode Narrow;
+          `Handled
+        )
       | (`ASCII 'r', []) -> (
           Ui_base.set_input_mode Reload;
           `Handled
@@ -692,10 +719,6 @@ let keyboard_handler
           let cur_ver = Lwd.peek Vars.document_store_cur_ver in
           let new_ver = cur_ver - 1 in
           if new_ver >= 0 then (
-            let cur_snapshot =
-              Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
-            in
-            Dynarray.set Vars.document_store_snapshots cur_ver cur_snapshot;
             Lwd.set Vars.document_store_cur_ver new_ver;
             let new_snapshot = Dynarray.get Vars.document_store_snapshots new_ver in
             Document_store_manager.submit_update_req `Multi_file_view new_snapshot;
@@ -710,10 +733,6 @@ let keyboard_handler
           let cur_ver = Lwd.peek Vars.document_store_cur_ver in
           let new_ver = cur_ver + 1 in
           if new_ver < Dynarray.length Vars.document_store_snapshots then (
-            let cur_snapshot =
-              Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
-            in
-            Dynarray.set Vars.document_store_snapshots cur_ver cur_snapshot;
             Lwd.set Vars.document_store_cur_ver new_ver;
             let new_snapshot = Dynarray.get Vars.document_store_snapshots new_ver in
             Document_store_manager.submit_update_req `Multi_file_view new_snapshot;
@@ -870,6 +889,34 @@ let keyboard_handler
         | (`ASCII 'l', []) -> (
             drop ~document_count `Listed;
             true
+          )
+        | _ -> false
+      in
+      if exit then (
+        Ui_base.set_input_mode Navigate;
+      );
+      `Handled
+    )
+  | Narrow -> (
+      let exit =
+        match key with
+        | (`Escape, [])
+        | (`ASCII 'C', [`Ctrl]) -> true
+        | (`ASCII '?', []) -> (
+            Ui_base.Key_binding_info.incr_rotation ();
+            false
+          )
+        | (`ASCII c, []) -> (
+            let code_1 = Char.code '1' in
+            let code_9 = Char.code '9' in
+            let code_c = Char.code c in
+            if code_1 <= code_c && code_c <= code_9 then (
+              let level = 1 + (code_c - code_1) in
+              narrow_search_scope ~level;
+              true
+            ) else (
+              false
+            )
           )
         | _ -> false
       in

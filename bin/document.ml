@@ -6,7 +6,7 @@ type t = {
   path : string;
   title : string option;
   index : Index.t;
-  search_scope : Diet.Int.t;
+  search_scope : Diet.Int.t option;
   last_scan : Timedesc.t;
 }
 
@@ -28,7 +28,7 @@ let make search_mode ~path : t =
     path;
     title = None;
     index = Index.make ();
-    search_scope = Diet.Int.empty;
+    search_scope = None;
     last_scan = Timedesc.now ~tz_of_date_time:Params.tz ();
   }
 
@@ -164,6 +164,14 @@ let find_index ~env ~hash : Index.t option =
       | _ -> None
     )
 
+let inter_search_scope (x : Diet.Int.t) (t : t) : t =
+  let search_scope =
+    match t.search_scope with
+    | None -> x
+    | Some y -> Diet.Int.inter x y
+  in
+  { t with search_scope = Some search_scope }
+
 module Of_path = struct
   let text ~env pool search_mode path : (t, string) result =
     let fs = Eio.Stdenv.fs env in
@@ -255,7 +263,7 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?hash ?index path : (
           path;
           title;
           index;
-          search_scope = Diet.Int.empty;
+          search_scope = None;
           last_scan = Timedesc.now ~tz_of_date_time:Params.tz ()
         }
     )
