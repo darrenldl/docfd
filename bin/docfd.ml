@@ -462,7 +462,7 @@ let run
                 debug_log
             )
           with
-          | _ -> (
+          | Sys_error _ -> (
               exit_with_error_msg
                 (Fmt.str "failed to open debug log file %s" (Filename.quote debug_log))
             )
@@ -529,7 +529,7 @@ let run
             try
               CCIO.with_in paths_from CCIO.read_lines_l
             with
-            | _ -> (
+            | Sys_error _ -> (
                 exit_with_error_msg
                   (Fmt.str "failed to read list of paths from %s" (Filename.quote paths_from))
               )
@@ -625,7 +625,7 @@ let run
         try
           Sys.remove tmp_file
         with
-        | _ -> ()
+        | Sys_error _ -> ()
       )
     | Files _ -> ()
   in
@@ -1016,7 +1016,7 @@ let run
                (try
                   Sys.remove file;
                 with
-                | _ -> ()
+                | Sys_error _ -> ()
                );
                (match res with
                 | `No_changes -> ()
@@ -1034,7 +1034,7 @@ let run
                   )
                );
              with
-             | _ -> (
+             | Sys_error _ -> (
                  exit_with_error_msg
                    (Fmt.str "failed to read or write temporary command history file %s" (Filename.quote file))
                ));
@@ -1050,7 +1050,7 @@ let run
          try
            CCIO.with_in commands_from CCIO.read_lines_l
          with
-         | _ -> (
+         | Sys_error _ -> (
              exit_with_error_msg
                (Fmt.str "failed to read command file %s" (Filename.quote commands_from))
            )
