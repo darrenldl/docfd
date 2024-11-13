@@ -54,7 +54,7 @@ module Parsers = struct
       string "narrow" *> skip_spaces *> (
         choice [
           string "level" *> skip_spaces *>
-          char ':' *>
+          char ':' *> skip_spaces *>
           satisfy (function '1'..'9' -> true | _ -> false) >>|
           (fun c -> `Narrow_level (1 + (Char.code c - Char.code '1')));
         ]
