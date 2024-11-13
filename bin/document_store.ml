@@ -274,39 +274,42 @@ let narrow_search_scope ~level (t : t) : t =
   let all_documents =
     String_map.mapi (fun path doc ->
         let index = Document.index doc in
-        let search_results = String_map.find path t.search_results in
-        if Array.length search_results = 0 then (
-          doc
-        ) else (
-          let search_scope =
-            Array.to_seq search_results
-            |> Seq.fold_left (fun scope search_result ->
-                let s, e =
-                  List.fold_left (fun s_e Search_result.{ found_word_pos; _ } ->
-                      match s_e with
-                      | None -> Some (found_word_pos, found_word_pos)
-                      | Some (s, e) -> (
-                          Some (min s found_word_pos, max found_word_pos e)
+        match String_map.find_opt path t.search_results with
+        | None -> doc
+        | Some search_results -> (
+            if Array.length search_results = 0 then (
+              doc
+            ) else (
+              let search_scope =
+                Array.to_seq search_results
+                |> Seq.fold_left (fun scope search_result ->
+                    let s, e =
+                      List.fold_left (fun s_e Search_result.{ found_word_pos; _ } ->
+                          match s_e with
+                          | None -> Some (found_word_pos, found_word_pos)
+                          | Some (s, e) -> (
+                              Some (min s found_word_pos, max found_word_pos e)
+                            )
                         )
-                    )
-                    None
-                    (Search_result.found_phrase search_result)
-                  |> Option.get
-                in
-                let offset = level * !Params.search_scope_words_per_level in
-                let s, e =
-                  (max 0 (s - offset), min (Index.max_pos index) (e + offset))
-                in
-                Diet.Int.add
-                  (Diet.Int.Interval.make s e)
-                  scope
-              )
-              Diet.Int.empty
-          in
-          Document.inter_search_scope
-            search_scope
-            doc
-        )
+                        None
+                        (Search_result.found_phrase search_result)
+                      |> Option.get
+                    in
+                    let offset = level * !Params.search_scope_words_per_level in
+                    let s, e =
+                      (max 0 (s - offset), min (Index.max_pos index) (e + offset))
+                    in
+                    Diet.Int.add
+                      (Diet.Int.Interval.make s e)
+                      scope
+                  )
+                  Diet.Int.empty
+              in
+              Document.inter_search_scope
+                search_scope
+                doc
+            )
+          )
       )
       t.all_documents
   in
