@@ -658,6 +658,7 @@ module Search = struct
       stop_signal
       ~within_same_line
       ~consider_edit_dist
+      (search_scope : Diet.Int.t)
       (phrase : Search_phrase.t)
       (t : t)
     : Search_result_heap.t =
@@ -671,6 +672,15 @@ module Search = struct
           Eio.Fiber.yield ();
           let possible_start_count, possible_starts =
             usable_positions ~consider_edit_dist first_word t
+            |> (fun s ->
+                if Diet.Int.is_empty search_scope then (
+                  s
+                ) else (
+                  Seq.filter (fun x ->
+                      Diet.Int.mem x search_scope
+                    ) s
+                )
+              )
             |> Misc_utils.length_and_list_of_seq
           in
           if possible_start_count = 0 then
@@ -795,12 +805,13 @@ module Search = struct
       stop_signal
       ~within_same_line
       ~consider_edit_dist
+      search_scope
       (exp : Search_exp.t)
       (t : t)
     : Search_result_heap.t =
     Search_exp.flattened exp
     |> List.to_seq
-    |> Seq.map (fun phrase -> search_single pool stop_signal ~within_same_line ~consider_edit_dist phrase t)
+    |> Seq.map (fun phrase -> search_single pool stop_signal ~within_same_line ~consider_edit_dist search_scope phrase t)
     |> Seq.fold_left search_result_heap_merge_with_yield Search_result_heap.empty
 end
 
@@ -808,11 +819,12 @@ let search
     pool
     stop_signal
     ~within_same_line
+    search_scope
     (exp : Search_exp.t)
     (t : t)
   : Search_result.t array =
   let arr =
-    Search.search pool stop_signal ~within_same_line ~consider_edit_dist:true exp t
+    Search.search pool stop_signal ~within_same_line ~consider_edit_dist:true search_scope exp t
     |> Search_result_heap.to_seq
     |> Array.of_seq
   in

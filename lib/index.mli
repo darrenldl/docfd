@@ -50,6 +50,7 @@ val search :
   Task_pool.t ->
   Stop_signal.t ->
   within_same_line:bool ->
+  Diet.Int.t ->
   Search_exp.t ->
   t ->
   Search_result.t array

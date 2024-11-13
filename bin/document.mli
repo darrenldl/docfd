@@ -12,6 +12,8 @@ val title : t -> string option
 
 val index : t -> Index.t
 
+val search_scope : t -> Diet.Int.t
+
 val last_scan : t -> Timedesc.t
 
 val of_path :

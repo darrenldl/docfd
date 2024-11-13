@@ -17,5 +17,6 @@
             bigstringaf
             unix
             cbor
+            diet
  )
 )

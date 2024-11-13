@@ -6,6 +6,7 @@ type t = {
   path : string;
   title : string option;
   index : Index.t;
+  search_scope : Diet.Int.t;
   last_scan : Timedesc.t;
 }
 
@@ -17,6 +18,8 @@ let title (t : t) = t.title
 
 let index (t : t) = t.index
 
+let search_scope (t : t) = t.search_scope
+
 let last_scan (t : t) = t.last_scan
 
 let make search_mode ~path : t =
@@ -25,6 +28,7 @@ let make search_mode ~path : t =
     path;
     title = None;
     index = Index.make ();
+    search_scope = Diet.Int.empty;
     last_scan = Timedesc.now ~tz_of_date_time:Params.tz ();
   }
 
@@ -245,7 +249,15 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?hash ?index path : (
         else
           Some (Index.line_of_global_line_num 0 index)
       in
-      Ok { search_mode; path; title; index; last_scan = Timedesc.now ~tz_of_date_time:Params.tz () }
+      Ok
+        {
+          search_mode;
+          path;
+          title;
+          index;
+          search_scope = Diet.Int.empty;
+          last_scan = Timedesc.now ~tz_of_date_time:Params.tz ()
+        }
     )
   | None -> (
       let* t =
