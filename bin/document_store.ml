@@ -271,6 +271,7 @@ let drop (choice : [ `Path of string | `Usable | `Unusable ]) (t : t) : t =
     )
 
 let narrow_search_scope ~level (t : t) : t =
+  let t = drop `Unusable t in
   let all_documents =
     String_map.mapi (fun path doc ->
         let index = Document.index doc in
