@@ -61,9 +61,11 @@ let signal_search_stop () =
   let x = Atomic.exchange search_stop_signal (Stop_signal.make ()) in
   Stop_signal.broadcast x
 
-let single_file_view_document_store_snapshot = Lwd.var Document_store_snapshot.empty
+let single_file_view_document_store_snapshot =
+  Lwd.var (Document_store_snapshot.make_empty ())
 
-let multi_file_view_document_store_snapshot = Lwd.var Document_store_snapshot.empty
+let multi_file_view_document_store_snapshot =
+  Lwd.var (Document_store_snapshot.make_empty ())
 
 let manager_fiber () =
   (* This fiber handles updates of Lwd.var which are not thread-safe,
@@ -112,8 +114,11 @@ let worker_fiber pool =
      This removes the need to make the code of document store always yield
      frequently.
   *)
-  let single_file_view_store_snapshot = ref Document_store_snapshot.empty in
-  let multi_file_view_store_snapshot = ref Document_store_snapshot.empty in
+  let single_file_view_store_snapshot =
+    ref (Document_store_snapshot.make_empty ()) in
+  let multi_file_view_store_snapshot =
+    ref (Document_store_snapshot.make_empty ())
+  in
   let process_search_req search_stop_signal (store_typ : store_typ) (s : string) =
     match Search_exp.make s with
     | None -> (
@@ -125,7 +130,7 @@ let worker_fiber pool =
           (match store_typ with
            | `Single_file_view -> !single_file_view_store_snapshot
            | `Multi_file_view -> !multi_file_view_store_snapshot)
-          |> (fun x -> x.store)
+          |> Document_store_snapshot.store
           |> Document_store.update_search_exp
             pool
             search_stop_signal
@@ -133,7 +138,7 @@ let worker_fiber pool =
             search_exp
         in
         let command = Some (`Search s) in
-        let snapshot = Document_store_snapshot.make command store in
+        let snapshot = Document_store_snapshot.make ~last_command:command store in
         (match store_typ with
          | `Single_file_view -> single_file_view_store_snapshot := snapshot
          | `Multi_file_view -> multi_file_view_store_snapshot := snapshot);
@@ -148,7 +153,7 @@ let worker_fiber pool =
           (match store_typ with
            | `Single_file_view -> !single_file_view_store_snapshot
            | `Multi_file_view -> !multi_file_view_store_snapshot)
-          |> (fun x -> x.store)
+          |> Document_store_snapshot.store
           |> Document_store.update_file_path_filter_glob
             pool
             search_stop_signal

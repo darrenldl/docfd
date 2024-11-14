@@ -50,15 +50,19 @@ let update_starting_snapshot_and_recompute_rest
   Dynarray.set snapshots 0 starting_snapshot;
   for i=1 to Dynarray.length snapshots - 1 do
     let prev = Dynarray.get snapshots (i - 1) in
+    let prev_store = Document_store_snapshot.store prev in
     let cur = Dynarray.get snapshots i in
     let store =
-      match cur.last_command with
-      | None -> prev.store
+      match Document_store_snapshot.last_command cur with
+      | None -> prev_store
       | Some command ->
-        Option.value ~default:prev.store
-          (Document_store.run_command pool command prev.store)
+        Option.value ~default:prev_store
+          (Document_store.run_command pool command prev_store)
     in
-    Dynarray.set snapshots i Document_store_snapshot.{ cur with store }
+    Dynarray.set
+      snapshots
+      i
+      (Document_store_snapshot.update_store store cur)
   done;
   let cur_snapshot = get_cur_document_store_snapshot () in
   Document_store_manager.submit_update_req
@@ -75,12 +79,12 @@ let reload_document (doc : Document.t) =
       reset_document_selected ();
       let document_store =
         Dynarray.get Vars.document_store_snapshots 0
-        |> (fun x -> x.store)
+        |> Document_store_snapshot.store
         |> Document_store.add_document pool doc
       in
       let snapshot =
         Document_store_snapshot.make
-          None
+          ~last_command:None
           document_store
       in
       update_starting_snapshot_and_recompute_rest snapshot
@@ -115,26 +119,20 @@ let commit_cur_document_store_snapshot () =
   Dynarray.add_last Vars.document_store_snapshots cur_snapshot;
   Lwd.set Vars.document_store_cur_ver (cur_ver + 1)
 
-let commit_cur_document_store_snapshot_if_ver_is_first_or_input_fields_changed () =
+let commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff () =
   let cur_ver = Lwd.peek Vars.document_store_cur_ver in
   if cur_ver = 0 then (
     commit_cur_document_store_snapshot ()
   ) else (
-    let prev_snapshot =
+    let prev_snapshot_id =
       Dynarray.get Vars.document_store_snapshots (cur_ver - 1)
+      |> Document_store_snapshot.id
     in
-    let cur_snapshot =
+    let cur_snapshot_id =
       Dynarray.get Vars.document_store_snapshots cur_ver
+      |> Document_store_snapshot.id
     in
-    let filter_changed =
-      Document_store.file_path_filter_glob_string prev_snapshot.store
-      <> Document_store.file_path_filter_glob_string cur_snapshot.store
-    in
-    let search_changed =
-      Document_store.search_exp_string prev_snapshot.store
-      <> Document_store.search_exp_string cur_snapshot.store
-    in
-    if filter_changed || search_changed then (
+    if prev_snapshot_id <> cur_snapshot_id then (
       commit_cur_document_store_snapshot ()
     )
   )
@@ -160,8 +158,10 @@ let drop ~document_count (choice : [`Path of string | `Listed | `Unlisted]) =
   commit_cur_document_store_snapshot ();
   let new_snapshot =
     Document_store_snapshot.make
-      (Some new_command)
-      (Document_store.drop choice cur_snapshot.store)
+      ~last_command:(Some new_command)
+      (Document_store.drop
+         choice
+         (Document_store_snapshot.store cur_snapshot))
   in
   Document_store_manager.submit_update_req
     `Multi_file_view
@@ -172,8 +172,10 @@ let narrow_search_scope ~level =
   commit_cur_document_store_snapshot ();
   let new_snapshot =
     Document_store_snapshot.make
-      (Some (`Narrow_level level))
-      (Document_store.narrow_search_scope ~level cur_snapshot.store)
+      ~last_command:(Some (`Narrow_level level))
+      (Document_store.narrow_search_scope
+         ~level
+         (Document_store_snapshot.store cur_snapshot))
   in
   Document_store_manager.submit_update_req
     `Multi_file_view
@@ -402,7 +404,8 @@ module Bottom_pane = struct
         Notty.I.strf ~attr:Ui_base.Status_bar.attr
           "%5d/%d documents listed"
           document_count
-          (Document_store.size snapshot.store)
+          (Document_store_snapshot.store snapshot
+           |> Document_store.size)
       in
       let version =
         Notty.I.strf ~attr:Ui_base.Status_bar.attr
@@ -412,7 +415,7 @@ module Bottom_pane = struct
       let desc =
         Notty.I.strf ~attr:Ui_base.Status_bar.attr
           "Last command: %s"
-          (match snapshot.last_command with
+          (match Document_store_snapshot.last_command snapshot with
            | None -> "N/A"
            | Some command -> Command.to_string command)
       in
@@ -722,7 +725,8 @@ let keyboard_handler
             Lwd.set Vars.document_store_cur_ver new_ver;
             let new_snapshot = Dynarray.get Vars.document_store_snapshots new_ver in
             Document_store_manager.submit_update_req `Multi_file_view new_snapshot;
-            sync_input_fields_from_document_store new_snapshot.store;
+            sync_input_fields_from_document_store
+              (Document_store_snapshot.store new_snapshot);
             reset_document_selected ();
           );
           `Handled
@@ -736,7 +740,8 @@ let keyboard_handler
             Lwd.set Vars.document_store_cur_ver new_ver;
             let new_snapshot = Dynarray.get Vars.document_store_snapshots new_ver in
             Document_store_manager.submit_update_req `Multi_file_view new_snapshot;
-            sync_input_fields_from_document_store new_snapshot.store;
+            sync_input_fields_from_document_store
+              (Document_store_snapshot.store new_snapshot);
             reset_document_selected ();
           );
           `Handled
@@ -747,11 +752,15 @@ let keyboard_handler
                 Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
               in
               let single_file_document_store =
-                Option.get (Document_store.single_out ~path:(Document.path doc) snapshot.store)
+                Document_store_snapshot.store snapshot
+                |> Document_store.single_out ~path:(Document.path doc)
+                |> Option.get
               in
               Document_store_manager.submit_update_req
                 `Single_file_view
-                { snapshot with store = single_file_document_store };
+                (Document_store_snapshot.update_store
+                   single_file_document_store
+                   snapshot);
               Lwd.set Ui_base.Vars.Single_file.index_of_search_result_selected
                 (Lwd.peek Vars.index_of_search_result_selected);
               Lwd.set Ui_base.Vars.Single_file.search_field
@@ -806,13 +815,13 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'f', []) -> (
-          commit_cur_document_store_snapshot_if_ver_is_first_or_input_fields_changed ();
+          commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff ();
           Nottui.Focus.request Vars.file_path_filter_field_focus_handle;
           Ui_base.set_input_mode Filter;
           `Handled
         )
       | (`ASCII '/', []) -> (
-          commit_cur_document_store_snapshot_if_ver_is_first_or_input_fields_changed ();
+          commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff ();
           Nottui.Focus.request Vars.search_field_focus_handle;
           Ui_base.set_input_mode Search;
           `Handled
@@ -849,13 +858,13 @@ let keyboard_handler
         | (`Escape, [])
         | (`ASCII 'C', [`Ctrl]) -> true
         | (`ASCII '/', []) -> (
-            commit_cur_document_store_snapshot_if_ver_is_first_or_input_fields_changed ();
+            commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff ();
             Lwd.set Vars.search_field Ui_base.empty_text_field;
             update_search_phrase ();
             true
           )
         | (`ASCII 'f', []) -> (
-            commit_cur_document_store_snapshot_if_ver_is_first_or_input_fields_changed ();
+            commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff ();
             Lwd.set Vars.file_path_filter_field Ui_base.empty_text_field;
             update_file_path_filter ();
             true
@@ -1067,7 +1076,7 @@ let main : Nottui.ui Lwd.t =
   ) else (
     Dynarray.set Vars.document_store_snapshots cur_ver snapshot
   );
-  let document_store = snapshot.store in
+  let document_store = Document_store_snapshot.store snapshot in
   let document_info_s =
     Document_store.usable_documents document_store
   in

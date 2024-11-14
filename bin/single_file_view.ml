@@ -30,24 +30,28 @@ let reload_document (doc : Document.t) : unit =
         Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
       in
       let multi_file_view_document_store =
-        multi_file_view_document_store_snapshot.store
+        multi_file_view_document_store_snapshot
+        |> Document_store_snapshot.store
         |> Document_store.add_document pool doc
       in
       Document_store_manager.submit_update_req
         `Multi_file_view
-        { multi_file_view_document_store_snapshot with
-          store = multi_file_view_document_store };
+        (Document_store_snapshot.update_store
+           multi_file_view_document_store
+           multi_file_view_document_store_snapshot);
       let single_file_view_document_store_snapshot =
         Lwd.peek Document_store_manager.single_file_view_document_store_snapshot
       in
       let single_file_view_document_store =
-        single_file_view_document_store_snapshot.store
+        single_file_view_document_store_snapshot
+        |>  Document_store_snapshot.store
         |> Document_store.add_document pool doc
       in
       Document_store_manager.submit_update_req
         `Single_file_view
-        { single_file_view_document_store_snapshot with
-          store = single_file_view_document_store };
+        (Document_store_snapshot.update_store
+           single_file_view_document_store
+           single_file_view_document_store_snapshot);
     )
   | Error _ -> ()
 
@@ -347,7 +351,7 @@ let main : Nottui.ui Lwd.t =
   let$* snapshot =
     Lwd.get Document_store_manager.single_file_view_document_store_snapshot
   in
-  let document_store = snapshot.store in
+  let document_store = Document_store_snapshot.store snapshot in
   match Document_store.min_binding document_store with
   | None -> Lwd.return (Nottui.Ui.atom (Notty.I.void 0 0))
   | Some (_, document_info) -> (

@@ -851,7 +851,7 @@ let run
             let new_starting_snapshot =
               compute_document_src ()
               |> document_store_of_document_src ~env ~interactive pool
-              |> Document_store_snapshot.make None
+              |> Document_store_snapshot.make ~last_command:None
             in
             Multi_file_view.update_starting_snapshot_and_recompute_rest
               new_starting_snapshot;
@@ -901,7 +901,9 @@ let run
                   snapshots
                   |> Dynarray.to_seq
                   |> Seq.filter_map  (fun (snapshot : Document_store_snapshot.t) ->
-                      Option.map Command.to_string snapshot.last_command
+                      Option.map
+                        Command.to_string
+                        (Document_store_snapshot.last_command snapshot)
                     )
                 )
                 (
@@ -956,7 +958,9 @@ let run
                 Lwd.set Multi_file_view.Vars.document_store_cur_ver 0;
                 Dynarray.add_last
                   snapshots
-                  { Document_store_snapshot.empty with store = init_document_store };
+                  (Document_store_snapshot.make
+                     ~last_command:None
+                     (init_document_store));
                 let store = ref init_document_store in
                 let rerun = ref false in
                 let lines =
@@ -989,7 +993,7 @@ let run
                                     store := x;
                                     let snapshot =
                                       Document_store_snapshot.make
-                                        (Some command)
+                                        ~last_command:(Some command)
                                         !store
                                     in
                                     Dynarray.add_last
@@ -1030,7 +1034,7 @@ let run
                       final_snapshot;
                     Multi_file_view.reset_document_selected ();
                     Multi_file_view.sync_input_fields_from_document_store
-                      final_snapshot.store;
+                      (Document_store_snapshot.store final_snapshot);
                   )
                );
              with
@@ -1058,7 +1062,9 @@ let run
        Dynarray.clear snapshots;
        Dynarray.add_last
          snapshots
-         { Document_store_snapshot.empty with store = init_document_store };
+         (Document_store_snapshot.make
+            ~last_command:None
+            init_document_store);
        lines
        |> CCList.foldi (fun store i line ->
            let line_num_in_error_msg = i + 1 in
@@ -1081,12 +1087,10 @@ let run
                  | Some store -> (
                      let snapshot =
                        Document_store_snapshot.make
-                         (Some command)
+                         ~last_command:(Some command)
                          store
                      in
-                     Dynarray.add_last
-                       snapshots
-                       snapshot;
+                     Dynarray.add_last snapshots snapshot;
                      store
                    )
                )
@@ -1107,14 +1111,14 @@ let run
        let snapshot =
          if Dynarray.length snapshots = 0 then (
            Document_store_snapshot.make
-             None
+             ~last_command:None
              init_document_store
          ) else (
            let last_index = Dynarray.length snapshots - 1 in
            Lwd.set Multi_file_view.Vars.document_store_cur_ver last_index;
            let snapshot = Dynarray.get snapshots last_index in
            Multi_file_view.sync_input_fields_from_document_store
-             snapshot.store;
+             (Document_store_snapshot.store snapshot);
            snapshot
          )
        in
