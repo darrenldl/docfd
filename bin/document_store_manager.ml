@@ -161,7 +161,7 @@ let worker_fiber pool =
             glob
         in
         let command = Some (`Filter original_string) in
-        let snapshot = Document_store_snapshot.make command store in
+        let snapshot = Document_store_snapshot.make ~last_command:command store in
         (match store_typ with
          | `Single_file_view -> single_file_view_store_snapshot := snapshot
          | `Multi_file_view -> multi_file_view_store_snapshot := snapshot);
