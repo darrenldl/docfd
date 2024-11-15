@@ -787,7 +787,7 @@ let run
       in
       Lwd.return (Nottui.Ui.keyboard_area keyboard_handler msg)
     ) else (
-      Multi_file_view.main
+      Ui.main
     )
   in
   let get_term, close_term =
@@ -844,7 +844,7 @@ let run
               |> document_store_of_document_src ~env ~interactive pool
               |> Document_store_snapshot.make ~last_command:None
             in
-            Multi_file_view.update_starting_snapshot_and_recompute_rest
+            Ui.update_starting_snapshot_and_recompute_rest
               new_starting_snapshot;
             loop ()
           )
@@ -876,13 +876,13 @@ let run
               Float.abs
                 (new_stats.st_mtime -. old_stats.st_mtime) >= Params.float_compare_margin
             then (
-              Multi_file_view.reload_document doc
+              Ui.reload_document doc
             );
             loop ()
           )
         | Edit_command_history -> (
             let file = Filename.temp_file "" ".docfd_commands" in
-            let snapshots = Multi_file_view.Vars.document_store_snapshots in
+            let snapshots = Ui.Vars.document_store_snapshots in
             let lines =
               Seq.append
                 (
@@ -943,7 +943,7 @@ let run
                   (new_stats.st_mtime -. old_stats.st_mtime) >= Params.float_compare_margin
               then (
                 Dynarray.clear snapshots;
-                Lwd.set Multi_file_view.Vars.document_store_cur_ver 0;
+                Lwd.set Ui.Vars.document_store_cur_ver 0;
                 Dynarray.add_last
                   snapshots
                   (Document_store_snapshot.make
@@ -1014,14 +1014,14 @@ let run
                 | `No_changes -> ()
                 | `Changes_made -> (
                     Lwd.set
-                      Multi_file_view.Vars.document_store_cur_ver
+                      Ui.Vars.document_store_cur_ver
                       (Dynarray.length snapshots - 1);
                     let final_snapshot = Dynarray.get_last snapshots in
                     Document_store_manager.submit_update_req
-                      `Multi_file_view
+                      `Ui
                       final_snapshot;
-                    Multi_file_view.reset_document_selected ();
-                    Multi_file_view.sync_input_fields_from_document_store
+                    Ui.reset_document_selected ();
+                    Ui.sync_input_fields_from_document_store
                       (Document_store_snapshot.store final_snapshot);
                   )
                );
@@ -1037,7 +1037,7 @@ let run
   (match commands_from with
    | None -> ()
    | Some commands_from -> (
-       let snapshots = Multi_file_view.Vars.document_store_snapshots in
+       let snapshots = Ui.Vars.document_store_snapshots in
        let lines =
          try
            CCIO.with_in commands_from CCIO.read_lines_l
@@ -1095,7 +1095,7 @@ let run
     Document_store_manager.manager_fiber;
     Ui_base.Key_binding_info.grid_light_fiber;
     (fun () ->
-       let snapshots = Multi_file_view.Vars.document_store_snapshots in
+       let snapshots = Ui.Vars.document_store_snapshots in
        let snapshot =
          if Dynarray.length snapshots = 0 then (
            Document_store_snapshot.make
@@ -1103,22 +1103,22 @@ let run
              init_document_store
          ) else (
            let last_index = Dynarray.length snapshots - 1 in
-           Lwd.set Multi_file_view.Vars.document_store_cur_ver last_index;
+           Lwd.set Ui.Vars.document_store_cur_ver last_index;
            let snapshot = Dynarray.get snapshots last_index in
-           Multi_file_view.sync_input_fields_from_document_store
+           Ui.sync_input_fields_from_document_store
              (Document_store_snapshot.store snapshot);
            snapshot
          )
        in
        Document_store_manager.submit_update_req
-         `Multi_file_view
+         `Ui
          snapshot;
        (match start_with_search with
         | None -> ()
         | Some start_with_search -> (
             let start_with_search_len = String.length start_with_search in
-            Lwd.set Multi_file_view.Vars.search_field (start_with_search, start_with_search_len);
-            Multi_file_view.update_search_phrase ();
+            Lwd.set Ui.Vars.search_field (start_with_search, start_with_search_len);
+            Ui.update_search_phrase ();
           ));
        loop ();
     );

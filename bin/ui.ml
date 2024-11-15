@@ -66,7 +66,7 @@ let update_starting_snapshot_and_recompute_rest
   done;
   let cur_snapshot = get_cur_document_store_snapshot () in
   Document_store_manager.submit_update_req
-    `Multi_file_view
+    `Ui
     cur_snapshot
 
 let reload_document (doc : Document.t) =
@@ -164,7 +164,7 @@ let drop ~document_count (choice : [`Path of string | `Listed | `Unlisted]) =
          (Document_store_snapshot.store cur_snapshot))
   in
   Document_store_manager.submit_update_req
-    `Multi_file_view
+    `Ui
     new_snapshot
 
 let narrow_search_scope ~level =
@@ -178,18 +178,18 @@ let narrow_search_scope ~level =
          (Document_store_snapshot.store cur_snapshot))
   in
   Document_store_manager.submit_update_req
-    `Multi_file_view
+    `Ui
     new_snapshot
 
 let update_file_path_filter () =
   reset_document_selected ();
   let s = fst @@ Lwd.peek Vars.file_path_filter_field in
-  Document_store_manager.submit_filter_req `Multi_file_view s
+  Document_store_manager.submit_filter_req `Ui s
 
 let update_search_phrase () =
   reset_document_selected ();
   let s = fst @@ Lwd.peek Vars.search_field in
-  Document_store_manager.submit_search_req `Multi_file_view s
+  Document_store_manager.submit_search_req `Ui s
 
 module Top_pane = struct
   module Document_list = struct
@@ -700,7 +700,7 @@ let keyboard_handler
           if new_ver >= 0 then (
             Lwd.set Vars.document_store_cur_ver new_ver;
             let new_snapshot = Dynarray.get Vars.document_store_snapshots new_ver in
-            Document_store_manager.submit_update_req `Multi_file_view new_snapshot;
+            Document_store_manager.submit_update_req `Ui new_snapshot;
             sync_input_fields_from_document_store
               (Document_store_snapshot.store new_snapshot);
             reset_document_selected ();
@@ -715,7 +715,7 @@ let keyboard_handler
           if new_ver < Dynarray.length Vars.document_store_snapshots then (
             Lwd.set Vars.document_store_cur_ver new_ver;
             let new_snapshot = Dynarray.get Vars.document_store_snapshots new_ver in
-            Document_store_manager.submit_update_req `Multi_file_view new_snapshot;
+            Document_store_manager.submit_update_req `Ui new_snapshot;
             sync_input_fields_from_document_store
               (Document_store_snapshot.store new_snapshot);
             reset_document_selected ();

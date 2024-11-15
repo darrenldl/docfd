@@ -1,7 +1,7 @@
 open Docfd_lib
 
 type store_typ = [
-  | `Multi_file_view
+  | `Ui
   | `Single_file_view
 ]
 
@@ -73,7 +73,7 @@ let manager_fiber () =
   *)
   let update_store (store_typ : store_typ) snapshot =
     match store_typ with
-    | `Multi_file_view -> (
+    | `Ui -> (
         Lwd.set multi_file_view_document_store_snapshot snapshot;
       )
     | `Single_file_view -> (
@@ -129,7 +129,7 @@ let worker_fiber pool =
         let store =
           (match store_typ with
            | `Single_file_view -> !single_file_view_store_snapshot
-           | `Multi_file_view -> !multi_file_view_store_snapshot)
+           | `Ui -> !multi_file_view_store_snapshot)
           |> Document_store_snapshot.store
           |> Document_store.update_search_exp
             pool
@@ -141,7 +141,7 @@ let worker_fiber pool =
         let snapshot = Document_store_snapshot.make ~last_command:command store in
         (match store_typ with
          | `Single_file_view -> single_file_view_store_snapshot := snapshot
-         | `Multi_file_view -> multi_file_view_store_snapshot := snapshot);
+         | `Ui -> multi_file_view_store_snapshot := snapshot);
         Eio.Stream.add egress (Search_done (store_typ, snapshot))
       )
   in
@@ -152,7 +152,7 @@ let worker_fiber pool =
         let store =
           (match store_typ with
            | `Single_file_view -> !single_file_view_store_snapshot
-           | `Multi_file_view -> !multi_file_view_store_snapshot)
+           | `Ui -> !multi_file_view_store_snapshot)
           |> Document_store_snapshot.store
           |> Document_store.update_file_path_filter_glob
             pool
@@ -164,7 +164,7 @@ let worker_fiber pool =
         let snapshot = Document_store_snapshot.make ~last_command:command store in
         (match store_typ with
          | `Single_file_view -> single_file_view_store_snapshot := snapshot
-         | `Multi_file_view -> multi_file_view_store_snapshot := snapshot);
+         | `Ui -> multi_file_view_store_snapshot := snapshot);
         Eio.Stream.add egress (Filtering_done (store_typ, snapshot))
       )
     | None -> (
@@ -174,7 +174,7 @@ let worker_fiber pool =
   let process_update_req (store_typ : store_typ) snapshot =
     (match store_typ with
      | `Single_file_view -> single_file_view_store_snapshot := snapshot
-     | `Multi_file_view -> multi_file_view_store_snapshot := snapshot
+     | `Ui -> multi_file_view_store_snapshot := snapshot
     );
     Eio.Stream.add egress (Update (store_typ, snapshot));
     Eio.Stream.take egress_ack;
@@ -189,7 +189,7 @@ let worker_fiber pool =
     );
     (match Lock_protected_cell.get multi_file_view_filter_request with
      | None -> ()
-     | Some s -> process_filter_req search_stop_signal' `Multi_file_view s
+     | Some s -> process_filter_req search_stop_signal' `Ui s
     );
     (match Lock_protected_cell.get single_file_view_search_request with
      | None -> ()
@@ -197,7 +197,7 @@ let worker_fiber pool =
     );
     (match Lock_protected_cell.get multi_file_view_search_request with
      | None -> ()
-     | Some s -> process_search_req search_stop_signal' `Multi_file_view s
+     | Some s -> process_search_req search_stop_signal' `Ui s
     );
     (match Lock_protected_cell.get single_file_view_update_request with
      | None -> ()
@@ -205,7 +205,7 @@ let worker_fiber pool =
     );
     (match Lock_protected_cell.get multi_file_view_update_request with
      | None -> ()
-     | Some snapshot -> process_update_req `Multi_file_view snapshot
+     | Some snapshot -> process_update_req `Ui snapshot
     );
     Ping.ping requester_ping
   done
@@ -214,7 +214,7 @@ let submit_filter_req (store_typ : store_typ) (s : string) =
   Eio.Mutex.use_rw requester_lock ~protect:false (fun () ->
       signal_search_stop ();
       (match store_typ with
-       | `Multi_file_view -> (
+       | `Ui -> (
            Lock_protected_cell.set multi_file_view_filter_request s;
          )
        | `Single_file_view -> (
@@ -228,7 +228,7 @@ let submit_search_req (store_typ : store_typ) (s : string) =
   Eio.Mutex.use_rw requester_lock ~protect:false (fun () ->
       signal_search_stop ();
       (match store_typ with
-       | `Multi_file_view -> (
+       | `Ui -> (
            Lock_protected_cell.set multi_file_view_search_request s;
          )
        | `Single_file_view -> (
@@ -245,7 +245,7 @@ let submit_update_req
   Eio.Mutex.use_rw requester_lock ~protect:false (fun () ->
       signal_search_stop ();
       (match store_typ with
-       | `Multi_file_view -> (
+       | `Ui -> (
            Lock_protected_cell.unset multi_file_view_search_request;
            Lock_protected_cell.unset multi_file_view_filter_request;
            Lock_protected_cell.set multi_file_view_update_request snapshot;
