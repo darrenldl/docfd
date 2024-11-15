@@ -66,7 +66,6 @@ let update_starting_snapshot_and_recompute_rest
   done;
   let cur_snapshot = get_cur_document_store_snapshot () in
   Document_store_manager.submit_update_req
-    `Ui
     cur_snapshot
 
 let reload_document (doc : Document.t) =
@@ -163,9 +162,7 @@ let drop ~document_count (choice : [`Path of string | `Listed | `Unlisted]) =
          choice
          (Document_store_snapshot.store cur_snapshot))
   in
-  Document_store_manager.submit_update_req
-    `Ui
-    new_snapshot
+  Document_store_manager.submit_update_req new_snapshot
 
 let narrow_search_scope ~level =
   let cur_snapshot = get_cur_document_store_snapshot () in
@@ -177,19 +174,17 @@ let narrow_search_scope ~level =
          ~level
          (Document_store_snapshot.store cur_snapshot))
   in
-  Document_store_manager.submit_update_req
-    `Ui
-    new_snapshot
+  Document_store_manager.submit_update_req new_snapshot
 
 let update_file_path_filter () =
   reset_document_selected ();
   let s = fst @@ Lwd.peek Vars.file_path_filter_field in
-  Document_store_manager.submit_filter_req `Ui s
+  Document_store_manager.submit_filter_req s
 
 let update_search_phrase () =
   reset_document_selected ();
   let s = fst @@ Lwd.peek Vars.search_field in
-  Document_store_manager.submit_search_req `Ui s
+  Document_store_manager.submit_search_req s
 
 module Top_pane = struct
   module Document_list = struct
@@ -397,7 +392,7 @@ module Bottom_pane = struct
     in
     let$* cur_ver = Lwd.get Vars.document_store_cur_ver in
     let$* snapshot =
-      Lwd.get Document_store_manager.multi_file_view_document_store_snapshot
+      Lwd.get Document_store_manager.document_store_snapshot
     in
     let content =
       let file_shown_count =
@@ -700,7 +695,7 @@ let keyboard_handler
           if new_ver >= 0 then (
             Lwd.set Vars.document_store_cur_ver new_ver;
             let new_snapshot = Dynarray.get Vars.document_store_snapshots new_ver in
-            Document_store_manager.submit_update_req `Ui new_snapshot;
+            Document_store_manager.submit_update_req new_snapshot;
             sync_input_fields_from_document_store
               (Document_store_snapshot.store new_snapshot);
             reset_document_selected ();
@@ -715,7 +710,7 @@ let keyboard_handler
           if new_ver < Dynarray.length Vars.document_store_snapshots then (
             Lwd.set Vars.document_store_cur_ver new_ver;
             let new_snapshot = Dynarray.get Vars.document_store_snapshots new_ver in
-            Document_store_manager.submit_update_req `Ui new_snapshot;
+            Document_store_manager.submit_update_req new_snapshot;
             sync_input_fields_from_document_store
               (Document_store_snapshot.store new_snapshot);
             reset_document_selected ();
@@ -1040,7 +1035,7 @@ let keyboard_handler
 
 let main : Nottui.ui Lwd.t =
   let$* snapshot =
-    Lwd.get Document_store_manager.multi_file_view_document_store_snapshot
+    Lwd.get Document_store_manager.document_store_snapshot
   in
   let cur_ver = Lwd.peek Vars.document_store_cur_ver in
   if
