@@ -553,7 +553,7 @@ let run
   in
   let pool = Task_pool.make ~sw (Eio.Stdenv.domain_mgr env) in
   Ui_base.Vars.pool := Some pool;
-  let compute_init_ui_mode_and_document_src : unit -> Ui_base.ui_mode * Document_src.t =
+  let compute_if_hide_file_list_initially_and_document_src : unit -> bool * Document_src.t =
     let stdin_tmp_file = ref None in
     (fun () ->
        String_set.iter (fun path ->
@@ -587,37 +587,36 @@ let run
        if file_constraints.paths_were_originally_specified_by_user
        || stdin_is_atty ()
        then (
-         let ui_mode =
-           let open Ui_base in
+         let hide_file_list =
            match Document_src.file_collection_size file_collection with
-           | 0 -> Ui_multi_file
-           | 1 -> Ui_single_file
-           | _ -> Ui_multi_file
+           | 0 -> false
+           | 1 -> true
+           | _ -> false
          in
-         (ui_mode, Files file_collection)
+         (hide_file_list, Files file_collection)
        ) else (
          match !stdin_tmp_file with
          | None -> (
              match read_in_channel_to_tmp_file stdin with
              | Ok tmp_file -> (
                  stdin_tmp_file := Some tmp_file;
-                 Ui_base.(Ui_single_file, Stdin tmp_file)
+                 (true, Stdin tmp_file)
                )
              | Error msg -> (
                  exit_with_error_msg msg
                )
            )
          | Some tmp_file -> (
-             Ui_base.(Ui_single_file, Stdin tmp_file)
+             (true, Stdin tmp_file)
            )
        )
     )
   in
   let compute_document_src () =
-    snd (compute_init_ui_mode_and_document_src ())
+    snd (compute_if_hide_file_list_initially_and_document_src ())
   in
-  let init_ui_mode, init_document_src =
-    compute_init_ui_mode_and_document_src ()
+  let hide_file_list_initially, init_document_src =
+    compute_if_hide_file_list_initially_and_document_src ()
   in
   let clean_up () =
     match init_document_src with
@@ -673,7 +672,7 @@ let run
        )
      )
   );
-  Ui_base.Vars.init_ui_mode := init_ui_mode;
+  Lwd.set Ui_base.Vars.hide_file_list hide_file_list_initially;
   let init_document_store =
     document_store_of_document_src ~env pool ~interactive init_document_src
   in
@@ -771,7 +770,6 @@ let run
      )
   );
   Ui_base.Vars.eio_env := Some env;
-  Lwd.set Ui_base.Vars.ui_mode init_ui_mode;
   let root : Nottui.ui Lwd.t =
     let$* (term_width, term_height) = Lwd.get Ui_base.Vars.term_width_height in
     if term_width <= 40 || term_height <= 20 then (
@@ -789,14 +787,7 @@ let run
       in
       Lwd.return (Nottui.Ui.keyboard_area keyboard_handler msg)
     ) else (
-      let$* ui_mode : Ui_base.ui_mode = Lwd.get Ui_base.Vars.ui_mode in
-      match ui_mode with
-      | Ui_multi_file -> (
-          Multi_file_view.main
-        )
-      | Ui_single_file -> (
-          Single_file_view.main
-        )
+      Multi_file_view.main
     )
   in
   let get_term, close_term =
@@ -885,10 +876,7 @@ let run
               Float.abs
                 (new_stats.st_mtime -. old_stats.st_mtime) >= Params.float_compare_margin
             then (
-              (match Lwd.peek Ui_base.Vars.ui_mode with
-               | Ui_single_file -> Single_file_view.reload_document doc
-               | Ui_multi_file -> Multi_file_view.reload_document doc
-              );
+              Multi_file_view.reload_document doc
             );
             loop ()
           )
@@ -1125,26 +1113,12 @@ let run
        Document_store_manager.submit_update_req
          `Multi_file_view
          snapshot;
-       (match init_ui_mode with
-        | Ui_base.Ui_single_file ->
-          Document_store_manager.submit_update_req
-            `Single_file_view
-            snapshot;
-        | _ -> ()
-       );
        (match start_with_search with
         | None -> ()
         | Some start_with_search -> (
             let start_with_search_len = String.length start_with_search in
-            match init_ui_mode with
-            | Ui_base.Ui_multi_file -> (
-                Lwd.set Multi_file_view.Vars.search_field (start_with_search, start_with_search_len);
-                Multi_file_view.update_search_phrase ();
-              )
-            | Ui_single_file -> (
-                Lwd.set Ui_base.Vars.Single_file.search_field (start_with_search, start_with_search_len);
-                Single_file_view.update_search_phrase ();
-              )
+            Lwd.set Multi_file_view.Vars.search_field (start_with_search, start_with_search_len);
+            Multi_file_view.update_search_phrase ();
           ));
        loop ();
     );

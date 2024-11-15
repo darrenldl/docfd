@@ -583,52 +583,28 @@ module Bottom_pane = struct
         ]
       in
       [
-        ({ input_mode = Navigate; init_ui_mode = Ui_multi_file },
+        ({ input_mode = Navigate },
          navigate_grid
         );
-        ({ input_mode = Navigate; init_ui_mode = Ui_single_file },
-         navigate_grid
-        );
-        ({ input_mode = Search; init_ui_mode = Ui_multi_file },
+        ({ input_mode = Search },
          search_grid
         );
-        ({ input_mode = Search; init_ui_mode = Ui_single_file },
-         search_grid
-        );
-        ({ input_mode = Filter; init_ui_mode = Ui_multi_file },
+        ({ input_mode = Filter },
          filter_grid
         );
-        ({ input_mode = Filter; init_ui_mode = Ui_single_file },
-         filter_grid
-        );
-        ({ input_mode = Clear; init_ui_mode = Ui_multi_file },
+        ({ input_mode = Clear },
          clear_grid
         );
-        ({ input_mode = Clear; init_ui_mode = Ui_single_file },
-         clear_grid
-        );
-        ({ input_mode = Drop; init_ui_mode = Ui_multi_file },
+        ({ input_mode = Drop },
          drop_grid
         );
-        ({ input_mode = Drop; init_ui_mode = Ui_single_file },
-         drop_grid
-        );
-        ({ input_mode = Narrow; init_ui_mode = Ui_multi_file },
+        ({ input_mode = Narrow },
          narrow_grid
         );
-        ({ input_mode = Narrow; init_ui_mode = Ui_single_file },
-         narrow_grid
-        );
-        ({ input_mode = Copy; init_ui_mode = Ui_multi_file },
+        ({ input_mode = Copy },
          copy_grid
         );
-        ({ input_mode = Copy; init_ui_mode = Ui_single_file },
-         copy_grid
-        );
-        ({ input_mode = Reload; init_ui_mode = Ui_multi_file },
-         reload_grid
-        );
-        ({ input_mode = Reload; init_ui_mode = Ui_single_file },
+        ({ input_mode = Reload },
          reload_grid
         );
       ]
@@ -747,7 +723,7 @@ let keyboard_handler
           `Handled
         )
       | (`Tab, []) -> (
-          Option.iter (fun (doc, _search_results) ->
+          (*Option.iter (fun (doc, _search_results) ->
               let snapshot =
                 Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
               in
@@ -765,9 +741,8 @@ let keyboard_handler
                 (Lwd.peek Vars.index_of_search_result_selected);
               Lwd.set Ui_base.Vars.Single_file.search_field
                 (Document_store.search_exp_string single_file_document_store, 0);
-              Ui_base.set_ui_mode Ui_single_file;
             )
-            document_info;
+            document_info;*)
           `Handled
         )
       | (`Page `Down, [`Shift])

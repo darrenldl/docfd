@@ -11,10 +11,6 @@ type input_mode =
   | Copy
   | Reload
 
-type ui_mode =
-  | Ui_single_file
-  | Ui_multi_file
-
 type top_level_action =
   | Recompute_document_src
   | Open_file_and_search_result of Document.t * Search_result.t option
@@ -38,23 +34,15 @@ module Vars = struct
 
   let eio_env : Eio_unix.Stdenv.base option ref = ref None
 
+  let hide_file_list : bool Lwd.var = Lwd.var false
+
   let input_mode : input_mode Lwd.var = Lwd.var Navigate
-
-  let init_ui_mode : ui_mode ref = ref Ui_multi_file
-
-  let ui_mode : ui_mode Lwd.var = Lwd.var Ui_multi_file
 
   let document_src : Document_src.t ref = ref (Document_src.(Files empty_file_collection))
 
   let term : Notty_unix.Term.t option ref = ref None
 
   let term_width_height : (int * int) Lwd.var = Lwd.var (0, 0)
-
-  module Single_file = struct
-    let search_field = Lwd.var empty_text_field
-
-    let index_of_search_result_selected = Lwd.var 0
-  end
 end
 
 let task_pool () =
@@ -282,7 +270,6 @@ module Key_binding_info = struct
 
   type grid_key = {
     input_mode : input_mode;
-    init_ui_mode : ui_mode;
   }
 
   type grid_contents = (grid_key * (labelled_msg_line list)) list
@@ -422,7 +409,7 @@ module Key_binding_info = struct
       grid_contents
 
   let main ~(grid_lookup : grid_lookup) ~(input_mode : input_mode) =
-    List.assoc { input_mode; init_ui_mode = !Vars.init_ui_mode } grid_lookup
+    List.assoc { input_mode; } grid_lookup
 end
 
 let file_path_filter_bar_label_string = "File path filter" 
@@ -583,10 +570,6 @@ let ui_loop ~quit ~term root =
     )
   in
   loop ()
-
-let set_ui_mode mode =
-  Lwd.set Vars.ui_mode mode;
-  Key_binding_info.reset_rotation ()
 
 let set_input_mode mode =
   Lwd.set Vars.input_mode mode;
