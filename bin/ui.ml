@@ -494,19 +494,19 @@ module Bottom_pane = struct
           [
             { label = "Enter"; msg = "open document" };
             { label = "/"; msg = "search mode" };
+            { label = "f"; msg = "filter mode" };
             { label = "x"; msg = "clear mode" };
-            { label = "h"; msg = "view/edit command history" };
           ];
           [
             { label = "Tab"; msg = "single file view" };
             { label = "y"; msg = "copy/yank mode" };
-            { label = "f"; msg = "filter mode" };
+            { label = "n"; msg = "narrow mode" };
             { label = "d"; msg = "drop mode" };
           ];
           [
             { label = "?"; msg = "rotate key binding info" };
+            { label = "h"; msg = "view/edit command history" };
             { label = "r"; msg = "reload mode" };
-            { label = "n"; msg = "narrow mode" };
           ];
         ]
       in
