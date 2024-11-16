@@ -42,8 +42,6 @@ result via PDF viewer integration:
 
 - Search scope narrowing - limit scope of next search based on current search results
 
-- Swap between multi-file view and single file view on the fly
-
 <details>
 
 #### Text editor integration
@@ -106,6 +104,8 @@ external tools at run time for full functionality:
 - `pdftotext` from `poppler-utils` for PDF support
 - `pandoc` for support of `.epub`, `.odt`, `.docx`, `.fb2`, `.ipynb`, `.html`, and `.htm` files
 - `fzf` for file selection menu
+- `wl-clibpard` for clipboard support on Wayland
+- `xclip` for clipboard support on X11
 
 ## Launching
 
@@ -349,22 +349,7 @@ Search results are then ranked using a heuristic.
 
 </details>
 
-## Common controls between multi-file view and single file view
-
-Navigation mode
-- Switch to search mode
-    - `/`
-- Exit Docfd
-    - `Esc`
-    - `Ctrl`+`C`
-- Enter print mode to print items to stderr
-    - `p`
-
-Search mode
-- Search field is active in this mode
-- `Enter` to confirm search expression and exit search mode
-
-## Multi-file view
+## UI
 
 ![](screenshots/multi-file-view0.png)
 
@@ -402,6 +387,15 @@ The search status indicator shows one of the following values:
 Docfd operates in modes, the initial mode is navigation mode.
 
 Navigation mode
+- Switch to search mode
+    - `/`
+- Exit Docfd
+    - `Esc`
+    - `Ctrl`+`C`
+- Enter yank/copy mode to copy items to clipboard
+    - `y`
+- Hide document list/focus on selected document
+    - `Tab`
 - Scroll down the document list
     - `j`
     - Down arrow
@@ -417,7 +411,8 @@ Navigation mode
     - `Shift`+Down arrow
     - `Shift`+Page down
     - Scroll down with mouse wheel when hovering above the area
-- Scroll up the document list
+    - `Shift` is optional if document list is hidden
+- Scroll up the search result list
     - `Shift`+`K`
     - `Shift`+Up arrow
     - `Shift`+Page up
@@ -438,6 +433,10 @@ Navigation mode
     - `Ctrl`+`R`
     - `Ctrl`+`Y`
 
+Search mode
+- Search field is active in this mode
+- `Enter` to confirm search expression and exit search mode
+
 Clear mode
 - Clear search field
     - `/`
@@ -455,8 +454,8 @@ Drop mode
     - `Esc`
     - `Ctrl`+`C`
 
-Print mode
-- Print currently selected search result
+Copy mode
+- Copy currently selected search result
     - `p`
 - Samples of selected document
     - `s`
@@ -472,69 +471,9 @@ Print mode
     - `Shift`+`S`
 - All results of all documents
     - `Shift`+`A`
-- Cancel/exit print mode
+- Cancel/exit copy mode
     - `Esc`
     - `Ctrl`+`C`
-
-</details>
-
-## Single file view
-
-If the specified path to Docfd is not a directory, then single file view
-is used.
-
-![](screenshots/single-file-view0.png)
-
-In this view, the TUI is divided into only three sections:
-- Top is content view
-- Middle is ranked search result list
-- Bottom pane is the same as the one displayed in multi-file view,
-  but with different key binding info
-
-#### Controls
-
-<details>
-
-The controls are simplified in single file view,
-namely `Shift` is optional for scrolling through search result list.
-
-Navigation mode
-- Scroll down the search result list
-    - `j`
-    - Down arrow
-    - Page down
-    - `Shift`+`J`
-    - `Shift`+Down arrow
-    - `Shift`+Page down
-    - Scroll down with mouse wheel when hovering above the area
-- Scroll up the document list
-    - `k`
-    - Up arrow
-    - Page up
-    - `Shift`+`K`
-    - `Shift`+Up arrow
-    - `Shift`+Page up
-    - Scroll up with mouse wheel when hovering above the area
-- Open document
-    - `Enter`
-        - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
-- Switch to multi-file view
-    - `Tab`
-- Clear search field
-    - `x`
-
-Print mode
-- Print currently selected search result
-    - `p`
-- Samples
-    - `s`
-- All results
-    - `a`
-- Path
-    - `Shift`+`P`
-- Cancel/exit print mode
-    - `Esc`
-    - `Ctrl+C`
 
 </details>
 
