@@ -405,6 +405,7 @@ module Bottom_pane = struct
     let$* snapshot =
       Lwd.get Document_store_manager.document_store_snapshot
     in
+    let$* show_only_document = Lwd.get Vars.show_only_document in
     let content =
       let file_shown_count =
         Notty.I.strf ~attr:Ui_base.Status_bar.attr
@@ -436,40 +437,46 @@ module Bottom_pane = struct
       let version_overlay =
         Notty.I.void (width - ver_len) 1 <|> version
       in
-      if document_count = 0 then (
-        Notty.I.zcat
-          [
-            Notty.I.hcat
+      let core =
+        match show_only_document with
+        | None -> (
+            if document_count = 0 then (
               [
-                input_mode_image;
                 Ui_base.Status_bar.element_spacer;
                 file_shown_count;
-              ];
-            desc_overlay;
-            version_overlay;
-          ]
-        |> Nottui.Ui.atom
-      ) else (
-        let index_of_selected =
-          Notty.I.strf ~attr:Ui_base.Status_bar.attr
-            "Index of document selected: %d"
-            index_of_document_selected
-        in
-        Notty.I.zcat
-          [
-            Notty.I.hcat
+              ]
+            ) else (
+              let index_of_selected =
+                Notty.I.strf ~attr:Ui_base.Status_bar.attr
+                  "Index of document selected: %d"
+                  index_of_document_selected
+              in
               [
-                input_mode_image;
-                Ui_base.Status_bar.element_spacer;
                 file_shown_count;
                 Ui_base.Status_bar.element_spacer;
                 index_of_selected;
-              ];
-            desc_overlay;
-            version_overlay;
-          ]
-        |> Nottui.Ui.atom
-      )
+              ]
+            )
+          )
+        | Some path -> (
+            [
+              Notty.I.strf ~attr:Ui_base.Status_bar.attr
+                "Document: %s" (File_utils.remove_cwd_from_path path)
+            ]
+          )
+      in
+      Notty.I.zcat
+        [
+          Notty.I.hcat
+            (input_mode_image
+             ::
+             Ui_base.Status_bar.element_spacer
+             ::
+             core);
+          desc_overlay;
+          version_overlay;
+        ]
+      |> Nottui.Ui.atom
     in
     let$ bar = Ui_base.Status_bar.background_bar in
     Nottui.Ui.join_z bar content
