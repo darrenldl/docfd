@@ -739,17 +739,17 @@ let keyboard_handler
           `Handled
         )
       | (`Tab, []) -> (
-          Lwd.set Ui_base.Vars.hide_document_list
-            (not hide_document_list);
-          (match Lwd.peek Vars.show_only_document with
-           | None -> (
-               let doc, _ = document_info_s.(Lwd.peek Vars.index_of_document_selected) in
-               Lwd.set Vars.show_only_document
-                 (Some (Document.path doc))
-             )
-           | Some _ -> (
-               Lwd.set Vars.show_only_document None
-             )
+          if hide_document_list then (
+            Lwd.set Ui_base.Vars.hide_document_list false;
+            Lwd.set Vars.show_only_document None
+          ) else (
+            Lwd.set Ui_base.Vars.hide_document_list true;
+            let index = Lwd.peek Vars.index_of_document_selected in
+            if index < Array.length document_info_s then (
+              let doc, _ = document_info_s.(index) in
+              Lwd.set Vars.show_only_document
+                (Some (Document.path doc))
+            )
           );
           `Handled
         )
