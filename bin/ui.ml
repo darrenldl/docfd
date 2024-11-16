@@ -2,6 +2,8 @@ open Docfd_lib
 open Lwd_infix
 
 module Vars = struct
+  let show_only_document : string option Lwd.var = Lwd.var None
+
   let index_of_document_selected = Lwd.var 0
 
   let index_of_search_result_selected = Lwd.var 0
@@ -732,6 +734,16 @@ let keyboard_handler
       | (`Tab, []) -> (
           Lwd.set Ui_base.Vars.hide_document_list
             (not hide_document_list);
+          (match Lwd.peek Vars.show_only_document with
+           | None -> (
+               let doc, _ = document_info_s.(Lwd.peek Vars.index_of_document_selected) in
+               Lwd.set Vars.show_only_document
+                 (Some (Document.path doc))
+             )
+           | Some _ -> (
+               Lwd.set Vars.show_only_document None
+             )
+          );
           `Handled
         )
       | (`Page `Down, [`Shift])
@@ -1054,7 +1066,17 @@ let main : Nottui.ui Lwd.t =
   ) else (
     Dynarray.set Vars.document_store_snapshots cur_ver snapshot
   );
-  let document_store = Document_store_snapshot.store snapshot in
+  let$* show_only_document = Lwd.get Vars.show_only_document in
+  let document_store =
+    let store = Document_store_snapshot.store snapshot in
+    match show_only_document with
+    | None -> store
+    | Some path -> (
+        match Document_store.single_out ~path store with
+        | None -> store
+        | Some store -> store
+      )
+  in
   let document_info_s =
     Document_store.usable_documents document_store
   in
