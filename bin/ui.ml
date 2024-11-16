@@ -1080,7 +1080,7 @@ let main : Nottui.ui Lwd.t =
     | None -> store
     | Some path -> (
         match Document_store.single_out ~path store with
-        | None -> store
+        | None -> Document_store.empty
         | Some store -> store
       )
   in
