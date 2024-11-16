@@ -387,45 +387,53 @@ The search status indicator shows one of the following values:
 Docfd operates in modes, the initial mode is navigation mode.
 
 Navigation mode
-- Switch to search mode
-    - `/`
 - Exit Docfd
     - `Esc`
     - `Ctrl`+`C`
-- Enter yank/copy mode to copy items to clipboard
-    - `y`
+- Open document
+    - `Enter`
+        - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
+- Switch to search mode
+    - `/`
+- Switch to filter mode
+    - `f`
+- Enter clear mode
+    - `x`
 - Hide document list/focus on selected document
     - `Tab`
+- Rotate key binding info
+    - `?`
+- Enter yank/copy mode to copy items to clipboard
+    - `y`
+- Enter narrow mode
+    - `n`
+- Enter drop mode
+    - `d`
+- View/edit command history
+    - `h`
+- Switch to reload mode
+    - `r`
 - Scroll down the document list
     - `j`
     - Down arrow
     - Page down
     - Scroll down with mouse wheel when hovering above the area
+    - If document list is hidden, then this scrolls down the search result list instead
 - Scroll up the document list
     - `k`
     - Up arrow
     - Page up
     - Scroll up with mouse wheel when hovering above the area
+    - If document list is hidden, then this scrolls up the search result list instead
 - Scroll down the search result list
     - `Shift`+`J`
     - `Shift`+Down arrow
     - `Shift`+Page down
     - Scroll down with mouse wheel when hovering above the area
-    - `Shift` is optional if document list is hidden
 - Scroll up the search result list
     - `Shift`+`K`
     - `Shift`+Up arrow
     - `Shift`+Page up
-    - Scroll up with mouse wheel when hovering above the area
-- Open document
-    - `Enter`
-        - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`
-- Switch to single file view
-    - `Tab`
-- Enter clear mode
-    - `x`
-- Enter drop mode
-    - `d`
 - Undo document store changes
     - `u`
     - `Ctrl`+`Z`
@@ -437,22 +445,15 @@ Search mode
 - Search field is active in this mode
 - `Enter` to confirm search expression and exit search mode
 
+Filter mode
+- Filter field is active in this mode
+- `Enter` to confirm path filter glob and exit search mode
+
 Clear mode
 - Clear search field
     - `/`
 - Clear file path filter field
     - `f`
-
-Drop mode
-- Drop currently selected document
-    - `d`
-- Drop all unlisted documents
-    - `u`
-- Drop all listed documents
-    - `l`
-- Cancel/exit drop mode
-    - `Esc`
-    - `Ctrl`+`C`
 
 Copy mode
 - Copy currently selected search result
@@ -474,6 +475,27 @@ Copy mode
 - Cancel/exit copy mode
     - `Esc`
     - `Ctrl`+`C`
+
+Narrow mode
+- Select level of search scope narrowing
+    - `1`-`9`
+
+Drop mode
+- Drop currently selected document
+    - `d`
+- Drop all unlisted documents
+    - `u`
+- Drop all listed documents
+    - `l`
+- Cancel/exit drop mode
+    - `Esc`
+    - `Ctrl`+`C`
+
+Reload mode
+- Reload selected document
+    - `r`
+- Reload all documents
+    - `a`
 
 </details>
 
