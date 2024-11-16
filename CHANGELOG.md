@@ -41,6 +41,13 @@
 
     - https://github.com/darrenldl/docfd/commit/4e0aa6785ce80630d0cd3cda6e316b7b15a4fb4b
 
+- Replaced print mode with copy mode
+
+- Replaced single file view with key binding to hide document list
+  to remove feature discrepencies
+
+- Added narrow mode for search scope narrowing
+
 ## 8.0.3
 
 - Fixed single file view crash
