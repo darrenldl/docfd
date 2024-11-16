@@ -553,7 +553,7 @@ let run
   in
   let pool = Task_pool.make ~sw (Eio.Stdenv.domain_mgr env) in
   Ui_base.Vars.pool := Some pool;
-  let compute_if_hide_file_list_initially_and_document_src : unit -> bool * Document_src.t =
+  let compute_if_hide_document_list_initially_and_document_src : unit -> bool * Document_src.t =
     let stdin_tmp_file = ref None in
     (fun () ->
        String_set.iter (fun path ->
@@ -587,13 +587,13 @@ let run
        if file_constraints.paths_were_originally_specified_by_user
        || stdin_is_atty ()
        then (
-         let hide_file_list =
+         let hide_document_list =
            match Document_src.file_collection_size file_collection with
            | 0 -> false
            | 1 -> true
            | _ -> false
          in
-         (hide_file_list, Files file_collection)
+         (hide_document_list, Files file_collection)
        ) else (
          match !stdin_tmp_file with
          | None -> (
@@ -613,10 +613,10 @@ let run
     )
   in
   let compute_document_src () =
-    snd (compute_if_hide_file_list_initially_and_document_src ())
+    snd (compute_if_hide_document_list_initially_and_document_src ())
   in
-  let hide_file_list_initially, init_document_src =
-    compute_if_hide_file_list_initially_and_document_src ()
+  let hide_document_list_initially, init_document_src =
+    compute_if_hide_document_list_initially_and_document_src ()
   in
   let clean_up () =
     match init_document_src with
@@ -672,7 +672,7 @@ let run
        )
      )
   );
-  Lwd.set Ui_base.Vars.hide_file_list hide_file_list_initially;
+  Lwd.set Ui_base.Vars.hide_document_list hide_document_list_initially;
   let init_document_store =
     document_store_of_document_src ~env pool ~interactive init_document_src
   in

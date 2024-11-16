@@ -339,14 +339,14 @@ module Top_pane = struct
         ~(document_info_s : Document_store.document_info array)
         ~(document_selected : int)
       : Nottui.ui Lwd.t =
-      if Array.length document_info_s = 0 then
+      if Array.length document_info_s = 0 then (
         let blank ~height =
           let _ = height in
           Nottui_widgets.empty_lwd
         in
         Ui_base.vpane ~width ~height
           blank blank
-      else (
+      ) else (
         let$* search_result_selected = Lwd.get Vars.index_of_search_result_selected in
         let document_info = document_info_s.(document_selected) in
         Ui_base.vpane ~width ~height
@@ -367,15 +367,24 @@ module Top_pane = struct
       ~(document_info_s : Document_store.document_info array)
     : Nottui.ui Lwd.t =
     let$* document_selected = Lwd.get Vars.index_of_document_selected in
-    Ui_base.hpane ~width ~height
-      (Document_list.main
-         ~height
-         ~document_info_s
-         ~document_selected)
-      (Right_pane.main
-         ~height
-         ~document_info_s
-         ~document_selected)
+    let$* hide_document_list = Lwd.get Ui_base.Vars.hide_document_list in
+    if hide_document_list then (
+      Right_pane.main
+        ~height
+        ~width
+        ~document_info_s
+        ~document_selected
+    ) else (
+      Ui_base.hpane ~width ~height
+        (Document_list.main
+           ~height
+           ~document_info_s
+           ~document_selected)
+        (Right_pane.main
+           ~height
+           ~document_info_s
+           ~document_selected)
+    )
 end
 
 module Bottom_pane = struct
@@ -658,6 +667,9 @@ let keyboard_handler
   let search_result_current_choice =
     Lwd.peek Vars.index_of_search_result_selected
   in
+  let hide_document_list =
+    Lwd.peek Ui_base.Vars.hide_document_list
+  in
   match Lwd.peek Ui_base.Vars.input_mode with
   | Navigate -> (
       match key with
@@ -718,26 +730,8 @@ let keyboard_handler
           `Handled
         )
       | (`Tab, []) -> (
-          (*Option.iter (fun (doc, _search_results) ->
-              let snapshot =
-                Lwd.peek Document_store_manager.multi_file_view_document_store_snapshot
-              in
-              let single_file_document_store =
-                Document_store_snapshot.store snapshot
-                |> Document_store.single_out ~path:(Document.path doc)
-                |> Option.get
-              in
-              Document_store_manager.submit_update_req
-                `Single_file_view
-                (Document_store_snapshot.update_store
-                   single_file_document_store
-                   snapshot);
-              Lwd.set Ui_base.Vars.Single_file.index_of_search_result_selected
-                (Lwd.peek Vars.index_of_search_result_selected);
-              Lwd.set Ui_base.Vars.Single_file.search_field
-                (Document_store.search_exp_string single_file_document_store, 0);
-            )
-            document_info;*)
+          Lwd.set Ui_base.Vars.hide_document_list
+            (not hide_document_list);
           `Handled
         )
       | (`Page `Down, [`Shift])
@@ -759,18 +753,32 @@ let keyboard_handler
       | (`Page `Down, [])
       | (`ASCII 'j', [])
       | (`Arrow `Down, []) -> (
-          set_document_selected
-            ~choice_count:document_count
-            (document_current_choice+1);
-          `Handled
+          if hide_document_list then (
+            set_search_result_selected
+              ~choice_count:search_result_choice_count
+              (search_result_current_choice+1);
+            `Handled
+          ) else (
+            set_document_selected
+              ~choice_count:document_count
+              (document_current_choice+1);
+            `Handled
+          )
         )
       | (`Page `Up, [])
       | (`ASCII 'k', [])
       | (`Arrow `Up, []) -> (
-          set_document_selected
-            ~choice_count:document_count
-            (document_current_choice-1);
-          `Handled
+          if hide_document_list then (
+            set_search_result_selected
+              ~choice_count:search_result_choice_count
+              (search_result_current_choice-1);
+            `Handled
+          ) else (
+            set_document_selected
+              ~choice_count:document_count
+              (document_current_choice-1);
+            `Handled
+          )
         )
       | (`ASCII 'g', []) -> (
           set_document_selected

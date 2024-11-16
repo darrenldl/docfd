@@ -34,7 +34,7 @@ module Vars = struct
 
   let eio_env : Eio_unix.Stdenv.base option ref = ref None
 
-  let hide_file_list : bool Lwd.var = Lwd.var false
+  let hide_document_list : bool Lwd.var = Lwd.var false
 
   let input_mode : input_mode Lwd.var = Lwd.var Navigate
 
