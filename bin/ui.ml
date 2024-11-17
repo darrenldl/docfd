@@ -22,6 +22,9 @@ module Vars = struct
     Dynarray.create ()
 
   let document_store_cur_ver = Lwd.var 0
+
+  let document_list_screen_ratio : [ `Left_split | `Mid_split | `Right_split ] Lwd.var =
+    Lwd.var `Mid_split
 end
 
 let set_document_selected ~choice_count n =
@@ -367,7 +370,14 @@ module Top_pane = struct
       ~(document_info_s : Document_store.document_info array)
     : Nottui.ui Lwd.t =
     let$* document_selected = Lwd.get Vars.index_of_document_selected in
-    Ui_base.hpane ~width ~height
+    let$* l_ratio = Lwd.get Vars.document_list_screen_ratio in
+    let l_ratio =
+      match l_ratio with
+      | `Left_split -> 0.25
+      | `Mid_split -> 0.50
+      | `Right_split -> 0.75
+    in
+    Ui_base.hpane ~l_ratio ~width ~height
       (Document_list.main
          ~height
          ~document_info_s
@@ -477,7 +487,7 @@ module Bottom_pane = struct
             { label = "x"; msg = "clear mode" };
           ];
           [
-            { label = "Tab"; msg = "single file view" };
+            { label = "Tab"; msg = "change screen split ratio" };
             { label = "y"; msg = "copy/yank mode" };
             { label = "n"; msg = "narrow mode" };
             { label = "d"; msg = "drop mode" };
@@ -715,6 +725,17 @@ let keyboard_handler
           `Handled
         )
       | (`Tab, []) -> (
+          (match Lwd.peek Vars.document_list_screen_ratio with
+           | `Left_split -> (
+               Lwd.set Vars.document_list_screen_ratio `Right_split
+             )
+           | `Mid_split -> (
+               Lwd.set Vars.document_list_screen_ratio `Left_split
+             )
+           | `Right_split -> (
+               Lwd.set Vars.document_list_screen_ratio `Mid_split
+             )
+          );
           `Handled
         )
       | (`Page `Down, [`Shift])

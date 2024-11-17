@@ -70,6 +70,7 @@ let hbar ~width =
   |> Nottui.Ui.atom
 
 let hpane
+    ~l_ratio
     ~width
     ~height
     (x : width:int -> Nottui.ui Lwd.t)
@@ -77,11 +78,12 @@ let hpane
   : Nottui.ui Lwd.t =
   let l_width =
     (* Minus 1 for pane separator bar. *)
-    (width / 2) - 1
+    Int.to_float width *. l_ratio
+    |> Float.floor
+    |> Int.of_float
+    |> (fun x -> x - 1)
   in
-  let r_width =
-    (Misc_utils.div_round_up width 2)
-  in
+  let r_width = width - l_width in
   let$* x = x ~width:l_width in
   let$ y = y ~width: r_width in
   let crop w x = Nottui.Ui.resize ~w ~h:height x in
