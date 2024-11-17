@@ -399,7 +399,7 @@ Navigation mode
     - `f`
 - Enter clear mode
     - `x`
-- Hide document list/focus on selected document
+- Change screen split ratio
     - `Tab`
 - Rotate key binding info
     - `?`
@@ -418,13 +418,13 @@ Navigation mode
     - Down arrow
     - Page down
     - Scroll down with mouse wheel when hovering above the area
-    - If document list is hidden, then this scrolls down the search result list instead
+    - If there is only one document listed, then this scrolls down the search result list instead
 - Scroll up the document list
     - `k`
     - Up arrow
     - Page up
     - Scroll up with mouse wheel when hovering above the area
-    - If document list is hidden, then this scrolls up the search result list instead
+    - If there is only one document listed, then this scrolls up the search result list instead
 - Scroll down the search result list
     - `Shift`+`J`
     - `Shift`+Down arrow
