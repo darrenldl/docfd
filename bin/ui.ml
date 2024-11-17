@@ -2,8 +2,6 @@ open Docfd_lib
 open Lwd_infix
 
 module Vars = struct
-  let show_only_document : string option Lwd.var = Lwd.var None
-
   let index_of_document_selected = Lwd.var 0
 
   let index_of_search_result_selected = Lwd.var 0
@@ -369,14 +367,6 @@ module Top_pane = struct
       ~(document_info_s : Document_store.document_info array)
     : Nottui.ui Lwd.t =
     let$* document_selected = Lwd.get Vars.index_of_document_selected in
-    let$* hide_document_list = Lwd.get Ui_base.Vars.hide_document_list in
-    if hide_document_list then (
-      Right_pane.main
-        ~height
-        ~width
-        ~document_info_s
-        ~document_selected
-    ) else (
       Ui_base.hpane ~width ~height
         (Document_list.main
            ~height
@@ -386,7 +376,6 @@ module Top_pane = struct
            ~height
            ~document_info_s
            ~document_selected)
-    )
 end
 
 module Bottom_pane = struct
@@ -405,7 +394,6 @@ module Bottom_pane = struct
     let$* snapshot =
       Lwd.get Document_store_manager.document_store_snapshot
     in
-    let$* show_only_document = Lwd.get Vars.show_only_document in
     let content =
       let file_shown_count =
         Notty.I.strf ~attr:Ui_base.Status_bar.attr
@@ -438,8 +426,6 @@ module Bottom_pane = struct
         Notty.I.void (width - ver_len) 1 <|> version
       in
       let core =
-        match show_only_document with
-        | None -> (
             if document_count = 0 then (
               [
                 Ui_base.Status_bar.element_spacer;
@@ -457,13 +443,6 @@ module Bottom_pane = struct
                 index_of_selected;
               ]
             )
-          )
-        | Some path -> (
-            [
-              Notty.I.strf ~attr:Ui_base.Status_bar.attr
-                "Document: %s" (File_utils.remove_cwd_from_path path)
-            ]
-          )
       in
       Notty.I.zcat
         [
@@ -676,9 +655,6 @@ let keyboard_handler
   let search_result_current_choice =
     Lwd.peek Vars.index_of_search_result_selected
   in
-  let hide_document_list =
-    Lwd.peek Ui_base.Vars.hide_document_list
-  in
   match Lwd.peek Ui_base.Vars.input_mode with
   | Navigate -> (
       match key with
@@ -739,18 +715,6 @@ let keyboard_handler
           `Handled
         )
       | (`Tab, []) -> (
-          if hide_document_list then (
-            Lwd.set Ui_base.Vars.hide_document_list false;
-            Lwd.set Vars.show_only_document None
-          ) else (
-            Lwd.set Ui_base.Vars.hide_document_list true;
-            let index = Lwd.peek Vars.index_of_document_selected in
-            if index < Array.length document_info_s then (
-              let doc, _ = document_info_s.(index) in
-              Lwd.set Vars.show_only_document
-                (Some (Document.path doc))
-            )
-          );
           `Handled
         )
       | (`Page `Down, [`Shift])
@@ -772,7 +736,7 @@ let keyboard_handler
       | (`Page `Down, [])
       | (`ASCII 'j', [])
       | (`Arrow `Down, []) -> (
-          if hide_document_list then (
+          if document_count = 1 then (
             set_search_result_selected
               ~choice_count:search_result_choice_count
               (search_result_current_choice+1);
@@ -787,7 +751,7 @@ let keyboard_handler
       | (`Page `Up, [])
       | (`ASCII 'k', [])
       | (`Arrow `Up, []) -> (
-          if hide_document_list then (
+          if document_count = 1 then (
             set_search_result_selected
               ~choice_count:search_result_choice_count
               (search_result_current_choice-1);
@@ -1073,16 +1037,8 @@ let main : Nottui.ui Lwd.t =
   ) else (
     Dynarray.set Vars.document_store_snapshots cur_ver snapshot
   );
-  let$* show_only_document = Lwd.get Vars.show_only_document in
   let document_store =
-    let store = Document_store_snapshot.store snapshot in
-    match show_only_document with
-    | None -> store
-    | Some path -> (
-        match Document_store.single_out ~path store with
-        | None -> Document_store.empty
-        | Some store -> store
-      )
+    Document_store_snapshot.store snapshot
   in
   let document_info_s =
     Document_store.usable_documents document_store
