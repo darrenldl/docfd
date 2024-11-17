@@ -587,9 +587,12 @@ module Bottom_pane = struct
             { label = "u"; msg = "unlisted" };
           ];
           [
+            { label = "m"; msg = "marked" };
+            { label = "r"; msg = "rest/unmarked" };
+          ];
+          [
             { label = "Esc"; msg = "cancel" };
           ];
-          empty_row;
         ]
       in
       let copy_grid =
