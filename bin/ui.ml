@@ -367,15 +367,15 @@ module Top_pane = struct
       ~(document_info_s : Document_store.document_info array)
     : Nottui.ui Lwd.t =
     let$* document_selected = Lwd.get Vars.index_of_document_selected in
-      Ui_base.hpane ~width ~height
-        (Document_list.main
-           ~height
-           ~document_info_s
-           ~document_selected)
-        (Right_pane.main
-           ~height
-           ~document_info_s
-           ~document_selected)
+    Ui_base.hpane ~width ~height
+      (Document_list.main
+         ~height
+         ~document_info_s
+         ~document_selected)
+      (Right_pane.main
+         ~height
+         ~document_info_s
+         ~document_selected)
 end
 
 module Bottom_pane = struct
@@ -426,23 +426,23 @@ module Bottom_pane = struct
         Notty.I.void (width - ver_len) 1 <|> version
       in
       let core =
-            if document_count = 0 then (
-              [
-                Ui_base.Status_bar.element_spacer;
-                file_shown_count;
-              ]
-            ) else (
-              let index_of_selected =
-                Notty.I.strf ~attr:Ui_base.Status_bar.attr
-                  "Index of document selected: %d"
-                  index_of_document_selected
-              in
-              [
-                file_shown_count;
-                Ui_base.Status_bar.element_spacer;
-                index_of_selected;
-              ]
-            )
+        if document_count = 0 then (
+          [
+            Ui_base.Status_bar.element_spacer;
+            file_shown_count;
+          ]
+        ) else (
+          let index_of_selected =
+            Notty.I.strf ~attr:Ui_base.Status_bar.attr
+              "Index of document selected: %d"
+              index_of_document_selected
+          in
+          [
+            file_shown_count;
+            Ui_base.Status_bar.element_spacer;
+            index_of_selected;
+          ]
+        )
       in
       Notty.I.zcat
         [
