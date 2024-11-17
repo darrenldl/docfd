@@ -139,13 +139,53 @@ let commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff () =
     )
   )
 
-let drop ~document_count (choice : [`Path of string | `Listed | `Unlisted]) =
+let toggle_mark ~path =
+  let cur_snapshot = get_cur_document_store_snapshot () in
+  commit_cur_document_store_snapshot ();
+  let store = Document_store_snapshot.store cur_snapshot in
+  let new_snapshot =
+    if
+      String_set.mem
+        path
+        (Document_store.marked_documents_paths store)
+    then (
+      Document_store_snapshot.make
+        ~last_command:(Some (`Unmark path))
+        (Document_store.unmark ~path store)
+    ) else (
+      Document_store_snapshot.make
+        ~last_command:(Some (`Mark path))
+        (Document_store.mark ~path store)
+    )
+  in
+  Document_store_manager.submit_update_req new_snapshot
+
+let unmark_all () =
+  let cur_snapshot = get_cur_document_store_snapshot () in
+  commit_cur_document_store_snapshot ();
+  let new_snapshot =
+    Document_store_snapshot.make
+      ~last_command:(Some `Unmark_all)
+      (Document_store.unmark_all
+         (Document_store_snapshot.store cur_snapshot))
+  in
+  Document_store_manager.submit_update_req new_snapshot
+
+let drop ~document_count (choice : [`Path of string | `Marked | `Unmarked | `Listed | `Unlisted]) =
   let choice, new_command =
     match choice with
     | `Path path -> (
         let n = Lwd.peek Vars.index_of_document_selected in
         set_document_selected ~choice_count:(document_count - 1) n;
         (`Path path, `Drop_path path)
+      )
+    | `Marked -> (
+        reset_document_selected ();
+        (`Marked, `Drop_marked)
+      )
+    | `Unmarked -> (
+        reset_document_selected ();
+        (`Unmarked, `Drop_unmarked)
       )
     | `Listed -> (
         reset_document_selected ();
@@ -193,6 +233,7 @@ module Top_pane = struct
   module Document_list = struct
     let render_document_preview
         ~width
+        ~documents_marked
         ~(document_info : Document_store.document_info)
         ~selected
       : Notty.image =
@@ -258,6 +299,7 @@ module Top_pane = struct
         I.string A.empty
           (Timedesc.to_string ~format:Params.last_scan_format_string (Document.last_scan doc))
       in
+      let marked = String_set.mem (Document.path doc) documents_marked in
       let title =
         let attr =
           if selected then (
@@ -276,21 +318,27 @@ module Top_pane = struct
             |> Content_and_search_result_render.Text_block_render.of_words ~attr ~width
           )
       in
-      title
+      (
+        (if marked then I.strf "> " else I.void 0 1)
+        <|>
+        title
+      )
       <->
-      (sub_item_base_left_padding
-       <|>
-       I.vcat
-         [ search_result_score_image;
-           path_image;
-           preview_image;
-           last_scan_image;
-         ]
+      (
+        sub_item_base_left_padding
+        <|>
+        I.vcat
+          [ search_result_score_image;
+            path_image;
+            preview_image;
+            last_scan_image;
+          ]
       )
 
     let main
         ~width
         ~height
+        ~documents_marked
         ~(document_info_s : Document_store.document_info array)
         ~(document_selected : int)
       : Nottui.ui Lwd.t =
@@ -301,7 +349,7 @@ module Top_pane = struct
           && height_filled < height
           then (
             let selected = Int.equal document_selected index in
-            let img = render_document_preview ~width ~document_info:document_info_s.(index) ~selected in
+            let img = render_document_preview ~width ~documents_marked ~document_info:document_info_s.(index) ~selected in
             aux (index + 1) (height_filled + Notty.I.height img) (img :: acc)
           ) else (
             List.rev acc
@@ -367,6 +415,7 @@ module Top_pane = struct
   let main
       ~width
       ~height
+      ~documents_marked
       ~(document_info_s : Document_store.document_info array)
     : Nottui.ui Lwd.t =
     let$* document_selected = Lwd.get Vars.index_of_document_selected in
@@ -380,6 +429,7 @@ module Top_pane = struct
     Ui_base.hpane ~l_ratio ~width ~height
       (Document_list.main
          ~height
+         ~documents_marked
          ~document_info_s
          ~document_selected)
       (Right_pane.main
@@ -678,6 +728,18 @@ let keyboard_handler
           Ui_base.Key_binding_info.incr_rotation ();
           `Handled
         )
+      | (`ASCII 'm', []) -> (
+          let index = Lwd.peek Vars.index_of_document_selected in
+          if index < Array.length document_info_s then (
+            let doc, _ = document_info_s.(index) in
+            toggle_mark ~path:(Document.path doc)
+          );
+          `Handled
+        )
+      | (`ASCII 'M', []) -> (
+          unmark_all ();
+          `Handled
+        )
       | (`ASCII 'd', []) -> (
           Ui_base.set_input_mode Drop;
           `Handled
@@ -879,6 +941,14 @@ let keyboard_handler
           )
         | (`ASCII 'l', []) -> (
             drop ~document_count `Listed;
+            true
+          )
+        | (`ASCII 'm', []) -> (
+            drop ~document_count `Marked;
+            true
+          )
+        | (`ASCII 'r', []) -> (
+            drop ~document_count `Unmarked;
             true
           )
         | _ -> false
@@ -1086,6 +1156,7 @@ let main : Nottui.ui Lwd.t =
     Top_pane.main
       ~width:term_width
       ~height:top_pane_height
+      ~documents_marked:(Document_store.marked_documents_paths document_store)
       ~document_info_s
   in
   Nottui_widgets.vbox

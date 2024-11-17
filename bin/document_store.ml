@@ -9,6 +9,7 @@ type t = {
   file_path_filter_glob : Glob.t;
   file_path_filter_glob_string : string;
   documents_passing_filter : String_set.t;
+  documents_marked : String_set.t;
   search_exp : Search_exp.t;
   search_exp_string : string;
   search_results : Search_result.t array String_map.t;
@@ -23,6 +24,7 @@ let empty : t =
     file_path_filter_glob = Option.get (Glob.make "");
     file_path_filter_glob_string = "";
     documents_passing_filter = String_set.empty;
+    documents_marked = String_set.empty;
     search_exp = Search_exp.empty;
     search_exp_string = "";
     search_results = String_map.empty;
@@ -220,6 +222,9 @@ let usable_documents_paths (t : t) : String_set.t =
   |> Seq.map (fun (doc, _) -> Document.path doc)
   |> String_set.of_seq
 
+let marked_documents_paths (t : t) =
+  t.documents_marked
+
 let all_documents_paths (t : t) : string Seq.t =
   t.all_documents
   |> String_map.to_seq
@@ -231,17 +236,71 @@ let unusable_documents_paths (t : t) =
   |> Seq.filter (fun path ->
       not (String_set.mem path s))
 
-let drop (choice : [ `Path of string | `Usable | `Unusable ]) (t : t) : t =
+let mark ~path t =
+  match String_map.find_opt path t.all_documents with
+  | None -> t
+  | Some _ -> (
+      let documents_marked =
+        String_set.add path t.documents_marked
+      in
+      { t with documents_marked }
+    )
+
+let unmark ~path t =
+  let documents_marked =
+    String_set.remove path t.documents_marked
+  in
+  { t with documents_marked }
+
+let toggle_mark ~path t =
+  if String_set.mem path t.documents_marked then (
+    unmark ~path t
+  ) else (
+    mark ~path t
+  )
+
+let unmark_all t =
+  {t with documents_marked = String_set.empty }
+
+let drop (choice : [ `Path of string | `Marked | `Unmarked | `Usable | `Unusable ]) (t : t) : t =
+  let aux ~(keep : string -> bool) =
+    let keep' : 'a. string -> 'a -> bool =
+      fun path _ ->
+        keep path
+    in
+    { all_documents = String_map.filter keep' t.all_documents;
+      file_path_filter_glob = t.file_path_filter_glob;
+      file_path_filter_glob_string = t.file_path_filter_glob_string;
+      documents_passing_filter = String_set.filter keep t.documents_passing_filter;
+      documents_marked = String_set.filter keep t.documents_marked;
+      search_exp = t.search_exp;
+      search_exp_string = t.search_exp_string;
+      search_results = String_map.filter keep' t.search_results;
+    }
+  in
   match choice with
   | `Path path -> (
       { all_documents = String_map.remove path t.all_documents;
         file_path_filter_glob = t.file_path_filter_glob;
         file_path_filter_glob_string = t.file_path_filter_glob_string;
         documents_passing_filter = String_set.remove path t.documents_passing_filter;
+        documents_marked = String_set.remove path t.documents_marked;
         search_exp = t.search_exp;
         search_exp_string = t.search_exp_string;
         search_results = String_map.remove path t.search_results;
       }
+    )
+  | `Marked -> (
+      let keep path =
+        not (String_set.mem path t.documents_marked)
+      in
+      aux ~keep
+    )
+  | `Unmarked -> (
+      let keep path =
+        String_set.mem path t.documents_marked
+      in
+      aux ~keep
     )
   | `Usable | `Unusable -> (
       let usable_documents_paths =
@@ -250,24 +309,13 @@ let drop (choice : [ `Path of string | `Usable | `Unusable ]) (t : t) : t =
       let document_is_usable path =
         String_set.mem path usable_documents_paths
       in
-      let f1 path =
+      let keep path =
         match choice with
         | `Usable -> not (document_is_usable path)
         | `Unusable -> document_is_usable path
         | _ -> failwith "unexpected case"
       in
-      let f2 : 'a. string -> 'a -> bool =
-        fun path _ ->
-          f1 path
-      in
-      { all_documents = String_map.filter f2 t.all_documents;
-        file_path_filter_glob = t.file_path_filter_glob;
-        file_path_filter_glob_string = t.file_path_filter_glob_string;
-        documents_passing_filter = String_set.filter f1 t.documents_passing_filter;
-        search_exp = t.search_exp;
-        search_exp_string = t.search_exp_string;
-        search_results = String_map.filter f2 t.search_results;
-      }
+      aux ~keep
     )
 
 let narrow_search_scope ~level (t : t) : t =
@@ -318,8 +366,23 @@ let narrow_search_scope ~level (t : t) : t =
 
 let run_command pool (command : Command.t) (t : t) : t option =
   match command with
+  | `Mark path -> (
+      Some (mark ~path t)
+    )
+  | `Unmark path -> (
+      Some (unmark ~path t)
+    )
+  | `Unmark_all -> (
+      Some (unmark_all t)
+    )
   | `Drop_path s -> (
       Some (drop (`Path s) t)
+    )
+  | `Drop_marked -> (
+      Some (drop `Marked t)
+    )
+  | `Drop_unmarked -> (
+      Some (drop `Unmarked t)
     )
   | `Drop_listed -> (
       Some (drop `Usable t)

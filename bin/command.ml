@@ -1,5 +1,10 @@
 type t = [
+  | `Mark of string
+  | `Unmark of string
+  | `Unmark_all
   | `Drop_path of string
+  | `Drop_marked
+  | `Drop_unmarked
   | `Drop_listed
   | `Drop_unlisted
   | `Narrow_level of int
@@ -9,7 +14,12 @@ type t = [
 
 let pp fmt (t : t) =
   match t with
+  | `Mark s -> Fmt.pf fmt "mark: %s" s
+  | `Unmark s -> Fmt.pf fmt "unmark: %s" s
+  | `Unmark_all -> Fmt.pf fmt "unmark all"
   | `Drop_path s -> Fmt.pf fmt "drop path: %s" s
+  | `Drop_marked -> Fmt.pf fmt "drop marked"
+  | `Drop_unmarked -> Fmt.pf fmt "drop unmarked"
   | `Drop_listed -> Fmt.pf fmt "drop listed"
   | `Drop_unlisted -> Fmt.pf fmt "drop unlisted"
   | `Narrow_level x -> Fmt.pf fmt "narrow level: %d" x
@@ -42,6 +52,16 @@ module Parsers = struct
 
   let p : t' Angstrom.t =
     choice [
+      string "mark" *> skip_spaces *>
+      char ':' *> skip_spaces *>
+      any_string_trimmed >>| (fun s -> (`Mark s));
+      string "unmark" *> skip_spaces *> (
+        choice [
+          string "all" *> skip_spaces *> return `Unmark_all;
+          char ':' *> skip_spaces *>
+          any_string_trimmed >>| (fun s -> (`Unmark s));
+        ]
+      );
       string "drop" *> skip_spaces *> (
         choice [
           string "path" *> skip_spaces *>
@@ -49,6 +69,8 @@ module Parsers = struct
           any_string_trimmed >>| (fun s -> (`Drop_path s));
           string "listed" *> skip_spaces *> return `Drop_listed;
           string "unlisted" *> skip_spaces *> return `Drop_unlisted;
+          string "marked" *> skip_spaces *> return `Drop_marked;
+          string "unmarked" *> skip_spaces *> return `Drop_unmarked;
         ]
       );
       string "narrow" *> skip_spaces *> (
