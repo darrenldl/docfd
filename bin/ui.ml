@@ -373,9 +373,9 @@ module Top_pane = struct
     let$* l_ratio = Lwd.get Vars.document_list_screen_ratio in
     let l_ratio =
       match l_ratio with
-      | `Left_split -> 0.25
+      | `Left_split -> 1.0 -. 0.618
       | `Mid_split -> 0.50
-      | `Right_split -> 0.75
+      | `Right_split -> 0.618
     in
     Ui_base.hpane ~l_ratio ~width ~height
       (Document_list.main
