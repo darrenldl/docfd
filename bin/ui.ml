@@ -540,6 +540,10 @@ module Bottom_pane = struct
             { label = "Tab"; msg = "change screen split ratio" };
             { label = "y"; msg = "copy/yank mode" };
             { label = "n"; msg = "narrow mode" };
+          ];
+          [
+            { label = "m"; msg = "mark/unmark document" };
+            { label = "Shift+M"; msg = "unmark all" };
             { label = "d"; msg = "drop mode" };
           ];
           [
@@ -556,6 +560,7 @@ module Bottom_pane = struct
           ];
           empty_row;
           empty_row;
+          empty_row;
         ]
       in
       let filter_grid =
@@ -563,6 +568,7 @@ module Bottom_pane = struct
           [
             { label = "Enter"; msg = "exit filter mode" };
           ];
+          empty_row;
           empty_row;
           empty_row;
         ]
@@ -576,6 +582,7 @@ module Bottom_pane = struct
           [
             { label = "Esc"; msg = "cancel" };
           ];
+          empty_row;
           empty_row;
         ]
       in
@@ -593,6 +600,7 @@ module Bottom_pane = struct
           [
             { label = "Esc"; msg = "cancel" };
           ];
+          empty_row;
         ]
       in
       let copy_grid =
@@ -612,6 +620,7 @@ module Bottom_pane = struct
             { label = "Shift+A"; msg = "results of all documents" };
             { label = "Esc"; msg = "cancel" };
           ];
+          empty_row;
         ]
       in
       let narrow_grid =
@@ -622,6 +631,7 @@ module Bottom_pane = struct
           [
             { label = "Esc"; msg = "cancel" };
           ];
+          empty_row;
           empty_row;
         ]
       in
@@ -634,6 +644,7 @@ module Bottom_pane = struct
           [
             { label = "Esc"; msg = "cancel" };
           ];
+          empty_row;
           empty_row;
         ]
       in
