@@ -586,11 +586,11 @@ module Bottom_pane = struct
           [
             { label = "d"; msg = "selected" };
             { label = "l"; msg = "listed" };
-            { label = "u"; msg = "unlisted" };
+            { label = "Shift+L"; msg = "unlisted" };
           ];
           [
             { label = "m"; msg = "marked" };
-            { label = "r"; msg = "rest/unmarked" };
+            { label = "Shift+M"; msg = "unmarked" };
           ];
           [
             { label = "Esc"; msg = "cancel" };
@@ -940,19 +940,19 @@ let keyboard_handler
               ) document_info;
             true
           )
-        | (`ASCII 'u', []) -> (
-            drop ~document_count `Unlisted;
-            true
-          )
         | (`ASCII 'l', []) -> (
             drop ~document_count `Listed;
+            true
+          )
+        | (`ASCII 'L', []) -> (
+            drop ~document_count `Unlisted;
             true
           )
         | (`ASCII 'm', []) -> (
             drop ~document_count `Marked;
             true
           )
-        | (`ASCII 'r', []) -> (
+        | (`ASCII 'M', []) -> (
             drop ~document_count `Unmarked;
             true
           )
@@ -1058,7 +1058,7 @@ let keyboard_handler
              |> copy_paths;
              true
            )
-         | (`ASCII 'u', []) -> (
+         | (`ASCII 'L', []) -> (
              Document_store.unusable_documents_paths document_store
              |> copy_paths;
              true
