@@ -533,23 +533,21 @@ module Bottom_pane = struct
           [
             { label = "Enter"; msg = "open document" };
             { label = "/"; msg = "search mode" };
-            { label = "f"; msg = "filter mode" };
-            { label = "x"; msg = "clear mode" };
+            { label = "m"; msg = "mark/unmark document" };
+            { label = "n"; msg = "narrow mode" };
+            { label = "h"; msg = "view/edit command history" };
           ];
           [
             { label = "Tab"; msg = "change screen split ratio" };
-            { label = "y"; msg = "copy/yank mode" };
-            { label = "n"; msg = "narrow mode" };
-          ];
-          [
-            { label = "m"; msg = "mark/unmark document" };
+            { label = "f"; msg = "filter mode" };
             { label = "Shift+M"; msg = "unmark all" };
             { label = "d"; msg = "drop mode" };
+            { label = "r"; msg = "reload mode" };
           ];
           [
             { label = "?"; msg = "rotate key binding info" };
-            { label = "h"; msg = "view/edit command history" };
-            { label = "r"; msg = "reload mode" };
+            { label = "x"; msg = "clear mode" };
+            { label = "y"; msg = "copy/yank mode" };
           ];
         ]
       in
@@ -560,7 +558,6 @@ module Bottom_pane = struct
           ];
           empty_row;
           empty_row;
-          empty_row;
         ]
       in
       let filter_grid =
@@ -568,7 +565,6 @@ module Bottom_pane = struct
           [
             { label = "Enter"; msg = "exit filter mode" };
           ];
-          empty_row;
           empty_row;
           empty_row;
         ]
@@ -582,7 +578,6 @@ module Bottom_pane = struct
           [
             { label = "Esc"; msg = "cancel" };
           ];
-          empty_row;
           empty_row;
         ]
       in
@@ -600,7 +595,6 @@ module Bottom_pane = struct
           [
             { label = "Esc"; msg = "cancel" };
           ];
-          empty_row;
         ]
       in
       let copy_grid =
@@ -620,7 +614,6 @@ module Bottom_pane = struct
             { label = "Shift+A"; msg = "results of all documents" };
             { label = "Esc"; msg = "cancel" };
           ];
-          empty_row;
         ]
       in
       let narrow_grid =
@@ -631,7 +624,6 @@ module Bottom_pane = struct
           [
             { label = "Esc"; msg = "cancel" };
           ];
-          empty_row;
           empty_row;
         ]
       in
@@ -644,7 +636,6 @@ module Bottom_pane = struct
           [
             { label = "Esc"; msg = "cancel" };
           ];
-          empty_row;
           empty_row;
         ]
       in
