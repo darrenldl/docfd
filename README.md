@@ -403,8 +403,10 @@ Navigation mode
     - `Tab`
 - Rotate key binding info
     - `?`
-- Enter yank/copy mode to copy items to clipboard
+- Enter yank/copy mode to copy search results to clipboard
     - `y`
+- Enter yank/copy paths mode to copy paths to clipboard
+    - `Shift`+`y`
 - Enter narrow mode
     - `n`
 - Enter drop mode
@@ -457,22 +459,29 @@ Clear mode
 
 Copy mode
 - Copy currently selected search result
-    - `p`
-- Samples of selected document
-    - `s`
+    - `y`
 - All results of selected document
     - `a`
+- All results of marked document
+    - `m`
+- All results of listed document
+    - `l`
+- Cancel/exit copy mode
+    - `Esc`
+    - `Ctrl`+`C`
+
+Copy paths mode
 - Path of selected document
-    - `Shift`+`P`
+    - `y`
+- Paths of marked document
+    - `m`
+- Paths of unmarked document
+    - `Shift`+`m`
 - Paths of listed documents
     - `l`
 - Paths of unlisted documents
-    - `u`
-- Samples of all documents
-    - `Shift`+`S`
-- All results of all documents
-    - `Shift`+`A`
-- Cancel/exit copy mode
+    - `Shift`+`L`
+- Cancel/exit copy paths mode
     - `Esc`
     - `Ctrl`+`C`
 

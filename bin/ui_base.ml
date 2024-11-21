@@ -9,6 +9,7 @@ type input_mode =
   | Drop
   | Narrow
   | Copy
+  | Copy_paths
   | Reload
 
 type top_level_action =
@@ -234,6 +235,7 @@ module Status_bar = struct
       ; (Drop, "DROP")
       ; (Narrow, "NARROW")
       ; (Copy, "COPY")
+      ; (Copy_paths, "COPY PATHS")
       ; (Reload, "RELOAD")
       ]
     in

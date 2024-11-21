@@ -535,19 +535,20 @@ module Bottom_pane = struct
             { label = "/"; msg = "search mode" };
             { label = "m"; msg = "mark/unmark document" };
             { label = "n"; msg = "narrow mode" };
-            { label = "h"; msg = "view/edit command history" };
+            { label = "y"; msg = "copy/yank mode" };
           ];
           [
             { label = "Tab"; msg = "change screen split ratio" };
             { label = "f"; msg = "filter mode" };
             { label = "Shift+M"; msg = "unmark all" };
             { label = "d"; msg = "drop mode" };
-            { label = "r"; msg = "reload mode" };
+            { label = "Shift+Y"; msg = "copy/yank paths mode" };
           ];
           [
             { label = "?"; msg = "rotate key binding info" };
             { label = "x"; msg = "clear mode" };
-            { label = "y"; msg = "copy/yank mode" };
+            { label = "r"; msg = "reload mode" };
+            { label = "h"; msg = "view/edit command history" };
           ];
         ]
       in
@@ -601,17 +602,29 @@ module Bottom_pane = struct
         [
           [
             { label = "y"; msg = "selected search result" };
-            { label = "s"; msg = "samples of selected document" };
             { label = "a"; msg = "results of selected document" };
+            { label = "m"; msg = "results of marked documents" };
           ];
           [
-            { label = "p"; msg = "path of selected document" };
-            { label = "l"; msg = "paths of listed" };
-            { label = "u"; msg = "paths of unlisted" };
+            { label = "l"; msg = "results of list documents" };
           ];
           [
-            { label = "Shift+S"; msg = "samples of all documents" };
-            { label = "Shift+A"; msg = "results of all documents" };
+            { label = "Esc"; msg = "cancel" };
+          ];
+        ]
+      in
+      let copy_paths_grid =
+        [
+          [
+            { label = "y"; msg = "path of selected document" };
+            { label = "m"; msg = "paths of marked documents" };
+            { label = "Shift+M"; msg = "paths of unmarked documents" };
+          ];
+          [
+            { label = "l"; msg = "paths of listed documents" };
+            { label = "Shift+L"; msg = "paths of unlisted documents" };
+          ];
+          [
             { label = "Esc"; msg = "cancel" };
           ];
         ]
@@ -660,6 +673,9 @@ module Bottom_pane = struct
         );
         ({ input_mode = Copy },
          copy_grid
+        );
+        ({ input_mode = Copy_paths },
+         copy_paths_grid
         );
         ({ input_mode = Reload },
          reload_grid
@@ -759,6 +775,10 @@ let keyboard_handler
         )
       | (`ASCII 'y', []) -> (
           Ui_base.set_input_mode Copy;
+          `Handled
+        )
+      | (`ASCII 'Y', []) -> (
+          Ui_base.set_input_mode Copy_paths;
           `Handled
         )
       | (`Arrow `Left, [])
@@ -1004,87 +1024,108 @@ let keyboard_handler
       let copy_search_results doc results =
         copy_search_results_batches (Seq.return (doc, results))
       in
+      let exit =
+        match key with
+        | (`Escape, [])
+        | (`ASCII 'C', [`Ctrl]) -> true
+        | (`ASCII '?', []) -> (
+            Ui_base.Key_binding_info.incr_rotation ();
+            false
+          )
+        | (`ASCII 'y', []) -> (
+            Option.iter (fun (doc, search_results) ->
+                (if search_result_current_choice < Array.length search_results then
+                   Seq.return search_results.(search_result_current_choice)
+                 else
+                   Seq.empty)
+                |> copy_search_results doc
+              )
+              document_info;
+            true
+          )
+        | (`ASCII 'a', []) -> (
+            Option.iter (fun (doc, search_results) ->
+                Array.to_seq search_results
+                |> copy_search_results doc
+              )
+              document_info;
+            true
+          )
+        | (`ASCII 'm', []) -> (
+            let marked =
+              Document_store.marked_documents_paths document_store
+            in
+            Document_store.usable_documents document_store
+            |> Array.to_seq
+            |> Seq.filter (fun (doc, _) ->
+                String_set.mem (Document.path doc) marked)
+            |> Seq.map (fun (doc, s) -> (doc, Array.to_seq s))
+            |> copy_search_results_batches;
+            true
+          )
+        | (`ASCII 'l', []) -> (
+            Document_store.usable_documents document_store
+            |> Array.to_seq
+            |> Seq.map (fun (doc, s) -> (doc, Array.to_seq s))
+            |> copy_search_results_batches;
+            true
+          )
+        | _ -> false
+      in
+      if exit then (
+        Ui_base.set_input_mode Navigate;
+      );
+      `Handled
+    )
+  | Copy_paths -> (
       let copy_paths s =
         Clipboard.pipe_to_clipboard (fun oc ->
             Seq.iter (Printers.path_image ~color:false oc) s
           )
       in
       let exit =
-        (match key with
-         | (`Escape, [])
-         | (`ASCII 'C', [`Ctrl]) -> true
-         | (`ASCII '?', []) -> (
-             Ui_base.Key_binding_info.incr_rotation ();
-             false
-           )
-         | (`ASCII 'y', []) -> (
-             Option.iter (fun (doc, search_results) ->
-                 (if search_result_current_choice < Array.length search_results then
-                    Seq.return search_results.(search_result_current_choice)
-                  else
-                    Seq.empty)
-                 |> copy_search_results doc
-               )
-               document_info;
-             true
-           )
-         | (`ASCII 's', []) -> (
-             Option.iter (fun (doc, search_results) ->
-                 Array.to_seq search_results
-                 |> OSeq.take !Params.sample_count_per_document
-                 |> copy_search_results doc
-               )
-               document_info;
-             true
-           )
-         | (`ASCII 'a', []) -> (
-             Option.iter (fun (doc, search_results) ->
-                 Array.to_seq search_results
-                 |> copy_search_results doc
-               )
-               document_info;
-             true
-           )
-         | (`ASCII 'p', []) -> (
-             Option.iter (fun (doc, _search_results) ->
-                 copy_search_results doc Seq.empty
-               )
-               document_info;
-             true
-           )
-         | (`ASCII 'l', []) -> (
-             Document_store.usable_documents_paths document_store
-             |> String_set.to_seq
-             |> copy_paths;
-             true
-           )
-         | (`ASCII 'L', []) -> (
-             Document_store.unusable_documents_paths document_store
-             |> copy_paths;
-             true
-           )
-         | (`ASCII 'S', []) -> (
-             document_info_s
-             |> Array.to_seq
-             |> Seq.map (fun (doc, s) ->
-                 let s =
-                   Array.to_seq s
-                   |> OSeq.take !Params.sample_count_per_document
-                 in
-                 (doc, s)
-               )
-             |> copy_search_results_batches;
-             true
-           )
-         | (`ASCII 'A', []) -> (
-             document_info_s
-             |> Array.to_seq
-             |> Seq.map (fun (doc, s) -> (doc, Array.to_seq s))
-             |> copy_search_results_batches;
-             true
-           )
-         | _ -> false
-        );
+        match key with
+        | (`Escape, [])
+        | (`ASCII 'C', [`Ctrl]) -> true
+        | (`ASCII '?', []) -> (
+            Ui_base.Key_binding_info.incr_rotation ();
+            false
+          )
+        | (`ASCII 'y', []) -> (
+            Option.iter (fun (doc, _search_results) ->
+                copy_paths (Seq.return (Document.path doc))
+              )
+              document_info;
+            true
+          )
+        | (`ASCII 'm', []) -> (
+            String_set.inter
+              (Document_store.usable_documents_paths document_store)
+              (Document_store.marked_documents_paths document_store)
+            |> String_set.to_seq
+            |> copy_paths;
+            true
+          )
+        | (`ASCII 'M', []) -> (
+            String_set.diff
+              (Document_store.usable_documents_paths document_store)
+              (Document_store.marked_documents_paths document_store)
+            |> String_set.to_seq
+            |> copy_paths;
+            true
+          )
+        | (`ASCII 'l', []) -> (
+            Document_store.usable_documents_paths document_store
+            |> String_set.to_seq
+            |> copy_paths;
+            true
+          )
+        | (`ASCII 'L', []) -> (
+            Document_store.unusable_documents_paths document_store
+            |> copy_paths;
+            true
+          )
+        | _ -> false
       in
       if exit then (
         Ui_base.set_input_mode Navigate;
