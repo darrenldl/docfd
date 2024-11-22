@@ -94,11 +94,11 @@ let reload_document (doc : Document.t) =
   | Error _ -> ()
 
 let reload_document_selected
-    ~(document_info_s : Document_store.document_info array)
+    ~(search_result_groups : Document_store.search_result_group array)
   : unit =
-  if Array.length document_info_s > 0 then (
+  if Array.length search_result_groups > 0 then (
     let index = Lwd.peek Vars.index_of_document_selected in
-    let doc, _search_results = document_info_s.(index) in
+    let doc, _search_results = search_result_groups.(index) in
     reload_document doc;
   )
 
@@ -234,12 +234,12 @@ module Top_pane = struct
     let render_document_preview
         ~width
         ~documents_marked
-        ~(document_info : Document_store.document_info)
+        ~(search_result_group : Document_store.search_result_group)
         ~selected
       : Notty.image =
       let open Notty in
       let open Notty.Infix in
-      let (doc, search_results) = document_info in
+      let (doc, search_results) = search_result_group in
       let search_result_score_image =
         if Option.is_some !Params.debug_output then (
           if Array.length search_results = 0 then
@@ -339,17 +339,17 @@ module Top_pane = struct
         ~width
         ~height
         ~documents_marked
-        ~(document_info_s : Document_store.document_info array)
+        ~(search_result_groups : Document_store.search_result_group array)
         ~(document_selected : int)
       : Nottui.ui Lwd.t =
-      let document_count = Array.length document_info_s in
+      let document_count = Array.length search_result_groups in
       let render_pane () =
         let rec aux index height_filled acc =
           if index < document_count
           && height_filled < height
           then (
             let selected = Int.equal document_selected index in
-            let img = render_document_preview ~width ~documents_marked ~document_info:document_info_s.(index) ~selected in
+            let img = render_document_preview ~width ~documents_marked ~search_result_group:search_result_groups.(index) ~selected in
             aux (index + 1) (height_filled + Notty.I.height img) (img :: acc)
           ) else (
             List.rev acc
@@ -387,10 +387,10 @@ module Top_pane = struct
     let main
         ~width
         ~height
-        ~(document_info_s : Document_store.document_info array)
+        ~(search_result_groups : Document_store.search_result_group array)
         ~(document_selected : int)
       : Nottui.ui Lwd.t =
-      if Array.length document_info_s = 0 then (
+      if Array.length search_result_groups = 0 then (
         let blank ~height =
           let _ = height in
           Nottui_widgets.empty_lwd
@@ -399,15 +399,15 @@ module Top_pane = struct
           blank blank
       ) else (
         let$* search_result_selected = Lwd.get Vars.index_of_search_result_selected in
-        let document_info = document_info_s.(document_selected) in
+        let search_result_group = search_result_groups.(document_selected) in
         Ui_base.vpane ~width ~height
           (Ui_base.Content_view.main
              ~width
-             ~document_info
+             ~search_result_group
              ~search_result_selected)
           (Ui_base.Search_result_list.main
              ~width
-             ~document_info
+             ~search_result_group
              ~index_of_search_result_selected:Vars.index_of_search_result_selected)
       )
   end
@@ -416,7 +416,7 @@ module Top_pane = struct
       ~width
       ~height
       ~documents_marked
-      ~(document_info_s : Document_store.document_info array)
+      ~(search_result_groups : Document_store.search_result_group array)
     : Nottui.ui Lwd.t =
     let$* document_selected = Lwd.get Vars.index_of_document_selected in
     let$* l_ratio = Lwd.get Vars.document_list_screen_ratio in
@@ -430,23 +430,23 @@ module Top_pane = struct
       (Document_list.main
          ~height
          ~documents_marked
-         ~document_info_s
+         ~search_result_groups
          ~document_selected)
       (Right_pane.main
          ~height
-         ~document_info_s
+         ~search_result_groups
          ~document_selected)
 end
 
 module Bottom_pane = struct
   let status_bar
       ~width
-      ~(document_info_s : Document_store.document_info array)
+      ~(search_result_groups : Document_store.search_result_group array)
       ~(input_mode : Ui_base.input_mode)
     : Nottui.Ui.t Lwd.t =
     let open Notty.Infix in
     let$* index_of_document_selected = Lwd.get Vars.index_of_document_selected in
-    let document_count = Array.length document_info_s in
+    let document_count = Array.length search_result_groups in
     let input_mode_image =
       List.assoc input_mode Ui_base.Status_bar.input_mode_images
     in
@@ -700,11 +700,11 @@ module Bottom_pane = struct
       ~focus_handle:Vars.search_field_focus_handle
       ~f:update_search_phrase
 
-  let main ~width ~document_info_s =
+  let main ~width ~search_result_groups =
     let$* input_mode = Lwd.get Ui_base.Vars.input_mode in
     Nottui_widgets.vbox
       [
-        status_bar ~width ~document_info_s ~input_mode;
+        status_bar ~width ~search_result_groups ~input_mode;
         Key_binding_info.main ~input_mode;
         file_path_filter_bar ~input_mode;
         search_bar ~input_mode;
@@ -713,23 +713,23 @@ end
 
 let keyboard_handler
     ~(document_store : Document_store.t)
-    ~(document_info_s : Document_store.document_info array)
+    ~(search_result_groups : Document_store.search_result_group array)
     (key : Nottui.Ui.key)
   =
   let document_count =
-    Array.length document_info_s
+    Array.length search_result_groups
   in
   let document_current_choice =
     Lwd.peek Vars.index_of_document_selected
   in
-  let document_info =
+  let search_result_group =
     if document_count = 0 then
       None
     else
-      Some document_info_s.(document_current_choice)
+      Some search_result_groups.(document_current_choice)
   in
   let search_result_choice_count =
-    match document_info with
+    match search_result_group with
     | None -> 0
     | Some (_doc, search_results) -> Array.length search_results
   in
@@ -751,8 +751,8 @@ let keyboard_handler
         )
       | (`ASCII 'm', []) -> (
           let index = Lwd.peek Vars.index_of_document_selected in
-          if index < Array.length document_info_s then (
-            let doc, _ = document_info_s.(index) in
+          if index < Array.length search_result_groups then (
+            let doc, _ = search_result_groups.(index) in
             toggle_mark ~path:(Document.path doc)
           );
           `Handled
@@ -916,7 +916,7 @@ let keyboard_handler
               Ui_base.Vars.action :=
                 Some (Ui_base.Open_file_and_search_result (doc, search_result));
             )
-            document_info;
+            search_result_group;
           `Handled
         )
       | _ -> `Handled
@@ -957,7 +957,7 @@ let keyboard_handler
         | (`ASCII 'd', []) -> (
             Option.iter (fun (doc, _search_results) ->
                 drop ~document_count (`Path (Document.path doc))
-              ) document_info;
+              ) search_result_group;
             true
           )
         | (`ASCII 'l', []) -> (
@@ -1040,7 +1040,7 @@ let keyboard_handler
                    Seq.empty)
                 |> copy_search_results doc
               )
-              document_info;
+              search_result_group;
             true
           )
         | (`ASCII 'a', []) -> (
@@ -1048,7 +1048,7 @@ let keyboard_handler
                 Array.to_seq search_results
                 |> copy_search_results doc
               )
-              document_info;
+              search_result_group;
             true
           )
         | (`ASCII 'm', []) -> (
@@ -1095,7 +1095,7 @@ let keyboard_handler
             Option.iter (fun (doc, _search_results) ->
                 copy_paths (Seq.return (Document.path doc))
               )
-              document_info;
+              search_result_group;
             true
           )
         | (`ASCII 'm', []) -> (
@@ -1142,7 +1142,7 @@ let keyboard_handler
              false
            )
          | (`ASCII 'r', []) -> (
-             reload_document_selected ~document_info_s;
+             reload_document_selected ~search_result_groups;
              true
            )
          | (`ASCII 'a', []) -> (
@@ -1177,24 +1177,24 @@ let main : Nottui.ui Lwd.t =
   let document_store =
     Document_store_snapshot.store snapshot
   in
-  let document_info_s =
+  let search_result_groups =
     Document_store.usable_documents document_store
   in
-  let document_count = Array.length document_info_s in
+  let document_count = Array.length search_result_groups in
   set_document_selected
     ~choice_count:document_count
     (Lwd.peek Vars.index_of_document_selected);
   if document_count > 0 then (
     set_search_result_selected
       ~choice_count:(Array.length
-                       (snd document_info_s.(Lwd.peek Vars.index_of_document_selected)))
+                       (snd search_result_groups.(Lwd.peek Vars.index_of_document_selected)))
       (Lwd.peek Vars.index_of_search_result_selected)
   );
   let$* (term_width, term_height) = Lwd.get Ui_base.Vars.term_width_height in
   let$* bottom_pane =
     Bottom_pane.main
       ~width:term_width
-      ~document_info_s
+      ~search_result_groups
   in
   let bottom_pane_height = Nottui.Ui.layout_height bottom_pane in
   let top_pane_height = term_height - bottom_pane_height in
@@ -1203,12 +1203,12 @@ let main : Nottui.ui Lwd.t =
       ~width:term_width
       ~height:top_pane_height
       ~documents_marked:(Document_store.marked_documents_paths document_store)
-      ~document_info_s
+      ~search_result_groups
   in
   Nottui_widgets.vbox
     [
       Lwd.return (Nottui.Ui.keyboard_area
-                    (keyboard_handler ~document_store ~document_info_s)
+                    (keyboard_handler ~document_store ~search_result_groups)
                     top_pane);
       Lwd.return bottom_pane;
     ]

@@ -120,10 +120,10 @@ module Content_view = struct
   let main
       ~height
       ~width
-      ~(document_info : Document.t * Search_result.t array)
+      ~(search_result_group : Document.t * Search_result.t array)
       ~(search_result_selected : int)
     : Nottui.ui Lwd.t =
-    let (document, search_results) = document_info in
+    let (document, search_results) = search_result_group in
     let search_result =
       if Array.length search_results = 0 then
         None
@@ -162,10 +162,10 @@ module Search_result_list = struct
   let main
       ~height
       ~width
-      ~(document_info : (Document.t * Search_result.t array))
+      ~(search_result_group : Document_store.search_result_group)
       ~(index_of_search_result_selected : int Lwd.var)
     : Nottui.ui Lwd.t =
-    let (document, search_results) = document_info in
+    let (document, search_results) = search_result_group in
     let search_result_selected = Lwd.peek index_of_search_result_selected in
     let result_count = Array.length search_results in
     if result_count = 0 then (

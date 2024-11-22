@@ -4,7 +4,7 @@ type t
 
 type key = string
 
-type document_info = Document.t * Search_result.t array
+type search_result_group = Document.t * Search_result.t array
 
 val size : t -> int
 
@@ -38,7 +38,7 @@ val add_document : Task_pool.t -> Document.t -> t -> t
 
 val of_seq : Task_pool.t -> Document.t Seq.t -> t
 
-val usable_documents : t -> document_info array
+val usable_documents : t -> search_result_group array
 
 val usable_documents_paths : t -> String_set.t
 
@@ -48,7 +48,7 @@ val all_documents_paths : t -> string Seq.t
 
 val marked_documents_paths : t -> String_set.t
 
-val min_binding : t -> (key * document_info) option
+val min_binding : t -> (key * search_result_group) option
 
 val single_out : path:string -> t -> t option
 
