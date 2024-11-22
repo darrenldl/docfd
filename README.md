@@ -38,9 +38,11 @@ result via PDF viewer integration:
 
 - Text editor and PDF viewer integration
 
-- Command history - rewrite/plan your actions in text editor
+- Editable command history - rewrite/plan your actions in text editor
 
 - Search scope narrowing - limit scope of next search based on current search results
+
+- Clipboard integration
 
 <details>
 
