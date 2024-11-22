@@ -185,7 +185,7 @@ let of_seq pool (s : Document.t Seq.t) =
     empty
     s
 
-let usable_documents (t : t) : (Document.t * Search_result.t array) array =
+let search_result_groups (t : t) : (Document.t * Search_result.t array) array =
   let no_search_exp = Search_exp.is_empty t.search_exp in
   let arr =
     t.documents_passing_filter
@@ -217,7 +217,7 @@ let usable_documents (t : t) : (Document.t * Search_result.t array) array =
   arr
 
 let usable_documents_paths (t : t) : String_set.t =
-  usable_documents t
+  search_result_groups t
   |> Array.to_seq
   |> Seq.map (fun (doc, _) -> Document.path doc)
   |> String_set.of_seq

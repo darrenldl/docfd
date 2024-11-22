@@ -748,10 +748,7 @@ let run
              Document_store.unusable_documents_paths document_store
              |> Seq.iter (Printers.path_image ~color oc)
            ) else (
-             let document_info_s =
-               Document_store.usable_documents document_store
-             in
-             document_info_s
+             Document_store.search_result_groups document_store
              |> Array.to_seq
              |> Seq.map (fun (doc, s) ->
                  let s = Array.to_seq s in

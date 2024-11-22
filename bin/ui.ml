@@ -1055,7 +1055,7 @@ let keyboard_handler
             let marked =
               Document_store.marked_documents_paths document_store
             in
-            Document_store.usable_documents document_store
+            Document_store.search_result_groups document_store
             |> Array.to_seq
             |> Seq.filter (fun (doc, _) ->
                 String_set.mem (Document.path doc) marked)
@@ -1064,7 +1064,7 @@ let keyboard_handler
             true
           )
         | (`ASCII 'l', []) -> (
-            Document_store.usable_documents document_store
+            Document_store.search_result_groups document_store
             |> Array.to_seq
             |> Seq.map (fun (doc, s) -> (doc, Array.to_seq s))
             |> copy_search_results_batches;
@@ -1178,7 +1178,7 @@ let main : Nottui.ui Lwd.t =
     Document_store_snapshot.store snapshot
   in
   let search_result_groups =
-    Document_store.usable_documents document_store
+    Document_store.search_result_groups document_store
   in
   let document_count = Array.length search_result_groups in
   set_document_selected

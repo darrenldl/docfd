@@ -38,7 +38,7 @@ val add_document : Task_pool.t -> Document.t -> t -> t
 
 val of_seq : Task_pool.t -> Document.t Seq.t -> t
 
-val usable_documents : t -> search_result_group array
+val search_result_groups : t -> search_result_group array
 
 val usable_documents_paths : t -> String_set.t
 
