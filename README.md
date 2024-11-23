@@ -11,7 +11,7 @@ so you can jump directly to a search result with a single key press.
 
 ---
 
-Navigating repo:
+Navigating repo and editing command history:
 
 ![](demo-vhs-gifs/repo.gif)
 
@@ -32,7 +32,7 @@ result via PDF viewer integration:
 
 - Multithreaded indexing and searching
 
-- Multiline fuzzy search of multiple files or a single file
+- Multiline fuzzy search of multiple files
 
 - Content view pane that shows the snippet surrounding the search result selected
 
@@ -117,9 +117,6 @@ external tools at run time for full functionality:
 command | docfd
 ```
 
-Docfd uses single file view
-when source of document is piped stdin.
-
 No paths should be supplied as arguments in this case.
 If any paths are specified, then stdin is ignored.
 
@@ -173,10 +170,6 @@ then Docfd defaults to scanning the
 current directory `.`
 unless any of the following is used:
 `--paths-from`, `--glob`, `--single-line-glob`.
-
-If exactly one file is specified
-in the list of paths, then Docfd uses single file view.
-Otherwise, Docfd uses multi-file view.
 
 #### Scan for files then select with fzf
 
@@ -353,7 +346,7 @@ Search results are then ranked using a heuristic.
 
 ## UI
 
-![](screenshots/multi-file-view0.png)
+![](screenshots/ui0.png)
 
 The default TUI is divided into four sections:
 - Left is the list of documents which satisfy the search expression

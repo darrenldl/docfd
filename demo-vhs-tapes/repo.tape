@@ -3,7 +3,7 @@ Output demo-vhs-gifs/repo.gif
 Set Padding 0
 Set Framerate 10
 
-Set Width  1024
+Set Width  1378
 Set Height  768
 Set FontSize 15
 
@@ -16,6 +16,17 @@ Enter
 Sleep 1s
 
 Type "/"
+Type "features"
+Enter
+Sleep 1s
+
+Type@50ms "n"
+Sleep 1s
+Type@50ms "1"
+Sleep 1s
+
+Type "x/"
+Type "/"
 Type "fuzz search"
 Enter
 Sleep 1s
@@ -25,13 +36,12 @@ Type "read\cme*"
 Enter
 Sleep 1s
 
-Type "J"
+Type@50ms "d"
+Sleep 1s
+Type@50ms "L"
 Sleep 1s
 
 Tab
-Sleep 1s
-
-Type "k"
 Sleep 1s
 
 Enter
@@ -45,4 +55,21 @@ Sleep 2s
 Type@200ms ":q!"
 Enter
 
+Sleep 1s
+
+Type "h"
+Type "o"
+Type@50ms "# Pressing h opens the command history for editing."
+Escape
+Sleep 0.5s
+Type "o"
+Type@50ms "search: narrowing"
+Escape
+Type@300ms "kkV"
+Type@300ms "kkk"
+Type@300ms "dd"
 Sleep 2s
+Type@200ms ":wq"
+Enter
+
+Sleep 3s

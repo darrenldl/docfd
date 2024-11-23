@@ -9,10 +9,10 @@ Set FontSize 15
 
 Set TypingSpeed 100ms
 
-Type@10ms "docfd --cache-dir .cache README.md"
+Type@10ms "docfd *.md"
 Enter
 Sleep 1s
 
-Screenshot screenshots/single-file-view0.png
+Screenshot screenshots/ui0.png
 
 Sleep 1s
