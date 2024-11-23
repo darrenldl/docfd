@@ -21,10 +21,10 @@ let path_image ~color oc path =
   |> Notty_unix.eol
   |> output_image ~color oc
 
-let search_results ~color ~underline (oc : out_channel) document (results : Search_result.t Seq.t) =
+let search_result_group ~color ~underline (oc : out_channel) ((document, results) : Document_store.search_result_group) =
   let path = Document.path document in
   path_image ~color oc path;
-  Seq.iteri (fun i search_result ->
+  Array.iteri (fun i search_result ->
       if i > 0 then (
         newline_image oc
       );
@@ -41,15 +41,15 @@ let search_results ~color ~underline (oc : out_channel) document (results : Sear
       |> output_image ~color oc;
     ) results
 
-let search_results_batches
+let search_result_groups
     ~color
     ~underline
     (oc : out_channel)
-    (s : (Document.t * Search_result.t Seq.t) Seq.t)
+    (s : Document_store.search_result_group Seq.t)
   =
-  Seq.iteri (fun i (doc, s) ->
+  Seq.iteri (fun i x ->
       if i > 0 then (
         newline_image oc;
       );
-      search_results ~color ~underline oc doc s
+      search_result_group ~color ~underline oc x
     ) s

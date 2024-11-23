@@ -750,16 +750,20 @@ let run
            ) else (
              Document_store.search_result_groups document_store
              |> Array.to_seq
-             |> Seq.map (fun (doc, s) ->
-                 let s = Array.to_seq s in
-                 let s =
+             |> Seq.map (fun (doc, arr) ->
+                 let arr =
                    match print_limit with
-                   | None -> s
-                   | Some n -> OSeq.take n s
+                   | None -> arr
+                   | Some n -> (
+                     Array.sub
+                     arr
+                     0
+                     (min (Array.length arr) n)
+                   )
                  in
-                 (doc, s)
+                 (doc, arr)
                )
-             |> Printers.search_results_batches ~color ~underline oc
+             |> Printers.search_result_groups ~color ~underline oc
            );
            clean_up ();
            exit 0

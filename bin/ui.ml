@@ -1012,17 +1012,17 @@ let keyboard_handler
       `Handled
     )
   | Copy -> (
-      let copy_search_results_batches (s : (Document.t * Search_result.t Seq.t) Seq.t) =
+      let copy_search_result_groups (s : Document_store.search_result_group Seq.t) =
         Clipboard.pipe_to_clipboard (fun oc ->
-            Printers.search_results_batches
+            Printers.search_result_groups
               ~color:false
               ~underline:true
               oc
               s
           )
       in
-      let copy_search_results doc results =
-        copy_search_results_batches (Seq.return (doc, results))
+      let copy_search_result_group x =
+        copy_search_result_groups (Seq.return x)
       in
       let exit =
         match key with
@@ -1034,20 +1034,20 @@ let keyboard_handler
           )
         | (`ASCII 'y', []) -> (
             Option.iter (fun (doc, search_results) ->
+              copy_search_result_group
+              (doc,
                 (if search_result_current_choice < Array.length search_results then
-                   Seq.return search_results.(search_result_current_choice)
+                  [|search_results.(search_result_current_choice)|]
                  else
-                   Seq.empty)
-                |> copy_search_results doc
+                   [||])
+                )
               )
               search_result_group;
             true
           )
         | (`ASCII 'a', []) -> (
-            Option.iter (fun (doc, search_results) ->
-                Array.to_seq search_results
-                |> copy_search_results doc
-              )
+            Option.iter
+            copy_search_result_group
               search_result_group;
             true
           )
@@ -1059,15 +1059,13 @@ let keyboard_handler
             |> Array.to_seq
             |> Seq.filter (fun (doc, _) ->
                 String_set.mem (Document.path doc) marked)
-            |> Seq.map (fun (doc, s) -> (doc, Array.to_seq s))
-            |> copy_search_results_batches;
+            |> copy_search_result_groups;
             true
           )
         | (`ASCII 'l', []) -> (
             Document_store.search_result_groups document_store
             |> Array.to_seq
-            |> Seq.map (fun (doc, s) -> (doc, Array.to_seq s))
-            |> copy_search_results_batches;
+            |> copy_search_result_groups;
             true
           )
         | _ -> false
