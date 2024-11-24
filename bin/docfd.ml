@@ -914,9 +914,15 @@ let run
                       "# This means \" and ' are treated literally and are not used to delimit strings.";
                       "#";
                       "# Possible commands:";
+                      Fmt.str "# - %a" Command.pp (`Mark "/path/to/document");
+                      Fmt.str "# - %a" Command.pp (`Unmark "/path/to/document");
+                      Fmt.str "# - %a" Command.pp `Unmark_all;
                       Fmt.str "# - %a" Command.pp (`Drop_path "/path/to/document");
+                      Fmt.str "# - %a" Command.pp `Drop_marked;
+                      Fmt.str "# - %a" Command.pp `Drop_unmarked;
                       Fmt.str "# - %a" Command.pp `Drop_listed;
                       Fmt.str "# - %a" Command.pp `Drop_unlisted;
+                      Fmt.str "# - %a" Command.pp (`Narrow_level 1);
                       Fmt.str "# - %a" Command.pp (`Search "search phrase");
                       Fmt.str "# - %a" Command.pp (`Filter "file.*pattern");
                     ]
