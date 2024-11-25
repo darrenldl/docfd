@@ -1,6 +1,6 @@
 # Changelog
 
-## 9.0.0
+## 9.0.0-rc1
 
 - Changed default cache size from 100 to 10000
 
