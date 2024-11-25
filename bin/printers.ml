@@ -1,5 +1,3 @@
-open Docfd_lib
-
 let output_image ~color (oc : out_channel) (img : Notty.image) : unit =
   let open Notty in
   let buf = Buffer.create 1024 in
