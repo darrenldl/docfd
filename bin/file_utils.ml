@@ -88,7 +88,11 @@ let list_files_recursive
   in
   let rec aux depth path =
     report_progress ();
-    if depth <= !Params.max_file_tree_scan_depth then (
+    let hidden =
+      String.starts_with ~prefix:"." (Filename.basename path)
+    in
+    if ((hidden && !Params.scan_hidden) || not hidden)
+    && depth <= !Params.max_file_tree_scan_depth then (
       match typ_of_path path with
       | Some (`Dir, _) -> (
           next_choices path

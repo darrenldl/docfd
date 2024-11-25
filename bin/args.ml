@@ -1,6 +1,19 @@
 open Cmdliner
 open Misc_utils
 
+let hidden_arg_name = "hidden"
+
+let hidden_arg =
+  let doc =
+    Fmt.str {|Scan hidden files and directories.
+By default, hidden files and directories are skipped.
+
+A file or directory is hidden if the base name starts
+with a dot, e.g. ".gitignore".
+    |}
+  in
+  Arg.(value & flag & info [ hidden_arg_name ] ~doc)
+
 let max_depth_arg_name = "max-depth"
 
 let max_depth_arg =

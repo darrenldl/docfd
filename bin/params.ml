@@ -2,6 +2,8 @@ include Docfd_lib.Params'
 
 let debug_output : out_channel option ref = ref None
 
+let scan_hidden = ref false
+
 let default_max_file_tree_scan_depth = 100
 
 let max_file_tree_scan_depth = ref default_max_file_tree_scan_depth

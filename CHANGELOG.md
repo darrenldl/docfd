@@ -7,6 +7,10 @@
 - Removed `Ctrl`+`C` exit key binding since it's prone to being
   triggered accidentally
 
+- Now defaults to not scanning hidden files and directories
+
+    - This behaviour is now enabled via the `--hidden` flag
+
 ## 9.0.0-rc1
 
 - Changed default cache size from 100 to 10000
