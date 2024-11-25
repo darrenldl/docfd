@@ -10,9 +10,9 @@ let default_max_linked_token_search_dist = 5
 
 let max_linked_token_search_dist = ref default_max_linked_token_search_dist
 
-let default_index_chunk_token_count = 5000
+let default_index_chunk_size = 5000
 
-let index_chunk_token_count = ref default_index_chunk_token_count
+let index_chunk_size = ref default_index_chunk_size
 
 let search_word_automaton_cache_size = 200
 

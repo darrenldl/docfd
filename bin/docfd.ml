@@ -411,7 +411,7 @@ let run
     (max_token_search_dist : int)
     (max_linked_token_search_dist : int)
     (tokens_per_search_scope_level : int)
-    (index_chunk_token_count : int)
+    (index_chunk_size : int)
     (exts : string)
     (single_line_exts : string)
     (additional_exts : string)
@@ -444,7 +444,7 @@ let run
     ~max_token_search_dist
     ~max_linked_token_search_dist
     ~tokens_per_search_scope_level
-    ~index_chunk_token_count
+    ~index_chunk_size
     ~cache_soft_limit
     ~sample_count_per_doc
     ~search_result_print_text_width
@@ -475,7 +475,7 @@ let run
   Params.max_token_search_dist := max_token_search_dist;
   Params.max_linked_token_search_dist := max_linked_token_search_dist;
   Params.tokens_per_search_scope_level := tokens_per_search_scope_level;
-  Params.index_chunk_token_count := index_chunk_token_count;
+  Params.index_chunk_size := index_chunk_size;
   Params.cache_soft_limit := cache_soft_limit;
   Params.search_result_print_text_width := search_result_print_text_width;
   Params.search_result_print_snippet_min_size := search_result_print_snippet_min_size;
@@ -1155,7 +1155,7 @@ let cmd ~env ~sw =
      $ max_token_search_dist_arg
      $ max_linked_token_search_dist_arg
      $ tokens_per_search_scope_level_arg
-     $ index_chunk_token_count_arg
+     $ index_chunk_size_arg
      $ exts_arg
      $ single_line_exts_arg
      $ add_exts_arg

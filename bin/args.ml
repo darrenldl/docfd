@@ -131,16 +131,16 @@ results for each search scope level in narrow mode.|}
     & info [ tokens_per_search_scope_level_arg_name ] ~doc ~docv:"N"
   )
 
-let index_chunk_token_count_arg_name = "index-chunk-token-count"
+let index_chunk_size_arg_name = "index-chunk-size"
 
-let index_chunk_token_count_arg =
+let index_chunk_size_arg =
   let doc =
     "Number of tokens to send as a task unit to the thread pool for indexing."
   in
   Arg.(
     value
-    & opt int Params.default_index_chunk_token_count
-    & info [ index_chunk_token_count_arg_name ] ~doc ~docv:"N"
+    & opt int Params.default_index_chunk_size
+    & info [ index_chunk_size_arg_name ] ~doc ~docv:"N"
   )
 
 let cache_dir_arg =
@@ -428,7 +428,7 @@ let check
     ~max_token_search_dist
     ~max_linked_token_search_dist
     ~tokens_per_search_scope_level
-    ~index_chunk_token_count
+    ~index_chunk_size
     ~cache_soft_limit
     ~sample_count_per_doc
     ~search_result_print_text_width
@@ -457,9 +457,9 @@ let check
     exit_with_error_msg
       (Fmt.str "invalid %s: cannot be < 1" tokens_per_search_scope_level_arg_name)
   );
-  if index_chunk_token_count < 1 then (
+  if index_chunk_size < 1 then (
     exit_with_error_msg
-      (Fmt.str "invalid %s: cannot be < 1" index_chunk_token_count_arg_name)
+      (Fmt.str "invalid %s: cannot be < 1" index_chunk_size_arg_name)
   );
   if cache_soft_limit < 1 then (
     exit_with_error_msg

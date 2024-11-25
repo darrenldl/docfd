@@ -50,6 +50,8 @@
 
 - Added narrow mode for search scope narrowing
 
+- Renamed `--index-chunk-token-count` to `--index-chunk-size`
+
 ## 8.0.3
 
 - Fixed single file view crash
