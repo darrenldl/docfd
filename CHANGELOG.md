@@ -52,6 +52,8 @@
 
 - Renamed `--index-chunk-token-count` to `--index-chunk-size`
 
+- Renamed `--sample-count-per-doc` to `--samples-per-doc`
+
 ## 8.0.3
 
 - Fixed single file view crash

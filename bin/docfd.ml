@@ -422,7 +422,7 @@ let run
     (index_only : bool)
     (start_with_search : string option)
     (sample_search_exp : string option)
-    (sample_count_per_doc : int)
+    (samples_per_doc : int)
     (search_exp : string option)
     (print_color_mode : Params.style_mode)
     (print_underline_mode : Params.style_mode)
@@ -446,7 +446,7 @@ let run
     ~tokens_per_search_scope_level
     ~index_chunk_size
     ~cache_soft_limit
-    ~sample_count_per_doc
+    ~samples_per_doc
     ~search_result_print_text_width
     ~search_result_print_snippet_min_size
     ~search_result_print_max_add_lines
@@ -481,7 +481,7 @@ let run
   Params.search_result_print_snippet_min_size := search_result_print_snippet_min_size;
   Params.search_result_print_snippet_max_additional_lines_each_direction :=
     search_result_print_max_add_lines;
-  Params.sample_count_per_document := sample_count_per_doc;
+  Params.samples_per_document := samples_per_doc;
   Params.cache_dir := (
     if no_cache then (
       None
@@ -708,7 +708,7 @@ let run
        (* Non-interactive mode *)
        let print_limit =
          match sample_search_exp with
-         | Some _ -> Some sample_count_per_doc
+         | Some _ -> Some samples_per_doc
          | None -> None
        in
        match
@@ -1166,7 +1166,7 @@ let cmd ~env ~sw =
      $ index_only_arg
      $ start_with_search_arg
      $ sample_arg
-     $ sample_count_per_doc_arg
+     $ samples_per_doc_arg
      $ search_arg
      $ color_arg
      $ underline_arg

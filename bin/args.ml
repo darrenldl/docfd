@@ -206,13 +206,13 @@ let start_with_search_arg =
 
 let sample_arg_name = "sample"
 
-let sample_count_per_doc_arg_name = "sample-count-per-doc"
+let samples_per_doc_arg_name = "samples-per-doc"
 
 let sample_arg =
   let doc =
     Fmt.str "Search with expression EXP in non-interactive mode but only
 show top N results where N is controlled by --%s."
-      sample_count_per_doc_arg_name
+      samples_per_doc_arg_name
   in
   Arg.(
     value
@@ -220,7 +220,7 @@ show top N results where N is controlled by --%s."
     & info [ sample_arg_name ] ~doc ~docv:"EXP"
   )
 
-let sample_count_per_doc_arg =
+let samples_per_doc_arg =
   let doc =
     Fmt.str
       "Number of search results to show per document when --%s is used
@@ -229,8 +229,8 @@ or when samples printing is triggered."
   in
   Arg.(
     value
-    & opt int Params.default_sample_count_per_document
-    & info [ sample_count_per_doc_arg_name ] ~doc ~docv:"N"
+    & opt int Params.default_samples_per_document
+    & info [ samples_per_doc_arg_name ] ~doc ~docv:"N"
   )
 
 let search_arg_name = "search"
@@ -430,7 +430,7 @@ let check
     ~tokens_per_search_scope_level
     ~index_chunk_size
     ~cache_soft_limit
-    ~sample_count_per_doc
+    ~samples_per_doc
     ~search_result_print_text_width
     ~search_result_print_snippet_min_size
     ~search_result_print_max_add_lines
@@ -465,9 +465,9 @@ let check
     exit_with_error_msg
       (Fmt.str "invalid %s: cannot be < 1" cache_soft_limit_arg_name)
   );
-  if sample_count_per_doc < 1 then (
+  if samples_per_doc < 1 then (
     exit_with_error_msg
-      (Fmt.str "invalid %s: cannot be < 1" sample_count_per_doc_arg_name)
+      (Fmt.str "invalid %s: cannot be < 1" samples_per_doc_arg_name)
   );
   if search_result_print_text_width < 1 then (
     exit_with_error_msg
