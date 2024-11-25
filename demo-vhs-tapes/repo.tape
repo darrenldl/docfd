@@ -26,6 +26,7 @@ Type@50ms "1"
 Sleep 1s
 
 Type "x/"
+Sleep 0.5s
 Type "/"
 Type "fuzz search"
 Enter
@@ -55,7 +56,7 @@ Sleep 2s
 Type@200ms ":q!"
 Enter
 
-Sleep 1s
+Sleep 1.5s
 
 Type "h"
 Type "o"
@@ -63,13 +64,17 @@ Type@50ms "# Pressing h opens the command history for editing."
 Escape
 Sleep 0.5s
 Type "o"
-Type@50ms "search: narrowing"
+Type@50ms "search: integration"
 Escape
 Type@300ms "kkV"
 Type@300ms "kkk"
-Type@300ms "dd"
+Type@300ms "d"
+Sleep 0.5s
+Type "jo"
+Type@50ms "# We replaced the last couple of steps with a simple search."
 Sleep 2s
+Escape
 Type@200ms ":wq"
 Enter
 
-Sleep 3s
+Sleep 4s
