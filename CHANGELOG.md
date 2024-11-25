@@ -1,5 +1,12 @@
 # Changelog
 
+## 9.0.0-rc2
+
+- Added `Esc` exit key binding to key binding info on screen
+
+- Removed `Ctrl`+`C` exit key binding since it's prone to being
+  triggered accidentally
+
 ## 9.0.0-rc1
 
 - Changed default cache size from 100 to 10000
