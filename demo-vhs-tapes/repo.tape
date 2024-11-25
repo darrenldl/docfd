@@ -3,7 +3,7 @@ Output demo-vhs-gifs/repo.gif
 Set Padding 0
 Set Framerate 10
 
-Set Width  1378
+Set Width  1366
 Set Height  768
 Set FontSize 15
 

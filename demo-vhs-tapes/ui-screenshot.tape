@@ -3,7 +3,7 @@ Output dummy.gif
 Set Padding 0
 Set Framerate 10
 
-Set Width  1024
+Set Width  1366
 Set Height  768
 Set FontSize 15
 
