@@ -344,7 +344,7 @@ let narrow_search_scope ~level (t : t) : t =
                         (Search_result.found_phrase search_result)
                       |> Option.get
                     in
-                    let offset = level * !Params.search_scope_words_per_level in
+                    let offset = level * !Params.tokens_per_search_scope_level in
                     let s, e =
                       (max 0 (s - offset), min (Index.max_pos index) (e + offset))
                     in

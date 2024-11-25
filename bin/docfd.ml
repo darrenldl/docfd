@@ -410,6 +410,7 @@ let run
     (max_fuzzy_edit_dist : int)
     (max_token_search_dist : int)
     (max_linked_token_search_dist : int)
+    (tokens_per_search_scope_level : int)
     (index_chunk_token_count : int)
     (exts : string)
     (single_line_exts : string)
@@ -442,6 +443,7 @@ let run
     ~max_fuzzy_edit_dist
     ~max_token_search_dist
     ~max_linked_token_search_dist
+    ~tokens_per_search_scope_level
     ~index_chunk_token_count
     ~cache_soft_limit
     ~sample_count_per_doc
@@ -472,6 +474,7 @@ let run
   Params.max_fuzzy_edit_dist := max_fuzzy_edit_dist;
   Params.max_token_search_dist := max_token_search_dist;
   Params.max_linked_token_search_dist := max_linked_token_search_dist;
+  Params.tokens_per_search_scope_level := tokens_per_search_scope_level;
   Params.index_chunk_token_count := index_chunk_token_count;
   Params.cache_soft_limit := cache_soft_limit;
   Params.search_result_print_text_width := search_result_print_text_width;
@@ -1151,6 +1154,7 @@ let cmd ~env ~sw =
      $ max_fuzzy_edit_dist_arg
      $ max_token_search_dist_arg
      $ max_linked_token_search_dist_arg
+     $ tokens_per_search_scope_level_arg
      $ index_chunk_token_count_arg
      $ exts_arg
      $ single_line_exts_arg

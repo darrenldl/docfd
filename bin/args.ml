@@ -117,6 +117,20 @@ e.g. "-" and ">" are linked in "->" but not in "- >",
     & info [ max_linked_token_search_dist_arg_name ] ~doc ~docv:"N"
   )
 
+let tokens_per_search_scope_level_arg_name = "tokens-per-search-scope-level"
+
+let tokens_per_search_scope_level_arg =
+  let doc =
+    Fmt.str
+      {|Number of tokens to use around the current search
+results for each search scope level in narrow mode.|}
+  in
+  Arg.(
+    value
+    & opt int Params.default_tokens_per_search_scope_level
+    & info [ tokens_per_search_scope_level_arg_name ] ~doc ~docv:"N"
+  )
+
 let index_chunk_token_count_arg_name = "index-chunk-token-count"
 
 let index_chunk_token_count_arg =
@@ -413,6 +427,7 @@ let check
     ~max_fuzzy_edit_dist
     ~max_token_search_dist
     ~max_linked_token_search_dist
+    ~tokens_per_search_scope_level
     ~index_chunk_token_count
     ~cache_soft_limit
     ~sample_count_per_doc
@@ -437,6 +452,10 @@ let check
   if max_linked_token_search_dist < 1 then (
     exit_with_error_msg
       (Fmt.str "invalid %s: cannot be < 1" max_linked_token_search_dist_arg_name)
+  );
+  if tokens_per_search_scope_level < 1 then (
+    exit_with_error_msg
+      (Fmt.str "invalid %s: cannot be < 1" tokens_per_search_scope_level_arg_name)
   );
   if index_chunk_token_count < 1 then (
     exit_with_error_msg
