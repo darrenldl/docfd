@@ -31,6 +31,8 @@
 
 - Added `--commands-from` command line argument
 
+- Added `--tokens-per-search-scope-level` command line argument
+
 - Concurrency related bug fixes
 
     - Unlikely to encounter in normal workflows with human input speed
@@ -43,7 +45,7 @@
 
 - Replaced print mode with copy mode
 
-- Replaced single file view with key binding to hide document list
+- Replaced single file view with key binding to change screen split ratio
   to remove feature discrepencies
 
 - Added narrow mode for search scope narrowing
