@@ -739,8 +739,7 @@ let keyboard_handler
   match Lwd.peek Ui_base.Vars.input_mode with
   | Navigate -> (
       match key with
-      | (`Escape, [])
-      | (`ASCII 'C', [`Ctrl]) -> (
+      | (`Escape, []) -> (
           Lwd.set Ui_base.Vars.quit true;
           Ui_base.Vars.action := None;
           `Handled
@@ -924,8 +923,7 @@ let keyboard_handler
   | Clear -> (
       let exit =
         match key with
-        | (`Escape, [])
-        | (`ASCII 'C', [`Ctrl]) -> true
+        | (`Escape, []) -> true
         | (`ASCII '/', []) -> (
             commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff ();
             Lwd.set Vars.search_field Ui_base.empty_text_field;
@@ -948,8 +946,7 @@ let keyboard_handler
   | Drop -> (
       let exit =
         match key with
-        | (`Escape, [])
-        | (`ASCII 'C', [`Ctrl]) -> true
+        | (`Escape, []) -> true
         | (`ASCII '?', []) -> (
             Ui_base.Key_binding_info.incr_rotation ();
             false
@@ -986,8 +983,7 @@ let keyboard_handler
   | Narrow -> (
       let exit =
         match key with
-        | (`Escape, [])
-        | (`ASCII 'C', [`Ctrl]) -> true
+        | (`Escape, []) -> true
         | (`ASCII '?', []) -> (
             Ui_base.Key_binding_info.incr_rotation ();
             false
@@ -1026,8 +1022,7 @@ let keyboard_handler
       in
       let exit =
         match key with
-        | (`Escape, [])
-        | (`ASCII 'C', [`Ctrl]) -> true
+        | (`Escape, []) -> true
         | (`ASCII '?', []) -> (
             Ui_base.Key_binding_info.incr_rotation ();
             false
@@ -1083,8 +1078,7 @@ let keyboard_handler
       in
       let exit =
         match key with
-        | (`Escape, [])
-        | (`ASCII 'C', [`Ctrl]) -> true
+        | (`Escape, []) -> true
         | (`ASCII '?', []) -> (
             Ui_base.Key_binding_info.incr_rotation ();
             false
@@ -1133,8 +1127,7 @@ let keyboard_handler
   | Reload -> (
       let exit =
         (match key with
-         | (`Escape, [])
-         | (`ASCII 'C', [`Ctrl]) -> true
+         | (`Escape, []) -> true
          | (`ASCII '?', []) -> (
              Ui_base.Key_binding_info.incr_rotation ();
              false
