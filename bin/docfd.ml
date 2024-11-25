@@ -755,11 +755,11 @@ let run
                    match print_limit with
                    | None -> arr
                    | Some n -> (
-                     Array.sub
-                     arr
-                     0
-                     (min (Array.length arr) n)
-                   )
+                       Array.sub
+                         arr
+                         0
+                         (min (Array.length arr) n)
+                     )
                  in
                  (doc, arr)
                )

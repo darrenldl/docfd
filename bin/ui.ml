@@ -1034,20 +1034,20 @@ let keyboard_handler
           )
         | (`ASCII 'y', []) -> (
             Option.iter (fun (doc, search_results) ->
-              copy_search_result_group
-              (doc,
-                (if search_result_current_choice < Array.length search_results then
-                  [|search_results.(search_result_current_choice)|]
-                 else
-                   [||])
-                )
+                copy_search_result_group
+                  (doc,
+                   (if search_result_current_choice < Array.length search_results then
+                      [|search_results.(search_result_current_choice)|]
+                    else
+                      [||])
+                  )
               )
               search_result_group;
             true
           )
         | (`ASCII 'a', []) -> (
             Option.iter
-            copy_search_result_group
+              copy_search_result_group
               search_result_group;
             true
           )
