@@ -531,14 +531,14 @@ module Bottom_pane = struct
       let navigate_grid =
         [
           [
-            { label = "Enter"; msg = "open document" };
+            { label = "Esc"; msg = "exit" };
             { label = "/"; msg = "search mode" };
             { label = "m"; msg = "mark/unmark document" };
             { label = "n"; msg = "narrow mode" };
             { label = "y"; msg = "copy/yank mode" };
           ];
           [
-            { label = "Tab"; msg = "change screen split ratio" };
+            { label = "Enter"; msg = "open document" };
             { label = "f"; msg = "filter mode" };
             { label = "Shift+M"; msg = "unmark all" };
             { label = "d"; msg = "drop mode" };
