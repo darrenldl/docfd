@@ -383,8 +383,9 @@ Docfd operates in modes, the initial mode is navigation mode.
 
 Navigation mode
 - Exit Docfd
-    - `Esc`
     - `Ctrl`+`C`
+    - `Ctrl`+`Q`
+    - `q`
 - Open document
     - `Enter`
         - Docfd tries to use `$VISUAL` first, if that fails then Docfd tries `$EDITOR`

@@ -531,7 +531,7 @@ module Bottom_pane = struct
       let navigate_grid =
         [
           [
-            { label = "Esc"; msg = "exit" };
+            { label = "Ctrl+C"; msg = "exit" };
             { label = "/"; msg = "search mode" };
             { label = "m"; msg = "mark/unmark document" };
             { label = "n"; msg = "narrow mode" };
@@ -739,7 +739,9 @@ let keyboard_handler
   match Lwd.peek Ui_base.Vars.input_mode with
   | Navigate -> (
       match key with
-      | (`Escape, []) -> (
+      | (`ASCII 'C', [`Ctrl])
+      | (`ASCII 'Q', [`Ctrl])
+      | (`ASCII 'q', []) -> (
           Lwd.set Ui_base.Vars.quit true;
           Ui_base.Vars.action := None;
           `Handled

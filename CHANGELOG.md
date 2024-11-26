@@ -2,10 +2,13 @@
 
 ## 9.0.0-rc2
 
-- Added `Esc` exit key binding to key binding info on screen
+- Added `Ctrl`+`C` exit key binding to key binding info on screen
 
-- Removed `Ctrl`+`C` exit key binding since it's prone to being
-  triggered accidentally
+- Updated exit keys
+
+    - To exit Docfd: `q`, `Ctrl`+`Q` or `Ctrl`+`C`
+
+    - To exit other modes: `Esc`
 
 - Now defaults to not scanning hidden files and directories
 
