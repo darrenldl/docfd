@@ -94,8 +94,8 @@ unless any of the following is used:
 
 ## Documentation
 
-See [GitHub Wiki](https://github.com/darrenldl/docfd/wiki) for usage guides,
-examples, and technical information.
+See [GitHub Wiki](https://github.com/darrenldl/docfd/wiki) for
+more examples/cookbook, and technical details.
 
 ## Limitations
 
@@ -137,3 +137,4 @@ examples, and technical information.
   [Stitch](https://git.mccd.space/pub/stitch/)) for discussions and inspiration
   of results narrowing functionality
 - Part of the search syntax was copied from [fzf](https://github.com/junegunn/fzf)
+- Command history editing workflow was inspired by Git interactive rebase workflow, e.g. `git rebase -i`
