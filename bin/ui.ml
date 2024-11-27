@@ -531,21 +531,21 @@ module Bottom_pane = struct
       let navigate_grid =
         [
           [
-            { label = "Ctrl+C"; msg = "exit" };
+            { label = "Enter"; msg = "open document" };
             { label = "/"; msg = "search mode" };
             { label = "m"; msg = "mark/unmark document" };
             { label = "n"; msg = "narrow mode" };
             { label = "y"; msg = "copy/yank mode" };
           ];
           [
-            { label = "Enter"; msg = "open document" };
+            { label = "?"; msg = "rotate key binding info" };
             { label = "f"; msg = "filter mode" };
             { label = "Shift+M"; msg = "unmark all" };
             { label = "d"; msg = "drop mode" };
             { label = "Shift+Y"; msg = "copy/yank paths mode" };
           ];
           [
-            { label = "?"; msg = "rotate key binding info" };
+            { label = "Ctrl+C"; msg = "exit" };
             { label = "x"; msg = "clear mode" };
             { label = "r"; msg = "reload mode" };
             { label = "h"; msg = "view/edit command history" };
