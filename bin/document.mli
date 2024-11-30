@@ -30,7 +30,6 @@ val compute_index_path :
   string option
 
 val find_index :
-  env:Eio_unix.Stdenv.base ->
   hash:string ->
   Index.t option
 

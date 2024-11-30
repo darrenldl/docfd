@@ -301,7 +301,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
                            do_if_debug (fun oc ->
                                Printf.fprintf oc "Finding index for document: %s, hash: %s\n" (Filename.quote path) hash;
                              );
-                           let res = (search_mode, path, hash, Document.find_index ~env ~hash) in
+                           let res = (search_mode, path, hash, Document.find_index ~hash) in
                            (match String_map.find_opt hash index_sizes with
                             | None -> ()
                             | Some x -> report_progress x

@@ -3,6 +3,10 @@ FROM docker.io/ocaml/opam:alpine-ocaml-5.2
 USER root
 RUN apk add linux-headers
 RUN apk add poppler-utils
+RUN apk add zlib-dev
+RUN apk add zlib-static
+RUN apk add zstd-dev
+RUN apk add zstd-static
 
 USER opam
 RUN sudo ln -s $(which opam-2.2) /usr/local/bin/opam

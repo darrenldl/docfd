@@ -57,7 +57,7 @@ Features:
    (timedesc (>= "2.0.0"))
    (re (>= "1.11.0"))
    (ppx_deriving (>= "5.0"))
-   decompress
+   camlzip
    progress
    cbor
    diet

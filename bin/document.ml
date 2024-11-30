@@ -120,26 +120,21 @@ let clean_up_cache_dir ~cache_dir =
     done
   )
 
-let save_index ~env ~hash index : (unit, string) result =
+let save_index ~hash index : (unit, string) result =
   match !Params.cache_dir with
   | None -> Ok ()
   | Some cache_dir -> (
-      let fs = Eio.Stdenv.fs env in
       let path =
-        Eio.Path.(
-          fs /
-          (Filename.concat
+          Filename.concat
              cache_dir
-             (Fmt.str "%s%s" hash Params.index_file_ext))
-        )
+             (Fmt.str "%s%s" hash Params.index_file_ext)
       in
-      let s = Index.to_compressed_string index in
-      try
-        Eio.Path.save ~create:(`Or_truncate 0o644) path s;
+      match Index.write_to_path ~path index with
+      | Error msg -> Error msg
+      | Ok () -> (
         clean_up_cache_dir ~cache_dir;
         Ok ()
-      with
-      | _ -> Error (Fmt.str "failed to save index to %s" hash)
+      )
     )
 
 let compute_index_path ~hash =
@@ -149,17 +144,13 @@ let compute_index_path ~hash =
       Some (Filename.concat cache_dir (Fmt.str "%s.index" hash))
     )
 
-let find_index ~env ~hash : Index.t option =
+let find_index ~hash : Index.t option =
   match compute_index_path ~hash with
   | None -> None
-  | Some path_str -> (
-      let fs = Eio.Stdenv.fs env in
+  | Some path -> (
       try
-        let path =
-          (fst fs, path_str)
-        in
-        refresh_modification_time ~path:path_str;
-        Index.of_compressed_string (Eio.Path.load path)
+        refresh_modification_time ~path;
+        Index.read_from_path ~path
       with
       | _ -> None
     )
@@ -280,6 +271,6 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?hash ?index path : (
             Of_path.text ~env pool search_mode path
           )
       in
-      let+ () = save_index ~env ~hash t.index in
+      let+ () = save_index ~hash t.index in
       t
     )

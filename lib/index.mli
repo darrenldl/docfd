@@ -65,6 +65,6 @@ val to_cbor : t -> CBOR.Simple.t
 
 val of_cbor : CBOR.Simple.t -> t option
 
-val to_compressed_string : t -> string
+val write_to_path : path:string -> t -> (unit, string) result
 
-val of_compressed_string : string -> t option
+val read_from_path : path:string -> t option

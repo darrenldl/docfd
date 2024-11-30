@@ -13,10 +13,10 @@
             spelll
             oseq
             eio
-            decompress.gz
             bigstringaf
             unix
             cbor
             diet
+            camlzip
  )
 )

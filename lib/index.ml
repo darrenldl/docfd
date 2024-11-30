@@ -1015,15 +1015,15 @@ let of_cbor (cbor : CBOR.Simple.t) : t option =
     )
   | _ -> None
 
-let to_compressed_string (t : t) : string =
+let write_to_path ~path (t : t) =
   to_cbor t
   |> CBOR.Simple.encode
-  |> GZIP.compress
+  |> GZIP.compress_to_path ~path
 
-let of_compressed_string (s : string) : t option =
+let read_from_path ~path : t option =
   let open Option_syntax in
   try
-    let* s = GZIP.decompress s in
+    let* s = GZIP.decompress_from_path ~path in
     CBOR.Simple.decode s
     |> of_cbor
   with
