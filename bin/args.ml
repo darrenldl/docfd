@@ -71,7 +71,7 @@ let add_exts_arg =
   in
   Arg.(
     value
-    & opt string ""
+    & opt_all string []
     & info [ add_exts_arg_name ] ~doc ~docv:"EXTS"
   )
 
@@ -83,7 +83,7 @@ let single_line_add_exts_arg =
   in
   Arg.(
     value
-    & opt string ""
+    & opt_all string []
     & info [ single_line_add_exts_arg_name ] ~doc ~docv:"EXTS"
   )
 

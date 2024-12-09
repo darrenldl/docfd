@@ -29,16 +29,18 @@ let stderr_is_atty () =
 
 let compute_total_recognized_exts ~exts ~additional_exts =
   let split_on_comma = String.split_on_char ',' in
-  ((split_on_comma exts)
-   @
-   (split_on_comma additional_exts))
-  |> List.map (fun s ->
+  (split_on_comma exts)
+  :: (List.map split_on_comma additional_exts)
+  |> List.to_seq
+  |> Seq.flat_map List.to_seq
+  |> Seq.map (fun s ->
       s
       |> String_utils.remove_leading_dots
       |> CCString.trim
     )
-  |> List.filter (fun s -> s <> "")
-  |> List.map (fun s -> Printf.sprintf ".%s" s)
+  |> Seq.filter (fun s -> s <> "")
+  |> Seq.map (fun s -> Printf.sprintf ".%s" s)
+  |> List.of_seq
 
 let array_sub_seq : 'a. start:int -> end_exc:int -> 'a array -> 'a Seq.t =
   fun ~start ~end_exc arr ->

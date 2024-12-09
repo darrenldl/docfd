@@ -14,6 +14,8 @@
 
     - This behaviour is now enabled via the `--hidden` flag
 
+- Changed to allow `--add-exts` and `--single-line-add-exts` to be specified multiple times
+
 ## 9.0.0-rc1
 
 - Changed default cache size from 100 to 10000
