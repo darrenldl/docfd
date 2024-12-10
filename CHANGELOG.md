@@ -16,6 +16,8 @@
 
 - Changed to allow `--add-exts` and `--single-line-add-exts` to be specified multiple times
 
+- Changed return code to be 1 when there are no results for `--sample` or `--search`
+
 ## 9.0.0-rc1
 
 - Changed default cache size from 100 to 10000

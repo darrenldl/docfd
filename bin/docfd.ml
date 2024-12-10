@@ -746,32 +746,47 @@ let run
              | `Always -> true
              | `Auto -> not (Out_channel.isatty oc)
            in
-           if print_files_with_match then (
-             Document_store.usable_documents_paths document_store
-             |> String_set.iter (Printers.path_image ~color oc)
-           ) else if print_files_without_match then (
-             Document_store.unusable_documents_paths document_store
-             |> Seq.iter (Printers.path_image ~color oc)
-           ) else (
-             Document_store.search_result_groups document_store
-             |> Array.to_seq
-             |> Seq.map (fun (doc, arr) ->
-                 let arr =
-                   match print_limit with
-                   | None -> arr
-                   | Some n -> (
-                       Array.sub
-                         arr
-                         0
-                         (min (Array.length arr) n)
-                     )
-                 in
-                 (doc, arr)
-               )
-             |> Printers.search_result_groups ~color ~underline oc
-           );
+           let no_results =
+             if print_files_with_match then (
+               let s =
+                 Document_store.usable_documents_paths document_store
+               in
+               String_set.iter (Printers.path_image ~color oc) s;
+               String_set.is_empty s
+             ) else if print_files_without_match then (
+               let s =
+                 Document_store.unusable_documents_paths document_store
+               in
+               Seq.iter (Printers.path_image ~color oc) s;
+               Seq.is_empty s
+             ) else (
+               let s =
+                 Document_store.search_result_groups document_store
+                 |> Array.to_seq
+                 |> Seq.map (fun (doc, arr) ->
+                     let arr =
+                       match print_limit with
+                       | None -> arr
+                       | Some n -> (
+                           Array.sub
+                             arr
+                             0
+                             (min (Array.length arr) n)
+                         )
+                     in
+                     (doc, arr)
+                   )
+               in
+               Printers.search_result_groups ~color ~underline oc s;
+               Seq.is_empty s
+             )
+           in
            clean_up ();
-           exit 0
+           if no_results then (
+             exit 1
+           ) else (
+             exit 0
+           )
          )
      )
   );
