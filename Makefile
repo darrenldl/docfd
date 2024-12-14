@@ -19,7 +19,7 @@ podman-build-demo-vhs:
 
 .PHONY: lock
 lock:
-	opam-2.2 lock .
+	opam lock .
 
 .PHONY: release-build
 release-build :
