@@ -3,6 +3,7 @@ FROM docker.io/ocaml/opam:alpine-ocaml-5.2
 USER root
 RUN apk add linux-headers
 RUN apk add poppler-utils
+RUN apk add sqlite sqlite-libs sqlite-dev sqlite-static
 
 USER opam
 RUN sudo ln -s $(which opam-2.2) /usr/local/bin/opam
