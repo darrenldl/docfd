@@ -41,6 +41,8 @@ let default_search_mode : Search_mode.t ref = ref `Multiline
 
 let index_file_ext = ".index"
 
+let db_file_name = "index.db"
+
 let hash_chunk_size = 4096
 
 let text_editor = ref ""
@@ -101,3 +103,5 @@ let clipboard_copy_cmd_and_args =
           | _ -> None
         )
     )
+
+let db : Sqlite3.db option ref = ref None

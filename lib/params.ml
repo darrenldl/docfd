@@ -28,3 +28,5 @@ let opening_closing_symbols_flipped = List.map (fun (x, y) -> (y, x)) opening_cl
 let default_max_fuzzy_edit_dist = 2
 
 let max_fuzzy_edit_dist = ref default_max_fuzzy_edit_dist
+
+let db : Sqlite3.db option ref = ref None

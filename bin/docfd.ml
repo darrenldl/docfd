@@ -499,6 +499,14 @@ let run
       `Multiline
     )
   );
+  let db = Sqlite3.db_open (Filename.concat cache_dir Params.db_file_name) in
+  Params.db := Some db;
+  Docfd_lib.init ~db;
+  if not (Sqlite3.Rc.is_success
+            (Misc_utils.init_db_if_needed db)) then (
+    exit_with_error_msg
+      (Fmt.str "failed to initialise index database")
+  );
   (match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
    | None, None -> (
        exit_with_error_msg

@@ -19,3 +19,6 @@ module Stop_signal = Stop_signal
 module Parser_components = Parser_components
 
 module Misc_utils' = Misc_utils
+
+let init ~db =
+  Params.db := Some db

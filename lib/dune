@@ -18,5 +18,6 @@
             unix
             cbor
             diet
+            sqlite3
  )
 )
