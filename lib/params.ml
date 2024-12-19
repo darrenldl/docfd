@@ -30,3 +30,6 @@ let default_max_fuzzy_edit_dist = 2
 let max_fuzzy_edit_dist = ref default_max_fuzzy_edit_dist
 
 let db : Sqlite3.db option ref = ref None
+
+let get_db () =
+  CCOption.get_exn_or "Docfd_lib.Params.db uninitialized" !db

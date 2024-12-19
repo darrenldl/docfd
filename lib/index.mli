@@ -18,35 +18,29 @@ module Loc : sig
   val pos_in_line : t -> int
 end
 
-type t
+val lines : Task_pool.t -> doc_hash:string -> string Seq.t -> unit
 
-val make : unit -> t
+val pages : Task_pool.t -> doc_hash:string -> string list Seq.t -> unit
 
-val equal : t -> t -> bool
+val word_ci_of_pos : doc_hash:string -> int -> string
 
-val of_lines : Task_pool.t -> string Seq.t -> t
+val word_of_pos : doc_hash:string -> int -> string
 
-val of_pages : Task_pool.t -> string list Seq.t -> t
+val word_ci_and_pos_s : ?range_inc:(int * int) -> doc_hash:string -> (string * Int_set.t) Seq.t
 
-val word_ci_of_pos : int -> t -> string
+val words_of_global_line_num : doc_hash:string -> string Seq.t
 
-val word_of_pos : int -> t -> string
+val line_of_global_line_num : doc_hash:string -> int -> string
 
-val word_ci_and_pos_s : ?range_inc:(int * int) -> t -> (string * Int_set.t) Seq.t
+val line_loc_of_global_line_num : doc_hash:string -> int -> Line_loc.t
 
-val words_of_global_line_num : int -> t -> string Seq.t
+val loc_of_pos : doc_hash:string -> int -> Loc.t
 
-val line_of_global_line_num : int -> t -> string
+val max_pos : doc_hash:string -> int
 
-val line_loc_of_global_line_num : int -> t -> Line_loc.t
+val words_of_page_num : doc_hash:string -> int -> string Seq.t
 
-val loc_of_pos : int -> t -> Loc.t
-
-val max_pos : t -> int
-
-val words_of_page_num : int -> t -> string Seq.t
-
-val line_count_of_page_num : int -> t -> int
+val line_count_of_page_num : doc_hash:string -> int -> int
 
 val search :
   Task_pool.t ->
@@ -54,17 +48,8 @@ val search :
   within_same_line:bool ->
   Diet.Int.t option ->
   Search_exp.t ->
-  t ->
   Search_result.t array
 
-val global_line_count : t -> int
+val global_line_count : doc_hash:string -> int
 
-val page_count : t -> int
-
-val to_cbor : t -> CBOR.Simple.t
-
-val of_cbor : CBOR.Simple.t -> t option
-
-val to_compressed_string : t -> string
-
-val of_compressed_string : string -> t option
+val page_count : doc_hash:string -> int

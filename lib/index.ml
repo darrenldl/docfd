@@ -277,6 +277,10 @@ module Raw = struct
     |> of_seq pool
 end
 
+let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
+  Word_db.load_into_db ~doc_hash x.word_db;
+  ()
+
 type t = {
   word_db : Word_db.t;
   pos_s_of_word_ci : Int_set.t Int_map.t;
@@ -393,13 +397,13 @@ let of_raw (raw : Raw.t) : t =
     global_line_count;
   }
 
-let of_lines pool s =
+let lines pool ~doc_hash s =
   Raw.of_lines pool s
-  |> of_raw
+  |> load_raw_into_db ~doc_hash
 
-let of_pages pool s =
+let pages pool ~doc_hash s =
   Raw.of_pages pool s
-  |> of_raw
+  |> load_raw_into_db ~doc_hash
 
 let word_ci_of_pos pos (t : t) : string =
   Word_db.word_of_index t.word_db (CCVector.get t.word_ci_of_pos pos)
@@ -833,198 +837,3 @@ let search
   in
   Array.sort Search_result.compare_relevance arr;
   arr
-
-let to_cbor (t : t) : CBOR.Simple.t =
-  let cbor_of_int (x : int) = `Int x in
-  let cbor_of_int_int ((x, y) : int * int) = `Array [ `Int x; `Int y ] in
-  let cbor_of_int_map
-    : 'a . ('a -> CBOR.Simple.t) -> 'a Int_map.t -> CBOR.Simple.t =
-    fun f m ->
-      let l =
-        Int_map.to_seq m
-        |> Seq.map (fun (k, v) -> `Array [ `Int k; f v ])
-        |> List.of_seq
-      in
-      `Array l
-  in
-  let cbor_of_ccvector
-    : 'a . ('a -> CBOR.Simple.t) -> ('a, _) CCVector.t -> CBOR.Simple.t =
-    fun f vec ->
-      let l =
-        CCVector.to_seq vec
-        |> Seq.map f
-        |> List.of_seq
-      in
-      `Array l
-  in
-  let cbor_of_int_set (s : Int_set.t) =
-    let l =
-      Int_set.to_seq s
-      |> Seq.map cbor_of_int
-      |> List.of_seq
-    in
-    `Array l
-  in
-  `Array [
-    Word_db.to_cbor t.word_db;
-    cbor_of_int_map cbor_of_int_set t.pos_s_of_word_ci;
-    cbor_of_ccvector Loc.to_cbor t.loc_of_pos;
-    cbor_of_ccvector Line_loc.to_cbor t.line_loc_of_global_line_num;
-    cbor_of_ccvector cbor_of_int_int t.start_end_inc_pos_of_global_line_num;
-    cbor_of_ccvector cbor_of_int_int t.start_end_inc_pos_of_page_num;
-    cbor_of_ccvector cbor_of_int t.word_ci_of_pos;
-    cbor_of_ccvector cbor_of_int t.word_of_pos;
-    cbor_of_ccvector cbor_of_int t.line_count_of_page_num;
-    `Int t.page_count;
-    `Int t.global_line_count;
-  ]
-
-let of_cbor (cbor : CBOR.Simple.t) : t option =
-  let open Option_syntax in
-  let int_of_cbor (cbor : CBOR.Simple.t) : int option =
-    match cbor with
-    | `Int x -> Some x
-    | _ -> None
-  in
-  let int_int_of_cbor (cbor : CBOR.Simple.t) : (int * int) option =
-    match cbor with
-    | `Array [ `Int x; `Int y ] -> Some (x, y)
-    | _ -> None
-  in
-  let int_set_of_cbor (cbor : CBOR.Simple.t) : Int_set.t option =
-    match cbor with
-    | `Array l -> (
-        let exception Invalid in
-        let s = ref Int_set.empty in
-        try
-          List.iter (fun x ->
-              match int_of_cbor x with
-              | None -> raise Invalid
-              | Some x -> s := Int_set.add x !s
-            ) l;
-          Some !s
-        with
-        | Invalid -> None
-      )
-    | _ -> None
-  in
-  let ccvector_of_cbor
-    : 'a . (CBOR.Simple.t -> 'a option) -> CBOR.Simple.t -> 'a CCVector.ro_vector option =
-    fun f cbor ->
-      match cbor with
-      | `Array l -> (
-          let exception Invalid in
-          let vec : 'a CCVector.vector = CCVector.create () in
-          try
-            List.iter (fun v ->
-                match f v with
-                | None -> raise Invalid
-                | Some (v : 'a) -> (
-                    CCVector.push vec v
-                  )
-              ) l;
-            Some (CCVector.freeze vec)
-          with
-          | Invalid -> None
-        )
-      | _ -> None
-  in
-  let int_map_of_cbor
-    : 'a . (CBOR.Simple.t -> 'a option) -> CBOR.Simple.t -> 'a Int_map.t option =
-    fun f cbor ->
-      match cbor with
-      | `Array l -> (
-          let exception Invalid in
-          let m : 'a Int_map.t ref = ref Int_map.empty in
-          try
-            List.iter (fun v ->
-                match v with
-                | `Array [ `Int k; v ] -> (
-                    match f v with
-                    | None -> raise Invalid
-                    | Some (v : 'a) -> (
-                        m := Int_map.add k v !m;
-                      )
-                  )
-                | _ -> raise Invalid
-              ) l;
-            Some !m
-          with
-          | Invalid -> None
-        )
-      | _ -> None
-  in
-  match cbor with
-  | `Array [
-      word_db;
-      pos_s_of_word_ci;
-      loc_of_pos;
-      line_loc_of_global_line_num;
-      start_end_inc_pos_of_global_line_num;
-      start_end_inc_pos_of_page_num;
-      word_ci_of_pos;
-      word_of_pos;
-      line_count_of_page_num;
-      page_count;
-      global_line_count;
-    ] -> (
-      let* word_db = Word_db.of_cbor word_db in
-      let* pos_s_of_word_ci =
-        int_map_of_cbor int_set_of_cbor pos_s_of_word_ci
-      in
-      let* loc_of_pos =
-        ccvector_of_cbor Loc.of_cbor loc_of_pos
-      in
-      let* line_loc_of_global_line_num =
-        ccvector_of_cbor Line_loc.of_cbor line_loc_of_global_line_num
-      in
-      let* start_end_inc_pos_of_global_line_num =
-        ccvector_of_cbor int_int_of_cbor start_end_inc_pos_of_global_line_num
-      in
-      let* start_end_inc_pos_of_page_num =
-        ccvector_of_cbor int_int_of_cbor start_end_inc_pos_of_page_num
-      in
-      let* word_ci_of_pos =
-        ccvector_of_cbor int_of_cbor word_ci_of_pos
-      in
-      let* word_of_pos =
-        ccvector_of_cbor int_of_cbor word_of_pos
-      in
-      let* line_count_of_page_num =
-        ccvector_of_cbor int_of_cbor line_count_of_page_num
-      in
-      let* page_count =
-        int_of_cbor page_count
-      in
-      let+ global_line_count =
-        int_of_cbor global_line_count
-      in
-      {
-        word_db;
-        pos_s_of_word_ci;
-        loc_of_pos;
-        line_loc_of_global_line_num;
-        start_end_inc_pos_of_global_line_num;
-        start_end_inc_pos_of_page_num;
-        word_ci_of_pos;
-        word_of_pos;
-        line_count_of_page_num;
-        page_count;
-        global_line_count;
-      }
-    )
-  | _ -> None
-
-let to_compressed_string (t : t) : string =
-  to_cbor t
-  |> CBOR.Simple.encode
-  |> GZIP.compress
-
-let of_compressed_string (s : string) : t option =
-  let open Option_syntax in
-  try
-    let* s = GZIP.decompress s in
-    CBOR.Simple.decode s
-    |> of_cbor
-  with
-  | _ -> None

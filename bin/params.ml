@@ -105,3 +105,6 @@ let clipboard_copy_cmd_and_args =
     )
 
 let db : Sqlite3.db option ref = ref None
+
+let get_db () =
+  CCOption.get_exn_or "Docfd.Params.db uninitialized" !db

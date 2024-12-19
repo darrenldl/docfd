@@ -268,57 +268,21 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
                 )
             )
         in
-        let index_count, indices_total_byte_count, index_sizes =
-          List.fold_left (fun (index_count, total_size, m) (_, _, hash) ->
-              match Document.compute_index_path ~hash with
-              | None -> (index_count, total_size, m)
-              | Some path -> (
-                  match File_utils.file_size path with
-                  | None -> (index_count, total_size, m)
-                  | Some x -> (index_count + 1, total_size + x, String_map.add hash x m)
-                )
+        let indexed_files, unindexed_files =
+          let open Sqlite3 in
+          let stmt = prepare (Params.get_db ()) {||
+          SELECT * FROM doc_info WHERE doc_hash = @doc_hash
+          |}
+          in
+          List.partition (fun (_, _, doc_hash) ->
+            Rc.check (bind_name stmt "doc_hash" (TEXT doc_hash));
+            let indexed = data_count stmt > 0 in
+            Rc.check (reset stmt);
+            indexed
             )
-            (0, 0, String_map.empty)
             file_and_hash_list
         in
-        if interactive then (
-          Printf.printf "Finding and loading indices\n";
-          print_stage_stats
-            ~file_count:index_count
-            ~total_byte_count:indices_total_byte_count;
-        );
-        let indexed_files, unindexed_files =
-          match file_and_hash_list with
-          | [] -> ([], [])
-          | _ -> (
-              file_and_hash_list
-              |> (fun l ->
-                  progress_with_reporter
-                    ~interactive
-                    (byte_bar ~total_byte_count:indices_total_byte_count)
-                    (fun report_progress ->
-                       Task_pool.map_list pool (fun (search_mode, path, hash) ->
-                           do_if_debug (fun oc ->
-                               Printf.fprintf oc "Finding index for document: %s, hash: %s\n" (Filename.quote path) hash;
-                             );
-                           let res = (search_mode, path, hash, Document.find_index ~env ~hash) in
-                           (match String_map.find_opt hash index_sizes with
-                            | None -> ()
-                            | Some x -> report_progress x
-                           );
-                           res
-                         )
-                         l
-                    )
-                )
-              |> List.partition_map (fun (search_mode, path, hash, index) ->
-                  match index with
-                  | Some index -> Left (search_mode, path, hash, index)
-                  | None -> Right (search_mode, path, hash)
-                )
-            )
-        in
-        let load_document ~env pool search_mode ~hash ?index path =
+        let load_document ~env pool search_mode ~hash path =
           do_if_debug (fun oc ->
               Printf.fprintf oc "Loading document: %s\n" (Filename.quote path);
             );
@@ -330,7 +294,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
                 )
                 (Filename.quote path)
             );
-          match Document.of_path ~env pool search_mode ~hash ?index path with
+          match Document.of_path ~env pool search_mode ~doc_hash path with
           | Ok x -> (
               do_if_debug (fun oc ->
                   Printf.fprintf oc "Document %s loaded successfully\n" (Filename.quote path);
@@ -349,8 +313,8 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
         );
         let indexed_files =
           indexed_files
-          |> List.filter_map (fun (search_mode, path, hash, index) ->
-              load_document ~env pool search_mode ~hash ~index path
+          |> List.filter_map (fun (search_mode, path, hash) ->
+              load_document ~env pool search_mode ~hash path
             )
         in
         if interactive then (
@@ -501,11 +465,9 @@ let run
   );
   let db = Sqlite3.db_open (Filename.concat cache_dir Params.db_file_name) in
   Params.db := Some db;
-  Docfd_lib.init ~db;
-  if not (Sqlite3.Rc.is_success
-            (Misc_utils.init_db_if_needed db)) then (
-    exit_with_error_msg
-      (Fmt.str "failed to initialise index database")
+  (match Docfd_lib.init ~db with
+  | None -> ()
+  | Some msg -> exit_with_error_msg msg
   );
   (match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
    | None, None -> (

@@ -5,7 +5,7 @@ type t = {
   search_mode : Search_mode.t;
   path : string;
   title : string option;
-  index : Index.t;
+  doc_hash : string;
   search_scope : Diet.Int.t option;
   last_scan : Timedesc.t;
 }
@@ -16,8 +16,6 @@ let path (t : t) = t.path
 
 let title (t : t) = t.title
 
-let index (t : t) = t.index
-
 let search_scope (t : t) = t.search_scope
 
 let last_scan (t : t) = t.last_scan
@@ -27,7 +25,7 @@ let make search_mode ~path : t =
     search_mode;
     path;
     title = None;
-    index = Index.make ();
+    doc_hash = "";
     search_scope = None;
     last_scan = Timedesc.now ~tz_of_date_time:Params.tz ();
   }
@@ -45,7 +43,6 @@ let parse_lines pool search_mode ~path (s : string Seq.t) : t =
         {
           empty with
           title;
-          index;
         }
       )
     | Title -> (
@@ -119,50 +116,6 @@ let clean_up_cache_dir ~cache_dir =
       Sys.remove path
     done
   )
-
-let save_index ~env ~hash index : (unit, string) result =
-  match !Params.cache_dir with
-  | None -> Ok ()
-  | Some cache_dir -> (
-      let fs = Eio.Stdenv.fs env in
-      let path =
-        Eio.Path.(
-          fs /
-          (Filename.concat
-             cache_dir
-             (Fmt.str "%s%s" hash Params.index_file_ext))
-        )
-      in
-      let s = Index.to_compressed_string index in
-      try
-        Eio.Path.save ~create:(`Or_truncate 0o644) path s;
-        clean_up_cache_dir ~cache_dir;
-        Ok ()
-      with
-      | _ -> Error (Fmt.str "failed to save index to %s" hash)
-    )
-
-let compute_index_path ~hash =
-  match !Params.cache_dir with
-  | None -> None
-  | Some cache_dir -> (
-      Some (Filename.concat cache_dir (Fmt.str "%s.index" hash))
-    )
-
-let find_index ~env ~hash : Index.t option =
-  match compute_index_path ~hash with
-  | None -> None
-  | Some path_str -> (
-      let fs = Eio.Stdenv.fs env in
-      try
-        let path =
-          (fst fs, path_str)
-        in
-        refresh_modification_time ~path:path_str;
-        Index.of_compressed_string (Eio.Path.load path)
-      with
-      | _ -> None
-    )
 
 let inter_search_scope (x : Diet.Int.t) (t : t) : t =
   let search_scope =
@@ -243,9 +196,9 @@ module Of_path = struct
       )
 end
 
-let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?hash ?index path : (t, string) result =
-  let* hash =
-    match hash with
+let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, string) result =
+  let* doc_hash =
+    match doc_hash with
     | Some x -> Ok x
     | None -> BLAKE2B.hash_of_file ~env ~path
   in
@@ -268,7 +221,6 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?hash ?index path : (
         }
     )
   | None -> (
-      let* t =
         match File_utils.format_of_file path with
         | `PDF -> (
             Of_path.pdf ~env pool search_mode path
@@ -279,7 +231,4 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?hash ?index path : (
         | `Text -> (
             Of_path.text ~env pool search_mode path
           )
-      in
-      let+ () = save_index ~env ~hash t.index in
-      t
     )

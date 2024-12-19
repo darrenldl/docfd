@@ -2,8 +2,6 @@ open Docfd_lib
 
 type t
 
-val make : Search_mode.t -> path:string -> t
-
 val search_mode : t -> Search_mode.t
 
 val path : t -> string
@@ -20,18 +18,8 @@ val of_path :
   env:Eio_unix.Stdenv.base ->
   Task_pool.t ->
   Search_mode.t ->
-  ?hash:string ->
-  ?index:Index.t ->
+  ?doc_hash:string ->
   string ->
   (t, string) result
-
-val compute_index_path :
-  hash:string ->
-  string option
-
-val find_index :
-  env:Eio_unix.Stdenv.base ->
-  hash:string ->
-  Index.t option
 
 val inter_search_scope : Diet.Int.t -> t -> t

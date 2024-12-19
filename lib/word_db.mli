@@ -10,6 +10,4 @@ val word_of_index : t -> int -> string
 
 val index_of_word : t -> string -> int
 
-val to_cbor : t -> CBOR.Simple.t
-
-val of_cbor : CBOR.Simple.t -> t option
+val load_into_db : doc_hash:string -> t -> unit

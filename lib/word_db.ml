@@ -29,29 +29,24 @@ let word_of_index t i : string =
 let index_of_word t s : int =
   String_map.find s t.index_of_word
 
-let to_cbor (t : t) : CBOR.Simple.t =
-  let l =
-    CCVector.to_seq t.word_of_index
-    |> Seq.map (fun s -> `Bytes s)
-    |> List.of_seq
-  in
-  `Array l
+let load_into_db ~doc_hash (t : t) : unit =
+  let open Sqlite3 in
+  let stmt = prepare (Params.get_db ()) {|
+  DELETE FROM word WHERE doc_hash = @doc_hash;
 
-let of_cbor (cbor : CBOR.Simple.t) : t option =
-  match cbor with
-  | `Array l -> (
-      let db = make () in
-      let exception Invalid in
-      try
-        List.iter (fun x ->
-            match x with
-            | `Bytes s -> (
-                add db s |> ignore
-              )
-            | _ -> raise Invalid
-          ) l;
-        Some db
-      with
-      | Invalid -> None
-    )
-  | _ -> None
+  INSERT INTO word
+  (id, doc_hash, word)
+  VALUES
+  (@id, @doc_hash, @word);
+  |}
+  in
+  CCVector.iteri (fun id word ->
+    bind_names
+  stmt
+  [ ("doc_hash", TEXT doc_hash)
+  ; ("id", INT (Int64.of_int id))
+  ; ("word", TEXT word)
+  ];
+    Rc.check (iter stmt ~f:ignore)
+  );
+  Rc.check (finalize stmt)
