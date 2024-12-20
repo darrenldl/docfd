@@ -28,11 +28,11 @@ let search_result_group ~color ~underline (oc : out_channel) ((document, results
       );
       let img =
         Content_and_search_result_render.search_result
+        ~doc_hash:(Document.doc_hash document)
           ~render_mode:(Ui_base.render_mode_of_document document)
           ~width:!Params.search_result_print_text_width
           ~underline
           ~fill_in_context:true
-          (Document.index document)
           search_result
       in
       Notty_unix.eol img

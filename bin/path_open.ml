@@ -8,11 +8,11 @@ let pandoc_supported_format ~path =
   let cmd = xdg_open_cmd ~path in
   Proc_utils.run_in_background cmd |> ignore
 
-let compute_most_unique_word_and_residing_page_num index found_phrase =
+let compute_most_unique_word_and_residing_page_num ~doc_hash found_phrase =
   let page_nums = found_phrase
                   |> List.map (fun word ->
                       word.Search_result.found_word_pos
-                      |> (fun pos -> Index.loc_of_pos pos index)
+                      |> (fun pos -> Index.loc_of_pos ~doc_hash pos)
                       |> Index.Loc.line_loc
                       |> Index.Line_loc.page_num
                     )
@@ -21,7 +21,7 @@ let compute_most_unique_word_and_residing_page_num index found_phrase =
   let frequency_of_word_of_page_ci : int String_map.t Int_map.t =
     List.fold_left (fun acc page_num ->
         let m = Misc_utils.frequencies_of_words_ci
-            (Index.words_of_page_num page_num index)
+            (Index.words_of_page_num ~doc_hash page_num)
         in
         Int_map.add page_num m acc
       )
@@ -31,7 +31,7 @@ let compute_most_unique_word_and_residing_page_num index found_phrase =
   found_phrase
   |> List.map (fun word ->
       let page_num =
-        Index.loc_of_pos word.Search_result.found_word_pos index
+        Index.loc_of_pos ~doc_hash word.Search_result.found_word_pos
         |> Index.Loc.line_loc
         |> Index.Line_loc.page_num
       in
@@ -67,7 +67,7 @@ let compute_most_unique_word_and_residing_page_num index found_phrase =
   |> (fun (word, page_num, _freq) ->
       (word.found_word, page_num))
 
-let pdf index ~path ~search_result =
+let pdf ~doc_hash ~path ~search_result =
   let path = Filename.quote path in
   let fallback =
     match Params.os_typ with
@@ -85,7 +85,7 @@ let pdf index ~path ~search_result =
             | None -> fallback
             | Some viewer_desktop_file_path -> (
                 let (most_unique_word, most_unique_word_page_num) =
-                  compute_most_unique_word_and_residing_page_num index found_phrase
+                  compute_most_unique_word_and_residing_page_num ~doc_hash found_phrase
                 in
                 let flatpak_package_name =
                   let s = Filename.basename viewer_desktop_file_path in
@@ -128,7 +128,7 @@ let pdf index ~path ~search_result =
   in
   Proc_utils.run_in_background cmd |> ignore
 
-let text index document_src ~editor ~path ~search_result =
+let text ~doc_hash document_src ~editor ~path ~search_result =
   let path = Filename.quote path in
   let fallback = Fmt.str "%s %s" editor path in
   let cmd =
@@ -136,7 +136,7 @@ let text index document_src ~editor ~path ~search_result =
     | None -> fallback
     | Some search_result -> (
         let first_word = List.hd @@ Search_result.found_phrase search_result in
-        let first_word_loc = Index.loc_of_pos first_word.Search_result.found_word_pos index in
+        let first_word_loc = Index.loc_of_pos ~doc_hash first_word.Search_result.found_word_pos in
         let line_num = first_word_loc
                        |> Index.Loc.line_loc
                        |> Index.Line_loc.line_num_in_page

@@ -8,7 +8,7 @@ val path : t -> string
 
 val title : t -> string option
 
-val index : t -> Index.t
+val doc_hash : t -> string
 
 val search_scope : t -> Diet.Int.t option
 

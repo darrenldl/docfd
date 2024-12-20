@@ -28,7 +28,7 @@ val word_of_pos : doc_hash:string -> int -> string
 
 val word_ci_and_pos_s : ?range_inc:(int * int) -> doc_hash:string -> (string * Int_set.t) Seq.t
 
-val words_of_global_line_num : doc_hash:string -> string Seq.t
+val words_of_global_line_num : doc_hash:string -> int -> string Seq.t
 
 val line_of_global_line_num : doc_hash:string -> int -> string
 

@@ -132,10 +132,11 @@ module Content_view = struct
     in
     let content =
       Content_and_search_result_render.content_snippet
+      ~doc_hash:(Document.doc_hash document)
         ?search_result
         ~height
         ~width
-        (Document.index document)
+        ()
     in
     Lwd.return (Nottui.Ui.atom content)
 end
@@ -177,9 +178,10 @@ module Search_result_list = struct
           ~end_exc:(min result_count (search_result_selected + height))
           search_results
         |> Seq.map (Content_and_search_result_render.search_result
+        ~doc_hash:(Document.doc_hash document)
                       ~render_mode:(render_mode_of_document document)
                       ~width
-                      (Document.index document))
+                      )
         |> List.of_seq
       in
       let pane =

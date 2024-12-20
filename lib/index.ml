@@ -281,83 +281,29 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
   Word_db.load_into_db ~doc_hash x.word_db;
   ()
 
-type t = {
-  word_db : Word_db.t;
-  pos_s_of_word_ci : Int_set.t Int_map.t;
-  loc_of_pos : Loc.t CCVector.ro_vector;
-  line_loc_of_global_line_num : Line_loc.t CCVector.ro_vector;
-  start_end_inc_pos_of_global_line_num : (int * int) CCVector.ro_vector;
-  start_end_inc_pos_of_page_num : (int * int) CCVector.ro_vector;
-  word_ci_of_pos : int CCVector.ro_vector;
-  word_of_pos : int CCVector.ro_vector;
-  line_count_of_page_num : int CCVector.ro_vector;
-  page_count : int;
-  global_line_count : int;
-}
-
-let make () : t = {
-  word_db = Word_db.make ();
-  pos_s_of_word_ci = Int_map.empty;
-  loc_of_pos = CCVector.(freeze (create ()));
-  line_loc_of_global_line_num = CCVector.(freeze (create ()));
-  start_end_inc_pos_of_global_line_num = CCVector.(freeze (create ()));
-  start_end_inc_pos_of_page_num = CCVector.(freeze (create ()));
-  word_ci_of_pos = CCVector.(freeze (create ()));
-  word_of_pos = CCVector.(freeze (create ()));
-  line_count_of_page_num = CCVector.(freeze (create ()));
-  page_count = 0;
-  global_line_count = 0;
-}
-
-let equal (x : t) (y : t) =
-  let equal_int_int (x0, y0) (x1, y1) =
-    x0 = x1 && y0 = y1
+let global_line_count ~doc_hash =
+  let open Sqlite3 in
+  let stmt = prepare (Params.get_db ()) {|
+  SELECT global_line_count FROM doc_info
+  WHERE doc_hash = @doc_hash
+  |}
   in
-  Word_db.equal x.word_db y.word_db
-  &&
-  Int_map.equal
-    Int_set.equal
-    x.pos_s_of_word_ci y.pos_s_of_word_ci
-  &&
-  CCVector.equal Loc.equal x.loc_of_pos y.loc_of_pos
-  &&
-  CCVector.equal
-    Line_loc.equal
-    x.line_loc_of_global_line_num
-    y.line_loc_of_global_line_num
-  &&
-  CCVector.equal
-    equal_int_int
-    x.start_end_inc_pos_of_global_line_num
-    y.start_end_inc_pos_of_global_line_num
-  &&
-  CCVector.equal
-    equal_int_int
-    x.start_end_inc_pos_of_page_num
-    y.start_end_inc_pos_of_page_num
-  &&
-  CCVector.equal
-    Int.equal
-    x.word_ci_of_pos
-    y.word_ci_of_pos
-  &&
-  CCVector.equal
-    Int.equal
-    x.word_of_pos
-    y.word_of_pos
-  &&
-  CCVector.equal
-    Int.equal
-    x.line_count_of_page_num
-    y.line_count_of_page_num
-  &&
-  x.page_count = y.page_count
-  &&
-  x.global_line_count = y.global_line_count
+  Rc.check (bind_name stmt "doc_hash" (TEXT doc_hash));
+  let x = column_int stmt 0 in
+  Rc.check (finalize stmt);
+  x
 
-let global_line_count t = t.global_line_count
-
-let page_count t = t.page_count
+let page_count ~doc_hash =
+  let open Sqlite3 in
+  let stmt = prepare (Params.get_db ()) {|
+  SELECT page_count FROM doc_info
+  WHERE doc_hash = @doc_hash
+  |}
+  in
+  Rc.check (bind_name stmt "doc_hash" (TEXT doc_hash));
+  let x = column_int stmt 0 in
+  Rc.check (finalize stmt);
+  x
 
 let ccvector_of_int_map
   : 'a . 'a Int_map.t -> 'a CCVector.ro_vector =
@@ -367,36 +313,6 @@ let ccvector_of_int_map
   |> CCVector.of_seq
   |> CCVector.freeze
 
-let of_raw (raw : Raw.t) : t =
-  let line_loc_of_global_line_num =
-    ccvector_of_int_map raw.Raw.line_loc_of_global_line_num
-  in
-  let start_end_inc_pos_of_global_line_num =
-    ccvector_of_int_map raw.Raw.start_end_inc_pos_of_global_line_num
-  in
-  let start_end_inc_pos_of_page_num =
-    ccvector_of_int_map raw.Raw.start_end_inc_pos_of_page_num
-  in
-  let page_count = raw.Raw.page_count in
-  let global_line_count = raw.Raw.global_line_count in
-  assert (global_line_count = CCVector.length line_loc_of_global_line_num);
-  assert (global_line_count = CCVector.length start_end_inc_pos_of_global_line_num);
-  assert (page_count = CCVector.length start_end_inc_pos_of_page_num);
-  {
-    word_db = raw.Raw.word_db;
-    pos_s_of_word_ci = raw.Raw.pos_s_of_word_ci;
-    loc_of_pos =
-      ccvector_of_int_map raw.Raw.loc_of_pos;
-    line_loc_of_global_line_num;
-    start_end_inc_pos_of_global_line_num;
-    start_end_inc_pos_of_page_num;
-    word_ci_of_pos = ccvector_of_int_map raw.Raw.word_ci_of_pos;
-    word_of_pos = ccvector_of_int_map raw.Raw.word_of_pos;
-    line_count_of_page_num = ccvector_of_int_map raw.Raw.line_count_of_page_num;
-    page_count;
-    global_line_count;
-  }
-
 let lines pool ~doc_hash s =
   Raw.of_lines pool s
   |> load_raw_into_db ~doc_hash
@@ -405,17 +321,58 @@ let pages pool ~doc_hash s =
   Raw.of_pages pool s
   |> load_raw_into_db ~doc_hash
 
-let word_ci_of_pos pos (t : t) : string =
-  Word_db.word_of_index t.word_db (CCVector.get t.word_ci_of_pos pos)
+let word_of_id ~doc_hash id : string =
+  let open Sqlite3 in
+  let stmt = prepare (Params.get_db ()) {|
+  SELECT word FROM word
+  WHERE doc_hash = @doc_hash
+  AND id = @id
+  |}
+  in
+  Rc.check (bind_names stmt
+  [("doc_hash", TEXT doc_hash); ("id", INT id)]);
+  let x = column_text stmt 0 in
+  Rc.check (finalize stmt);
+  x
 
-let word_of_pos pos (t : t) : string =
-  Word_db.word_of_index t.word_db (CCVector.get t.word_of_pos pos)
+let word_ci_of_pos ~doc_hash pos : string =
+  let open Sqlite3 in
+  let stmt = prepare (Params.get_db ()) {|
+  SELECT word.word
+  FROM position p
+  JOIN word on word.id = p.word_ci_id
+  WHERE p.doc_hash = @doc_hash
+  AND flat_position = @pos
+  |}
+  in
+  Rc.check (bind_names stmt
+  [("doc_hash", TEXT doc_hash); ("pos", INT pos)]);
+  let x = column_text stmt 0 in
+  Rc.check (finalize stmt);
+  x
 
-let word_ci_and_pos_s ?range_inc (t : t) : (string * Int_set.t) Seq.t =
+let word_of_pos ~doc_hash pos : string =
+  let open Sqlite3 in
+  let stmt = prepare (Params.get_db ()) {|
+  SELECT word.word
+  FROM position p
+  JOIN word on word.id = p.word_id
+  WHERE p.doc_hash = @doc_hash
+  AND flat_position = @pos
+  |}
+  in
+  Rc.check (bind_names stmt
+  [("doc_hash", TEXT doc_hash); ("pos", INT pos)]);
+  let x = column_text stmt 0 in
+  Rc.check (finalize stmt);
+  x
+
+(* let word_ci_and_pos_s ~doc_hash ?range_inc () : (string * Int_set.t) Seq.t =
+  let open Sqlite3 in
   match range_inc with
   | None -> (
       Int_map.to_seq t.pos_s_of_word_ci
-      |> Seq.map (fun (i, s) -> (Word_db.word_of_index t.word_db i, s))
+      |> Seq.map (fun (i, s) -> (word_of_id ~doc_hash i, s))
     )
   | Some (start, end_inc) -> (
       assert (start <= end_inc);
@@ -439,12 +396,27 @@ let word_ci_and_pos_s ?range_inc (t : t) : (string * Int_set.t) Seq.t =
           in
           (word, m)
         )
-    )
+    ) *)
 
-let words_of_global_line_num x t : string Seq.t =
-  if x >= global_line_count t then (
+let words_of_global_line_num ~doc_hash x : string Dynarray.t =
+  let open Sqlite3 in
+  if x >= global_line_count ~doc_hash t then (
     invalid_arg "Index.words_of_global_line_num: global_line_num out of range"
   ) else (
+    let stmt = prepare (!Params.get_db ()) {|
+    SELECT start_pos, end_inc_pos
+    FROM line_info
+    WHERE doc_hash = @doc_hash
+    AND global_line_num = @x
+    |}
+    in
+    bind_names stmt
+    [ ("doc_hash", TEXT doc_hash)
+    ; ("x", INT (Int64.of_int))
+    ];
+    let start = column_int stmt 0 in
+    let end_inc = column_int stmt 1 in
+    Rc.check (finalize stmt);
     let (start, end_inc) =
       CCVector.get t.start_end_inc_pos_of_global_line_num x
     in
@@ -505,33 +477,83 @@ module Search = struct
       (token : Search_phrase.Enriched_token.t)
       (t : t)
     : int Seq.t =
+    let open Sqlite3 in
     Eio.Fiber.yield ();
     let match_typ = ET.match_typ token in
+    let start_enc_inc =
+      Option.map (fun around_pos ->
+        let start, end_inc =
+          if ET.is_linked_to_prev token then (
+            match match_typ with
+            | `Fuzzy ->
+              (around_pos - !Params.max_linked_token_search_dist,
+               around_pos + !Params.max_linked_token_search_dist)
+            | `Exact | `Prefix | `Suffix ->
+              (around_pos + 1,
+               around_pos + 1)
+          ) else (
+            (around_pos - !Params.max_token_search_dist,
+             around_pos + !Params.max_token_search_dist)
+          )
+        in
+        match within with
+        | None -> (start, end_inc)
+        | Some (within_start_pos, within_end_inc_pos) -> (
+            (max within_start_pos start, min within_end_inc_pos end_inc)
+          )
+      )
+      around_pos
+    in
+    let all_word_ci_s =
+      let stmt =
+        match start_end_inc with
+        | None -> (
+          let stmt = prepare (Params.get_db ()) {|
+          SELECT DISTINCT word_ci.id, word_ci.word
+          FROM word_ci
+          WHERE doc_hash = @doc_hash
+          |}
+          in
+          bind_names
+          stmt
+          [ ("doc_hash", TEXT doc_hash)
+          ];
+        )
+        | Some (start, end_inc) -> (
+          let stmt = prepare (Params.get_db ()) {|
+          SELECT DISTINCT word_ci.id, word_ci.word
+          FROM word_ci 
+          JOIN position
+            ON position.doc_hash = word.doc_hash
+            AND position.word_ci_id = word.id
+          WHERE word_ci.doc_hash = @doc_hash
+          AND position.flat_position BETWEEN @start AND @end_inc
+          |}
+          in
+          bind_names
+          stmt
+          [ ("doc_hash", TEXT doc_hash)
+          ; ("start", INT start)
+          ; ("end_inc", INT end_inc)
+          ];
+        )
+      in
+          let l = fold
+          stmt
+          ~f:(fun data ->
+            let id = Data.to_int_exn data.(0) in
+            let word_ci = Data.to_string_exn data.(1) in
+            (id, word_ci)
+          )
+          ~init:[]
+          in
+          Rc.check (finalize stmt);
+          l
+    in
     let word_ci_and_positions_to_consider =
       match around_pos with
       | None -> word_ci_and_pos_s t
       | Some around_pos -> (
-          let start, end_inc =
-            if ET.is_linked_to_prev token then (
-              match match_typ with
-              | `Fuzzy ->
-                (around_pos - !Params.max_linked_token_search_dist,
-                 around_pos + !Params.max_linked_token_search_dist)
-              | `Exact | `Prefix | `Suffix ->
-                (around_pos + 1,
-                 around_pos + 1)
-            ) else (
-              (around_pos - !Params.max_token_search_dist,
-               around_pos + !Params.max_token_search_dist)
-            )
-          in
-          let start, end_inc =
-            match within with
-            | None -> (start, end_inc)
-            | Some (within_start_pos, within_end_inc_pos) -> (
-                (max within_start_pos start, min within_end_inc_pos end_inc)
-              )
-          in
           word_ci_and_pos_s ~range_inc:(start, end_inc) t
         )
     in
