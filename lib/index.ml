@@ -282,28 +282,28 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
   ()
 
 let global_line_count ~doc_hash =
-  let open Sqlite3 in
-  let stmt = prepare (Params.get_db ()) {|
+  let open Sqlite3_utils in
+  step_stmt
+  {|
   SELECT global_line_count FROM doc_info
   WHERE doc_hash = @doc_hash
   |}
-  in
-  Rc.check (bind_name stmt "doc_hash" (TEXT doc_hash));
-  let x = column_int stmt 0 in
-  Rc.check (finalize stmt);
-  x
+  ~names:[("doc_hash", TEXT doc_hash)]
+  (fun stmt ->
+    column_int stmt 0
+  )
 
 let page_count ~doc_hash =
-  let open Sqlite3 in
-  let stmt = prepare (Params.get_db ()) {|
+  let open Sqlite3_utils in
+  step_stmt
+  {|
   SELECT page_count FROM doc_info
   WHERE doc_hash = @doc_hash
   |}
-  in
-  Rc.check (bind_name stmt "doc_hash" (TEXT doc_hash));
-  let x = column_int stmt 0 in
-  Rc.check (finalize stmt);
-  x
+  ~names:[("doc_hash", TEXT doc_hash)]
+  (fun stmt ->
+  column_int stmt 0
+  )
 
 let ccvector_of_int_map
   : 'a . 'a Int_map.t -> 'a CCVector.ro_vector =
@@ -322,50 +322,48 @@ let pages pool ~doc_hash s =
   |> load_raw_into_db ~doc_hash
 
 let word_of_id ~doc_hash id : string =
-  let open Sqlite3 in
-  let stmt = prepare (Params.get_db ()) {|
+  let open Sqlite3_utils in
+  let stmt = prepare {|
   SELECT word FROM word
   WHERE doc_hash = @doc_hash
   AND id = @id
   |}
   in
-  Rc.check (bind_names stmt
-  [("doc_hash", TEXT doc_hash); ("id", INT id)]);
+  bind_names stmt
+  [("doc_hash", TEXT doc_hash); ("id", INT id)];
   let x = column_text stmt 0 in
-  Rc.check (finalize stmt);
+  finalize stmt;
   x
 
 let word_ci_of_pos ~doc_hash pos : string =
-  let open Sqlite3 in
-  let stmt = prepare (Params.get_db ()) {|
+  let open Sqlite3_utils in
+  step_stmt
+  {|
   SELECT word.word
   FROM position p
   JOIN word on word.id = p.word_ci_id
   WHERE p.doc_hash = @doc_hash
   AND flat_position = @pos
   |}
-  in
-  Rc.check (bind_names stmt
-  [("doc_hash", TEXT doc_hash); ("pos", INT pos)]);
-  let x = column_text stmt 0 in
-  Rc.check (finalize stmt);
-  x
+  ~names:[("doc_hash", TEXT doc_hash); ("pos", INT pos)]
+  (fun stmt ->
+    column_text stmt 0
+  )
 
 let word_of_pos ~doc_hash pos : string =
-  let open Sqlite3 in
-  let stmt = prepare (Params.get_db ()) {|
+  let open Sqlite3_utils in
+  step_stmt
+  {|
   SELECT word.word
   FROM position p
   JOIN word on word.id = p.word_id
   WHERE p.doc_hash = @doc_hash
   AND flat_position = @pos
   |}
-  in
-  Rc.check (bind_names stmt
-  [("doc_hash", TEXT doc_hash); ("pos", INT pos)]);
-  let x = column_text stmt 0 in
-  Rc.check (finalize stmt);
-  x
+  ~names:[("doc_hash", TEXT doc_hash); ("pos", INT pos)]
+  (fun stmt ->
+  column_text stmt 0
+  )
 
 (* let word_ci_and_pos_s ~doc_hash ?range_inc () : (string * Int_set.t) Seq.t =
   let open Sqlite3 in
@@ -398,73 +396,169 @@ let word_of_pos ~doc_hash pos : string =
         )
     ) *)
 
+let words_between_start_and_end_inc ~doc_hash (start, end_inc) : string Dynarray.t =
+  let open Sqlite3_utils in
+    step_stmt
+    {|
+    SELECT word.word
+    FROM position
+    JOIN word
+      ON word.doc_hash = position.doc_hash
+      AND word.id = position.word_id
+    WHERE position.doc_hash = @doc_hash
+    AND position.flat_position BETWEEN @start AND @end_inc
+    ORDER BY position.flat_position
+    |}
+    ~names:[ ("doc_hash", TEXT doc_hash)
+    ; ("start", INT (Int64.of_int start))
+    ; ("end_inc", INT (Int64.of_int end_inc))
+    ]
+    (fun stmt ->
+      let acc = Dynarray.create () in
+    iter stmt
+    (fun data ->
+      Dynarray.add_last acc (Data.to_string_exn data.(0))
+    );
+    acc
+    )
+
 let words_of_global_line_num ~doc_hash x : string Dynarray.t =
-  let open Sqlite3 in
-  if x >= global_line_count ~doc_hash t then (
+  let open Sqlite3_utils in
+  if x >= global_line_count ~doc_hash then (
     invalid_arg "Index.words_of_global_line_num: global_line_num out of range"
   ) else (
-    let stmt = prepare (!Params.get_db ()) {|
+    let start, end_inc =
+    step_stmt
+    {|
     SELECT start_pos, end_inc_pos
     FROM line_info
     WHERE doc_hash = @doc_hash
     AND global_line_num = @x
     |}
-    in
-    bind_names stmt
-    [ ("doc_hash", TEXT doc_hash)
-    ; ("x", INT (Int64.of_int))
-    ];
-    let start = column_int stmt 0 in
-    let end_inc = column_int stmt 1 in
-    Rc.check (finalize stmt);
-    let (start, end_inc) =
-      CCVector.get t.start_end_inc_pos_of_global_line_num x
-    in
-    OSeq.(start -- end_inc)
-    |> Seq.map (fun pos -> word_of_pos pos t)
+    ~names:[ ("doc_hash", TEXT doc_hash)
+    ; ("x", INT (Int64.of_int x))
+    ]
+    (fun stmt ->
+    (column_int stmt 0, column_int stmt 1)
+    )
+in
+    words_between_start_and_end_inc ~doc_hash (start, end_inc)
   )
 
-let words_of_page_num x t : string Seq.t =
-  if x >= page_count t then (
+let words_of_page_num ~doc_hash x : string Dynarray.t =
+  let open Sqlite3_utils in
+  if x >= page_count ~doc_hash then (
     invalid_arg "Index.words_of_page_num: page_num out of range"
   ) else (
-    let (start, end_inc) =
-      CCVector.get t.start_end_inc_pos_of_page_num x
-    in
-    OSeq.(start -- end_inc)
-    |> Seq.map (fun pos -> word_of_pos pos t)
+    let start, end_inc =
+    step_stmt
+    {|
+    SELECT start_pos, end_inc_pos
+    FROM page_info
+    WHERE doc_hash = @doc_hash
+    AND page_num = @x
+    |}
+    ~names:[ ("doc_hash", TEXT doc_hash)
+    ; ("x", INT (Int64.of_int x))
+    ]
+    (fun stmt ->
+    (column_int stmt 0, column_int stmt 1)
+    )
+in
+    words_between_start_and_end_inc ~doc_hash (start, end_inc)
   )
 
-let line_of_global_line_num x t =
-  if x >= global_line_count t then (
+let line_of_global_line_num ~doc_hash x =
+  if x >= global_line_count ~doc_hash then (
     invalid_arg "Index.line_of_global_line_num: global_line_num out of range"
   ) else (
-    words_of_global_line_num x t
-    |> List.of_seq
+    words_of_global_line_num ~doc_hash x
+    |> Dynarray.to_list
     |> String.concat ""
   )
 
-let line_loc_of_global_line_num x t =
-  if x >= global_line_count t then (
+let line_loc_of_global_line_num ~doc_hash global_line_num : Line_loc.t =
+  let open Sqlite3_utils in
+  if global_line_num >= global_line_count ~doc_hash then (
     invalid_arg "Index.line_loc_of_global_line_num: global_line_num out of range"
   ) else (
-    CCVector.get t.line_loc_of_global_line_num x
+    let page_num, line_num_in_page =
+    step_stmt
+    {|
+    SELECT page_num, line_num_in_page
+    FROM line_info
+    WHERE global_line_num = @global_line_num
+    |}
+    ~names:[ ("doc_hash", TEXT doc_hash)
+    ; ("global_line_num", INT (Int64.of_int global_line_num)) ]
+    (fun stmt ->
+      (column_int stmt 0, column_int stmt 1)
+    )
+in
+    { page_num; line_num_in_page; global_line_num }
   )
 
-let loc_of_pos pos t : Loc.t =
-  CCVector.get t.loc_of_pos pos
+let loc_of_pos ~doc_hash pos : Loc.t =
+  let open Sqlite3_utils in
+  let pos_in_line, global_line_num =
+  step_stmt
+  {|
+  SELECT pos_in_line, global_line_num
+  FROM position
+  WHERE doc_hash = @doc_hash
+  AND pos = @pos
+  |}
+  ~names:[ ("doc_hash", TEXT doc_hash); ("pos", INT (Int64.of_int pos)) ]
+  (fun stmt ->
+    (column_int stmt 0, column_int stmt 1)
+  )
+  in
+  let line_loc = line_loc_of_global_line_num ~doc_hash global_line_num in
+  { line_loc; pos_in_line }
 
-let max_pos t =
-  CCVector.length t.word_of_pos
+let max_pos ~doc_hash =
+  let open Sqlite3_utils in
+  step_stmt
+  {|
+  SELECT max_pos
+  FROM doc_info
+  WHERE doc_hash = @doc_hash
+  |}
+  ~names:[ ("doc_hash", TEXT doc_hash) ]
+  (fun stmt ->
+    column_int stmt 0
+  )
 
-let line_count_of_page_num page t : int =
-  CCVector.get t.line_count_of_page_num page
+let line_count_of_page_num ~doc_hash page : int =
+  let open Sqlite3_utils in
+  step_stmt
+  {|
+  SELECT line_count
+  FROM page_info
+  WHERE doc_hash = @doc_hash
+  AND page = @page
+  |}
+  ~names:[ ("doc_hash", TEXT doc_hash); ("page", INT (Int64.of_int page)) ]
+  (fun stmt ->
+    column_int stmt 0
+  )
 
-let start_end_inc_pos_of_global_line_num x t =
-  if x >= global_line_count t then (
+let start_end_inc_pos_of_global_line_num ~doc_hash global_line_num =
+  let open Sqlite3_utils in
+  if global_line_num >= global_line_count ~doc_hash then (
     invalid_arg "Index.start_end_inc_pos_of_global_line_num: global_line_num out of range"
   ) else (
-    CCVector.get t.start_end_inc_pos_of_global_line_num x
+  step_stmt
+  {|
+  SELECT start_pos, end_inc_pos
+  FROM line_num
+  WHERE doc_hash = @doc_hash
+  AND global_line_num = @global_line_num
+  |}
+  ~names:[ ("doc_hash", TEXT doc_hash); ("global_line_num", INT (Int64.of_int global_line_num)) ]
+  (fun stmt ->
+    (column_int stmt 0, column_int stmt 1)
+  )
   )
 
 module Search = struct
@@ -475,9 +569,8 @@ module Search = struct
       ?around_pos
       ~(consider_edit_dist : bool)
       (token : Search_phrase.Enriched_token.t)
-      (t : t)
     : int Seq.t =
-    let open Sqlite3 in
+    let open Sqlite3_utils in
     Eio.Fiber.yield ();
     let match_typ = ET.match_typ token in
     let start_enc_inc =
