@@ -398,7 +398,8 @@ let word_of_pos ~doc_hash pos : string =
 
 let words_between_start_and_end_inc ~doc_hash (start, end_inc) : string Dynarray.t =
   let open Sqlite3_utils in
-    step_stmt
+let acc = Dynarray.create () in
+    iter_stmt
     {|
     SELECT word.word
     FROM position
@@ -413,14 +414,10 @@ let words_between_start_and_end_inc ~doc_hash (start, end_inc) : string Dynarray
     ; ("start", INT (Int64.of_int start))
     ; ("end_inc", INT (Int64.of_int end_inc))
     ]
-    (fun stmt ->
-      let acc = Dynarray.create () in
-    iter stmt
     (fun data ->
       Dynarray.add_last acc (Data.to_string_exn data.(0))
     );
     acc
-    )
 
 let words_of_global_line_num ~doc_hash x : string Dynarray.t =
   let open Sqlite3_utils in
@@ -565,6 +562,7 @@ module Search = struct
   module ET = Search_phrase.Enriched_token
 
   let usable_positions
+      ~doc_hash
       ?within
       ?around_pos
       ~(consider_edit_dist : bool)
@@ -573,7 +571,7 @@ module Search = struct
     let open Sqlite3_utils in
     Eio.Fiber.yield ();
     let match_typ = ET.match_typ token in
-    let start_enc_inc =
+    let start_end_inc =
       Option.map (fun around_pos ->
         let start, end_inc =
           if ET.is_linked_to_prev token then (
@@ -597,66 +595,55 @@ module Search = struct
       )
       around_pos
     in
-    let all_word_ci_s =
-      let stmt =
+    let word_candidates : (int * string) list =
+        let f acc data =
+          let word_id = Data.to_int_exn data.(0) in
+          let word = Data.to_string_exn data.(1) in
+          (word_id, word) :: acc
+        in
         match start_end_inc with
         | None -> (
-          let stmt = prepare (Params.get_db ()) {|
-          SELECT DISTINCT word_ci.id, word_ci.word
-          FROM word_ci
+          fold_stmt
+          {|
+          SELECT DISTINCT
+              word.id AS word_id,
+              word.word AS word
+          FROM word
           WHERE doc_hash = @doc_hash
           |}
-          in
-          bind_names
-          stmt
-          [ ("doc_hash", TEXT doc_hash)
-          ];
+          ~names:[ ("doc_hash", TEXT doc_hash)
+          ]
+          f
+          []
         )
         | Some (start, end_inc) -> (
-          let stmt = prepare (Params.get_db ()) {|
-          SELECT DISTINCT word_ci.id, word_ci.word
-          FROM word_ci 
+          fold_stmt
+          {|
+          SELECT DISTINCT
+              word.id AS word_id,
+              word.word AS word
+          FROM word
           JOIN position
-            ON position.doc_hash = word.doc_hash
-            AND position.word_ci_id = word.id
+              ON position.doc_hash = word.doc_hash
+              AND position.word_id = word.id
           WHERE word_ci.doc_hash = @doc_hash
-          AND position.flat_position BETWEEN @start AND @end_inc
+          AND position.pos BETWEEN @start AND @end_inc
           |}
-          in
-          bind_names
-          stmt
-          [ ("doc_hash", TEXT doc_hash)
-          ; ("start", INT start)
-          ; ("end_inc", INT end_inc)
-          ];
-        )
-      in
-          let l = fold
-          stmt
-          ~f:(fun data ->
-            let id = Data.to_int_exn data.(0) in
-            let word_ci = Data.to_string_exn data.(1) in
-            (id, word_ci)
-          )
-          ~init:[]
-          in
-          Rc.check (finalize stmt);
-          l
-    in
-    let word_ci_and_positions_to_consider =
-      match around_pos with
-      | None -> word_ci_and_pos_s t
-      | Some around_pos -> (
-          word_ci_and_pos_s ~range_inc:(start, end_inc) t
+          ~names:[ ("doc_hash", TEXT doc_hash)
+          ; ("start", INT (Int64.of_int start))
+          ; ("end_inc", INT (Int64.of_int end_inc))
+          ]
+          f
+          []
         )
     in
-    let non_fuzzy_filter_pos_s
+    let non_fuzzy_filter
         ~search_word
         ~search_word_ci
-        ~indexed_word_ci
         (match_typ : [ `Exact | `Prefix | `Suffix ])
-        (pos_s : Int_set.t)
-      : Int_set.t option
+        ~indexed_word
+        ~indexed_word_ci
+      : bool
       =
       let f_ci =
         match match_typ with
@@ -670,87 +657,107 @@ module Search = struct
         | `Prefix -> CCString.prefix ~pre:search_word
         | `Suffix -> CCString.suffix ~suf:search_word
       in
-      if f_ci indexed_word_ci then (
         if String.equal search_word search_word_ci then (
-          Some pos_s
+          f_ci indexed_word_ci
         ) else (
-          pos_s
-          |> Int_set.filter (fun pos ->
-              let indexed_word = word_of_pos pos t in
-              f indexed_word
-            )
-          |> Option.some
+          f indexed_word
         )
-      ) else (
-        None
-      )
     in
-    word_ci_and_positions_to_consider
-    |> Seq.filter (fun (indexed_word_ci, _pos_s) ->
+    word_candidates
+    |> List.to_seq
+    |> Seq.filter (fun (_word_id, indexed_word) ->
         Eio.Fiber.yield ();
-        String.length indexed_word_ci > 0
+        String.length indexed_word > 0
       )
-    |> Seq.filter_map (
+    |> Seq.filter (
       match ET.data token with
       | `Explicit_spaces -> (
-          fun (indexed_word_ci, pos_s) ->
+          fun (_word_id, indexed_word) ->
             Eio.Fiber.yield ();
-            if Parser_components.is_space indexed_word_ci.[0] then
-              Some pos_s
-            else
-              None
+            Parser_components.is_space indexed_word.[0]
         )
       | `String search_word -> (
-          fun (indexed_word_ci, pos_s) ->
+        fun (word_id, indexed_word) ->
             Eio.Fiber.yield ();
             let search_word_ci =
               String.lowercase_ascii search_word
             in
-            let indexed_word_ci_len = String.length indexed_word_ci in
-            if Parser_components.is_possibly_utf_8 indexed_word_ci.[0] then (
-              if String.equal search_word_ci indexed_word_ci then (
-                Some pos_s
-              ) else (
-                None
-              )
+          let indexed_word_ci = String.lowercase_ascii indexed_word in
+            let indexed_word_len = String.length indexed_word in
+            if Parser_components.is_possibly_utf_8 indexed_word.[0] then (
+              String.equal search_word indexed_word
             ) else (
               match match_typ with
               | `Fuzzy -> (
-                  if
                     String.equal search_word_ci indexed_word_ci
                     || CCString.find ~sub:search_word_ci indexed_word_ci >= 0
-                    || (indexed_word_ci_len >= 2
+                    || (indexed_word_len >= 2
                         && CCString.find ~sub:indexed_word_ci search_word_ci >= 0)
                     || (consider_edit_dist
                         && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word_ci search_word_ci.[0]
                         && Spelll.match_with (ET.automaton token) indexed_word_ci)
-                  then (
-                    Some pos_s
-                  ) else (
-                    None
-                  )
                 )
               | `Exact | `Prefix | `Suffix as m -> (
-                  non_fuzzy_filter_pos_s
+                  non_fuzzy_filter
                     ~search_word
                     ~search_word_ci
-                    ~indexed_word_ci
                     (m :> [ `Exact | `Prefix | `Suffix ])
-                    pos_s
+                    ~indexed_word
+                    ~indexed_word_ci
                 )
             )
         )
     )
-    |> Seq.flat_map (fun pos_s ->
+    |> Seq.flat_map (fun (word_id, indexed_word) ->
         Eio.Fiber.yield ();
-        Int_set.to_seq pos_s)
+        let f acc data =
+          Data.to_int_exn data.(0) :: acc
+        in
+        let l =
+        match start_end_inc with
+        | None -> (
+          fold_stmt
+          {|
+          SELECT
+              position.pos
+          FROM position
+          WHERE doc_hash = @doc_hash
+          AND word_id = @word_id
+          |}
+          ~names:[ ("doc_hash", TEXT doc_hash)
+          ; ("word_id", INT (Int64.of_int word_id))
+          ]
+          f
+          []
+        )
+        | Some (start, end_inc) -> (
+          fold_stmt
+          {|
+          SELECT
+              position.pos
+          WHERE doc_hash = @doc_hash
+          AND word_id = @word_id
+          AND pos BETWEEN @start AND @end_inc
+          |}
+          ~names:[ ("doc_hash", TEXT doc_hash)
+          ; ("word_id", INT (Int64.of_int word_id))
+          ; ("start", INT (Int64.of_int start))
+          ; ("end_inc", INT (Int64.of_int end_inc))
+          ]
+          f
+          []
+        )
+        in
+        l
+        |> List.to_seq
+        )
 
   let search_around_pos
+      ~doc_hash
       ~consider_edit_dist
       ~(within : (int * int) option)
       (around_pos : int)
       (l : Search_phrase.Enriched_token.t list)
-      (t : t)
     : int list Seq.t =
     let rec aux around_pos l =
       Eio.Fiber.yield ();
@@ -758,11 +765,11 @@ module Search = struct
       | [] -> Seq.return []
       | token :: rest -> (
           usable_positions
+          ~doc_hash
             ?within
             ~around_pos
             ~consider_edit_dist
             token
-            t
           |> Seq.flat_map (fun pos ->
               aux pos rest
               |> Seq.map (fun l -> pos :: l)
@@ -778,11 +785,11 @@ module Search = struct
   let search_single
       pool
       stop_signal
+      ~doc_hash
       ~within_same_line
       ~consider_edit_dist
       (search_scope : Diet.Int.t option)
       (phrase : Search_phrase.t)
-      (t : t)
     : Search_result_heap.t =
     Eio.Fiber.yield ();
     if Search_phrase.is_empty phrase then (
@@ -793,7 +800,7 @@ module Search = struct
       | first_word :: rest -> (
           Eio.Fiber.yield ();
           let possible_start_count, possible_starts =
-            usable_positions ~consider_edit_dist first_word t
+            usable_positions ~doc_hash ~consider_edit_dist first_word
             |> (fun s ->
                 match search_scope with
                 | None -> s
@@ -832,7 +839,7 @@ module Search = struct
                          Eio.Fiber.yield ();
                          let within =
                            if within_same_line then (
-                             let loc = loc_of_pos pos t in
+                             let loc = loc_of_pos ~doc_hash pos in
                              Some (start_end_inc_pos_of_global_line_num loc.line_loc.global_line_num t)
                            ) else (
                              None
