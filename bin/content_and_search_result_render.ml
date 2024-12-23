@@ -153,6 +153,7 @@ let word_grid_of_index
       |> Seq.map (fun global_line_num ->
           let data =
             Index.words_of_global_line_num ~doc_hash global_line_num
+      |> Dynarray.to_seq
             |> Seq.map (fun word -> { word; typ = `Plain })
             |> Array.of_seq
           in
@@ -324,6 +325,7 @@ let grab_additional_lines
   let max_end_inc_global_line_num = Index.global_line_count ~doc_hash - 1 in
   let non_space_word_count_of_line n =
     Index.words_of_global_line_num ~doc_hash n
+    |> Dynarray.to_seq
     |> Seq.filter word_is_not_space
     |> Seq.length
   in

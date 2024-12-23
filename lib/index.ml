@@ -313,41 +313,38 @@ let ccvector_of_int_map
   |> CCVector.of_seq
   |> CCVector.freeze
 
-let lines pool ~doc_hash s =
+let is_indexed ~doc_hash =
+  let open Sqlite3_utils in
+  step_stmt
+  {|
+  SELECT 0
+  FROM page_info
+  WHERE doc_hash = @doc_hash
+  |}
+  ~names:[ ("doc_hash", TEXT doc_hash) ]
+  (fun stmt ->
+    data_count stmt > 0
+  )
+
+let index_lines pool ~doc_hash s =
   Raw.of_lines pool s
   |> load_raw_into_db ~doc_hash
 
-let pages pool ~doc_hash s =
+let index_pages pool ~doc_hash s =
   Raw.of_pages pool s
   |> load_raw_into_db ~doc_hash
 
 let word_of_id ~doc_hash id : string =
   let open Sqlite3_utils in
-  let stmt = prepare {|
+  step_stmt
+  {|
   SELECT word FROM word
   WHERE doc_hash = @doc_hash
   AND id = @id
   |}
-  in
-  bind_names stmt
-  [("doc_hash", TEXT doc_hash); ("id", INT id)];
-  let x = column_text stmt 0 in
-  finalize stmt;
-  x
-
-let word_ci_of_pos ~doc_hash pos : string =
-  let open Sqlite3_utils in
-  step_stmt
-  {|
-  SELECT word.word
-  FROM position p
-  JOIN word on word.id = p.word_ci_id
-  WHERE p.doc_hash = @doc_hash
-  AND flat_position = @pos
-  |}
-  ~names:[("doc_hash", TEXT doc_hash); ("pos", INT pos)]
+  ~names:[("doc_hash", TEXT doc_hash); ("id", INT id)]
   (fun stmt ->
-    column_text stmt 0
+  column_text stmt 0
   )
 
 let word_of_pos ~doc_hash pos : string =
@@ -360,41 +357,14 @@ let word_of_pos ~doc_hash pos : string =
   WHERE p.doc_hash = @doc_hash
   AND flat_position = @pos
   |}
-  ~names:[("doc_hash", TEXT doc_hash); ("pos", INT pos)]
+  ~names:[("doc_hash", TEXT doc_hash); ("pos", INT (Int64.of_int pos))]
   (fun stmt ->
   column_text stmt 0
   )
 
-(* let word_ci_and_pos_s ~doc_hash ?range_inc () : (string * Int_set.t) Seq.t =
-  let open Sqlite3 in
-  match range_inc with
-  | None -> (
-      Int_map.to_seq t.pos_s_of_word_ci
-      |> Seq.map (fun (i, s) -> (word_of_id ~doc_hash i, s))
-    )
-  | Some (start, end_inc) -> (
-      assert (start <= end_inc);
-      let start = max 0 start in
-      let end_inc = min (CCVector.length t.word_ci_of_pos - 1) end_inc in
-      let words_to_consider = ref Int_set.empty in
-      for pos = start to end_inc do
-        let index = CCVector.get t.word_ci_of_pos pos in
-        words_to_consider := Int_set.add index !words_to_consider
-      done;
-      Int_set.to_seq !words_to_consider
-      |> Seq.map (fun index ->
-          (Word_db.word_of_index t.word_db index, Int_map.find index t.pos_s_of_word_ci)
-        )
-      |> Seq.map (fun (word, pos_s) ->
-          let _, _, m =
-            Int_set.split (start-1) pos_s
-          in
-          let m, _, _ =
-            Int_set.split (end_inc+1) m
-          in
-          (word, m)
-        )
-    ) *)
+let word_ci_of_pos ~doc_hash pos : string =
+  word_of_pos ~doc_hash pos
+    |> String.lowercase_ascii
 
 let words_between_start_and_end_inc ~doc_hash (start, end_inc) : string Dynarray.t =
   let open Sqlite3_utils in
@@ -840,25 +810,26 @@ module Search = struct
                          let within =
                            if within_same_line then (
                              let loc = loc_of_pos ~doc_hash pos in
-                             Some (start_end_inc_pos_of_global_line_num loc.line_loc.global_line_num t)
+                             Some (start_end_inc_pos_of_global_line_num ~doc_hash loc.line_loc.global_line_num)
                            ) else (
                              None
                            )
                          in
-                         search_around_pos ~consider_edit_dist ~within pos rest t
+                         search_around_pos ~doc_hash ~consider_edit_dist ~within pos rest
                          |> Seq.map (fun l -> pos :: l)
                          |> Seq.map (fun (l : int list) ->
                              Eio.Fiber.yield ();
-                             let opening_closing_symbol_pairs = List.map (fun pos -> word_of_pos pos t) l
-                                                                |>  Misc_utils.opening_closing_symbol_pairs
+                             let opening_closing_symbol_pairs =
+                               List.map (fun pos -> word_of_pos ~doc_hash pos) l
+                               |>  Misc_utils.opening_closing_symbol_pairs
                              in
                              let found_phrase_opening_closing_symbol_match_count =
                                let pos_arr : int array = Array.of_list l in
                                List.fold_left (fun total (x, y) ->
                                    let pos_x = pos_arr.(x) in
                                    let pos_y = pos_arr.(y) in
-                                   let c_x = String.get (word_of_pos pos_x t) 0 in
-                                   let c_y = String.get (word_of_pos pos_y t) 0 in
+                                   let c_x = String.get (word_of_pos ~doc_hash pos_x) 0 in
+                                   let c_y = String.get (word_of_pos ~doc_hash pos_y) 0 in
                                    assert (List.exists (fun (x, y) -> c_x = x && c_y = y)
                                              Params.opening_closing_symbols);
                                    if pos_x < pos_y then (
@@ -867,7 +838,7 @@ module Search = struct
                                        |> Seq.fold_left (fun count pos ->
                                            match count with
                                            | Some count -> (
-                                               let word = word_of_pos pos t in
+                                               let word = word_of_pos ~doc_hash pos in
                                                if String.length word = 1 then (
                                                  if String.get word 0 = c_x then (
                                                    Some (count + 1)
@@ -904,8 +875,8 @@ module Search = struct
                                                 (fun pos ->
                                                    Search_result.{
                                                      found_word_pos = pos;
-                                                     found_word_ci = word_ci_of_pos pos t;
-                                                     found_word = word_of_pos pos t;
+                                                     found_word_ci = word_ci_of_pos ~doc_hash pos;
+                                                     found_word = word_of_pos ~doc_hash pos;
                                                    }) l)
                                ~found_phrase_opening_closing_symbol_match_count
                            )
@@ -932,28 +903,35 @@ module Search = struct
   let search
       pool
       stop_signal
+      ~doc_hash
       ~within_same_line
       ~consider_edit_dist
       search_scope
       (exp : Search_exp.t)
-      (t : t)
     : Search_result_heap.t =
     Search_exp.flattened exp
     |> List.to_seq
-    |> Seq.map (fun phrase -> search_single pool stop_signal ~within_same_line ~consider_edit_dist search_scope phrase t)
+    |> Seq.map (fun phrase -> search_single pool stop_signal ~doc_hash ~within_same_line ~consider_edit_dist search_scope phrase)
     |> Seq.fold_left search_result_heap_merge_with_yield Search_result_heap.empty
 end
 
 let search
     pool
     stop_signal
+    ~doc_hash
     ~within_same_line
     search_scope
     (exp : Search_exp.t)
-    (t : t)
   : Search_result.t array =
   let arr =
-    Search.search pool stop_signal ~within_same_line ~consider_edit_dist:true search_scope exp t
+    Search.search
+    pool
+    stop_signal
+    ~doc_hash
+    ~within_same_line
+    ~consider_edit_dist:true
+    search_scope
+    exp
     |> Search_result_heap.to_seq
     |> Array.of_seq
   in

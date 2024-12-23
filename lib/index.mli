@@ -18,17 +18,15 @@ module Loc : sig
   val pos_in_line : t -> int
 end
 
-val lines : Task_pool.t -> doc_hash:string -> string Seq.t -> unit
+val index_lines : Task_pool.t -> doc_hash:string -> string Seq.t -> unit
 
-val pages : Task_pool.t -> doc_hash:string -> string list Seq.t -> unit
+val index_pages : Task_pool.t -> doc_hash:string -> string list Seq.t -> unit
 
 val word_ci_of_pos : doc_hash:string -> int -> string
 
 val word_of_pos : doc_hash:string -> int -> string
 
-val word_ci_and_pos_s : ?range_inc:(int * int) -> doc_hash:string -> (string * Int_set.t) Seq.t
-
-val words_of_global_line_num : doc_hash:string -> int -> string Seq.t
+val words_of_global_line_num : doc_hash:string -> int -> string Dynarray.t
 
 val line_of_global_line_num : doc_hash:string -> int -> string
 
@@ -38,13 +36,14 @@ val loc_of_pos : doc_hash:string -> int -> Loc.t
 
 val max_pos : doc_hash:string -> int
 
-val words_of_page_num : doc_hash:string -> int -> string Seq.t
+val words_of_page_num : doc_hash:string -> int -> string Dynarray.t
 
 val line_count_of_page_num : doc_hash:string -> int -> int
 
 val search :
   Task_pool.t ->
   Stop_signal.t ->
+  doc_hash:string ->
   within_same_line:bool ->
   Diet.Int.t option ->
   Search_exp.t ->
@@ -53,3 +52,5 @@ val search :
 val global_line_count : doc_hash:string -> int
 
 val page_count : doc_hash:string -> int
+
+val is_indexed : doc_hash:string -> bool

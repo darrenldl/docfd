@@ -89,10 +89,11 @@ let refresh_search_results pool stop_signal (t : t) : t =
           Index.search
             pool
             stop_signal
+            ~doc_hash:(Document.doc_hash doc)
             ~within_same_line
             (Document.search_scope doc)
             t.search_exp
-            (Document.index doc))
+            )
       )
     |> String_map.of_list
   in
@@ -162,10 +163,11 @@ let add_document pool (doc : Document.t) (t : t) : t =
       (Index.search
          pool
          (Stop_signal.make ())
+         ~doc_hash:(Document.doc_hash doc)
          ~within_same_line
          (Document.search_scope doc)
          t.search_exp
-         (Document.index doc))
+         )
       t.search_results
   in
   { t with
@@ -322,7 +324,7 @@ let narrow_search_scope ~level (t : t) : t =
   let t = drop `Unusable t in
   let all_documents =
     String_map.mapi (fun path doc ->
-        let index = Document.index doc in
+        let doc_hash = Document.doc_hash doc in
         match String_map.find_opt path t.search_results with
         | None -> doc
         | Some search_results -> (
@@ -346,7 +348,7 @@ let narrow_search_scope ~level (t : t) : t =
                     in
                     let offset = level * !Params.tokens_per_search_scope_level in
                     let s, e =
-                      (max 0 (s - offset), min (Index.max_pos index) (e + offset))
+                      (max 0 (s - offset), min (Index.max_pos ~doc_hash) (e + offset))
                     in
                     Diet.Int.add
                       (Diet.Int.Interval.make s e)

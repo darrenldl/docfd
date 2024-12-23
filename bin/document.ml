@@ -16,6 +16,8 @@ let path (t : t) = t.path
 
 let title (t : t) = t.title
 
+let doc_hash (t : t) = t.doc_hash
+
 let search_scope (t : t) = t.search_scope
 
 let last_scan (t : t) = t.last_scan
@@ -38,7 +40,7 @@ let parse_lines pool search_mode ~path (s : string Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
     | Content -> (
-        let index = Index.of_lines pool s in
+        let index = Index.index_lines pool s in
         let empty = make search_mode ~path in
         {
           empty with
@@ -55,16 +57,15 @@ let parse_lines pool search_mode ~path (s : string Seq.t) : t =
   in
   aux Title None s
 
-let parse_pages pool search_mode ~path (s : string list Seq.t) : t =
+let parse_pages pool ~doc_hash search_mode ~path (s : string list Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
     | Content -> (
-        let index = Index.of_pages pool s in
+      Index.index_pages pool ~doc_hash s;
         let empty = make search_mode ~path in
         {
           empty with
           title;
-          index;
         }
       )
     | Title -> (
@@ -126,7 +127,7 @@ let inter_search_scope (x : Diet.Int.t) (t : t) : t =
   { t with search_scope = Some search_scope }
 
 module Of_path = struct
-  let text ~env pool search_mode path : (t, string) result =
+  let text ~env pool ~doc_hash search_mode path : (t, string) result =
     let fs = Eio.Stdenv.fs env in
     try
       Eio.Path.(with_lines (fs / path))
@@ -136,7 +137,7 @@ module Of_path = struct
     with
     | _ -> Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
 
-  let pdf ~env pool search_mode path : (t, string) result =
+  let pdf ~env pool ~doc_hash search_mode path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
     let fs = Eio.Stdenv.fs env in
     try
@@ -149,11 +150,11 @@ module Of_path = struct
             |> Seq.map (fun page -> String.split_on_char '\n' page)
           )
       in
-      Ok (parse_pages pool search_mode ~path pages)
+      Ok (parse_pages pool ~doc_hash search_mode ~path pages)
     with
     | _ -> Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
 
-  let pandoc_supported_format ~env pool search_mode path : (t, string) result =
+  let pandoc_supported_format ~env pool ~doc_hash search_mode path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
     let fs = Eio.Stdenv.fs env in
     let ext = File_utils.extension_of_file path in
@@ -202,33 +203,31 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, 
     | Some x -> Ok x
     | None -> BLAKE2B.hash_of_file ~env ~path
   in
-  match index with
-  | Some index -> (
+  if Index.is_indexed ~doc_hash then (
       let title =
-        if Index.global_line_count index = 0 then
+        if Index.global_line_count ~doc_hash = 0 then
           None
         else
-          Some (Index.line_of_global_line_num 0 index)
+          Some (Index.line_of_global_line_num ~doc_hash 0)
       in
       Ok
         {
           search_mode;
           path;
           title;
-          index;
+          doc_hash;
           search_scope = None;
           last_scan = Timedesc.now ~tz_of_date_time:Params.tz ()
         }
-    )
-  | None -> (
+    ) else (
         match File_utils.format_of_file path with
         | `PDF -> (
-            Of_path.pdf ~env pool search_mode path
+            Of_path.pdf ~env pool ~doc_hash search_mode path
           )
         | `Pandoc_supported_format -> (
-            Of_path.pandoc_supported_format ~env pool search_mode path
+            Of_path.pandoc_supported_format ~env pool ~doc_hash search_mode path
           )
         | `Text -> (
-            Of_path.text ~env pool search_mode path
+            Of_path.text ~env pool ~doc_hash search_mode path
           )
     )

@@ -282,7 +282,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             )
             file_and_hash_list
         in
-        let load_document ~env pool search_mode ~hash path =
+        let load_document ~env pool search_mode ~doc_hash path =
           do_if_debug (fun oc ->
               Printf.fprintf oc "Loading document: %s\n" (Filename.quote path);
             );
@@ -313,8 +313,8 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
         );
         let indexed_files =
           indexed_files
-          |> List.filter_map (fun (search_mode, path, hash) ->
-              load_document ~env pool search_mode ~hash path
+          |> List.filter_map (fun (search_mode, path, doc_hash) ->
+              load_document ~env pool search_mode ~doc_hash path
             )
         in
         if interactive then (
@@ -343,8 +343,8 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
                 (fun report_progress ->
                    unindexed_files
                    |> Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size
-                     (fun (search_mode, path, hash) ->
-                        let res = load_document ~env pool search_mode ~hash path in
+                     (fun (search_mode, path, doc_hash) ->
+                        let res = load_document ~env pool search_mode ~doc_hash path in
                         (match String_map.find_opt path document_sizes with
                          | None -> ()
                          | Some x -> report_progress x
@@ -840,13 +840,13 @@ let run
             loop ()
           )
         | Open_file_and_search_result (doc, search_result) -> (
-            let index = Document.index doc in
+            let doc_hash = Document.doc_hash doc in
             let path = Document.path doc in
             let old_stats = Unix.stat path in
             (match File_utils.format_of_file path with
              | `PDF -> (
                  Path_open.pdf
-                   index
+                 ~doc_hash
                    ~path
                    ~search_result
                )
@@ -856,7 +856,7 @@ let run
              | `Text -> (
                  close_term ();
                  Path_open.text
-                   index
+                 ~doc_hash
                    init_document_src
                    ~editor:!Params.text_editor
                    ~path

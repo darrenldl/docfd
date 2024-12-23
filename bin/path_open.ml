@@ -21,7 +21,8 @@ let compute_most_unique_word_and_residing_page_num ~doc_hash found_phrase =
   let frequency_of_word_of_page_ci : int String_map.t Int_map.t =
     List.fold_left (fun acc page_num ->
         let m = Misc_utils.frequencies_of_words_ci
-            (Index.words_of_page_num ~doc_hash page_num)
+            (Index.words_of_page_num ~doc_hash page_num
+                      |> Dynarray.to_seq)
         in
         Int_map.add page_num m acc
       )
