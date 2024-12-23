@@ -41,12 +41,12 @@ let load_into_db ~doc_hash (t : t) : unit =
   |}
   in
   CCVector.iteri (fun id word ->
-    bind_names
-  stmt
-  [ ("doc_hash", TEXT doc_hash)
-  ; ("id", INT (Int64.of_int id))
-  ; ("word", TEXT word)
-  ];
-    Rc.check (iter stmt ~f:ignore)
-  );
+      bind_names
+        stmt
+        [ ("doc_hash", TEXT doc_hash)
+        ; ("id", INT (Int64.of_int id))
+        ; ("word", TEXT word)
+        ];
+      Rc.check (iter stmt ~f:ignore)
+    );
   Rc.check (finalize stmt)

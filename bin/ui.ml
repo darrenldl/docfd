@@ -266,7 +266,7 @@ module Top_pane = struct
         OSeq.(0 --^ line_count)
         |> Seq.map (fun global_line_num ->
             Index.words_of_global_line_num ~doc_hash:(Document.doc_hash doc) global_line_num 
-        |> Dynarray.to_list
+            |> Dynarray.to_list
             |> Content_and_search_result_render.Text_block_render.of_words ~width:sub_item_width
           )
         |> Seq.map (fun img ->

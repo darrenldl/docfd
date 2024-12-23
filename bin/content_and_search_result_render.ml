@@ -139,7 +139,7 @@ let start_and_end_inc_global_line_num_of_search_result
     )
 
 let word_grid_of_index
-~doc_hash
+    ~doc_hash
     ~start_global_line_num
     ~end_inc_global_line_num
   : word_grid =
@@ -153,7 +153,7 @@ let word_grid_of_index
       |> Seq.map (fun global_line_num ->
           let data =
             Index.words_of_global_line_num ~doc_hash global_line_num
-      |> Dynarray.to_seq
+            |> Dynarray.to_seq
             |> Seq.map (fun word -> { word; typ = `Plain })
             |> Array.of_seq
           in
@@ -165,7 +165,7 @@ let word_grid_of_index
   )
 
 let mark_search_result_in_word_grid
-~doc_hash
+    ~doc_hash
     (grid : word_grid)
     (search_result : Search_result.t)
   : unit =
@@ -284,7 +284,7 @@ let content_snippet
   | None -> (
       let grid =
         word_grid_of_index
-        ~doc_hash
+          ~doc_hash
           ~start_global_line_num:0
           ~end_inc_global_line_num:(min max_line_num (height - 1))
       in
@@ -299,7 +299,7 @@ let content_snippet
       let end_inc_global_line_num = min max_line_num (start_global_line_num + height - 1) in
       let grid =
         word_grid_of_index
-        ~doc_hash
+          ~doc_hash
           ~start_global_line_num
           ~end_inc_global_line_num
       in

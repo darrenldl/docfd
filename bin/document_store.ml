@@ -93,7 +93,7 @@ let refresh_search_results pool stop_signal (t : t) : t =
             ~within_same_line
             (Document.search_scope doc)
             t.search_exp
-            )
+         )
       )
     |> String_map.of_list
   in
@@ -167,7 +167,7 @@ let add_document pool (doc : Document.t) (t : t) : t =
          ~within_same_line
          (Document.search_scope doc)
          t.search_exp
-         )
+      )
       t.search_results
   in
   { t with

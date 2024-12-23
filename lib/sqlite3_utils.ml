@@ -13,8 +13,8 @@ let with_stmt : type a. string -> ?names:((string * Sqlite3.Data.t) list) -> (Sq
   fun s ?names f ->
   let stmt = prepare s in
   Option.iter
-  (fun names -> bind_names stmt names)
-  names;
+    (fun names -> bind_names stmt names)
+    names;
   let res = f stmt in
   finalize stmt;
   res
@@ -22,22 +22,22 @@ let with_stmt : type a. string -> ?names:((string * Sqlite3.Data.t) list) -> (Sq
 let step_stmt : type a. string -> ?names:((string * Data.t) list) -> (stmt -> a) -> a =
   fun s ?names f ->
   with_stmt s ?names
-  (fun stmt ->
-    Rc.check (Sqlite3.step stmt);
-    f stmt
-  )
+    (fun stmt ->
+       Rc.check (Sqlite3.step stmt);
+       f stmt
+    )
 
 let iter_stmt s ?names (f : Data.t array -> unit) =
   with_stmt s ?names
-  (fun stmt ->
-    Rc.check (Sqlite3.iter stmt ~f)
-  )
+    (fun stmt ->
+       Rc.check (Sqlite3.iter stmt ~f)
+    )
 
 let fold_stmt : type a. string -> ?names:((string * Data.t) list) -> (a -> Sqlite3.Data.t array -> a) -> a -> a =
   fun s ?names f init ->
-    with_stmt s ?names
+  with_stmt s ?names
     (fun stmt ->
-    let rc, res = Sqlite3.fold stmt ~f ~init in
-    Sqlite3.Rc.check rc;
-    res
+       let rc, res = Sqlite3.fold stmt ~f ~init in
+       Sqlite3.Rc.check rc;
+       res
     )

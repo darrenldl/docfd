@@ -284,26 +284,26 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
 let global_line_count ~doc_hash =
   let open Sqlite3_utils in
   step_stmt
-  {|
+    {|
   SELECT global_line_count FROM doc_info
   WHERE doc_hash = @doc_hash
   |}
-  ~names:[("doc_hash", TEXT doc_hash)]
-  (fun stmt ->
-    column_int stmt 0
-  )
+    ~names:[("doc_hash", TEXT doc_hash)]
+    (fun stmt ->
+       column_int stmt 0
+    )
 
 let page_count ~doc_hash =
   let open Sqlite3_utils in
   step_stmt
-  {|
+    {|
   SELECT page_count FROM doc_info
   WHERE doc_hash = @doc_hash
   |}
-  ~names:[("doc_hash", TEXT doc_hash)]
-  (fun stmt ->
-  column_int stmt 0
-  )
+    ~names:[("doc_hash", TEXT doc_hash)]
+    (fun stmt ->
+       column_int stmt 0
+    )
 
 let ccvector_of_int_map
   : 'a . 'a Int_map.t -> 'a CCVector.ro_vector =
@@ -316,15 +316,15 @@ let ccvector_of_int_map
 let is_indexed ~doc_hash =
   let open Sqlite3_utils in
   step_stmt
-  {|
+    {|
   SELECT 0
   FROM page_info
   WHERE doc_hash = @doc_hash
   |}
-  ~names:[ ("doc_hash", TEXT doc_hash) ]
-  (fun stmt ->
-    data_count stmt > 0
-  )
+    ~names:[ ("doc_hash", TEXT doc_hash) ]
+    (fun stmt ->
+       data_count stmt > 0
+    )
 
 let index_lines pool ~doc_hash s =
   Raw.of_lines pool s
@@ -337,39 +337,39 @@ let index_pages pool ~doc_hash s =
 let word_of_id ~doc_hash id : string =
   let open Sqlite3_utils in
   step_stmt
-  {|
+    {|
   SELECT word FROM word
   WHERE doc_hash = @doc_hash
   AND id = @id
   |}
-  ~names:[("doc_hash", TEXT doc_hash); ("id", INT id)]
-  (fun stmt ->
-  column_text stmt 0
-  )
+    ~names:[("doc_hash", TEXT doc_hash); ("id", INT id)]
+    (fun stmt ->
+       column_text stmt 0
+    )
 
 let word_of_pos ~doc_hash pos : string =
   let open Sqlite3_utils in
   step_stmt
-  {|
+    {|
   SELECT word.word
   FROM position p
   JOIN word on word.id = p.word_id
   WHERE p.doc_hash = @doc_hash
   AND flat_position = @pos
   |}
-  ~names:[("doc_hash", TEXT doc_hash); ("pos", INT (Int64.of_int pos))]
-  (fun stmt ->
-  column_text stmt 0
-  )
+    ~names:[("doc_hash", TEXT doc_hash); ("pos", INT (Int64.of_int pos))]
+    (fun stmt ->
+       column_text stmt 0
+    )
 
 let word_ci_of_pos ~doc_hash pos : string =
   word_of_pos ~doc_hash pos
-    |> String.lowercase_ascii
+  |> String.lowercase_ascii
 
 let words_between_start_and_end_inc ~doc_hash (start, end_inc) : string Dynarray.t =
   let open Sqlite3_utils in
-let acc = Dynarray.create () in
-    iter_stmt
+  let acc = Dynarray.create () in
+  iter_stmt
     {|
     SELECT word.word
     FROM position
@@ -381,13 +381,13 @@ let acc = Dynarray.create () in
     ORDER BY position.flat_position
     |}
     ~names:[ ("doc_hash", TEXT doc_hash)
-    ; ("start", INT (Int64.of_int start))
-    ; ("end_inc", INT (Int64.of_int end_inc))
-    ]
+           ; ("start", INT (Int64.of_int start))
+           ; ("end_inc", INT (Int64.of_int end_inc))
+           ]
     (fun data ->
-      Dynarray.add_last acc (Data.to_string_exn data.(0))
+       Dynarray.add_last acc (Data.to_string_exn data.(0))
     );
-    acc
+  acc
 
 let words_of_global_line_num ~doc_hash x : string Dynarray.t =
   let open Sqlite3_utils in
@@ -395,20 +395,20 @@ let words_of_global_line_num ~doc_hash x : string Dynarray.t =
     invalid_arg "Index.words_of_global_line_num: global_line_num out of range"
   ) else (
     let start, end_inc =
-    step_stmt
-    {|
+      step_stmt
+        {|
     SELECT start_pos, end_inc_pos
     FROM line_info
     WHERE doc_hash = @doc_hash
     AND global_line_num = @x
     |}
-    ~names:[ ("doc_hash", TEXT doc_hash)
-    ; ("x", INT (Int64.of_int x))
-    ]
-    (fun stmt ->
-    (column_int stmt 0, column_int stmt 1)
-    )
-in
+        ~names:[ ("doc_hash", TEXT doc_hash)
+               ; ("x", INT (Int64.of_int x))
+               ]
+        (fun stmt ->
+           (column_int stmt 0, column_int stmt 1)
+        )
+    in
     words_between_start_and_end_inc ~doc_hash (start, end_inc)
   )
 
@@ -418,20 +418,20 @@ let words_of_page_num ~doc_hash x : string Dynarray.t =
     invalid_arg "Index.words_of_page_num: page_num out of range"
   ) else (
     let start, end_inc =
-    step_stmt
-    {|
+      step_stmt
+        {|
     SELECT start_pos, end_inc_pos
     FROM page_info
     WHERE doc_hash = @doc_hash
     AND page_num = @x
     |}
-    ~names:[ ("doc_hash", TEXT doc_hash)
-    ; ("x", INT (Int64.of_int x))
-    ]
-    (fun stmt ->
-    (column_int stmt 0, column_int stmt 1)
-    )
-in
+        ~names:[ ("doc_hash", TEXT doc_hash)
+               ; ("x", INT (Int64.of_int x))
+               ]
+        (fun stmt ->
+           (column_int stmt 0, column_int stmt 1)
+        )
+    in
     words_between_start_and_end_inc ~doc_hash (start, end_inc)
   )
 
@@ -450,35 +450,35 @@ let line_loc_of_global_line_num ~doc_hash global_line_num : Line_loc.t =
     invalid_arg "Index.line_loc_of_global_line_num: global_line_num out of range"
   ) else (
     let page_num, line_num_in_page =
-    step_stmt
-    {|
+      step_stmt
+        {|
     SELECT page_num, line_num_in_page
     FROM line_info
     WHERE global_line_num = @global_line_num
     |}
-    ~names:[ ("doc_hash", TEXT doc_hash)
-    ; ("global_line_num", INT (Int64.of_int global_line_num)) ]
-    (fun stmt ->
-      (column_int stmt 0, column_int stmt 1)
-    )
-in
+        ~names:[ ("doc_hash", TEXT doc_hash)
+               ; ("global_line_num", INT (Int64.of_int global_line_num)) ]
+        (fun stmt ->
+           (column_int stmt 0, column_int stmt 1)
+        )
+    in
     { page_num; line_num_in_page; global_line_num }
   )
 
 let loc_of_pos ~doc_hash pos : Loc.t =
   let open Sqlite3_utils in
   let pos_in_line, global_line_num =
-  step_stmt
-  {|
+    step_stmt
+      {|
   SELECT pos_in_line, global_line_num
   FROM position
   WHERE doc_hash = @doc_hash
   AND pos = @pos
   |}
-  ~names:[ ("doc_hash", TEXT doc_hash); ("pos", INT (Int64.of_int pos)) ]
-  (fun stmt ->
-    (column_int stmt 0, column_int stmt 1)
-  )
+      ~names:[ ("doc_hash", TEXT doc_hash); ("pos", INT (Int64.of_int pos)) ]
+      (fun stmt ->
+         (column_int stmt 0, column_int stmt 1)
+      )
   in
   let line_loc = line_loc_of_global_line_num ~doc_hash global_line_num in
   { line_loc; pos_in_line }
@@ -486,46 +486,46 @@ let loc_of_pos ~doc_hash pos : Loc.t =
 let max_pos ~doc_hash =
   let open Sqlite3_utils in
   step_stmt
-  {|
+    {|
   SELECT max_pos
   FROM doc_info
   WHERE doc_hash = @doc_hash
   |}
-  ~names:[ ("doc_hash", TEXT doc_hash) ]
-  (fun stmt ->
-    column_int stmt 0
-  )
+    ~names:[ ("doc_hash", TEXT doc_hash) ]
+    (fun stmt ->
+       column_int stmt 0
+    )
 
 let line_count_of_page_num ~doc_hash page : int =
   let open Sqlite3_utils in
   step_stmt
-  {|
+    {|
   SELECT line_count
   FROM page_info
   WHERE doc_hash = @doc_hash
   AND page = @page
   |}
-  ~names:[ ("doc_hash", TEXT doc_hash); ("page", INT (Int64.of_int page)) ]
-  (fun stmt ->
-    column_int stmt 0
-  )
+    ~names:[ ("doc_hash", TEXT doc_hash); ("page", INT (Int64.of_int page)) ]
+    (fun stmt ->
+       column_int stmt 0
+    )
 
 let start_end_inc_pos_of_global_line_num ~doc_hash global_line_num =
   let open Sqlite3_utils in
   if global_line_num >= global_line_count ~doc_hash then (
     invalid_arg "Index.start_end_inc_pos_of_global_line_num: global_line_num out of range"
   ) else (
-  step_stmt
-  {|
+    step_stmt
+      {|
   SELECT start_pos, end_inc_pos
   FROM line_num
   WHERE doc_hash = @doc_hash
   AND global_line_num = @global_line_num
   |}
-  ~names:[ ("doc_hash", TEXT doc_hash); ("global_line_num", INT (Int64.of_int global_line_num)) ]
-  (fun stmt ->
-    (column_int stmt 0, column_int stmt 1)
-  )
+      ~names:[ ("doc_hash", TEXT doc_hash); ("global_line_num", INT (Int64.of_int global_line_num)) ]
+      (fun stmt ->
+         (column_int stmt 0, column_int stmt 1)
+      )
   )
 
 module Search = struct
@@ -543,52 +543,52 @@ module Search = struct
     let match_typ = ET.match_typ token in
     let start_end_inc =
       Option.map (fun around_pos ->
-        let start, end_inc =
-          if ET.is_linked_to_prev token then (
-            match match_typ with
-            | `Fuzzy ->
-              (around_pos - !Params.max_linked_token_search_dist,
-               around_pos + !Params.max_linked_token_search_dist)
-            | `Exact | `Prefix | `Suffix ->
-              (around_pos + 1,
-               around_pos + 1)
-          ) else (
-            (around_pos - !Params.max_token_search_dist,
-             around_pos + !Params.max_token_search_dist)
-          )
-        in
-        match within with
-        | None -> (start, end_inc)
-        | Some (within_start_pos, within_end_inc_pos) -> (
-            (max within_start_pos start, min within_end_inc_pos end_inc)
-          )
-      )
-      around_pos
+          let start, end_inc =
+            if ET.is_linked_to_prev token then (
+              match match_typ with
+              | `Fuzzy ->
+                (around_pos - !Params.max_linked_token_search_dist,
+                 around_pos + !Params.max_linked_token_search_dist)
+              | `Exact | `Prefix | `Suffix ->
+                (around_pos + 1,
+                 around_pos + 1)
+            ) else (
+              (around_pos - !Params.max_token_search_dist,
+               around_pos + !Params.max_token_search_dist)
+            )
+          in
+          match within with
+          | None -> (start, end_inc)
+          | Some (within_start_pos, within_end_inc_pos) -> (
+              (max within_start_pos start, min within_end_inc_pos end_inc)
+            )
+        )
+        around_pos
     in
     let word_candidates : (int * string) list =
-        let f acc data =
-          let word_id = Data.to_int_exn data.(0) in
-          let word = Data.to_string_exn data.(1) in
-          (word_id, word) :: acc
-        in
-        match start_end_inc with
-        | None -> (
+      let f acc data =
+        let word_id = Data.to_int_exn data.(0) in
+        let word = Data.to_string_exn data.(1) in
+        (word_id, word) :: acc
+      in
+      match start_end_inc with
+      | None -> (
           fold_stmt
-          {|
+            {|
           SELECT DISTINCT
               word.id AS word_id,
               word.word AS word
           FROM word
           WHERE doc_hash = @doc_hash
           |}
-          ~names:[ ("doc_hash", TEXT doc_hash)
-          ]
-          f
-          []
+            ~names:[ ("doc_hash", TEXT doc_hash)
+                   ]
+            f
+            []
         )
-        | Some (start, end_inc) -> (
+      | Some (start, end_inc) -> (
           fold_stmt
-          {|
+            {|
           SELECT DISTINCT
               word.id AS word_id,
               word.word AS word
@@ -599,12 +599,12 @@ module Search = struct
           WHERE word_ci.doc_hash = @doc_hash
           AND position.pos BETWEEN @start AND @end_inc
           |}
-          ~names:[ ("doc_hash", TEXT doc_hash)
-          ; ("start", INT (Int64.of_int start))
-          ; ("end_inc", INT (Int64.of_int end_inc))
-          ]
-          f
-          []
+            ~names:[ ("doc_hash", TEXT doc_hash)
+                   ; ("start", INT (Int64.of_int start))
+                   ; ("end_inc", INT (Int64.of_int end_inc))
+                   ]
+            f
+            []
         )
     in
     let non_fuzzy_filter
@@ -627,11 +627,11 @@ module Search = struct
         | `Prefix -> CCString.prefix ~pre:search_word
         | `Suffix -> CCString.suffix ~suf:search_word
       in
-        if String.equal search_word search_word_ci then (
-          f_ci indexed_word_ci
-        ) else (
-          f indexed_word
-        )
+      if String.equal search_word search_word_ci then (
+        f_ci indexed_word_ci
+      ) else (
+        f indexed_word
+      )
     in
     word_candidates
     |> List.to_seq
@@ -647,25 +647,25 @@ module Search = struct
             Parser_components.is_space indexed_word.[0]
         )
       | `String search_word -> (
-        fun (word_id, indexed_word) ->
+          fun (word_id, indexed_word) ->
             Eio.Fiber.yield ();
             let search_word_ci =
               String.lowercase_ascii search_word
             in
-          let indexed_word_ci = String.lowercase_ascii indexed_word in
+            let indexed_word_ci = String.lowercase_ascii indexed_word in
             let indexed_word_len = String.length indexed_word in
             if Parser_components.is_possibly_utf_8 indexed_word.[0] then (
               String.equal search_word indexed_word
             ) else (
               match match_typ with
               | `Fuzzy -> (
-                    String.equal search_word_ci indexed_word_ci
-                    || CCString.find ~sub:search_word_ci indexed_word_ci >= 0
-                    || (indexed_word_len >= 2
-                        && CCString.find ~sub:indexed_word_ci search_word_ci >= 0)
-                    || (consider_edit_dist
-                        && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word_ci search_word_ci.[0]
-                        && Spelll.match_with (ET.automaton token) indexed_word_ci)
+                  String.equal search_word_ci indexed_word_ci
+                  || CCString.find ~sub:search_word_ci indexed_word_ci >= 0
+                  || (indexed_word_len >= 2
+                      && CCString.find ~sub:indexed_word_ci search_word_ci >= 0)
+                  || (consider_edit_dist
+                      && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word_ci search_word_ci.[0]
+                      && Spelll.match_with (ET.automaton token) indexed_word_ci)
                 )
               | `Exact | `Prefix | `Suffix as m -> (
                   non_fuzzy_filter
@@ -684,43 +684,43 @@ module Search = struct
           Data.to_int_exn data.(0) :: acc
         in
         let l =
-        match start_end_inc with
-        | None -> (
-          fold_stmt
-          {|
+          match start_end_inc with
+          | None -> (
+              fold_stmt
+                {|
           SELECT
               position.pos
           FROM position
           WHERE doc_hash = @doc_hash
           AND word_id = @word_id
           |}
-          ~names:[ ("doc_hash", TEXT doc_hash)
-          ; ("word_id", INT (Int64.of_int word_id))
-          ]
-          f
-          []
-        )
-        | Some (start, end_inc) -> (
-          fold_stmt
-          {|
+                ~names:[ ("doc_hash", TEXT doc_hash)
+                       ; ("word_id", INT (Int64.of_int word_id))
+                       ]
+                f
+                []
+            )
+          | Some (start, end_inc) -> (
+              fold_stmt
+                {|
           SELECT
               position.pos
           WHERE doc_hash = @doc_hash
           AND word_id = @word_id
           AND pos BETWEEN @start AND @end_inc
           |}
-          ~names:[ ("doc_hash", TEXT doc_hash)
-          ; ("word_id", INT (Int64.of_int word_id))
-          ; ("start", INT (Int64.of_int start))
-          ; ("end_inc", INT (Int64.of_int end_inc))
-          ]
-          f
-          []
-        )
+                ~names:[ ("doc_hash", TEXT doc_hash)
+                       ; ("word_id", INT (Int64.of_int word_id))
+                       ; ("start", INT (Int64.of_int start))
+                       ; ("end_inc", INT (Int64.of_int end_inc))
+                       ]
+                f
+                []
+            )
         in
         l
         |> List.to_seq
-        )
+      )
 
   let search_around_pos
       ~doc_hash
@@ -735,7 +735,7 @@ module Search = struct
       | [] -> Seq.return []
       | token :: rest -> (
           usable_positions
-          ~doc_hash
+            ~doc_hash
             ?within
             ~around_pos
             ~consider_edit_dist
@@ -925,13 +925,13 @@ let search
   : Search_result.t array =
   let arr =
     Search.search
-    pool
-    stop_signal
-    ~doc_hash
-    ~within_same_line
-    ~consider_edit_dist:true
-    search_scope
-    exp
+      pool
+      stop_signal
+      ~doc_hash
+      ~within_same_line
+      ~consider_edit_dist:true
+      search_scope
+      exp
     |> Search_result_heap.to_seq
     |> Array.of_seq
   in

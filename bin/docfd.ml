@@ -275,10 +275,10 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
           |}
           in
           List.partition (fun (_, _, doc_hash) ->
-            Rc.check (bind_name stmt "doc_hash" (TEXT doc_hash));
-            let indexed = data_count stmt > 0 in
-            Rc.check (reset stmt);
-            indexed
+              Rc.check (bind_name stmt "doc_hash" (TEXT doc_hash));
+              let indexed = data_count stmt > 0 in
+              Rc.check (reset stmt);
+              indexed
             )
             file_and_hash_list
         in
@@ -466,8 +466,8 @@ let run
   let db = Sqlite3.db_open (Filename.concat cache_dir Params.db_file_name) in
   Params.db := Some db;
   (match Docfd_lib.init ~db with
-  | None -> ()
-  | Some msg -> exit_with_error_msg msg
+   | None -> ()
+   | Some msg -> exit_with_error_msg msg
   );
   (match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
    | None, None -> (
@@ -846,7 +846,7 @@ let run
             (match File_utils.format_of_file path with
              | `PDF -> (
                  Path_open.pdf
-                 ~doc_hash
+                   ~doc_hash
                    ~path
                    ~search_result
                )
@@ -856,7 +856,7 @@ let run
              | `Text -> (
                  close_term ();
                  Path_open.text
-                 ~doc_hash
+                   ~doc_hash
                    init_document_src
                    ~editor:!Params.text_editor
                    ~path

@@ -22,7 +22,7 @@ module Misc_utils' = Misc_utils
 
 let init ~db =
   let db_res =
-  Sqlite3.exec db {|
+    Sqlite3.exec db {|
   CREATE TABLE IF NOT EXISTS line_info (
     doc_hash varchar(500) PRIMARY KEY,
     global_line_num integer,
@@ -78,7 +78,7 @@ let init ~db =
   in
   if not (Sqlite3.Rc.is_success db_res) then (
     Some (Fmt.str
-    "failed to initialize index DB: %s" (Sqlite3.Rc.to_string db_res))
+            "failed to initialize index DB: %s" (Sqlite3.Rc.to_string db_res))
   ) else (
     Params.db := Some db;
     None

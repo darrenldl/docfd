@@ -61,7 +61,7 @@ let parse_pages pool ~doc_hash search_mode ~path (s : string list Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
     | Content -> (
-      Index.index_pages pool ~doc_hash s;
+        Index.index_pages pool ~doc_hash s;
         let empty = make search_mode ~path in
         {
           empty with
@@ -204,30 +204,30 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, 
     | None -> BLAKE2B.hash_of_file ~env ~path
   in
   if Index.is_indexed ~doc_hash then (
-      let title =
-        if Index.global_line_count ~doc_hash = 0 then
-          None
-        else
-          Some (Index.line_of_global_line_num ~doc_hash 0)
-      in
-      Ok
-        {
-          search_mode;
-          path;
-          title;
-          doc_hash;
-          search_scope = None;
-          last_scan = Timedesc.now ~tz_of_date_time:Params.tz ()
-        }
-    ) else (
-        match File_utils.format_of_file path with
-        | `PDF -> (
-            Of_path.pdf ~env pool ~doc_hash search_mode path
-          )
-        | `Pandoc_supported_format -> (
-            Of_path.pandoc_supported_format ~env pool ~doc_hash search_mode path
-          )
-        | `Text -> (
-            Of_path.text ~env pool ~doc_hash search_mode path
-          )
-    )
+    let title =
+      if Index.global_line_count ~doc_hash = 0 then
+        None
+      else
+        Some (Index.line_of_global_line_num ~doc_hash 0)
+    in
+    Ok
+      {
+        search_mode;
+        path;
+        title;
+        doc_hash;
+        search_scope = None;
+        last_scan = Timedesc.now ~tz_of_date_time:Params.tz ()
+      }
+  ) else (
+    match File_utils.format_of_file path with
+    | `PDF -> (
+        Of_path.pdf ~env pool ~doc_hash search_mode path
+      )
+    | `Pandoc_supported_format -> (
+        Of_path.pandoc_supported_format ~env pool ~doc_hash search_mode path
+      )
+    | `Text -> (
+        Of_path.text ~env pool ~doc_hash search_mode path
+      )
+  )
