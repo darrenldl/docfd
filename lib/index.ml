@@ -52,12 +52,11 @@ end
 module Raw = struct
   type t = {
     word_db : Word_db.t;
-    pos_s_of_word_ci : Int_set.t Int_map.t;
+    pos_s_of_word : Int_set.t Int_map.t;
     loc_of_pos : Loc.t Int_map.t;
     line_loc_of_global_line_num : Line_loc.t Int_map.t;
     start_end_inc_pos_of_global_line_num : (int * int) Int_map.t;
     start_end_inc_pos_of_page_num : (int * int) Int_map.t;
-    word_ci_of_pos : int Int_map.t;
     word_of_pos : int Int_map.t;
     line_count_of_page_num : int Int_map.t;
     page_count : int;
@@ -74,12 +73,11 @@ module Raw = struct
 
   let make () : t = {
     word_db = Word_db.make ();
-    pos_s_of_word_ci = Int_map.empty;
+    pos_s_of_word = Int_map.empty;
     loc_of_pos = Int_map.empty;
     line_loc_of_global_line_num = Int_map.empty;
     start_end_inc_pos_of_global_line_num = Int_map.empty;
     start_end_inc_pos_of_page_num = Int_map.empty;
-    word_ci_of_pos = Int_map.empty;
     word_of_pos = Int_map.empty;
     line_count_of_page_num = Int_map.empty;
     page_count = 0;
@@ -89,10 +87,10 @@ module Raw = struct
   let union (x : t) (y : t) =
     {
       word_db = Word_db.make ();
-      pos_s_of_word_ci =
+      pos_s_of_word =
         Int_map.union (fun _k s0 s1 -> Some (Int_set.union s0 s1))
-          x.pos_s_of_word_ci
-          y.pos_s_of_word_ci;
+          x.pos_s_of_word
+          y.pos_s_of_word;
       loc_of_pos =
         Int_map.union (fun _k x _ -> Some x)
           x.loc_of_pos
@@ -111,10 +109,6 @@ module Raw = struct
             Some (min start_x start_y, max end_inc_x end_inc_y))
           x.start_end_inc_pos_of_page_num
           y.start_end_inc_pos_of_page_num;
-      word_ci_of_pos =
-        Int_map.union (fun _k x _ -> Some x)
-          x.word_ci_of_pos
-          y.word_ci_of_pos;
       word_of_pos =
         Int_map.union (fun _k x _ -> Some x)
           x.word_of_pos
@@ -154,26 +148,21 @@ module Raw = struct
     Array.fold_left
       (fun
         { word_db = dummy_word_db;
-          pos_s_of_word_ci;
+          pos_s_of_word;
           loc_of_pos;
           line_loc_of_global_line_num;
           start_end_inc_pos_of_global_line_num;
           start_end_inc_pos_of_page_num;
-          word_ci_of_pos;
           word_of_pos;
           line_count_of_page_num;
           page_count;
           global_line_count;
         }
         { pos; loc; word } ->
-        let word_ci = String.lowercase_ascii word in
 
         Mutex.lock shared_word_db.lock;
         let index_of_word =
           Word_db.add shared_word_db.word_db word
-        in
-        let index_of_word_ci =
-          Word_db.add shared_word_db.word_db word_ci
         in
         Mutex.unlock shared_word_db.lock;
 
@@ -181,7 +170,7 @@ module Raw = struct
         let global_line_num = line_loc.global_line_num in
         let page_num = line_loc.page_num in
         let pos_s =
-          Int_map.find_opt index_of_word_ci pos_s_of_word_ci
+          Int_map.find_opt index_of_word pos_s_of_word
           |> Option.value ~default:Int_set.empty
           |> Int_set.add pos
         in
@@ -190,7 +179,7 @@ module Raw = struct
             (Int_map.find_opt page_num line_count_of_page_num)
         in
         { word_db = dummy_word_db;
-          pos_s_of_word_ci = Int_map.add index_of_word_ci pos_s pos_s_of_word_ci;
+          pos_s_of_word = Int_map.add index_of_word pos_s pos_s_of_word;
           loc_of_pos = Int_map.add pos loc loc_of_pos;
           line_loc_of_global_line_num =
             Int_map.add global_line_num line_loc line_loc_of_global_line_num;
@@ -208,7 +197,6 @@ module Raw = struct
                | None -> (pos, pos)
                | Some (x, y) -> (min x pos, max y pos))
               start_end_inc_pos_of_page_num;
-          word_ci_of_pos = Int_map.add pos index_of_word_ci word_ci_of_pos;
           word_of_pos = Int_map.add pos index_of_word word_of_pos;
           line_count_of_page_num =
             Int_map.add line_loc.page_num (max cur_page_line_count (line_loc.line_num_in_page + 1)) line_count_of_page_num;
@@ -277,8 +265,112 @@ module Raw = struct
     |> of_seq pool
 end
 
+let doc_id_of_doc_hash doc_hash : int64 =
+  let open Sqlite3_utils in
+  step_stmt
+    {|
+    SELECT id
+    FROM doc_info
+    WHERE doc_hash = @doc_hash
+    |}
+    ~names:[ ("@doc_hash", TEXT doc_hash) ]
+    (fun stmt ->
+       column_int64 stmt 0
+    )
+
 let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
-  Word_db.load_into_db ~doc_hash x.word_db;
+  let open Sqlite3_utils in
+  step_stmt
+    {|
+  INSERT INTO doc_info
+  (id, doc_hash, page_count, global_line_count, max_pos)
+  VALUES
+  (NULL, @doc_hash, @page_count, @global_line_count, @max_pos)
+  |}
+    ~names:[ ("@doc_hash", TEXT doc_hash)
+           ; ("@page_count", INT (Int64.of_int x.page_count))
+           ; ("@global_line_count", INT (Int64.of_int x.global_line_count))
+           ; ("@max_pos", INT (Int64.of_int (Int_map.max_binding x.word_of_pos |> fst)))
+           ]
+    (fun _ -> ());
+  let doc_id = doc_id_of_doc_hash doc_hash in
+  with_stmt
+    {|
+  INSERT INTO page_info
+  (doc_id, page_num, line_count, start_pos, end_inc_pos)
+  VALUES
+  (@doc_id, @page_num, @line_count, @start_pos, @end_inc_pos)
+  |}
+    (fun stmt ->
+       Int_map.iter (fun page_num line_count ->
+           let (start_pos, end_inc_pos) =
+             Int_map.find page_num x.start_end_inc_pos_of_page_num
+           in
+           bind_names stmt [ ("@doc_id", INT doc_id)
+                           ; ("@page_num", INT (Int64.of_int page_num))
+                           ; ("@line_count", INT (Int64.of_int line_count))
+                           ; ("@start_pos", INT (Int64.of_int start_pos))
+                           ; ("@end_inc_pos", INT (Int64.of_int end_inc_pos))
+                           ];
+           step stmt;
+           reset stmt;
+         )
+         x.line_count_of_page_num
+    );
+  with_stmt
+    {|
+  INSERT INTO line_info
+  (doc_id, global_line_num, start_pos, end_inc_pos, page_num, line_num_in_page)
+  VALUES
+  (@doc_id, @global_line_num, @start_pos, @end_inc_pos, @page_num, @line_num_in_page)
+  |}
+    (fun stmt ->
+       Int_map.iter (fun line_num line_loc ->
+           let (start_pos, end_inc_pos) =
+             Int_map.find line_num x.start_end_inc_pos_of_global_line_num
+           in
+           let page_num = line_loc.Line_loc.page_num in
+           let line_num_in_page = line_loc.Line_loc.line_num_in_page in
+           bind_names stmt [ ("@doc_id", INT doc_id)
+                           ; ("@global_line_num", INT (Int64.of_int line_num))
+                           ; ("@start_pos", INT (Int64.of_int start_pos))
+                           ; ("@end_inc_pos", INT (Int64.of_int end_inc_pos))
+                           ; ("@page_num", INT (Int64.of_int page_num))
+                           ; ("@line_num_in_page", INT (Int64.of_int line_num_in_page))
+                           ];
+           step stmt;
+           reset stmt;
+         )
+         x.line_loc_of_global_line_num;
+    );
+  with_stmt
+    {|
+  INSERT INTO position
+  (doc_id, pos, word_id, global_line_num, pos_in_line)
+  VALUES
+  (@doc_id, @pos, @word_id, @global_line_num, @pos_in_line)
+    |}
+    (fun stmt ->
+       Int_map.iter (fun word_id pos_s ->
+           Int_set.iter (fun pos ->
+               let loc = Int_map.find pos x.loc_of_pos in
+               let global_line_num = loc.Loc.line_loc.global_line_num in
+               let pos_in_line = loc.Loc.pos_in_line in
+               bind_names stmt
+                 [ ("@doc_id", INT doc_id)
+                 ; ("@pos", INT (Int64.of_int pos))
+                 ; ("@word_id", INT (Int64.of_int word_id))
+                 ; ("@global_line_num", INT (Int64.of_int global_line_num))
+                 ; ("@pos_in_line", INT (Int64.of_int pos_in_line))
+                 ];
+               step stmt;
+               reset stmt;
+             )
+             pos_s
+         )
+         x.pos_s_of_word
+    );
+  Word_db.load_into_db ~doc_id x.word_db;
   ()
 
 let global_line_count ~doc_hash =
@@ -288,19 +380,20 @@ let global_line_count ~doc_hash =
   SELECT global_line_count FROM doc_info
   WHERE doc_hash = @doc_hash
   |}
-    ~names:[("doc_hash", TEXT doc_hash)]
+    ~names:[ ("@doc_hash", TEXT doc_hash) ]
     (fun stmt ->
        column_int stmt 0
     )
 
 let page_count ~doc_hash =
   let open Sqlite3_utils in
+  let doc_id = doc_id_of_doc_hash doc_hash in
   step_stmt
     {|
   SELECT page_count FROM doc_info
-  WHERE doc_hash = @doc_hash
+  WHERE doc_id = @doc_id
   |}
-    ~names:[("doc_hash", TEXT doc_hash)]
+    ~names:[("@doc_id", INT doc_id)]
     (fun stmt ->
        column_int stmt 0
     )
@@ -318,10 +411,10 @@ let is_indexed ~doc_hash =
   step_stmt
     {|
   SELECT 0
-  FROM page_info
+  FROM doc_info
   WHERE doc_hash = @doc_hash
   |}
-    ~names:[ ("doc_hash", TEXT doc_hash) ]
+    ~names:[ ("@doc_hash", TEXT doc_hash) ]
     (fun stmt ->
        data_count stmt > 0
     )
@@ -336,28 +429,31 @@ let index_pages pool ~doc_hash s =
 
 let word_of_id ~doc_hash id : string =
   let open Sqlite3_utils in
+  let doc_id = doc_id_of_doc_hash doc_hash in
   step_stmt
     {|
   SELECT word FROM word
-  WHERE doc_hash = @doc_hash
+  WHERE doc_id = @doc_id
   AND id = @id
   |}
-    ~names:[("doc_hash", TEXT doc_hash); ("id", INT id)]
+    ~names:[ ("@doc_id", INT doc_id); ("@id", INT id) ]
     (fun stmt ->
        column_text stmt 0
     )
 
 let word_of_pos ~doc_hash pos : string =
   let open Sqlite3_utils in
+  let doc_id = doc_id_of_doc_hash doc_hash in
   step_stmt
     {|
   SELECT word.word
   FROM position p
   JOIN word on word.id = p.word_id
-  WHERE p.doc_hash = @doc_hash
-  AND flat_position = @pos
+  WHERE p.doc_id = @doc_id
+  AND pos = @pos
   |}
-    ~names:[("doc_hash", TEXT doc_hash); ("pos", INT (Int64.of_int pos))]
+    ~names:[ ("@doc_id", INT doc_id)
+           ; ("@pos", INT (Int64.of_int pos)) ]
     (fun stmt ->
        column_text stmt 0
     )
@@ -368,21 +464,22 @@ let word_ci_of_pos ~doc_hash pos : string =
 
 let words_between_start_and_end_inc ~doc_hash (start, end_inc) : string Dynarray.t =
   let open Sqlite3_utils in
+  let doc_id = doc_id_of_doc_hash doc_hash in
   let acc = Dynarray.create () in
   iter_stmt
     {|
     SELECT word.word
     FROM position
     JOIN word
-      ON word.doc_hash = position.doc_hash
+      ON word.doc_id = position.doc_id
       AND word.id = position.word_id
-    WHERE position.doc_hash = @doc_hash
-    AND position.flat_position BETWEEN @start AND @end_inc
-    ORDER BY position.flat_position
+    WHERE position.doc_id = @doc_id
+    AND position.pos BETWEEN @start AND @end_inc
+    ORDER BY position.pos
     |}
-    ~names:[ ("doc_hash", TEXT doc_hash)
-           ; ("start", INT (Int64.of_int start))
-           ; ("end_inc", INT (Int64.of_int end_inc))
+    ~names:[ ("@doc_id", INT doc_id)
+           ; ("@start", INT (Int64.of_int start))
+           ; ("@end_inc", INT (Int64.of_int end_inc))
            ]
     (fun data ->
        Dynarray.add_last acc (Data.to_string_exn data.(0))
@@ -391,6 +488,7 @@ let words_between_start_and_end_inc ~doc_hash (start, end_inc) : string Dynarray
 
 let words_of_global_line_num ~doc_hash x : string Dynarray.t =
   let open Sqlite3_utils in
+  let doc_id = doc_id_of_doc_hash doc_hash in
   if x >= global_line_count ~doc_hash then (
     invalid_arg "Index.words_of_global_line_num: global_line_num out of range"
   ) else (
@@ -399,11 +497,11 @@ let words_of_global_line_num ~doc_hash x : string Dynarray.t =
         {|
     SELECT start_pos, end_inc_pos
     FROM line_info
-    WHERE doc_hash = @doc_hash
+    WHERE doc_id = @doc_id
     AND global_line_num = @x
     |}
-        ~names:[ ("doc_hash", TEXT doc_hash)
-               ; ("x", INT (Int64.of_int x))
+        ~names:[ ("@doc_id", INT doc_id)
+               ; ("@x", INT (Int64.of_int x))
                ]
         (fun stmt ->
            (column_int stmt 0, column_int stmt 1)
@@ -414,6 +512,7 @@ let words_of_global_line_num ~doc_hash x : string Dynarray.t =
 
 let words_of_page_num ~doc_hash x : string Dynarray.t =
   let open Sqlite3_utils in
+  let doc_id = doc_id_of_doc_hash doc_hash in
   if x >= page_count ~doc_hash then (
     invalid_arg "Index.words_of_page_num: page_num out of range"
   ) else (
@@ -422,11 +521,11 @@ let words_of_page_num ~doc_hash x : string Dynarray.t =
         {|
     SELECT start_pos, end_inc_pos
     FROM page_info
-    WHERE doc_hash = @doc_hash
+    WHERE doc_id = @doc_id
     AND page_num = @x
     |}
-        ~names:[ ("doc_hash", TEXT doc_hash)
-               ; ("x", INT (Int64.of_int x))
+        ~names:[ ("@doc_id", INT doc_id)
+               ; ("@x", INT (Int64.of_int x))
                ]
         (fun stmt ->
            (column_int stmt 0, column_int stmt 1)
@@ -446,6 +545,7 @@ let line_of_global_line_num ~doc_hash x =
 
 let line_loc_of_global_line_num ~doc_hash global_line_num : Line_loc.t =
   let open Sqlite3_utils in
+  let doc_id = doc_id_of_doc_hash doc_hash in
   if global_line_num >= global_line_count ~doc_hash then (
     invalid_arg "Index.line_loc_of_global_line_num: global_line_num out of range"
   ) else (
@@ -454,10 +554,11 @@ let line_loc_of_global_line_num ~doc_hash global_line_num : Line_loc.t =
         {|
     SELECT page_num, line_num_in_page
     FROM line_info
-    WHERE global_line_num = @global_line_num
+    WHERE doc_id = @doc_id
+    AND global_line_num = @global_line_num
     |}
-        ~names:[ ("doc_hash", TEXT doc_hash)
-               ; ("global_line_num", INT (Int64.of_int global_line_num)) ]
+        ~names:[ ("@doc_id", INT doc_id)
+               ; ("@global_line_num", INT (Int64.of_int global_line_num)) ]
         (fun stmt ->
            (column_int stmt 0, column_int stmt 1)
         )
@@ -467,15 +568,17 @@ let line_loc_of_global_line_num ~doc_hash global_line_num : Line_loc.t =
 
 let loc_of_pos ~doc_hash pos : Loc.t =
   let open Sqlite3_utils in
+  let doc_id = doc_id_of_doc_hash doc_hash in
   let pos_in_line, global_line_num =
     step_stmt
       {|
   SELECT pos_in_line, global_line_num
   FROM position
-  WHERE doc_hash = @doc_hash
+  WHERE doc_id = @doc_id
   AND pos = @pos
   |}
-      ~names:[ ("doc_hash", TEXT doc_hash); ("pos", INT (Int64.of_int pos)) ]
+      ~names:[ ("@doc_id", INT doc_id)
+             ; ("@pos", INT (Int64.of_int pos)) ]
       (fun stmt ->
          (column_int stmt 0, column_int stmt 1)
       )
@@ -491,38 +594,42 @@ let max_pos ~doc_hash =
   FROM doc_info
   WHERE doc_hash = @doc_hash
   |}
-    ~names:[ ("doc_hash", TEXT doc_hash) ]
+    ~names:[ ("@doc_hash", TEXT doc_hash) ]
     (fun stmt ->
        column_int stmt 0
     )
 
 let line_count_of_page_num ~doc_hash page : int =
   let open Sqlite3_utils in
+  let doc_id = doc_id_of_doc_hash doc_hash in
   step_stmt
     {|
   SELECT line_count
   FROM page_info
-  WHERE doc_hash = @doc_hash
+  WHERE doc_id = @doc_id
   AND page = @page
   |}
-    ~names:[ ("doc_hash", TEXT doc_hash); ("page", INT (Int64.of_int page)) ]
+    ~names:[ ("@doc_id", INT doc_id)
+           ; ("@page", INT (Int64.of_int page)) ]
     (fun stmt ->
        column_int stmt 0
     )
 
 let start_end_inc_pos_of_global_line_num ~doc_hash global_line_num =
   let open Sqlite3_utils in
+  let doc_id = doc_id_of_doc_hash doc_hash in
   if global_line_num >= global_line_count ~doc_hash then (
     invalid_arg "Index.start_end_inc_pos_of_global_line_num: global_line_num out of range"
   ) else (
     step_stmt
       {|
   SELECT start_pos, end_inc_pos
-  FROM line_num
-  WHERE doc_hash = @doc_hash
+  FROM line_info
+  WHERE doc_id = @doc_id
   AND global_line_num = @global_line_num
   |}
-      ~names:[ ("doc_hash", TEXT doc_hash); ("global_line_num", INT (Int64.of_int global_line_num)) ]
+      ~names:[ ("@doc_id", INT doc_id)
+             ; ("@global_line_num", INT (Int64.of_int global_line_num)) ]
       (fun stmt ->
          (column_int stmt 0, column_int stmt 1)
       )
@@ -539,6 +646,7 @@ module Search = struct
       (token : Search_phrase.Enriched_token.t)
     : int Seq.t =
     let open Sqlite3_utils in
+    let doc_id = doc_id_of_doc_hash doc_hash in
     Eio.Fiber.yield ();
     let match_typ = ET.match_typ token in
     let start_end_inc =
@@ -579,9 +687,9 @@ module Search = struct
               word.id AS word_id,
               word.word AS word
           FROM word
-          WHERE doc_hash = @doc_hash
+          WHERE doc_id = @doc_id
           |}
-            ~names:[ ("doc_hash", TEXT doc_hash)
+            ~names:[ ("@doc_id", INT doc_id)
                    ]
             f
             []
@@ -594,14 +702,14 @@ module Search = struct
               word.word AS word
           FROM word
           JOIN position
-              ON position.doc_hash = word.doc_hash
+              ON position.doc_id = word.doc_id
               AND position.word_id = word.id
-          WHERE word_ci.doc_hash = @doc_hash
+          WHERE word.doc_id = @doc_id
           AND position.pos BETWEEN @start AND @end_inc
           |}
-            ~names:[ ("doc_hash", TEXT doc_hash)
-                   ; ("start", INT (Int64.of_int start))
-                   ; ("end_inc", INT (Int64.of_int end_inc))
+            ~names:[ ("@doc_id", INT doc_id)
+                   ; ("@start", INT (Int64.of_int start))
+                   ; ("@end_inc", INT (Int64.of_int end_inc))
                    ]
             f
             []
@@ -647,7 +755,7 @@ module Search = struct
             Parser_components.is_space indexed_word.[0]
         )
       | `String search_word -> (
-          fun (word_id, indexed_word) ->
+          fun (_word_id, indexed_word) ->
             Eio.Fiber.yield ();
             let search_word_ci =
               String.lowercase_ascii search_word
@@ -678,7 +786,7 @@ module Search = struct
             )
         )
     )
-    |> Seq.flat_map (fun (word_id, indexed_word) ->
+    |> Seq.flat_map (fun (word_id, _indexed_word) ->
         Eio.Fiber.yield ();
         let f acc data =
           Data.to_int_exn data.(0) :: acc
@@ -691,11 +799,11 @@ module Search = struct
           SELECT
               position.pos
           FROM position
-          WHERE doc_hash = @doc_hash
+          WHERE doc_id = @doc_id
           AND word_id = @word_id
           |}
-                ~names:[ ("doc_hash", TEXT doc_hash)
-                       ; ("word_id", INT (Int64.of_int word_id))
+                ~names:[ ("@doc_id", INT doc_id)
+                       ; ("@word_id", INT (Int64.of_int word_id))
                        ]
                 f
                 []
@@ -705,14 +813,15 @@ module Search = struct
                 {|
           SELECT
               position.pos
-          WHERE doc_hash = @doc_hash
+          FROM position
+          WHERE doc_id = @doc_id
           AND word_id = @word_id
           AND pos BETWEEN @start AND @end_inc
           |}
-                ~names:[ ("doc_hash", TEXT doc_hash)
-                       ; ("word_id", INT (Int64.of_int word_id))
-                       ; ("start", INT (Int64.of_int start))
-                       ; ("end_inc", INT (Int64.of_int end_inc))
+                ~names:[ ("@doc_id", INT doc_id)
+                       ; ("@word_id", INT (Int64.of_int word_id))
+                       ; ("@start", INT (Int64.of_int start))
+                       ; ("@end_inc", INT (Int64.of_int end_inc))
                        ]
                 f
                 []

@@ -29,24 +29,31 @@ let word_of_index t i : string =
 let index_of_word t s : int =
   String_map.find s t.index_of_word
 
-let load_into_db ~doc_hash (t : t) : unit =
-  let open Sqlite3 in
-  let stmt = prepare (Params.get_db ()) {|
-  DELETE FROM word WHERE doc_hash = @doc_hash;
-
-  INSERT INTO word
-  (id, doc_hash, word)
-  VALUES
-  (@id, @doc_hash, @word);
+let load_into_db ~doc_id (t : t) : unit =
+  let open Sqlite3_utils in
+  step_stmt
+    {|
+  DELETE FROM word WHERE doc_id = @doc_id
   |}
-  in
-  CCVector.iteri (fun id word ->
-      bind_names
-        stmt
-        [ ("doc_hash", TEXT doc_hash)
-        ; ("id", INT (Int64.of_int id))
-        ; ("word", TEXT word)
-        ];
-      Rc.check (iter stmt ~f:ignore)
-    );
-  Rc.check (finalize stmt)
+    ~names:[ ("@doc_id", INT doc_id) ]
+    (fun _ -> ());
+  with_stmt
+    {|
+  INSERT INTO word
+  (id, doc_id, word)
+  VALUES
+  (@id, @doc_id, @word);
+  |}
+    (fun stmt ->
+       CCVector.iteri (fun id word ->
+           bind_names
+             stmt
+             [ ("@doc_id", INT doc_id)
+             ; ("@id", INT (Int64.of_int id))
+             ; ("@word", TEXT word)
+             ];
+           step stmt;
+           reset stmt;
+         )
+         t.word_of_index
+    )

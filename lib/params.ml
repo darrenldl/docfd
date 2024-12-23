@@ -29,6 +29,65 @@ let default_max_fuzzy_edit_dist = 2
 
 let max_fuzzy_edit_dist = ref default_max_fuzzy_edit_dist
 
+let db_schema =
+  {|
+CREATE TABLE IF NOT EXISTS line_info (
+  doc_id integer,
+  global_line_num integer,
+  start_pos integer,
+  end_inc_pos integer,
+  page_num integer,
+  line_num_in_page integer
+  -- FOREIGN KEY (doc_id) REFERENCES doc_info (id)
+);
+
+CREATE INDEX IF NOT EXISTS line_info_index_1 ON line_info (doc_id);
+
+CREATE TABLE IF NOT EXISTS position (
+  doc_id integer,
+  pos integer,
+  word_id integer,
+  global_line_num integer,
+  pos_in_line integer
+  -- FOREIGN KEY (doc_id) REFERENCES doc_info (id),
+  -- FOREIGN KEY (word_id) REFERENCES word (id)
+);
+
+CREATE INDEX IF NOT EXISTS position_index_1 ON position (doc_id);
+CREATE INDEX IF NOT EXISTS position_index_2 ON position (pos);
+
+CREATE TABLE IF NOT EXISTS page_info (
+  doc_id integer,
+  page_num integer,
+  line_count integer,
+  start_pos integer,
+  end_inc_pos integer
+  -- FOREIGN KEY (doc_id) REFERENCES doc_info (id)
+);
+
+CREATE INDEX IF NOT EXISTS page_info_index_1 ON page_info (doc_id);
+
+CREATE TABLE IF NOT EXISTS doc_info (
+  id integer PRIMARY KEY AUTOINCREMENT,
+  doc_hash varchar(500),
+  page_count integer,
+  global_line_count integer,
+  max_pos integer
+);
+
+CREATE INDEX IF NOT EXISTS doc_info_index_1 ON doc_info (doc_hash);
+
+CREATE TABLE IF NOT EXISTS word (
+  id integer PRIMARY KEY AUTOINCREMENT,
+  doc_id integer,
+  word varchar(500)
+  -- FOREIGN KEY (doc_id) REFERENCES doc_info (id)
+);
+
+CREATE INDEX IF NOT EXISTS word_index_1 ON word (word);
+CREATE INDEX IF NOT EXISTS word_index_2 ON word (doc_id);
+  |}
+
 let db : Sqlite3.db option ref = ref None
 
 let get_db () =

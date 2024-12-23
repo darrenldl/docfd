@@ -269,18 +269,21 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             )
         in
         let indexed_files, unindexed_files =
-          let open Sqlite3 in
-          let stmt = prepare (Params.get_db ()) {||
-          SELECT * FROM doc_info WHERE doc_hash = @doc_hash
+          let open Sqlite3_utils in
+          with_stmt
+            {|
+          SELECT 0 FROM doc_info WHERE doc_hash = @doc_hash
           |}
-          in
-          List.partition (fun (_, _, doc_hash) ->
-              Rc.check (bind_name stmt "doc_hash" (TEXT doc_hash));
-              let indexed = data_count stmt > 0 in
-              Rc.check (reset stmt);
-              indexed
+            (fun stmt ->
+               List.partition (fun (_, _, doc_hash) ->
+                   bind_names stmt [ ("@doc_hash", TEXT doc_hash) ];
+                   step stmt;
+                   let indexed = data_count stmt > 0 in
+                   reset stmt;
+                   indexed
+                 )
+                 file_and_hash_list
             )
-            file_and_hash_list
         in
         let load_document ~env pool search_mode ~doc_hash path =
           do_if_debug (fun oc ->
@@ -464,7 +467,6 @@ let run
     )
   );
   let db = Sqlite3.db_open (Filename.concat cache_dir Params.db_file_name) in
-  Params.db := Some db;
   (match Docfd_lib.init ~db with
    | None -> ()
    | Some msg -> exit_with_error_msg msg

@@ -20,65 +20,16 @@ module Parser_components = Parser_components
 
 module Misc_utils' = Misc_utils
 
+module Sqlite3_utils = Sqlite3_utils
+
 let init ~db =
+  let open Sqlite3_utils in
   let db_res =
-    Sqlite3.exec db {|
-  CREATE TABLE IF NOT EXISTS line_info (
-    doc_hash varchar(500) PRIMARY KEY,
-    global_line_num integer,
-    start_pos integer,
-    end_inc_pos integer,
-    page_num integer,
-    line_num_in_page integer
-  );
-
-  CREATE INDEX IF NOT EXISTS index_1 ON line_info (global_line_num);
-
-  CREATE TABLE IF NOT EXISTS position (
-    doc_hash varchar(500),
-    pos integer,
-    word_id integer,
-    global_line_num integer,
-    pos_in_line integer,
-    PRIMARY KEY (doc_hash, pos),
-    FOREIGN KEY (doc_hash) REFERENCES doc_info (doc_hash),
-    FOREIGN KEY (doc_hash) REFERENCES line_info (doc_hash),
-    FOREIGN KEY (doc_hash) REFERENCES page_info (doc_hash),
-    FOREIGN KEY (word_id) REFERENCES word (id)
-  );
-
-  CREATE INDEX IF NOT EXISTS index_3 ON position (pos);
-
-  CREATE TABLE IF NOT EXISTS page_info (
-    doc_hash varchar(500) PRIMARY KEY,
-    page_num integer,
-    line_count integer,
-    start_pos integer,
-    end_inc_pos integer
-  );
-
-  CREATE INDEX IF NOT EXISTS index_1 ON page_info (page_num);
-
-  CREATE TABLE IF NOT EXISTS doc_info (
-    doc_hash varchar(500) PRIMARY KEY,
-    page_count integer,
-    global_line_count integer,
-    max_pos integer
-  );
-
-  CREATE TABLE IF NOT EXISTS word (
-    id integer PRIMARY KEY,
-    doc_hash varchar(500),
-    word varchar(500)
-  );
-
-  CREATE INDEX IF NOT EXISTS index_1 ON word (word);
-  CREATE INDEX IF NOT EXISTS index_2 ON word (doc_hash);
-  |}
+    Sqlite3.exec db Params.db_schema
   in
-  if not (Sqlite3.Rc.is_success db_res) then (
+  if not (Rc.is_success db_res) then (
     Some (Fmt.str
-            "failed to initialize index DB: %s" (Sqlite3.Rc.to_string db_res))
+            "failed to initialize index DB: %s" (Rc.to_string db_res))
   ) else (
     Params.db := Some db;
     None

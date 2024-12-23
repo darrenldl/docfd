@@ -36,11 +36,11 @@ type work_stage =
   | Title
   | Content
 
-let parse_lines pool search_mode ~path (s : string Seq.t) : t =
+let parse_lines pool ~doc_hash search_mode ~path (s : string Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
     | Content -> (
-        let index = Index.index_lines pool s in
+        Index.index_lines pool ~doc_hash s;
         let empty = make search_mode ~path in
         {
           empty with
@@ -132,7 +132,7 @@ module Of_path = struct
     try
       Eio.Path.(with_lines (fs / path))
         (fun lines ->
-           Ok (parse_lines pool search_mode ~path lines)
+           Ok (parse_lines pool ~doc_hash search_mode ~path lines)
         )
     with
     | _ -> Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
@@ -190,7 +190,7 @@ module Of_path = struct
     | Some lines -> (
         try
           List.to_seq lines
-          |> parse_lines pool search_mode ~path
+          |> parse_lines pool ~doc_hash search_mode ~path
           |> Result.ok
         with
         | _ -> Error error_msg

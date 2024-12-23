@@ -1,5 +1,5 @@
 module B = Digestif.Make_BLAKE2B (struct
-    let digest_size = 20
+    let digest_size = 64
   end)
 
 let hash_of_file ~env ~path =

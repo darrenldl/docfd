@@ -1,10 +1,21 @@
 include Sqlite3
 
+let exec s =
+  Sqlite3.Rc.check (Sqlite3.exec (Params.get_db ()) s)
+
 let prepare s =
   Sqlite3.prepare (Params.get_db ()) s
 
 let bind_names stmt l =
   Sqlite3.Rc.check (Sqlite3.bind_names stmt l)
+
+let reset stmt =
+  Sqlite3.Rc.check (Sqlite3.reset stmt)
+
+let step stmt =
+  match Sqlite3.step stmt with
+  | OK | DONE | ROW -> ()
+  | x -> Sqlite3.Rc.check x
 
 let finalize stmt =
   Sqlite3.Rc.check (Sqlite3.finalize stmt)
@@ -23,7 +34,7 @@ let step_stmt : type a. string -> ?names:((string * Data.t) list) -> (stmt -> a)
   fun s ?names f ->
   with_stmt s ?names
     (fun stmt ->
-       Rc.check (Sqlite3.step stmt);
+       step stmt;
        f stmt
     )
 
