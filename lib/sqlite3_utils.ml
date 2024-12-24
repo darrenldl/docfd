@@ -5,15 +5,15 @@ let mutex = Mutex.create ()
 let use_db : type a. ?db:db -> (db -> a) -> a =
   let open Sqlite3 in
   fun ?db f ->
-  let db_path =
-    CCOption.get_exn_or "Docfd_lib.Params.db_path uninitialized" !Params.db_path
-  in
-  let& db =
-    match db with
-   | Some db -> db
-  | None -> db_open db_path
-  in
-  Mutex.protect mutex (fun () -> f db)
+    let db_path =
+      CCOption.get_exn_or "Docfd_lib.Params.db_path uninitialized" !Params.db_path
+    in
+    let& db =
+      match db with
+      | Some db -> db
+      | None -> db_open db_path
+    in
+    Mutex.protect mutex (fun () -> f db)
 
 let exec db s =
   Sqlite3.Rc.check (Sqlite3.exec db s)

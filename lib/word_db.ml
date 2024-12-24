@@ -31,7 +31,7 @@ let index_of_word t s : int =
 
 let load_into_db db ~doc_id (t : t) : unit =
   let open Sqlite3_utils in
-    step_stmt db "BEGIN IMMEDIATE" ignore;
+  step_stmt db "BEGIN IMMEDIATE" ignore;
   step_stmt db
     {|
   DELETE FROM word WHERE doc_id = @doc_id
@@ -58,4 +58,4 @@ let load_into_db db ~doc_id (t : t) : unit =
          )
          t.word_of_index
     );
-    step_stmt db "COMMIT" ignore
+  step_stmt db "COMMIT" ignore
