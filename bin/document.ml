@@ -36,11 +36,11 @@ type work_stage =
   | Title
   | Content
 
-let parse_lines pool ~doc_hash search_mode ~path (s : string Seq.t) : t =
+let parse_lines pool db ~doc_hash search_mode ~path (s : string Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
     | Content -> (
-        Index.index_lines pool ~doc_hash s;
+        Index.index_lines pool db ~doc_hash s;
         make ~doc_hash ~path ~title search_mode
       )
     | Title -> (
@@ -53,11 +53,11 @@ let parse_lines pool ~doc_hash search_mode ~path (s : string Seq.t) : t =
   in
   aux Title None s
 
-let parse_pages pool ~doc_hash search_mode ~path (s : string list Seq.t) : t =
+let parse_pages pool db ~doc_hash search_mode ~path (s : string list Seq.t) : t =
   let rec aux (stage : work_stage) title s =
     match stage with
     | Content -> (
-        Index.index_pages pool ~doc_hash s;
+        Index.index_pages pool db ~doc_hash s;
         make ~doc_hash ~path ~title search_mode
       )
     | Title -> (
@@ -119,12 +119,12 @@ let inter_search_scope (x : Diet.Int.t) (t : t) : t =
   { t with search_scope = Some search_scope }
 
 module Of_path = struct
-  let text ~env pool ~doc_hash search_mode path : (t, string) result =
+  let text ~env pool db ~doc_hash search_mode path : (t, string) result =
     let fs = Eio.Stdenv.fs env in
     try
       Eio.Path.(with_lines (fs / path))
         (fun lines ->
-           Ok (parse_lines pool ~doc_hash search_mode ~path lines)
+           Ok (parse_lines pool db ~doc_hash search_mode ~path lines)
         )
     with
     | Failure _
@@ -133,7 +133,7 @@ module Of_path = struct
         Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
       )
 
-  let pdf ~env pool ~doc_hash search_mode path : (t, string) result =
+  let pdf ~env pool db ~doc_hash search_mode path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
     let fs = Eio.Stdenv.fs env in
     try
@@ -146,7 +146,7 @@ module Of_path = struct
             |> Seq.map (fun page -> String.split_on_char '\n' page)
           )
       in
-      Ok (parse_pages pool ~doc_hash search_mode ~path pages)
+      Ok (parse_pages pool db ~doc_hash search_mode ~path pages)
     with
     | Failure _
     | End_of_file
@@ -154,7 +154,7 @@ module Of_path = struct
         Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
       )
 
-  let pandoc_supported_format ~env pool ~doc_hash search_mode path : (t, string) result =
+  let pandoc_supported_format ~env pool db ~doc_hash search_mode path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
     let fs = Eio.Stdenv.fs env in
     let ext = File_utils.extension_of_file path in
@@ -190,7 +190,7 @@ module Of_path = struct
     | Some lines -> (
         try
           List.to_seq lines
-          |> parse_lines pool ~doc_hash search_mode ~path
+          |> parse_lines pool db ~doc_hash search_mode ~path
           |> Result.ok
         with
         | _ -> Error error_msg
@@ -198,17 +198,19 @@ module Of_path = struct
 end
 
 let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, string) result =
+  let open Sqlite3_utils in
   let* doc_hash =
     match doc_hash with
     | Some x -> Ok x
     | None -> BLAKE2B.hash_of_file ~env ~path
   in
-  if Index.is_indexed ~doc_hash then (
+  use_db (fun db ->
+  if Index.is_indexed db ~doc_hash then (
     let title =
-      if Index.global_line_count ~doc_hash = 0 then
+      if Index.global_line_count db ~doc_hash = 0 then
         None
       else
-        Some (Index.line_of_global_line_num ~doc_hash 0)
+        Some (Index.line_of_global_line_num db ~doc_hash 0)
     in
     Ok
       {
@@ -222,12 +224,13 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, 
   ) else (
     match File_utils.format_of_file path with
     | `PDF -> (
-        Of_path.pdf ~env pool ~doc_hash search_mode path
+        Of_path.pdf ~env pool db ~doc_hash search_mode path
       )
     | `Pandoc_supported_format -> (
-        Of_path.pandoc_supported_format ~env pool ~doc_hash search_mode path
+        Of_path.pandoc_supported_format ~env pool db ~doc_hash search_mode path
       )
     | `Text -> (
-        Of_path.text ~env pool ~doc_hash search_mode path
+        Of_path.text ~env pool db ~doc_hash search_mode path
       )
+  )
   )

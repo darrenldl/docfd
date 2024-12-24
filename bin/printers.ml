@@ -1,3 +1,5 @@
+open Docfd_lib
+
 let output_image ~color (oc : out_channel) (img : Notty.image) : unit =
   let open Notty in
   let buf = Buffer.create 1024 in
@@ -22,12 +24,14 @@ let path_image ~color oc path =
 let search_result_group ~color ~underline (oc : out_channel) ((document, results) : Document_store.search_result_group) =
   let path = Document.path document in
   path_image ~color oc path;
+  Sqlite3_utils.use_db ~no_lock:true (fun db ->
   Array.iteri (fun i search_result ->
       if i > 0 then (
         newline_image oc
       );
       let img =
         Content_and_search_result_render.search_result
+          db
           ~doc_hash:(Document.doc_hash document)
           ~render_mode:(Ui_base.render_mode_of_document document)
           ~width:!Params.search_result_print_text_width
@@ -38,6 +42,7 @@ let search_result_group ~color ~underline (oc : out_channel) ((document, results
       Notty_unix.eol img
       |> output_image ~color oc;
     ) results
+        )
 
 let search_result_groups
     ~color
