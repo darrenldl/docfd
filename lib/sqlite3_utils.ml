@@ -1,6 +1,6 @@
 include Sqlite3
 
-let mutex = Mutex.create ()
+let mutex = Eio.Mutex.create ()
 
 let use_db : type a. ?no_lock:bool -> ?db:db -> (db -> a) -> a =
   let open Sqlite3 in
@@ -8,7 +8,7 @@ let use_db : type a. ?no_lock:bool -> ?db:db -> (db -> a) -> a =
     let db_path =
       CCOption.get_exn_or "Docfd_lib.Params.db_path uninitialized" !Params.db_path
     in
-    let body = fun () ->
+    let body () =
       let& db =
         match db with
         | Some db -> db
@@ -19,7 +19,7 @@ let use_db : type a. ?no_lock:bool -> ?db:db -> (db -> a) -> a =
     if no_lock then (
       body ()
     ) else (
-      Mutex.protect mutex body
+      Eio.Mutex.use_rw ~protect:true mutex body
     )
 
 let exec db s =

@@ -338,7 +338,7 @@ let narrow_search_scope ~level (t : t) : t =
               doc
             ) else (
               let search_scope =
-                Sqlite3_utils.use_db (fun db ->
+                Sqlite3_utils.use_db ~no_lock:true (fun db ->
                     Array.to_seq search_results
                     |> Seq.fold_left (fun scope search_result ->
                         let s, e =
