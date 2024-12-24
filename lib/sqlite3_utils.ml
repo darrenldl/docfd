@@ -2,18 +2,25 @@ include Sqlite3
 
 let mutex = Mutex.create ()
 
-let use_db : type a. ?db:db -> (db -> a) -> a =
+let use_db : type a. ?no_lock:bool -> ?db:db -> (db -> a) -> a =
   let open Sqlite3 in
-  fun ?db f ->
+  fun ?(no_lock = false) ?db f ->
     let db_path =
       CCOption.get_exn_or "Docfd_lib.Params.db_path uninitialized" !Params.db_path
     in
+    let body = fun () ->
     let& db =
       match db with
       | Some db -> db
       | None -> db_open db_path
     in
-    Mutex.protect mutex (fun () -> f db)
+      f db
+    in
+    if no_lock then (
+      body ()
+    ) else (
+    Mutex.protect mutex body
+    )
 
 let exec db s =
   Sqlite3.Rc.check (Sqlite3.exec db s)
