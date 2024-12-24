@@ -86,16 +86,16 @@ let refresh_search_results pool stop_signal (t : t) : t =
            | `Multiline -> false
          in
          (path,
-        Sqlite3_utils.use_db ~no_lock:true (fun db ->
-          Index.search
-            pool
-            stop_signal
-            db
-            ~doc_hash:(Document.doc_hash doc)
-            ~within_same_line
-            (Document.search_scope doc)
-            t.search_exp
-         )
+          Sqlite3_utils.use_db ~no_lock:true (fun db ->
+              Index.search
+                pool
+                stop_signal
+                db
+                ~doc_hash:(Document.doc_hash doc)
+                ~within_same_line
+                (Document.search_scope doc)
+                t.search_exp
+            )
          )
       )
     |> String_map.of_list
@@ -162,19 +162,19 @@ let add_document pool (doc : Document.t) (t : t) : t =
   in
   let search_results =
     Sqlite3_utils.use_db ~no_lock:true (fun db ->
-    String_map.add
-      path
-      (Index.search
-         pool
-         (Stop_signal.make ())
-         db
-         ~doc_hash:(Document.doc_hash doc)
-         ~within_same_line
-         (Document.search_scope doc)
-         t.search_exp
+        String_map.add
+          path
+          (Index.search
+             pool
+             (Stop_signal.make ())
+             db
+             ~doc_hash:(Document.doc_hash doc)
+             ~within_same_line
+             (Document.search_scope doc)
+             t.search_exp
+          )
+          t.search_results
       )
-      t.search_results
-    )
   in
   { t with
     all_documents =
@@ -339,30 +339,30 @@ let narrow_search_scope ~level (t : t) : t =
             ) else (
               let search_scope =
                 Sqlite3_utils.use_db (fun db ->
-                Array.to_seq search_results
-                |> Seq.fold_left (fun scope search_result ->
-                    let s, e =
-                      List.fold_left (fun s_e Search_result.{ found_word_pos; _ } ->
-                          match s_e with
-                          | None -> Some (found_word_pos, found_word_pos)
-                          | Some (s, e) -> (
-                              Some (min s found_word_pos, max found_word_pos e)
+                    Array.to_seq search_results
+                    |> Seq.fold_left (fun scope search_result ->
+                        let s, e =
+                          List.fold_left (fun s_e Search_result.{ found_word_pos; _ } ->
+                              match s_e with
+                              | None -> Some (found_word_pos, found_word_pos)
+                              | Some (s, e) -> (
+                                  Some (min s found_word_pos, max found_word_pos e)
+                                )
                             )
-                        )
-                        None
-                        (Search_result.found_phrase search_result)
-                      |> Option.get
-                    in
-                    let offset = level * !Params.tokens_per_search_scope_level in
-                    let s, e =
-                      (max 0 (s - offset), min (Index.max_pos db ~doc_hash) (e + offset))
-                    in
-                    Diet.Int.add
-                      (Diet.Int.Interval.make s e)
-                      scope
+                            None
+                            (Search_result.found_phrase search_result)
+                          |> Option.get
+                        in
+                        let offset = level * !Params.tokens_per_search_scope_level in
+                        let s, e =
+                          (max 0 (s - offset), min (Index.max_pos db ~doc_hash) (e + offset))
+                        in
+                        Diet.Int.add
+                          (Diet.Int.Interval.make s e)
+                          scope
+                      )
+                      Diet.Int.empty
                   )
-                  Diet.Int.empty
-                )
               in
               Document.inter_search_scope
                 search_scope

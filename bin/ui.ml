@@ -261,25 +261,25 @@ module Top_pane = struct
       in
       let preview_line_images =
         Sqlite3_utils.use_db ~no_lock:true (fun db ->
-        let line_count =
-          min Params.preview_line_count (Index.global_line_count db ~doc_hash:(Document.doc_hash doc))
-        in
-        OSeq.(0 --^ line_count)
-        |> Seq.map (fun global_line_num ->
-            Index.words_of_global_line_num db ~doc_hash:(Document.doc_hash doc) global_line_num
-            |> Dynarray.to_list
-            |> Content_and_search_result_render.Text_block_render.of_words ~width:sub_item_width
-          )
-        |> Seq.map (fun img ->
-            let left_padding =
-              OSeq.(0 --^ I.height img)
-              |> Seq.map (fun _ -> preview_left_padding_per_line)
-              |> List.of_seq
-              |> I.vcat
+            let line_count =
+              min Params.preview_line_count (Index.global_line_count db ~doc_hash:(Document.doc_hash doc))
             in
-            left_padding <|> img
-          )
-        |> List.of_seq
+            OSeq.(0 --^ line_count)
+            |> Seq.map (fun global_line_num ->
+                Index.words_of_global_line_num db ~doc_hash:(Document.doc_hash doc) global_line_num
+                |> Dynarray.to_list
+                |> Content_and_search_result_render.Text_block_render.of_words ~width:sub_item_width
+              )
+            |> Seq.map (fun img ->
+                let left_padding =
+                  OSeq.(0 --^ I.height img)
+                  |> Seq.map (fun _ -> preview_left_padding_per_line)
+                  |> List.of_seq
+                  |> I.vcat
+                in
+                left_padding <|> img
+              )
+            |> List.of_seq
           )
       in
       let preview_image =

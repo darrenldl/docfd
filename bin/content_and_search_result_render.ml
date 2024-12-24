@@ -115,7 +115,7 @@ type word_grid = {
 }
 
 let start_and_end_inc_global_line_num_of_search_result
-db
+    db
     ~doc_hash
     (search_result : Search_result.t)
   : (int * int) =
@@ -137,10 +137,10 @@ db
         None
         l
       |> Option.get
-  )
+    )
 
 let word_grid_of_index
-db
+    db
     ~doc_hash
     ~start_global_line_num
     ~end_inc_global_line_num
@@ -167,7 +167,7 @@ db
   )
 
 let mark_search_result_in_word_grid
-db
+    db
     ~doc_hash
     (grid : word_grid)
     (search_result : Search_result.t)
@@ -196,7 +196,7 @@ type render_mode = [
 ]
 
 let render_grid
-db
+    db
     ~doc_hash
     ~(render_mode : render_mode)
     ~width
@@ -275,7 +275,7 @@ db
     )
 
 let content_snippet
-db
+    db
     ~doc_hash
     ?(search_result : Search_result.t option)
     ~(width : int)
@@ -305,14 +305,14 @@ db
       let end_inc_global_line_num = min max_line_num (start_global_line_num + height - 1) in
       let grid =
         word_grid_of_index
-        db
+          db
           ~doc_hash
           ~start_global_line_num
           ~end_inc_global_line_num
       in
       mark_search_result_in_word_grid db ~doc_hash grid search_result;
       render_grid
-      db
+        db
         ~doc_hash
         ~render_mode:`None
         ~width
@@ -325,7 +325,7 @@ let word_is_not_space s =
   String.length s > 0 && not (Parser_components.is_space s.[0])
 
 let grab_additional_lines
-db
+    db
     ~doc_hash
     ~non_space_word_count
     start_global_line_num
@@ -371,7 +371,7 @@ db
   aux ~non_space_word_count ~i:0 start_global_line_num end_inc_global_line_num
 
 let search_result
-db
+    db
     ~doc_hash
     ~render_mode
     ~width
@@ -406,7 +406,7 @@ db
   in
   let grid =
     word_grid_of_index
-    db
+      db
       ~doc_hash
       ~start_global_line_num
       ~end_inc_global_line_num

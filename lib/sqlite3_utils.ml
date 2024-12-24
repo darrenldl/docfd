@@ -9,17 +9,17 @@ let use_db : type a. ?no_lock:bool -> ?db:db -> (db -> a) -> a =
       CCOption.get_exn_or "Docfd_lib.Params.db_path uninitialized" !Params.db_path
     in
     let body = fun () ->
-    let& db =
-      match db with
-      | Some db -> db
-      | None -> db_open db_path
-    in
+      let& db =
+        match db with
+        | Some db -> db
+        | None -> db_open db_path
+      in
       f db
     in
     if no_lock then (
       body ()
     ) else (
-    Mutex.protect mutex body
+      Mutex.protect mutex body
     )
 
 let exec db s =

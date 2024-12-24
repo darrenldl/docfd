@@ -205,32 +205,32 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, 
     | None -> BLAKE2B.hash_of_file ~env ~path
   in
   use_db (fun db ->
-  if Index.is_indexed db ~doc_hash then (
-    let title =
-      if Index.global_line_count db ~doc_hash = 0 then
-        None
-      else
-        Some (Index.line_of_global_line_num db ~doc_hash 0)
-    in
-    Ok
-      {
-        search_mode;
-        path;
-        title;
-        doc_hash;
-        search_scope = None;
-        last_scan = Timedesc.now ~tz_of_date_time:Params.tz ()
-      }
-  ) else (
-    match File_utils.format_of_file path with
-    | `PDF -> (
-        Of_path.pdf ~env pool db ~doc_hash search_mode path
+      if Index.is_indexed db ~doc_hash then (
+        let title =
+          if Index.global_line_count db ~doc_hash = 0 then
+            None
+          else
+            Some (Index.line_of_global_line_num db ~doc_hash 0)
+        in
+        Ok
+          {
+            search_mode;
+            path;
+            title;
+            doc_hash;
+            search_scope = None;
+            last_scan = Timedesc.now ~tz_of_date_time:Params.tz ()
+          }
+      ) else (
+        match File_utils.format_of_file path with
+        | `PDF -> (
+            Of_path.pdf ~env pool db ~doc_hash search_mode path
+          )
+        | `Pandoc_supported_format -> (
+            Of_path.pandoc_supported_format ~env pool db ~doc_hash search_mode path
+          )
+        | `Text -> (
+            Of_path.text ~env pool db ~doc_hash search_mode path
+          )
       )
-    | `Pandoc_supported_format -> (
-        Of_path.pandoc_supported_format ~env pool db ~doc_hash search_mode path
-      )
-    | `Text -> (
-        Of_path.text ~env pool db ~doc_hash search_mode path
-      )
-  )
-  )
+    )
