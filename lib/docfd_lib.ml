@@ -22,8 +22,9 @@ module Misc_utils' = Misc_utils
 
 module Sqlite3_utils = Sqlite3_utils
 
-let init ~db =
+let init ~db_path =
   let open Sqlite3_utils in
+  let db = db_open db_path in
   let db_res =
     Sqlite3.exec db Params.db_schema
   in
@@ -31,6 +32,6 @@ let init ~db =
     Some (Fmt.str
             "failed to initialize index DB: %s" (Rc.to_string db_res))
   ) else (
-    Params.db := Some db;
+    Params.db_path := Some db_path;
     None
   )

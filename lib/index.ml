@@ -267,7 +267,8 @@ end
 
 let doc_id_of_doc_hash doc_hash : int64 =
   let open Sqlite3_utils in
-  step_stmt
+  use_db (fun db ->
+  step_stmt db
     {|
     SELECT id
     FROM doc_info
@@ -277,10 +278,12 @@ let doc_id_of_doc_hash doc_hash : int64 =
     (fun stmt ->
        column_int64 stmt 0
     )
+  )
 
 let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
   let open Sqlite3_utils in
-  step_stmt
+  use_db (fun db ->
+  step_stmt db
     {|
   INSERT INTO doc_info
   (id, doc_hash, page_count, global_line_count, max_pos)
@@ -292,9 +295,12 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
            ; ("@global_line_count", INT (Int64.of_int x.global_line_count))
            ; ("@max_pos", INT (Int64.of_int (Int_map.max_binding x.word_of_pos |> fst)))
            ]
-    (fun _ -> ());
+    (fun _ -> ())
+  );
   let doc_id = doc_id_of_doc_hash doc_hash in
-  with_stmt
+  use_db (fun db ->
+    step_stmt db "BEGIN IMMEDIATE" ignore;
+  with_stmt db
     {|
   INSERT INTO page_info
   (doc_id, page_num, line_count, start_pos, end_inc_pos)
@@ -317,7 +323,7 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
          )
          x.line_count_of_page_num
     );
-  with_stmt
+  with_stmt db
     {|
   INSERT INTO line_info
   (doc_id, global_line_num, start_pos, end_inc_pos, page_num, line_num_in_page)
@@ -343,7 +349,7 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
          )
          x.line_loc_of_global_line_num;
     );
-  with_stmt
+  with_stmt db
     {|
   INSERT INTO position
   (doc_id, pos, word_id, global_line_num, pos_in_line)
@@ -370,12 +376,14 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
          )
          x.pos_s_of_word
     );
-  Word_db.load_into_db ~doc_id x.word_db;
-  ()
+    step_stmt db "COMMIT" ignore;
+  Word_db.load_into_db db ~doc_id x.word_db
+  )
 
 let global_line_count ~doc_hash =
   let open Sqlite3_utils in
-  step_stmt
+  use_db (fun db ->
+  step_stmt db
     {|
   SELECT global_line_count FROM doc_info
   WHERE doc_hash = @doc_hash
@@ -384,11 +392,13 @@ let global_line_count ~doc_hash =
     (fun stmt ->
        column_int stmt 0
     )
+  )
 
 let page_count ~doc_hash =
   let open Sqlite3_utils in
   let doc_id = doc_id_of_doc_hash doc_hash in
-  step_stmt
+  use_db (fun db ->
+  step_stmt db
     {|
   SELECT page_count FROM doc_info
   WHERE doc_id = @doc_id
@@ -397,6 +407,7 @@ let page_count ~doc_hash =
     (fun stmt ->
        column_int stmt 0
     )
+  )
 
 let ccvector_of_int_map
   : 'a . 'a Int_map.t -> 'a CCVector.ro_vector =
@@ -408,7 +419,8 @@ let ccvector_of_int_map
 
 let is_indexed ~doc_hash =
   let open Sqlite3_utils in
-  step_stmt
+  use_db (fun db ->
+  step_stmt db
     {|
   SELECT 0
   FROM doc_info
@@ -418,6 +430,7 @@ let is_indexed ~doc_hash =
     (fun stmt ->
        data_count stmt > 0
     )
+  )
 
 let index_lines pool ~doc_hash s =
   Raw.of_lines pool s
@@ -430,7 +443,8 @@ let index_pages pool ~doc_hash s =
 let word_of_id ~doc_hash id : string =
   let open Sqlite3_utils in
   let doc_id = doc_id_of_doc_hash doc_hash in
-  step_stmt
+  use_db (fun db ->
+  step_stmt db
     {|
   SELECT word FROM word
   WHERE doc_id = @doc_id
@@ -440,11 +454,13 @@ let word_of_id ~doc_hash id : string =
     (fun stmt ->
        column_text stmt 0
     )
+  )
 
 let word_of_pos ~doc_hash pos : string =
   let open Sqlite3_utils in
   let doc_id = doc_id_of_doc_hash doc_hash in
-  step_stmt
+  use_db (fun db ->
+  step_stmt db
     {|
   SELECT word.word
   FROM position p
@@ -457,6 +473,7 @@ let word_of_pos ~doc_hash pos : string =
     (fun stmt ->
        column_text stmt 0
     )
+  )
 
 let word_ci_of_pos ~doc_hash pos : string =
   word_of_pos ~doc_hash pos
@@ -465,8 +482,9 @@ let word_ci_of_pos ~doc_hash pos : string =
 let words_between_start_and_end_inc ~doc_hash (start, end_inc) : string Dynarray.t =
   let open Sqlite3_utils in
   let doc_id = doc_id_of_doc_hash doc_hash in
+  use_db (fun db ->
   let acc = Dynarray.create () in
-  iter_stmt
+  iter_stmt db
     {|
     SELECT word.word
     FROM position
@@ -485,6 +503,7 @@ let words_between_start_and_end_inc ~doc_hash (start, end_inc) : string Dynarray
        Dynarray.add_last acc (Data.to_string_exn data.(0))
     );
   acc
+  )
 
 let words_of_global_line_num ~doc_hash x : string Dynarray.t =
   let open Sqlite3_utils in
@@ -493,7 +512,8 @@ let words_of_global_line_num ~doc_hash x : string Dynarray.t =
     invalid_arg "Index.words_of_global_line_num: global_line_num out of range"
   ) else (
     let start, end_inc =
-      step_stmt
+  use_db (fun db ->
+      step_stmt db
         {|
     SELECT start_pos, end_inc_pos
     FROM line_info
@@ -506,6 +526,7 @@ let words_of_global_line_num ~doc_hash x : string Dynarray.t =
         (fun stmt ->
            (column_int stmt 0, column_int stmt 1)
         )
+  )
     in
     words_between_start_and_end_inc ~doc_hash (start, end_inc)
   )
@@ -516,8 +537,9 @@ let words_of_page_num ~doc_hash x : string Dynarray.t =
   if x >= page_count ~doc_hash then (
     invalid_arg "Index.words_of_page_num: page_num out of range"
   ) else (
+  use_db (fun db ->
     let start, end_inc =
-      step_stmt
+      step_stmt db
         {|
     SELECT start_pos, end_inc_pos
     FROM page_info
@@ -532,6 +554,7 @@ let words_of_page_num ~doc_hash x : string Dynarray.t =
         )
     in
     words_between_start_and_end_inc ~doc_hash (start, end_inc)
+  )
   )
 
 let line_of_global_line_num ~doc_hash x =
@@ -550,7 +573,8 @@ let line_loc_of_global_line_num ~doc_hash global_line_num : Line_loc.t =
     invalid_arg "Index.line_loc_of_global_line_num: global_line_num out of range"
   ) else (
     let page_num, line_num_in_page =
-      step_stmt
+      use_db (fun db ->
+      step_stmt db
         {|
     SELECT page_num, line_num_in_page
     FROM line_info
@@ -562,15 +586,17 @@ let line_loc_of_global_line_num ~doc_hash global_line_num : Line_loc.t =
         (fun stmt ->
            (column_int stmt 0, column_int stmt 1)
         )
+      )
     in
-    { page_num; line_num_in_page; global_line_num }
+    { Line_loc.page_num; line_num_in_page; global_line_num }
   )
 
 let loc_of_pos ~doc_hash pos : Loc.t =
   let open Sqlite3_utils in
   let doc_id = doc_id_of_doc_hash doc_hash in
   let pos_in_line, global_line_num =
-    step_stmt
+    use_db (fun db ->
+    step_stmt db
       {|
   SELECT pos_in_line, global_line_num
   FROM position
@@ -582,13 +608,15 @@ let loc_of_pos ~doc_hash pos : Loc.t =
       (fun stmt ->
          (column_int stmt 0, column_int stmt 1)
       )
+    )
   in
   let line_loc = line_loc_of_global_line_num ~doc_hash global_line_num in
   { line_loc; pos_in_line }
 
 let max_pos ~doc_hash =
   let open Sqlite3_utils in
-  step_stmt
+  use_db (fun db ->
+  step_stmt db
     {|
   SELECT max_pos
   FROM doc_info
@@ -598,11 +626,13 @@ let max_pos ~doc_hash =
     (fun stmt ->
        column_int stmt 0
     )
+  )
 
 let line_count_of_page_num ~doc_hash page : int =
   let open Sqlite3_utils in
   let doc_id = doc_id_of_doc_hash doc_hash in
-  step_stmt
+  use_db (fun db ->
+  step_stmt db
     {|
   SELECT line_count
   FROM page_info
@@ -614,6 +644,7 @@ let line_count_of_page_num ~doc_hash page : int =
     (fun stmt ->
        column_int stmt 0
     )
+  )
 
 let start_end_inc_pos_of_global_line_num ~doc_hash global_line_num =
   let open Sqlite3_utils in
@@ -621,7 +652,8 @@ let start_end_inc_pos_of_global_line_num ~doc_hash global_line_num =
   if global_line_num >= global_line_count ~doc_hash then (
     invalid_arg "Index.start_end_inc_pos_of_global_line_num: global_line_num out of range"
   ) else (
-    step_stmt
+    use_db (fun db ->
+    step_stmt db
       {|
   SELECT start_pos, end_inc_pos
   FROM line_info
@@ -633,6 +665,7 @@ let start_end_inc_pos_of_global_line_num ~doc_hash global_line_num =
       (fun stmt ->
          (column_int stmt 0, column_int stmt 1)
       )
+    )
   )
 
 module Search = struct
@@ -679,9 +712,10 @@ module Search = struct
         let word = Data.to_string_exn data.(1) in
         (word_id, word) :: acc
       in
+      use_db (fun db ->
       match start_end_inc with
       | None -> (
-          fold_stmt
+          fold_stmt db
             {|
           SELECT DISTINCT
               word.id AS word_id,
@@ -695,7 +729,7 @@ module Search = struct
             []
         )
       | Some (start, end_inc) -> (
-          fold_stmt
+          fold_stmt db
             {|
           SELECT DISTINCT
               word.id AS word_id,
@@ -714,6 +748,7 @@ module Search = struct
             f
             []
         )
+      )
     in
     let non_fuzzy_filter
         ~search_word
@@ -792,9 +827,10 @@ module Search = struct
           Data.to_int_exn data.(0) :: acc
         in
         let l =
+          use_db (fun db ->
           match start_end_inc with
           | None -> (
-              fold_stmt
+              fold_stmt db
                 {|
           SELECT
               position.pos
@@ -809,7 +845,7 @@ module Search = struct
                 []
             )
           | Some (start, end_inc) -> (
-              fold_stmt
+              fold_stmt db
                 {|
           SELECT
               position.pos
@@ -826,6 +862,7 @@ module Search = struct
                 f
                 []
             )
+          )
         in
         l
         |> List.to_seq

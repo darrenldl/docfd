@@ -29,15 +29,16 @@ let word_of_index t i : string =
 let index_of_word t s : int =
   String_map.find s t.index_of_word
 
-let load_into_db ~doc_id (t : t) : unit =
+let load_into_db db ~doc_id (t : t) : unit =
   let open Sqlite3_utils in
-  step_stmt
+    step_stmt db "BEGIN IMMEDIATE" ignore;
+  step_stmt db
     {|
   DELETE FROM word WHERE doc_id = @doc_id
   |}
     ~names:[ ("@doc_id", INT doc_id) ]
     (fun _ -> ());
-  with_stmt
+  with_stmt db
     {|
   INSERT INTO word
   (id, doc_id, word)
@@ -56,4 +57,5 @@ let load_into_db ~doc_id (t : t) : unit =
            reset stmt;
          )
          t.word_of_index
-    )
+    );
+    step_stmt db "COMMIT" ignore

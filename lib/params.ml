@@ -88,7 +88,4 @@ CREATE INDEX IF NOT EXISTS word_index_1 ON word (word);
 CREATE INDEX IF NOT EXISTS word_index_2 ON word (doc_id);
   |}
 
-let db : Sqlite3.db option ref = ref None
-
-let get_db () =
-  CCOption.get_exn_or "Docfd_lib.Params.db uninitialized" !db
+let db_path : string option ref = ref None

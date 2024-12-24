@@ -22,12 +22,12 @@ let search_scope (t : t) = t.search_scope
 
 let last_scan (t : t) = t.last_scan
 
-let make search_mode ~path : t =
+let make ~doc_hash ~path ~title search_mode : t =
   {
     search_mode;
     path;
-    title = None;
-    doc_hash = "";
+    title;
+    doc_hash;
     search_scope = None;
     last_scan = Timedesc.now ~tz_of_date_time:Params.tz ();
   }
@@ -41,11 +41,7 @@ let parse_lines pool ~doc_hash search_mode ~path (s : string Seq.t) : t =
     match stage with
     | Content -> (
         Index.index_lines pool ~doc_hash s;
-        let empty = make search_mode ~path in
-        {
-          empty with
-          title;
-        }
+        make ~doc_hash ~path ~title search_mode
       )
     | Title -> (
         match s () with
@@ -62,11 +58,7 @@ let parse_pages pool ~doc_hash search_mode ~path (s : string list Seq.t) : t =
     match stage with
     | Content -> (
         Index.index_pages pool ~doc_hash s;
-        let empty = make search_mode ~path in
-        {
-          empty with
-          title;
-        }
+        make ~doc_hash ~path ~title search_mode
       )
     | Title -> (
         match s () with

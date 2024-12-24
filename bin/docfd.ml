@@ -270,7 +270,8 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
         in
         let indexed_files, unindexed_files =
           let open Sqlite3_utils in
-          with_stmt
+          use_db (fun db ->
+          with_stmt db
             {|
           SELECT 0 FROM doc_info WHERE doc_hash = @doc_hash
           |}
@@ -284,6 +285,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
                  )
                  file_and_hash_list
             )
+          )
         in
         let load_document ~env pool search_mode ~doc_hash path =
           do_if_debug (fun oc ->
@@ -466,8 +468,8 @@ let run
       `Multiline
     )
   );
-  let db = Sqlite3.db_open (Filename.concat cache_dir Params.db_file_name) in
-  (match Docfd_lib.init ~db with
+  let db_path = Filename.concat cache_dir Params.db_file_name in
+  (match Docfd_lib.init ~db_path with
    | None -> ()
    | Some msg -> exit_with_error_msg msg
   );
