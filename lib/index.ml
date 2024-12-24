@@ -124,7 +124,7 @@ module Raw = struct
   let words_of_lines
       (s : (Line_loc.t * string) Seq.t)
     : multi_indexed_word Seq.t =
-    s
+      s
     |> Seq.flat_map (fun (line_loc, s) ->
         let seq = Tokenize.tokenize_with_pos ~drop_spaces:false s in
         if Seq.is_empty seq then (
@@ -208,7 +208,19 @@ module Raw = struct
       arr
 
   let chunks_of_words (s : multi_indexed_word Seq.t) : chunk Seq.t =
-    OSeq.chunks !Params.index_chunk_size s
+    let empty_word =
+      let line_loc =
+        { Line_loc.page_num = 0; line_num_in_page = 0; global_line_num = 0 }
+      in
+      let loc = { Loc.line_loc; pos_in_line = 0 } in
+      { pos = 0; loc; word = "" }
+    in
+    (if Seq.is_empty s then (
+      Seq.return empty_word
+    ) else (
+      s
+    ))
+    |> OSeq.chunks !Params.index_chunk_size
 
   let of_seq pool (s : (Line_loc.t * string) Seq.t) : t =
     let shared_word_db : shared_word_db =

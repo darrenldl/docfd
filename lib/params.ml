@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS doc_info (
 CREATE INDEX IF NOT EXISTS doc_info_index_1 ON doc_info (doc_hash);
 
 CREATE TABLE IF NOT EXISTS word (
-  id integer PRIMARY KEY AUTOINCREMENT,
+  id integer,
   doc_id integer,
   word varchar(500)
   -- FOREIGN KEY (doc_id) REFERENCES doc_info (id)
