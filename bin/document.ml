@@ -131,7 +131,7 @@ module Of_path = struct
     | End_of_file
     | Eio.Buf_read.Buffer_limit_exceeded -> (
         Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
-    )
+      )
 
   let pdf ~env pool ~doc_hash search_mode path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
@@ -151,8 +151,8 @@ module Of_path = struct
     | Failure _
     | End_of_file
     | Eio.Buf_read.Buffer_limit_exceeded -> (
-    Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
-    )
+        Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
+      )
 
   let pandoc_supported_format ~env pool ~doc_hash search_mode path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
