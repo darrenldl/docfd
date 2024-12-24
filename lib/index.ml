@@ -277,9 +277,8 @@ module Raw = struct
     |> of_seq pool
 end
 
-let doc_id_of_doc_hash doc_hash : int64 =
+let doc_id_of_doc_hash db doc_hash : int64 =
   let open Sqlite3_utils in
-  use_db (fun db ->
       step_stmt db
         {|
     SELECT id
@@ -290,11 +289,9 @@ let doc_id_of_doc_hash doc_hash : int64 =
         (fun stmt ->
            column_int64 stmt 0
         )
-    )
 
-let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
+let load_raw_into_db db ~doc_hash (x : Raw.t) : unit =
   let open Sqlite3_utils in
-  use_db (fun db ->
       step_stmt db
         {|
   INSERT INTO doc_info
@@ -307,10 +304,8 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
                ; ("@global_line_count", INT (Int64.of_int x.global_line_count))
                ; ("@max_pos", INT (Int64.of_int (Int_map.max_binding x.word_of_pos |> fst)))
                ]
-        (fun _ -> ())
-    );
-  let doc_id = doc_id_of_doc_hash doc_hash in
-  use_db (fun db ->
+        ignore;
+  let doc_id = doc_id_of_doc_hash db doc_hash in
       step_stmt db "BEGIN IMMEDIATE" ignore;
       with_stmt db
         {|
@@ -390,11 +385,9 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
         );
       step_stmt db "COMMIT" ignore;
       Word_db.load_into_db db ~doc_id x.word_db
-    )
 
-let global_line_count ~doc_hash =
+let global_line_count db ~doc_hash =
   let open Sqlite3_utils in
-  use_db (fun db ->
       step_stmt db
         {|
   SELECT global_line_count FROM doc_info
@@ -404,12 +397,10 @@ let global_line_count ~doc_hash =
         (fun stmt ->
            column_int stmt 0
         )
-    )
 
-let page_count ~doc_hash =
+let page_count db ~doc_hash =
   let open Sqlite3_utils in
-  let doc_id = doc_id_of_doc_hash doc_hash in
-  use_db (fun db ->
+  let doc_id = doc_id_of_doc_hash db doc_hash in
       step_stmt db
         {|
   SELECT page_count FROM doc_info
@@ -419,7 +410,6 @@ let page_count ~doc_hash =
         (fun stmt ->
            column_int stmt 0
         )
-    )
 
 let ccvector_of_int_map
   : 'a . 'a Int_map.t -> 'a CCVector.ro_vector =
@@ -429,9 +419,8 @@ let ccvector_of_int_map
   |> CCVector.of_seq
   |> CCVector.freeze
 
-let is_indexed ~doc_hash =
+let is_indexed db ~doc_hash =
   let open Sqlite3_utils in
-  use_db (fun db ->
       step_stmt db
         {|
   SELECT 0
@@ -442,20 +431,18 @@ let is_indexed ~doc_hash =
         (fun stmt ->
            data_count stmt > 0
         )
-    )
 
-let index_lines pool ~doc_hash s =
+let index_lines pool db ~doc_hash s =
   Raw.of_lines pool s
-  |> load_raw_into_db ~doc_hash
+  |> load_raw_into_db db ~doc_hash
 
-let index_pages pool ~doc_hash s =
+let index_pages pool db ~doc_hash s =
   Raw.of_pages pool s
-  |> load_raw_into_db ~doc_hash
+  |> load_raw_into_db db ~doc_hash
 
-let word_of_id ~doc_hash id : string =
+let word_of_id db ~doc_hash id : string =
   let open Sqlite3_utils in
-  let doc_id = doc_id_of_doc_hash doc_hash in
-  use_db (fun db ->
+  let doc_id = doc_id_of_doc_hash db doc_hash in
       step_stmt db
         {|
   SELECT word FROM word
@@ -466,12 +453,10 @@ let word_of_id ~doc_hash id : string =
         (fun stmt ->
            column_text stmt 0
         )
-    )
 
-let word_of_pos ~doc_hash pos : string =
+let word_of_pos db ~doc_hash pos : string =
   let open Sqlite3_utils in
-  let doc_id = doc_id_of_doc_hash doc_hash in
-  use_db (fun db ->
+  let doc_id = doc_id_of_doc_hash db doc_hash in
       step_stmt db
         {|
   SELECT word.word
@@ -485,16 +470,14 @@ let word_of_pos ~doc_hash pos : string =
         (fun stmt ->
            column_text stmt 0
         )
-    )
 
-let word_ci_of_pos ~doc_hash pos : string =
-  word_of_pos ~doc_hash pos
+let word_ci_of_pos db ~doc_hash pos : string =
+  word_of_pos db ~doc_hash pos
   |> String.lowercase_ascii
 
-let words_between_start_and_end_inc ~doc_hash (start, end_inc) : string Dynarray.t =
+let words_between_start_and_end_inc db ~doc_hash (start, end_inc) : string Dynarray.t =
   let open Sqlite3_utils in
-  let doc_id = doc_id_of_doc_hash doc_hash in
-  use_db (fun db ->
+  let doc_id = doc_id_of_doc_hash db doc_hash in
       let acc = Dynarray.create () in
       iter_stmt db
         {|
@@ -515,16 +498,14 @@ let words_between_start_and_end_inc ~doc_hash (start, end_inc) : string Dynarray
            Dynarray.add_last acc (Data.to_string_exn data.(0))
         );
       acc
-    )
 
-let words_of_global_line_num ~doc_hash x : string Dynarray.t =
+let words_of_global_line_num db ~doc_hash x : string Dynarray.t =
   let open Sqlite3_utils in
-  let doc_id = doc_id_of_doc_hash doc_hash in
-  if x >= global_line_count ~doc_hash then (
+  let doc_id = doc_id_of_doc_hash db doc_hash in
+  if x >= global_line_count db ~doc_hash then (
     invalid_arg "Index.words_of_global_line_num: global_line_num out of range"
   ) else (
     let start, end_inc =
-      use_db (fun db ->
           step_stmt db
             {|
     SELECT start_pos, end_inc_pos
@@ -538,18 +519,16 @@ let words_of_global_line_num ~doc_hash x : string Dynarray.t =
             (fun stmt ->
                (column_int stmt 0, column_int stmt 1)
             )
-        )
     in
-    words_between_start_and_end_inc ~doc_hash (start, end_inc)
+    words_between_start_and_end_inc db ~doc_hash (start, end_inc)
   )
 
-let words_of_page_num ~doc_hash x : string Dynarray.t =
+let words_of_page_num db ~doc_hash x : string Dynarray.t =
   let open Sqlite3_utils in
-  let doc_id = doc_id_of_doc_hash doc_hash in
-  if x >= page_count ~doc_hash then (
+  let doc_id = doc_id_of_doc_hash db doc_hash in
+  if x >= page_count db ~doc_hash then (
     invalid_arg "Index.words_of_page_num: page_num out of range"
   ) else (
-    use_db (fun db ->
         let start, end_inc =
           step_stmt db
             {|
@@ -565,27 +544,25 @@ let words_of_page_num ~doc_hash x : string Dynarray.t =
                (column_int stmt 0, column_int stmt 1)
             )
         in
-        words_between_start_and_end_inc ~doc_hash (start, end_inc)
-      )
+        words_between_start_and_end_inc db ~doc_hash (start, end_inc)
   )
 
-let line_of_global_line_num ~doc_hash x =
-  if x >= global_line_count ~doc_hash then (
+let line_of_global_line_num db ~doc_hash x =
+  if x >= global_line_count db ~doc_hash then (
     invalid_arg "Index.line_of_global_line_num: global_line_num out of range"
   ) else (
-    words_of_global_line_num ~doc_hash x
+    words_of_global_line_num db ~doc_hash x
     |> Dynarray.to_list
     |> String.concat ""
   )
 
-let line_loc_of_global_line_num ~doc_hash global_line_num : Line_loc.t =
+let line_loc_of_global_line_num db ~doc_hash global_line_num : Line_loc.t =
   let open Sqlite3_utils in
-  let doc_id = doc_id_of_doc_hash doc_hash in
-  if global_line_num >= global_line_count ~doc_hash then (
+  let doc_id = doc_id_of_doc_hash db doc_hash in
+  if global_line_num >= global_line_count db ~doc_hash then (
     invalid_arg "Index.line_loc_of_global_line_num: global_line_num out of range"
   ) else (
     let page_num, line_num_in_page =
-      use_db (fun db ->
           step_stmt db
             {|
     SELECT page_num, line_num_in_page
@@ -598,16 +575,14 @@ let line_loc_of_global_line_num ~doc_hash global_line_num : Line_loc.t =
             (fun stmt ->
                (column_int stmt 0, column_int stmt 1)
             )
-        )
     in
     { Line_loc.page_num; line_num_in_page; global_line_num }
   )
 
-let loc_of_pos ~doc_hash pos : Loc.t =
+let loc_of_pos db ~doc_hash pos : Loc.t =
   let open Sqlite3_utils in
-  let doc_id = doc_id_of_doc_hash doc_hash in
+  let doc_id = doc_id_of_doc_hash db doc_hash in
   let pos_in_line, global_line_num =
-    use_db (fun db ->
         step_stmt db
           {|
   SELECT pos_in_line, global_line_num
@@ -620,14 +595,12 @@ let loc_of_pos ~doc_hash pos : Loc.t =
           (fun stmt ->
              (column_int stmt 0, column_int stmt 1)
           )
-      )
   in
-  let line_loc = line_loc_of_global_line_num ~doc_hash global_line_num in
+  let line_loc = line_loc_of_global_line_num db ~doc_hash global_line_num in
   { line_loc; pos_in_line }
 
-let max_pos ~doc_hash =
+let max_pos db ~doc_hash =
   let open Sqlite3_utils in
-  use_db (fun db ->
       step_stmt db
         {|
   SELECT max_pos
@@ -638,12 +611,10 @@ let max_pos ~doc_hash =
         (fun stmt ->
            column_int stmt 0
         )
-    )
 
-let line_count_of_page_num ~doc_hash page : int =
+let line_count_of_page_num db ~doc_hash page : int =
   let open Sqlite3_utils in
-  let doc_id = doc_id_of_doc_hash doc_hash in
-  use_db (fun db ->
+  let doc_id = doc_id_of_doc_hash db doc_hash in
       step_stmt db
         {|
   SELECT line_count
@@ -656,15 +627,13 @@ let line_count_of_page_num ~doc_hash page : int =
         (fun stmt ->
            column_int stmt 0
         )
-    )
 
-let start_end_inc_pos_of_global_line_num ~doc_hash global_line_num =
+let start_end_inc_pos_of_global_line_num db ~doc_hash global_line_num =
   let open Sqlite3_utils in
-  let doc_id = doc_id_of_doc_hash doc_hash in
-  if global_line_num >= global_line_count ~doc_hash then (
+  let doc_id = doc_id_of_doc_hash db doc_hash in
+  if global_line_num >= global_line_count db ~doc_hash then (
     invalid_arg "Index.start_end_inc_pos_of_global_line_num: global_line_num out of range"
   ) else (
-    use_db (fun db ->
         step_stmt db
           {|
   SELECT start_pos, end_inc_pos
@@ -677,13 +646,69 @@ let start_end_inc_pos_of_global_line_num ~doc_hash global_line_num =
           (fun stmt ->
              (column_int stmt 0, column_int stmt 1)
           )
-      )
   )
 
 module Search = struct
   module ET = Search_phrase.Enriched_token
 
+  let indexed_word_is_usable
+        (match_typ : [ `Fuzzy | `Exact | `Prefix | `Suffix ])
+        ~consider_edit_dist
+                    (token : Search_phrase.Enriched_token.t)
+                    ~indexed_word
+                    =
+                      Eio.Fiber.yield ();
+      String.length indexed_word > 0
+      &&
+      (match ET.data token with
+      | `Explicit_spaces -> (
+        Parser_components.is_space indexed_word.[0]
+      )
+      | `String search_word -> (
+        let search_word_ci = String.lowercase_ascii search_word in
+        let indexed_word_ci = String.lowercase_ascii indexed_word in
+        let use_ci_match = String.equal search_word search_word_ci in
+        let indexed_word_len = String.length indexed_word in
+            if Parser_components.is_possibly_utf_8 indexed_word.[0] then (
+              String.equal search_word indexed_word
+            ) else (
+              match match_typ with
+              | `Fuzzy -> (
+                  String.equal search_word_ci indexed_word_ci
+                  || CCString.find ~sub:search_word_ci indexed_word_ci >= 0
+                  || (indexed_word_len >= 2
+                      && CCString.find ~sub:indexed_word_ci search_word_ci >= 0)
+                  || (consider_edit_dist
+                      && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word_ci search_word_ci.[0]
+                      && Spelll.match_with (ET.automaton token) indexed_word_ci)
+                )
+              | `Exact -> (
+                if use_ci_match then (
+                  String.equal search_word_ci indexed_word_ci
+                ) else (
+                  String.equal search_word indexed_word
+                )
+              )
+              | `Prefix -> (
+                if use_ci_match then (
+                  CCString.prefix ~pre:search_word_ci indexed_word_ci
+                ) else (
+                  CCString.prefix ~pre:search_word indexed_word
+              )
+              )
+              | `Suffix -> (
+                if use_ci_match then (
+                  CCString.suffix ~suf:search_word_ci indexed_word_ci
+                ) else (
+                  CCString.suffix ~suf:search_word indexed_word
+              )
+              )
+            )
+      )
+      )
+
   let usable_positions
+  db
       ~doc_hash
       ?within
       ?around_pos
@@ -691,8 +716,8 @@ module Search = struct
       (token : Search_phrase.Enriched_token.t)
     : int Seq.t =
     let open Sqlite3_utils in
-    let doc_id = doc_id_of_doc_hash doc_hash in
     Eio.Fiber.yield ();
+    let doc_id = doc_id_of_doc_hash db doc_hash in
     let match_typ = ET.match_typ token in
     let start_end_inc =
       Option.map (fun around_pos ->
@@ -718,16 +743,25 @@ module Search = struct
         )
         around_pos
     in
-    let word_candidates : (int * string) list =
-      let f acc data =
-        let word_id = Data.to_int_exn data.(0) in
-        let word = Data.to_string_exn data.(1) in
-        (word_id, word) :: acc
+    let word_candidates : int Dynarray.t =
+      let acc : int Dynarray.t =
+        Dynarray.create ()
       in
-      use_db (fun db ->
-          match start_end_inc with
+      let f data =
+        let indexed_word = Data.to_string_exn data.(1) in
+        if indexed_word_is_usable
+        match_typ
+        ~consider_edit_dist
+        token
+        ~indexed_word
+            then (
+          let word_id = Data.to_int_exn data.(0) in
+          Dynarray.add_last acc word_id
+        )
+      in
+          (match start_end_inc with
           | None -> (
-              fold_stmt db
+              iter_stmt db
                 {|
           SELECT DISTINCT
               word.id AS word_id,
@@ -738,10 +772,9 @@ module Search = struct
                 ~names:[ ("@doc_id", INT doc_id)
                        ]
                 f
-                []
             )
           | Some (start, end_inc) -> (
-              fold_stmt db
+              iter_stmt db
                 {|
           SELECT DISTINCT
               word.id AS word_id,
@@ -758,91 +791,20 @@ module Search = struct
                        ; ("@end_inc", INT (Int64.of_int end_inc))
                        ]
                 f
-                []
             )
-        )
+      );
+      acc
     in
-    let non_fuzzy_filter
-        ~search_word
-        ~search_word_ci
-        (match_typ : [ `Exact | `Prefix | `Suffix ])
-        ~indexed_word
-        ~indexed_word_ci
-      : bool
-      =
-      let f_ci =
-        match match_typ with
-        | `Exact -> String.equal search_word_ci
-        | `Prefix -> CCString.prefix ~pre:search_word_ci
-        | `Suffix -> CCString.suffix ~suf:search_word_ci
-      in
-      let f =
-        match match_typ with
-        | `Exact -> String.equal search_word
-        | `Prefix -> CCString.prefix ~pre:search_word
-        | `Suffix -> CCString.suffix ~suf:search_word
-      in
-      if String.equal search_word search_word_ci then (
-        f_ci indexed_word_ci
-      ) else (
-        f indexed_word
-      )
+    let positions : int Dynarray.t = Dynarray.create () in
+    let record_position data =
+       Dynarray.add_last positions (Data.to_int_exn data.(0))
     in
     word_candidates
-    |> List.to_seq
-    |> Seq.filter (fun (_word_id, indexed_word) ->
+    |> Dynarray.iter (fun word_id ->
         Eio.Fiber.yield ();
-        String.length indexed_word > 0
-      )
-    |> Seq.filter (
-      match ET.data token with
-      | `Explicit_spaces -> (
-          fun (_word_id, indexed_word) ->
-            Eio.Fiber.yield ();
-            Parser_components.is_space indexed_word.[0]
-        )
-      | `String search_word -> (
-          fun (_word_id, indexed_word) ->
-            Eio.Fiber.yield ();
-            let search_word_ci =
-              String.lowercase_ascii search_word
-            in
-            let indexed_word_ci = String.lowercase_ascii indexed_word in
-            let indexed_word_len = String.length indexed_word in
-            if Parser_components.is_possibly_utf_8 indexed_word.[0] then (
-              String.equal search_word indexed_word
-            ) else (
-              match match_typ with
-              | `Fuzzy -> (
-                  String.equal search_word_ci indexed_word_ci
-                  || CCString.find ~sub:search_word_ci indexed_word_ci >= 0
-                  || (indexed_word_len >= 2
-                      && CCString.find ~sub:indexed_word_ci search_word_ci >= 0)
-                  || (consider_edit_dist
-                      && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word_ci search_word_ci.[0]
-                      && Spelll.match_with (ET.automaton token) indexed_word_ci)
-                )
-              | `Exact | `Prefix | `Suffix as m -> (
-                  non_fuzzy_filter
-                    ~search_word
-                    ~search_word_ci
-                    (m :> [ `Exact | `Prefix | `Suffix ])
-                    ~indexed_word
-                    ~indexed_word_ci
-                )
-            )
-        )
-    )
-    |> Seq.flat_map (fun (word_id, _indexed_word) ->
-        Eio.Fiber.yield ();
-        let f acc data =
-          Data.to_int_exn data.(0) :: acc
-        in
-        let l =
-          use_db (fun db ->
               match start_end_inc with
               | None -> (
-                  fold_stmt db
+                  iter_stmt db
                     {|
           SELECT
               position.pos
@@ -853,11 +815,10 @@ module Search = struct
                     ~names:[ ("@doc_id", INT doc_id)
                            ; ("@word_id", INT (Int64.of_int word_id))
                            ]
-                    f
-                    []
+                    record_position
                 )
               | Some (start, end_inc) -> (
-                  fold_stmt db
+                  iter_stmt db
                     {|
           SELECT
               position.pos
@@ -871,16 +832,13 @@ module Search = struct
                            ; ("@start", INT (Int64.of_int start))
                            ; ("@end_inc", INT (Int64.of_int end_inc))
                            ]
-                    f
-                    []
+                    record_position
                 )
-            )
-        in
-        l
-        |> List.to_seq
-      )
+    );
+    Dynarray.to_seq positions
 
   let search_around_pos
+  db
       ~doc_hash
       ~consider_edit_dist
       ~(within : (int * int) option)
@@ -893,6 +851,7 @@ module Search = struct
       | [] -> Seq.return []
       | token :: rest -> (
           usable_positions
+          db
             ~doc_hash
             ?within
             ~around_pos
@@ -913,6 +872,7 @@ module Search = struct
   let search_single
       pool
       stop_signal
+      db
       ~doc_hash
       ~within_same_line
       ~consider_edit_dist
@@ -928,7 +888,7 @@ module Search = struct
       | first_word :: rest -> (
           Eio.Fiber.yield ();
           let possible_start_count, possible_starts =
-            usable_positions ~doc_hash ~consider_edit_dist first_word
+            usable_positions db ~doc_hash ~consider_edit_dist first_word
             |> (fun s ->
                 match search_scope with
                 | None -> s
@@ -967,18 +927,18 @@ module Search = struct
                          Eio.Fiber.yield ();
                          let within =
                            if within_same_line then (
-                             let loc = loc_of_pos ~doc_hash pos in
-                             Some (start_end_inc_pos_of_global_line_num ~doc_hash loc.line_loc.global_line_num)
+                             let loc = loc_of_pos db ~doc_hash pos in
+                             Some (start_end_inc_pos_of_global_line_num db ~doc_hash loc.line_loc.global_line_num)
                            ) else (
                              None
                            )
                          in
-                         search_around_pos ~doc_hash ~consider_edit_dist ~within pos rest
+                         search_around_pos db ~doc_hash ~consider_edit_dist ~within pos rest
                          |> Seq.map (fun l -> pos :: l)
                          |> Seq.map (fun (l : int list) ->
                              Eio.Fiber.yield ();
                              let opening_closing_symbol_pairs =
-                               List.map (fun pos -> word_of_pos ~doc_hash pos) l
+                               List.map (fun pos -> word_of_pos db ~doc_hash pos) l
                                |>  Misc_utils.opening_closing_symbol_pairs
                              in
                              let found_phrase_opening_closing_symbol_match_count =
@@ -986,8 +946,8 @@ module Search = struct
                                List.fold_left (fun total (x, y) ->
                                    let pos_x = pos_arr.(x) in
                                    let pos_y = pos_arr.(y) in
-                                   let c_x = String.get (word_of_pos ~doc_hash pos_x) 0 in
-                                   let c_y = String.get (word_of_pos ~doc_hash pos_y) 0 in
+                                   let c_x = String.get (word_of_pos db ~doc_hash pos_x) 0 in
+                                   let c_y = String.get (word_of_pos db ~doc_hash pos_y) 0 in
                                    assert (List.exists (fun (x, y) -> c_x = x && c_y = y)
                                              Params.opening_closing_symbols);
                                    if pos_x < pos_y then (
@@ -996,7 +956,7 @@ module Search = struct
                                        |> Seq.fold_left (fun count pos ->
                                            match count with
                                            | Some count -> (
-                                               let word = word_of_pos ~doc_hash pos in
+                                               let word = word_of_pos db ~doc_hash pos in
                                                if String.length word = 1 then (
                                                  if String.get word 0 = c_x then (
                                                    Some (count + 1)
@@ -1033,8 +993,8 @@ module Search = struct
                                                 (fun pos ->
                                                    Search_result.{
                                                      found_word_pos = pos;
-                                                     found_word_ci = word_ci_of_pos ~doc_hash pos;
-                                                     found_word = word_of_pos ~doc_hash pos;
+                                                     found_word_ci = word_ci_of_pos db ~doc_hash pos;
+                                                     found_word = word_of_pos db ~doc_hash pos;
                                                    }) l)
                                ~found_phrase_opening_closing_symbol_match_count
                            )
@@ -1061,6 +1021,7 @@ module Search = struct
   let search
       pool
       stop_signal
+      db
       ~doc_hash
       ~within_same_line
       ~consider_edit_dist
@@ -1069,13 +1030,14 @@ module Search = struct
     : Search_result_heap.t =
     Search_exp.flattened exp
     |> List.to_seq
-    |> Seq.map (fun phrase -> search_single pool stop_signal ~doc_hash ~within_same_line ~consider_edit_dist search_scope phrase)
+    |> Seq.map (fun phrase -> search_single pool stop_signal db ~doc_hash ~within_same_line ~consider_edit_dist search_scope phrase)
     |> Seq.fold_left search_result_heap_merge_with_yield Search_result_heap.empty
 end
 
 let search
     pool
     stop_signal
+    db
     ~doc_hash
     ~within_same_line
     search_scope
@@ -1085,6 +1047,7 @@ let search
     Search.search
       pool
       stop_signal
+      db
       ~doc_hash
       ~within_same_line
       ~consider_edit_dist:true
