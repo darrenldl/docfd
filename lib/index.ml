@@ -780,6 +780,7 @@ module Search = struct
         Dynarray.create ()
       in
       let f data =
+        Eio.Fiber.yield ();
         let indexed_word = Data.to_string_exn data.(1) in
         if indexed_word_is_usable
             match_typ
@@ -830,6 +831,7 @@ module Search = struct
     in
     let positions : int Dynarray.t = Dynarray.create () in
     let record_position data =
+      Eio.Fiber.yield ();
       Dynarray.add_last positions (Data.to_int_exn data.(0))
     in
     word_candidates
@@ -923,7 +925,12 @@ module Search = struct
       | first_word :: rest -> (
           Eio.Fiber.yield ();
           let possible_start_count, possible_starts =
-            usable_positions db ~doc_hash ~consider_edit_dist first_word
+            Eio.Fiber.first
+            (fun () ->
+              Stop_signal.await stop_signal;
+              Seq.empty)
+            (fun () ->
+              usable_positions db ~doc_hash ~consider_edit_dist first_word)
             |> (fun s ->
                 match search_scope with
                 | None -> s
