@@ -811,6 +811,7 @@ module Search = struct
           FROM position
           WHERE doc_id = @doc_id
           AND word_id = @word_id
+          ORDER BY position.pos
           |}
               ~names:[ ("@doc_id", INT doc_id)
                      ; ("@word_id", INT (Int64.of_int word_id))
@@ -826,6 +827,7 @@ module Search = struct
           WHERE doc_id = @doc_id
           AND word_id = @word_id
           AND pos BETWEEN @start AND @end_inc
+          ORDER BY position.pos
           |}
               ~names:[ ("@doc_id", INT doc_id)
                      ; ("@word_id", INT (Int64.of_int word_id))
