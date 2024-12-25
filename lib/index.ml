@@ -14,15 +14,6 @@ module Line_loc = struct
 
   let compare (x : t) (y : t) =
     Int.compare x.global_line_num y.global_line_num
-
-  let to_cbor (t : t) : CBOR.Simple.t =
-    `Array [ `Int t.page_num; `Int t.line_num_in_page; `Int t.global_line_num ]
-
-  let of_cbor (cbor : CBOR.Simple.t) : t option =
-    match cbor with
-    | `Array [ `Int page_num; `Int line_num_in_page; `Int global_line_num ] ->
-      Some { page_num; line_num_in_page; global_line_num }
-    | _ -> None
 end
 
 module Loc = struct
@@ -35,18 +26,6 @@ module Loc = struct
   let line_loc t = t.line_loc
 
   let pos_in_line t =  t.pos_in_line
-
-  let to_cbor (t : t) : CBOR.Simple.t =
-    `Array [ Line_loc.to_cbor t.line_loc; `Int t.pos_in_line ]
-
-  let of_cbor (cbor : CBOR.Simple.t) : t option =
-    match cbor with
-    | `Array [ line_loc; `Int pos_in_line ] -> (
-        match Line_loc.of_cbor line_loc with
-        | None -> None
-        | Some line_loc -> Some { line_loc; pos_in_line }
-      )
-    | _ -> None
 end
 
 module Raw = struct

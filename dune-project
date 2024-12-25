@@ -59,7 +59,6 @@ Features:
    (ppx_deriving (>= "5.0"))
    decompress
    progress
-   cbor
    diet
    sqlite3
    (alcotest :with-test)

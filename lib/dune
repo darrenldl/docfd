@@ -16,7 +16,6 @@
             decompress.gz
             bigstringaf
             unix
-            cbor
             diet
             sqlite3
  )
