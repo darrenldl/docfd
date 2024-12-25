@@ -390,9 +390,9 @@ let global_line_count db ~doc_hash =
   let open Sqlite3_utils in
   step_stmt db
     {|
-  SELECT global_line_count FROM doc_info
-  WHERE doc_hash = @doc_hash
-  |}
+    SELECT global_line_count FROM doc_info
+    WHERE doc_hash = @doc_hash
+    |}
     ~names:[ ("@doc_hash", TEXT doc_hash) ]
     (fun stmt ->
        column_int stmt 0
@@ -403,9 +403,9 @@ let page_count db ~doc_hash =
   let doc_id = doc_id_of_doc_hash db doc_hash in
   step_stmt db
     {|
-  SELECT page_count FROM doc_info
-  WHERE doc_id = @doc_id
-  |}
+    SELECT page_count FROM doc_info
+    WHERE doc_id = @doc_id
+    |}
     ~names:[("@doc_id", INT doc_id)]
     (fun stmt ->
        column_int stmt 0
@@ -423,10 +423,10 @@ let is_indexed db ~doc_hash =
   let open Sqlite3_utils in
   step_stmt db
     {|
-  SELECT 0
-  FROM doc_info
-  WHERE doc_hash = @doc_hash
-  |}
+    SELECT 0
+    FROM doc_info
+    WHERE doc_hash = @doc_hash
+    |}
     ~names:[ ("@doc_hash", TEXT doc_hash) ]
     (fun stmt ->
        data_count stmt > 0
@@ -445,10 +445,10 @@ let word_of_id db ~doc_hash id : string =
   let doc_id = doc_id_of_doc_hash db doc_hash in
   step_stmt db
     {|
-  SELECT word FROM word
-  WHERE doc_id = @doc_id
-  AND id = @id
-  |}
+    SELECT word FROM word
+    WHERE doc_id = @doc_id
+    AND id = @id
+    |}
     ~names:[ ("@doc_id", INT doc_id); ("@id", INT id) ]
     (fun stmt ->
        column_text stmt 0
@@ -459,12 +459,14 @@ let word_of_pos db ~doc_hash pos : string =
   let doc_id = doc_id_of_doc_hash db doc_hash in
   step_stmt db
     {|
-  SELECT word.word
-  FROM position p
-  JOIN word on word.id = p.word_id
-  WHERE p.doc_id = @doc_id
-  AND pos = @pos
-  |}
+    SELECT word.word
+    FROM position p
+    JOIN word
+        ON word.doc_id = p.doc_id
+        AND word.id = p.word_id
+    WHERE p.doc_id = @doc_id
+    AND pos = @pos
+    |}
     ~names:[ ("@doc_id", INT doc_id)
            ; ("@pos", INT (Int64.of_int pos)) ]
     (fun stmt ->
@@ -482,13 +484,13 @@ let words_between_start_and_end_inc db ~doc_hash (start, end_inc) : string Dynar
   iter_stmt db
     {|
     SELECT word.word
-    FROM position
+    FROM position p
     JOIN word
-      ON word.doc_id = position.doc_id
-      AND word.id = position.word_id
-    WHERE position.doc_id = @doc_id
-    AND position.pos BETWEEN @start AND @end_inc
-    ORDER BY position.pos
+        ON word.doc_id = p.doc_id
+        AND word.id = p.word_id
+    WHERE p.doc_id = @doc_id
+    AND p.pos BETWEEN @start AND @end_inc
+    ORDER BY p.pos
     |}
     ~names:[ ("@doc_id", INT doc_id)
            ; ("@start", INT (Int64.of_int start))
@@ -508,11 +510,11 @@ let words_of_global_line_num db ~doc_hash x : string Dynarray.t =
     let start, end_inc =
       step_stmt db
         {|
-    SELECT start_pos, end_inc_pos
-    FROM line_info
-    WHERE doc_id = @doc_id
-    AND global_line_num = @x
-    |}
+        SELECT start_pos, end_inc_pos
+        FROM line_info
+        WHERE doc_id = @doc_id
+        AND global_line_num = @x
+        |}
         ~names:[ ("@doc_id", INT doc_id)
                ; ("@x", INT (Int64.of_int x))
                ]
@@ -532,11 +534,11 @@ let words_of_page_num db ~doc_hash x : string Dynarray.t =
     let start, end_inc =
       step_stmt db
         {|
-    SELECT start_pos, end_inc_pos
-    FROM page_info
-    WHERE doc_id = @doc_id
-    AND page_num = @x
-    |}
+        SELECT start_pos, end_inc_pos
+        FROM page_info
+        WHERE doc_id = @doc_id
+        AND page_num = @x
+        |}
         ~names:[ ("@doc_id", INT doc_id)
                ; ("@x", INT (Int64.of_int x))
                ]
@@ -565,11 +567,11 @@ let line_loc_of_global_line_num db ~doc_hash global_line_num : Line_loc.t =
     let page_num, line_num_in_page =
       step_stmt db
         {|
-    SELECT page_num, line_num_in_page
-    FROM line_info
-    WHERE doc_id = @doc_id
-    AND global_line_num = @global_line_num
-    |}
+        SELECT page_num, line_num_in_page
+        FROM line_info
+        WHERE doc_id = @doc_id
+        AND global_line_num = @global_line_num
+        |}
         ~names:[ ("@doc_id", INT doc_id)
                ; ("@global_line_num", INT (Int64.of_int global_line_num)) ]
         (fun stmt ->
@@ -585,11 +587,11 @@ let loc_of_pos db ~doc_hash pos : Loc.t =
   let pos_in_line, global_line_num =
     step_stmt db
       {|
-  SELECT pos_in_line, global_line_num
-  FROM position
-  WHERE doc_id = @doc_id
-  AND pos = @pos
-  |}
+      SELECT pos_in_line, global_line_num
+      FROM position
+      WHERE doc_id = @doc_id
+      AND pos = @pos
+      |}
       ~names:[ ("@doc_id", INT doc_id)
              ; ("@pos", INT (Int64.of_int pos)) ]
       (fun stmt ->
@@ -603,10 +605,10 @@ let max_pos db ~doc_hash =
   let open Sqlite3_utils in
   step_stmt db
     {|
-  SELECT max_pos
-  FROM doc_info
-  WHERE doc_hash = @doc_hash
-  |}
+    SELECT max_pos
+    FROM doc_info
+    WHERE doc_hash = @doc_hash
+    |}
     ~names:[ ("@doc_hash", TEXT doc_hash) ]
     (fun stmt ->
        column_int stmt 0
@@ -617,11 +619,11 @@ let line_count_of_page_num db ~doc_hash page : int =
   let doc_id = doc_id_of_doc_hash db doc_hash in
   step_stmt db
     {|
-  SELECT line_count
-  FROM page_info
-  WHERE doc_id = @doc_id
-  AND page = @page
-  |}
+    SELECT line_count
+    FROM page_info
+    WHERE doc_id = @doc_id
+    AND page = @page
+    |}
     ~names:[ ("@doc_id", INT doc_id)
            ; ("@page", INT (Int64.of_int page)) ]
     (fun stmt ->
@@ -636,11 +638,11 @@ let start_end_inc_pos_of_global_line_num db ~doc_hash global_line_num =
   ) else (
     step_stmt db
       {|
-  SELECT start_pos, end_inc_pos
-  FROM line_info
-  WHERE doc_id = @doc_id
-  AND global_line_num = @global_line_num
-  |}
+      SELECT start_pos, end_inc_pos
+      FROM line_info
+      WHERE doc_id = @doc_id
+      AND global_line_num = @global_line_num
+      |}
       ~names:[ ("@doc_id", INT doc_id)
              ; ("@global_line_num", INT (Int64.of_int global_line_num)) ]
       (fun stmt ->
@@ -759,39 +761,40 @@ module Search = struct
           Dynarray.add_last acc word_id
         )
       in
-      (match start_end_inc with
-       | None -> (
-           iter_stmt db
-             {|
-          SELECT DISTINCT
-              word.id AS word_id,
-              word.word AS word
-          FROM word
-          WHERE doc_id = @doc_id
-          |}
-             ~names:[ ("@doc_id", INT doc_id)
-                    ]
-             f
-         )
-       | Some (start, end_inc) -> (
-           iter_stmt db
-             {|
-          SELECT DISTINCT
-              word.id AS word_id,
-              word.word AS word
-          FROM word
-          JOIN position
-              ON position.doc_id = word.doc_id
-              AND position.word_id = word.id
-          WHERE word.doc_id = @doc_id
-          AND position.pos BETWEEN @start AND @end_inc
-          |}
-             ~names:[ ("@doc_id", INT doc_id)
-                    ; ("@start", INT (Int64.of_int start))
-                    ; ("@end_inc", INT (Int64.of_int end_inc))
-                    ]
-             f
-         )
+      (
+        match start_end_inc with
+        | None -> (
+            iter_stmt db
+              {|
+              SELECT DISTINCT
+                  word.id AS word_id,
+                  word.word AS word
+              FROM word
+              WHERE doc_id = @doc_id
+              |}
+              ~names:[ ("@doc_id", INT doc_id)
+                     ]
+              f
+          )
+        | Some (start, end_inc) -> (
+            iter_stmt db
+              {|
+              SELECT DISTINCT
+                  word.id AS word_id,
+                  word.word AS word
+              FROM word
+              JOIN position p
+                  ON p.doc_id = word.doc_id
+                  AND p.word_id = word.id
+              WHERE word.doc_id = @doc_id
+              AND p.pos BETWEEN @start AND @end_inc
+              |}
+              ~names:[ ("@doc_id", INT doc_id)
+                     ; ("@start", INT (Int64.of_int start))
+                     ; ("@end_inc", INT (Int64.of_int end_inc))
+                     ]
+              f
+          )
       );
       acc
     in
@@ -806,13 +809,13 @@ module Search = struct
         | None -> (
             iter_stmt db
               {|
-          SELECT
-              position.pos
-          FROM position
-          WHERE doc_id = @doc_id
-          AND word_id = @word_id
-          ORDER BY position.pos
-          |}
+              SELECT
+                  p.pos
+              FROM position p
+              WHERE doc_id = @doc_id
+              AND word_id = @word_id
+              ORDER BY p.pos
+              |}
               ~names:[ ("@doc_id", INT doc_id)
                      ; ("@word_id", INT (Int64.of_int word_id))
                      ]
@@ -821,14 +824,14 @@ module Search = struct
         | Some (start, end_inc) -> (
             iter_stmt db
               {|
-          SELECT
-              position.pos
-          FROM position
-          WHERE doc_id = @doc_id
-          AND word_id = @word_id
-          AND pos BETWEEN @start AND @end_inc
-          ORDER BY position.pos
-          |}
+              SELECT
+                  p.pos
+              FROM position p
+              WHERE doc_id = @doc_id
+              AND word_id = @word_id
+              AND pos BETWEEN @start AND @end_inc
+              ORDER BY p.pos
+              |}
               ~names:[ ("@doc_id", INT doc_id)
                      ; ("@word_id", INT (Int64.of_int word_id))
                      ; ("@start", INT (Int64.of_int start))
