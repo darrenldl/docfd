@@ -277,8 +277,11 @@ module Raw = struct
     |> of_seq pool
 end
 
-let doc_id_of_doc_hash db doc_hash : int64 =
+let doc_id_of_doc_hash : Sqlite3.db -> string -> int64 =
+  let cache = CCCache.lru ~eq:String.equal 10240 in
+  fun db ->
   let open Sqlite3_utils in
+  CCCache.with_cache cache (fun doc_hash ->
   step_stmt db
     {|
     SELECT id
@@ -289,6 +292,7 @@ let doc_id_of_doc_hash db doc_hash : int64 =
     (fun stmt ->
        column_int64 stmt 0
     )
+  )
 
 let load_raw_into_db db ~doc_hash (x : Raw.t) : unit =
   let open Sqlite3_utils in
@@ -386,8 +390,11 @@ let load_raw_into_db db ~doc_hash (x : Raw.t) : unit =
   step_stmt db "COMMIT" ignore;
   Word_db.load_into_db db ~doc_id x.word_db
 
-let global_line_count db ~doc_hash =
+let global_line_count =
+  let cache = CCCache.lru ~eq:String.equal 10240 in
   let open Sqlite3_utils in
+  fun db ~doc_hash ->
+    CCCache.with_cache cache (fun doc_hash ->
   step_stmt db
     {|
     SELECT global_line_count FROM doc_info
@@ -397,6 +404,8 @@ let global_line_count db ~doc_hash =
     (fun stmt ->
        column_int stmt 0
     )
+    )
+    doc_hash
 
 let page_count db ~doc_hash =
   let open Sqlite3_utils in
@@ -477,7 +486,17 @@ let word_ci_of_pos db ~doc_hash pos : string =
   word_of_pos db ~doc_hash pos
   |> String.lowercase_ascii
 
-let words_between_start_and_end_inc db ~doc_hash (start, end_inc) : string Dynarray.t =
+let words_between_start_and_end_inc : Sqlite3.db -> doc_hash:string -> int * int -> string Dynarray.t =
+  let cache =
+    CCCache.lru ~eq:(fun (x0, y0, z0) (x1, y1, z1) ->
+    String.equal x0 x1
+    && Int.equal y0 y1
+    && Int.equal z0 z1
+    )
+  10240
+  in
+  fun db ~doc_hash (start, end_inc) ->
+    CCCache.with_cache cache (fun (doc_hash, start, end_inc) ->
   let open Sqlite3_utils in
   let doc_id = doc_id_of_doc_hash db doc_hash in
   let acc = Dynarray.create () in
@@ -500,8 +519,17 @@ let words_between_start_and_end_inc db ~doc_hash (start, end_inc) : string Dynar
        Dynarray.add_last acc (Data.to_string_exn data.(0))
     );
   acc
+    )
+    (doc_hash, start, end_inc)
 
-let words_of_global_line_num db ~doc_hash x : string Dynarray.t =
+let words_of_global_line_num : Sqlite3.db -> doc_hash:string -> int -> string Dynarray.t =
+  let cache =
+    CCCache.lru ~eq:(fun (x0, y0) (x1, y1) ->
+    String.equal x0 x1 && Int.equal y0 y1)
+  10240
+  in
+  fun db ~doc_hash x ->
+  CCCache.with_cache cache (fun (doc_hash, x) ->
   let open Sqlite3_utils in
   let doc_id = doc_id_of_doc_hash db doc_hash in
   if x >= global_line_count db ~doc_hash then (
@@ -524,6 +552,8 @@ let words_of_global_line_num db ~doc_hash x : string Dynarray.t =
     in
     words_between_start_and_end_inc db ~doc_hash (start, end_inc)
   )
+  )
+  (doc_hash, x)
 
 let words_of_page_num db ~doc_hash x : string Dynarray.t =
   let open Sqlite3_utils in
@@ -766,7 +796,7 @@ module Search = struct
         | None -> (
             iter_stmt db
               {|
-              SELECT DISTINCT
+              SELECT
                   word.id AS word_id,
                   word.word AS word
               FROM word
@@ -779,7 +809,7 @@ module Search = struct
         | Some (start, end_inc) -> (
             iter_stmt db
               {|
-              SELECT DISTINCT
+              SELECT
                   word.id AS word_id,
                   word.word AS word
               FROM word
