@@ -1,5 +1,6 @@
 Exact match:
   $ docfd test.txt --sample "'abc"
+  [1]
   $ docfd test.txt --sample "'abcd"
   $TESTCASE_ROOT/test.txt
   1: abcd
@@ -131,6 +132,7 @@ Exact match smart case sensitivity:
 
 Prefix match:
   $ docfd test.txt --sample "^bcd"
+  [1]
   $ docfd test.txt --sample "^abcd"
   $TESTCASE_ROOT/test.txt
   1: abcd
@@ -399,6 +401,7 @@ Exact match explicit spaces:
   22: 
   23: HELLO WORLD
   $ docfd test.txt --sample "'Hello~World"
+  [1]
 
 Prefix match explicit spaces:
   $ docfd test.txt --sample '^hello~wo'
@@ -429,6 +432,7 @@ Prefix match explicit spaces:
   23: HELLO WORLD
       ^^^^^^^^^^^
   $ docfd test.txt --sample '^ello~wo'
+  [1]
 
 Suffix match explicit spaces:
   $ docfd test.txt --sample 'lo~world$'
@@ -459,3 +463,4 @@ Suffix match explicit spaces:
   23: HELLO WORLD
       ^^^^^^^^^^^
   $ docfd test.txt --sample 'lo~worl$'
+  [1]
