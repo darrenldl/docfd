@@ -2,6 +2,15 @@
 
 ## 9.0.0-rc2
 
+- Swapped over to using SQLite for index
+
+    - Memory usage is much slimmer/stays flat
+
+        - For the sample of 1.4GB worth of PDFs used, after indexing, 9.0.0-rc1 uses
+          1.9GB of memory, while 9.0.0-rc2 uses 39MB
+
+    - Search is a bit slower
+
 - Added `Ctrl`+`C` exit key binding to key binding info on screen
 
 - Updated exit keys
