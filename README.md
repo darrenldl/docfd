@@ -99,13 +99,6 @@ more examples/cookbook, and technical details.
 
 ## Limitations
 
-- Docfd cannot handle large collection of documents yet
-
-    - Docfd right now loads the entire content index into memory,
-      which severely limits how many documents it can handle at a time.
-
-    - Content index redesign is ongoing to remove this limitation.
-
 - File auto-reloading is not supported for PDF files,
   as PDF viewers are invoked in the background via shell.
   It is possible to support this properly
