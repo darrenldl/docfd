@@ -1179,7 +1179,7 @@ let () =
     exit_with_error_msg "Windows is not supported"
   );
   Random.self_init ();
-  Eio_main.run (fun env ->
+  Eio_posix.run (fun env ->
       Eio.Switch.run (fun sw ->
           exit (Cmd.eval (cmd ~env ~sw))
         ))

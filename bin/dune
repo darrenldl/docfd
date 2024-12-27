@@ -51,6 +51,7 @@
             oseq
             eio
             eio_main
+            eio_posix
             digestif.c
             digestif
             timedesc
