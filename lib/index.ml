@@ -789,7 +789,7 @@ module Search = struct
         | Some (start, end_inc) -> (
             iter_stmt db
               {|
-              SELECT
+              SELECT DISTINCT
                   word.id AS word_id,
                   word.word AS word
               FROM word
