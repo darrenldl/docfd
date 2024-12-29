@@ -452,7 +452,7 @@ let word_of_pos db ~doc_hash pos : string =
         ON word.doc_id = p.doc_id
         AND word.id = p.word_id
     WHERE p.doc_id = @doc_id
-    AND pos = @pos
+    AND p.pos = @pos
     |}
     ~names:[ ("@doc_id", INT doc_id)
            ; ("@pos", INT (Int64.of_int pos)) ]
@@ -791,11 +791,11 @@ module Search = struct
               SELECT DISTINCT
                   word.id AS word_id,
                   word.word AS word
-              FROM word
-              JOIN position p
+              FROM position p
+              JOIN word
                   ON p.doc_id = word.doc_id
                   AND p.word_id = word.id
-              WHERE word.doc_id = @doc_id
+              WHERE p.doc_id = @doc_id
               AND p.pos BETWEEN @start AND @end_inc
               |}
               ~names:[ ("@doc_id", INT doc_id)
