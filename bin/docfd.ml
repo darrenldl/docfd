@@ -273,7 +273,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
           use_db (fun db ->
               with_stmt db
                 {|
-          SELECT 0 FROM doc_info WHERE doc_hash = @doc_hash
+          SELECT 0 FROM doc_info WHERE hash = @doc_hash
           |}
                 (fun stmt ->
                    List.partition (fun (_, _, doc_hash) ->

@@ -265,7 +265,7 @@ let doc_id_of_doc_hash : Sqlite3.db -> string -> int64 =
           {|
     SELECT id
     FROM doc_info
-    WHERE doc_hash = @doc_hash
+    WHERE hash = @doc_hash
     |}
           ~names:[ ("@doc_hash", TEXT doc_hash) ]
           (fun stmt ->
@@ -278,7 +278,7 @@ let load_raw_into_db db ~doc_hash (x : Raw.t) : unit =
   step_stmt db
     {|
   INSERT INTO doc_info
-  (id, doc_hash, page_count, global_line_count, max_pos)
+  (id, hash, page_count, global_line_count, max_pos)
   VALUES
   (NULL, @doc_hash, @page_count, @global_line_count, @max_pos)
   |}
@@ -377,7 +377,7 @@ let global_line_count =
         step_stmt db
           {|
     SELECT global_line_count FROM doc_info
-    WHERE doc_hash = @doc_hash
+    WHERE hash = @doc_hash
     |}
           ~names:[ ("@doc_hash", TEXT doc_hash) ]
           (fun stmt ->
@@ -388,13 +388,12 @@ let global_line_count =
 
 let page_count db ~doc_hash =
   let open Sqlite3_utils in
-  let doc_id = doc_id_of_doc_hash db doc_hash in
   step_stmt db
     {|
     SELECT page_count FROM doc_info
-    WHERE doc_id = @doc_id
+    WHERE hash = @doc_hash
     |}
-    ~names:[("@doc_id", INT doc_id)]
+    ~names:[("@doc_hash", TEXT doc_hash)]
     (fun stmt ->
        column_int stmt 0
     )
@@ -413,7 +412,7 @@ let is_indexed db ~doc_hash =
     {|
     SELECT 0
     FROM doc_info
-    WHERE doc_hash = @doc_hash
+    WHERE hash = @doc_hash
     |}
     ~names:[ ("@doc_hash", TEXT doc_hash) ]
     (fun stmt ->
@@ -536,10 +535,10 @@ let words_of_global_line_num : Sqlite3.db -> doc_hash:string -> int -> string Dy
 
 let words_of_page_num db ~doc_hash x : string Dynarray.t =
   let open Sqlite3_utils in
-  let doc_id = doc_id_of_doc_hash db doc_hash in
   if x >= page_count db ~doc_hash then (
     invalid_arg "Index.words_of_page_num: page_num out of range"
   ) else (
+    let doc_id = doc_id_of_doc_hash db doc_hash in
     let start, end_inc =
       step_stmt db
         {|
@@ -616,7 +615,7 @@ let max_pos db ~doc_hash =
     {|
     SELECT max_pos
     FROM doc_info
-    WHERE doc_hash = @doc_hash
+    WHERE hash = @doc_hash
     |}
     ~names:[ ("@doc_hash", TEXT doc_hash) ]
     (fun stmt ->

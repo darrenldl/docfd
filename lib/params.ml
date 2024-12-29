@@ -69,13 +69,13 @@ CREATE INDEX IF NOT EXISTS page_info_index_1 ON page_info (doc_id);
 
 CREATE TABLE IF NOT EXISTS doc_info (
   id integer PRIMARY KEY AUTOINCREMENT,
-  doc_hash varchar(500),
+  hash varchar(500),
   page_count integer,
   global_line_count integer,
   max_pos integer
 );
 
-CREATE INDEX IF NOT EXISTS doc_info_index_1 ON doc_info (doc_hash);
+CREATE INDEX IF NOT EXISTS doc_info_index_1 ON doc_info (hash);
 
 CREATE TABLE IF NOT EXISTS word (
   id integer,
