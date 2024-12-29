@@ -29,6 +29,16 @@ so you can jump directly to a search result with a single key press.
 
 - Clipboard integration
 
+## Why Docfd?
+
+- You are interested in ad hoc searches and just want to run a command to get going
+
+- You don't want to move everything into a central storage, and want to just keep your current folder structure
+
+- You want a standalone TUI search tool that does not need to spin up a server and is also completely offline
+
+- You want to script your search
+
 ## Installation
 
 Statically linked binaries for Linux and macOS are available via
