@@ -1,25 +1,25 @@
 include Sqlite3
 
-let mutex = Eio.Mutex.create ()
+let db_pool =
+        Eio.Pool.create
+        ~dispose:(fun db ->
+                while not (db_close db) do Unix.sleepf 0.5 done
+                )
+        Task_pool.size
+        (fun () ->
+                db_open
+                ~mutex:`NO
+      (CCOption.get_exn_or "Docfd_lib.Params.db_path uninitialized" !Params.db_path)
+        )
 
-let use_db : type a. ?no_lock:bool -> ?db:db -> (db -> a) -> a =
-  let open Sqlite3 in
-  fun ?(no_lock = false) ?db f ->
-    let db_path =
-      CCOption.get_exn_or "Docfd_lib.Params.db_path uninitialized" !Params.db_path
-    in
-    let body () =
-      let& db =
-        match db with
-        | Some db -> db
-        | None -> db_open db_path
-      in
+let with_db : type a. ?db:db -> (db -> a) -> a =
+  fun ?db f ->
+    match db with
+    | None -> (
+    Eio.Pool.use db_pool f
+    )
+    | Some db -> (
       f db
-    in
-    if no_lock then (
-      body ()
-    ) else (
-      Eio.Mutex.use_rw ~protect:true mutex body
     )
 
 let exec db s =
@@ -42,8 +42,9 @@ let step stmt =
 let finalize stmt =
   Sqlite3.Rc.check (Sqlite3.finalize stmt)
 
-let with_stmt : type a. db -> string -> ?names:((string * Sqlite3.Data.t) list) -> (Sqlite3.stmt -> a) -> a =
-  fun db s ?names f ->
+let with_stmt : type a. ?db:db -> string -> ?names:((string * Sqlite3.Data.t) list) -> (Sqlite3.stmt -> a) -> a =
+  fun ?db s ?names f ->
+    with_db ?db (fun db ->
   let stmt = prepare db s in
   Option.iter
     (fun names -> bind_names stmt names)
@@ -51,24 +52,25 @@ let with_stmt : type a. db -> string -> ?names:((string * Sqlite3.Data.t) list) 
   let res = f stmt in
   finalize stmt;
   res
+    )
 
-let step_stmt : type a. db -> string -> ?names:((string * Data.t) list) -> (stmt -> a) -> a =
-  fun db s ?names f ->
-  with_stmt db s ?names
+let step_stmt : type a. ?db:db -> string -> ?names:((string * Data.t) list) -> (stmt -> a) -> a =
+  fun ?db s ?names f ->
+  with_stmt ?db s ?names
     (fun stmt ->
        step stmt;
        f stmt
     )
 
-let iter_stmt db s ?names (f : Data.t array -> unit) =
-  with_stmt db s ?names
+let iter_stmt ?db s ?names (f : Data.t array -> unit) =
+  with_stmt ?db s ?names
     (fun stmt ->
        Rc.check (Sqlite3.iter stmt ~f)
     )
 
-let fold_stmt : type a. db -> string -> ?names:((string * Data.t) list) -> (a -> Sqlite3.Data.t array -> a) -> a -> a =
-  fun db s ?names f init ->
-  with_stmt db s ?names
+let fold_stmt : type a. ?db:db -> string -> ?names:((string * Data.t) list) -> (a -> Sqlite3.Data.t array -> a) -> a -> a =
+  fun ?db s ?names f init ->
+  with_stmt ?db s ?names
     (fun stmt ->
        let rc, res = Sqlite3.fold stmt ~f ~init in
        Sqlite3.Rc.check rc;
