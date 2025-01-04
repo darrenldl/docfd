@@ -1,24 +1,24 @@
 include Sqlite3
 
 let db_pool =
-        Eio.Pool.create
-        ~dispose:(fun db ->
-                while not (db_close db) do Unix.sleepf 0.5 done
-                )
-        Task_pool.size
-        (fun () ->
-                db_open
-                ~mutex:`NO
-      (CCOption.get_exn_or "Docfd_lib.Params.db_path uninitialized" !Params.db_path)
-        )
+  Eio.Pool.create
+    ~dispose:(fun db ->
+        while not (db_close db) do Unix.sleepf 0.5 done
+      )
+    Task_pool.size
+    (fun () ->
+       db_open
+         ~mutex:`NO
+         (CCOption.get_exn_or "Docfd_lib.Params.db_path uninitialized" !Params.db_path)
+    )
 
 let with_db : type a. ?db:db -> (db -> a) -> a =
   fun ?db f ->
-    match db with
-    | None -> (
-    Eio.Pool.use db_pool f
+  match db with
+  | None -> (
+      Eio.Pool.use db_pool f
     )
-    | Some db -> (
+  | Some db -> (
       f db
     )
 
@@ -44,14 +44,14 @@ let finalize stmt =
 
 let with_stmt : type a. ?db:db -> string -> ?names:((string * Sqlite3.Data.t) list) -> (Sqlite3.stmt -> a) -> a =
   fun ?db s ?names f ->
-    with_db ?db (fun db ->
-  let stmt = prepare db s in
-  Option.iter
-    (fun names -> bind_names stmt names)
-    names;
-  let res = f stmt in
-  finalize stmt;
-  res
+  with_db ?db (fun db ->
+      let stmt = prepare db s in
+      Option.iter
+        (fun names -> bind_names stmt names)
+        names;
+      let res = f stmt in
+      finalize stmt;
+      res
     )
 
 let step_stmt : type a. ?db:db -> string -> ?names:((string * Data.t) list) -> (stmt -> a) -> a =

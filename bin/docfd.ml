@@ -270,20 +270,20 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
         in
         let indexed_files, unindexed_files =
           let open Sqlite3_utils in
-              with_stmt
-                {|
+          with_stmt
+            {|
           SELECT 0 FROM doc_info WHERE hash = @doc_hash
           |}
-                (fun stmt ->
-                   List.partition (fun (_, _, doc_hash) ->
-                       bind_names stmt [ ("@doc_hash", TEXT doc_hash) ];
-                       step stmt;
-                       let indexed = data_count stmt > 0 in
-                       reset stmt;
-                       indexed
-                     )
-                     file_and_hash_list
-                )
+            (fun stmt ->
+               List.partition (fun (_, _, doc_hash) ->
+                   bind_names stmt [ ("@doc_hash", TEXT doc_hash) ];
+                   step stmt;
+                   let indexed = data_count stmt > 0 in
+                   reset stmt;
+                   indexed
+                 )
+                 file_and_hash_list
+            )
         in
         let load_document ~env pool search_mode ~doc_hash path =
           do_if_debug (fun oc ->

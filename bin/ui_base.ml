@@ -131,12 +131,12 @@ module Content_view = struct
         Some search_results.(search_result_selected)
     in
     let content =
-          Content_and_search_result_render.content_snippet
-            ~doc_hash:(Document.doc_hash document)
-            ?search_result
-            ~height
-            ~width
-            ()
+      Content_and_search_result_render.content_snippet
+        ~doc_hash:(Document.doc_hash document)
+        ?search_result
+        ~height
+        ~width
+        ()
     in
     Lwd.return (Nottui.Ui.atom content)
 end
@@ -173,16 +173,16 @@ module Search_result_list = struct
       Lwd.return Nottui.Ui.empty
     ) else (
       let images =
-            Misc_utils.array_sub_seq
-              ~start:search_result_selected
-              ~end_exc:(min result_count (search_result_selected + height))
-              search_results
-            |> Seq.map (Content_and_search_result_render.search_result
-                          ~doc_hash:(Document.doc_hash document)
-                          ~render_mode:(render_mode_of_document document)
-                          ~width
-                       )
-            |> List.of_seq
+        Misc_utils.array_sub_seq
+          ~start:search_result_selected
+          ~end_exc:(min result_count (search_result_selected + height))
+          search_results
+        |> Seq.map (Content_and_search_result_render.search_result
+                      ~doc_hash:(Document.doc_hash document)
+                      ~render_mode:(render_mode_of_document document)
+                      ~width
+                   )
+        |> List.of_seq
       in
       let pane =
         images

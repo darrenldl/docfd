@@ -22,22 +22,22 @@ let path_image ~color oc path =
 let search_result_group ~color ~underline (oc : out_channel) ((document, results) : Document_store.search_result_group) =
   let path = Document.path document in
   path_image ~color oc path;
-      Array.iteri (fun i search_result ->
-          if i > 0 then (
-            newline_image oc
-          );
-          let img =
-            Content_and_search_result_render.search_result
-              ~doc_hash:(Document.doc_hash document)
-              ~render_mode:(Ui_base.render_mode_of_document document)
-              ~width:!Params.search_result_print_text_width
-              ~underline
-              ~fill_in_context:true
-              search_result
-          in
-          Notty_unix.eol img
-          |> output_image ~color oc;
-        ) results
+  Array.iteri (fun i search_result ->
+      if i > 0 then (
+        newline_image oc
+      );
+      let img =
+        Content_and_search_result_render.search_result
+          ~doc_hash:(Document.doc_hash document)
+          ~render_mode:(Ui_base.render_mode_of_document document)
+          ~width:!Params.search_result_print_text_width
+          ~underline
+          ~fill_in_context:true
+          search_result
+      in
+      Notty_unix.eol img
+      |> output_image ~color oc;
+    ) results
 
 let search_result_groups
     ~color
