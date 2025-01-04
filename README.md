@@ -148,3 +148,4 @@ more examples/cookbook, and technical details.
   of results narrowing functionality
 - Part of the search syntax was copied from [fzf](https://github.com/junegunn/fzf)
 - Command history editing workflow was inspired by Git interactive rebase workflow, e.g. `git rebase -i`
+- [PDF corpora](https://github.com/pdf-association/pdf-corpora) from PDF association was used to stress test performance
