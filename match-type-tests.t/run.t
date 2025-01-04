@@ -1,7 +1,7 @@
 Exact match:
-  $ docfd test.txt --sample "'abc"
+  $ docfd --cache-dir .cache test.txt --sample "'abc"
   [1]
-  $ docfd test.txt --sample "'abcd"
+  $ docfd --cache-dir .cache test.txt --sample "'abcd"
   $TESTCASE_ROOT/test.txt
   1: abcd
      ^^^^
@@ -35,7 +35,7 @@ Exact match:
       ^^^^
   10: ^efgh
   11: ^^efgh
-  $ docfd test.txt --sample "\\'abcd"
+  $ docfd --cache-dir .cache test.txt --sample "\\'abcd"
   $TESTCASE_ROOT/test.txt
   6: ABcdEF
   7: 
@@ -75,7 +75,7 @@ Exact match:
       ^^^^^
   10: ^efgh
   11: ^^efgh
-  $ docfd test.txt --sample "'abcdef"
+  $ docfd --cache-dir .cache test.txt --sample "'abcdef"
   $TESTCASE_ROOT/test.txt
   1: abcd
   2: abcdef
@@ -96,7 +96,7 @@ Exact match:
      ^^^^^^
   7: 
   8: 'abcd
-  $ docfd test.txt --sample "''abcd"
+  $ docfd --cache-dir .cache test.txt --sample "''abcd"
   $TESTCASE_ROOT/test.txt
   6: ABcdEF
   7: 
@@ -113,7 +113,7 @@ Exact match:
   11: ^^efgh
 
 Exact match smart case sensitivity:
-  $ docfd test.txt --sample "'ABCD"
+  $ docfd --cache-dir .cache test.txt --sample "'ABCD"
   $TESTCASE_ROOT/test.txt
   1: abcd
   2: abcdef
@@ -121,7 +121,7 @@ Exact match smart case sensitivity:
      ^^^^
   4: ABCDEF
   5: ABcd
-  $ docfd test.txt --sample "'ABcd"
+  $ docfd --cache-dir .cache test.txt --sample "'ABcd"
   $TESTCASE_ROOT/test.txt
   3: ABCD
   4: ABCDEF
@@ -131,9 +131,9 @@ Exact match smart case sensitivity:
   7: 
 
 Prefix match:
-  $ docfd test.txt --sample "^bcd"
+  $ docfd --cache-dir .cache test.txt --sample "^bcd"
   [1]
-  $ docfd test.txt --sample "^abcd"
+  $ docfd --cache-dir .cache test.txt --sample "^abcd"
   $TESTCASE_ROOT/test.txt
   1: abcd
      ^^^^
@@ -167,7 +167,7 @@ Prefix match:
       ^^^^
   10: ^efgh
   11: ^^efgh
-  $ docfd test.txt --sample "^abcdef"
+  $ docfd --cache-dir .cache test.txt --sample "^abcdef"
   $TESTCASE_ROOT/test.txt
   1: abcd
   2: abcdef
@@ -188,7 +188,7 @@ Prefix match:
      ^^^^^^
   7: 
   8: 'abcd
-  $ docfd test.txt --sample "^'abcd"
+  $ docfd --cache-dir .cache test.txt --sample "^'abcd"
   $TESTCASE_ROOT/test.txt
   6: ABcdEF
   7: 
@@ -205,7 +205,7 @@ Prefix match:
   11: ^^efgh
 
 Prefix match smart case sensitivity:
-  $ docfd test.txt --sample "^ABCD"
+  $ docfd --cache-dir .cache test.txt --sample "^ABCD"
   $TESTCASE_ROOT/test.txt
   1: abcd
   2: abcdef
@@ -220,7 +220,7 @@ Prefix match smart case sensitivity:
      ^^^^^^
   5: ABcd
   6: ABcdEF
-  $ docfd test.txt --sample "^ABcd"
+  $ docfd --cache-dir .cache test.txt --sample "^ABcd"
   $TESTCASE_ROOT/test.txt
   3: ABCD
   4: ABCDEF
@@ -237,7 +237,7 @@ Prefix match smart case sensitivity:
   8: 'abcd
 
 Suffix match:
-  $ docfd test.txt --sample 'bcd$'
+  $ docfd --cache-dir .cache test.txt --sample 'bcd$'
   $TESTCASE_ROOT/test.txt
   1: abcd
      ^^^^
@@ -271,7 +271,7 @@ Suffix match:
       ^^^^
   10: ^efgh
   11: ^^efgh
-  $ docfd test.txt --sample 'abcd$$'
+  $ docfd --cache-dir .cache test.txt --sample 'abcd$$'
   $TESTCASE_ROOT/test.txt
   13: efgh$$
   14: 
@@ -279,7 +279,7 @@ Suffix match:
       ^^^^^
   16: efgh$
   17: 
-  $ docfd test.txt --sample 'ef$'
+  $ docfd --cache-dir .cache test.txt --sample 'ef$'
   $TESTCASE_ROOT/test.txt
   1: abcd
   2: abcdef
@@ -302,7 +302,7 @@ Suffix match:
   8: 'abcd
 
 Suffix match smart case sensitivity:
-  $ docfd test.txt --sample 'ABCD$'
+  $ docfd --cache-dir .cache test.txt --sample 'ABCD$'
   $TESTCASE_ROOT/test.txt
   1: abcd
   2: abcdef
@@ -310,7 +310,7 @@ Suffix match smart case sensitivity:
      ^^^^
   4: ABCDEF
   5: ABcd
-  $ docfd test.txt --sample 'EF$'
+  $ docfd --cache-dir .cache test.txt --sample 'EF$'
   $TESTCASE_ROOT/test.txt
   2: abcdef
   3: ABCD
@@ -327,7 +327,7 @@ Suffix match smart case sensitivity:
   8: 'abcd
 
 Fuzzy match explicit spaces:
-  $ docfd test.txt --sample 'hel~word'
+  $ docfd --cache-dir .cache test.txt --sample 'hel~word'
   $TESTCASE_ROOT/test.txt
   16: efgh$
   17: 
@@ -365,7 +365,7 @@ Fuzzy match explicit spaces:
   21: Hello world
 
 Exact match explicit spaces:
-  $ docfd test.txt --sample "'hello~world"
+  $ docfd --cache-dir .cache test.txt --sample "'hello~world"
   $TESTCASE_ROOT/test.txt
   16: efgh$
   17: 
@@ -392,7 +392,7 @@ Exact match explicit spaces:
   22: 
   23: HELLO WORLD
       ^^^^^^^^^^^
-  $ docfd test.txt --sample "'Hello~world"
+  $ docfd --cache-dir .cache test.txt --sample "'Hello~world"
   $TESTCASE_ROOT/test.txt
   19: hello   world
   20: 
@@ -400,11 +400,11 @@ Exact match explicit spaces:
       ^^^^^^^^^^^
   22: 
   23: HELLO WORLD
-  $ docfd test.txt --sample "'Hello~World"
+  $ docfd --cache-dir .cache test.txt --sample "'Hello~World"
   [1]
 
 Prefix match explicit spaces:
-  $ docfd test.txt --sample '^hello~wo'
+  $ docfd --cache-dir .cache test.txt --sample '^hello~wo'
   $TESTCASE_ROOT/test.txt
   16: efgh$
   17: 
@@ -431,11 +431,11 @@ Prefix match explicit spaces:
   22: 
   23: HELLO WORLD
       ^^^^^^^^^^^
-  $ docfd test.txt --sample '^ello~wo'
+  $ docfd --cache-dir .cache test.txt --sample '^ello~wo'
   [1]
 
 Suffix match explicit spaces:
-  $ docfd test.txt --sample 'lo~world$'
+  $ docfd --cache-dir .cache test.txt --sample 'lo~world$'
   $TESTCASE_ROOT/test.txt
   16: efgh$
   17: 
@@ -462,5 +462,5 @@ Suffix match explicit spaces:
   22: 
   23: HELLO WORLD
       ^^^^^^^^^^^
-  $ docfd test.txt --sample 'lo~worl$'
+  $ docfd --cache-dir .cache test.txt --sample 'lo~worl$'
   [1]

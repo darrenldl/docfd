@@ -1,5 +1,5 @@
 Word breaking:
-  $ docfd --search-result-print-snippet-min-size 0 long-words.txt --sample "01 ab" --search-result-print-text-width 80
+  $ docfd --cache-dir .cache --search-result-print-snippet-min-size 0 long-words.txt --sample "01 ab" --search-result-print-text-width 80
   $TESTCASE_ROOT/long-words.txt
   1: 01234567890123456789012345678901234567890123456789012345678901234567890123456
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -75,7 +75,7 @@ Word breaking:
      4567890123456789012345678901234567890123456789
   5: abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  $ docfd --search-result-print-snippet-min-size 0 long-words.txt --sample "01 ab" --search-result-print-text-width 20
+  $ docfd --cache-dir .cache --search-result-print-snippet-min-size 0 long-words.txt --sample "01 ab" --search-result-print-text-width 20
   $TESTCASE_ROOT/long-words.txt
   1: 01234567890123456
      ^^^^^^^^^^^^^^^^^
@@ -249,7 +249,7 @@ Word breaking:
      ^^^^^^^^^^^^^^^^^
      z
      ^
-  $ docfd --search-result-print-snippet-min-size 0 words.txt --sample "01 ab" --search-result-print-text-width 5
+  $ docfd --cache-dir .cache --search-result-print-snippet-min-size 0 words.txt --sample "01 ab" --search-result-print-text-width 5
   $TESTCASE_ROOT/words.txt
   1: 01
      ^^
@@ -370,7 +370,7 @@ Word breaking:
       ^
       5
       ^
-  $ docfd --search-result-print-snippet-min-size 0 words.txt --sample "01 ab" --search-result-print-text-width 1
+  $ docfd --cache-dir .cache --search-result-print-snippet-min-size 0 words.txt --sample "01 ab" --search-result-print-text-width 1
   $TESTCASE_ROOT/words.txt
   1: 0
      ^
@@ -520,7 +520,7 @@ Word breaking:
       ^
 
 Line wrapping and word breaking:
-  $ docfd --search-result-print-snippet-min-size 0 sentences.txt --sample "lorem" --search-result-print-text-width 80
+  $ docfd --cache-dir .cache --search-result-print-snippet-min-size 0 sentences.txt --sample "lorem" --search-result-print-text-width 80
   $TESTCASE_ROOT/sentences.txt
   1:     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod 
          ^^^^^
@@ -529,7 +529,7 @@ Line wrapping and word breaking:
      consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse 
      cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
       proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-  $ docfd --search-result-print-snippet-min-size 0 sentences.txt --sample "lorem" --search-result-print-text-width 20
+  $ docfd --cache-dir .cache --search-result-print-snippet-min-size 0 sentences.txt --sample "lorem" --search-result-print-text-width 20
   $TESTCASE_ROOT/sentences.txt
   1:     Lorem ipsum 
          ^^^^^
@@ -562,7 +562,7 @@ Line wrapping and word breaking:
      officia deserunt 
      mollit anim id 
      est laborum.
-  $ docfd --search-result-print-snippet-min-size 0 sentences.txt --sample "lorem" --search-result-print-text-width 10
+  $ docfd --cache-dir .cache --search-result-print-snippet-min-size 0 sentences.txt --sample "lorem" --search-result-print-text-width 10
   $TESTCASE_ROOT/sentences.txt
   1:     
      Lorem 
@@ -654,7 +654,7 @@ Line wrapping and word breaking:
      id est 
      laborum
      .
-  $ docfd --search-result-print-snippet-min-size 0 sentences.txt --sample "laborum 0" --search-result-print-text-width 80
+  $ docfd --cache-dir .cache --search-result-print-snippet-min-size 0 sentences.txt --sample "laborum 0" --search-result-print-text-width 80
   $TESTCASE_ROOT/sentences.txt
   1:     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod 
      tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, 
@@ -685,7 +685,7 @@ Line wrapping and word breaking:
                                                                       ^^^^^^^
   2: 0 12 abcd efghi jkl mnopqrst uvwx yz 0123456 789012345
                                                   ^^^^^^^^^
-  $ docfd --search-result-print-snippet-min-size 0 sentences.txt --sample "laborum 0" --search-result-print-text-width 20
+  $ docfd --cache-dir .cache --search-result-print-snippet-min-size 0 sentences.txt --sample "laborum 0" --search-result-print-text-width 20
   $TESTCASE_ROOT/sentences.txt
   1:     Lorem ipsum 
      dolor sit amet, 
@@ -797,7 +797,7 @@ Line wrapping and word breaking:
       yz 0123456 
      789012345
      ^^^^^^^^^
-  $ docfd --search-result-print-snippet-min-size 0 sentences.txt --sample "laborum 0" --search-result-print-text-width 10
+  $ docfd --cache-dir .cache --search-result-print-snippet-min-size 0 sentences.txt --sample "laborum 0" --search-result-print-text-width 10
   $TESTCASE_ROOT/sentences.txt
   1:     
      Lorem 
