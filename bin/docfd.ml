@@ -270,8 +270,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
         in
         let indexed_files, unindexed_files =
           let open Sqlite3_utils in
-          use_db (fun db ->
-              with_stmt db
+              with_stmt
                 {|
           SELECT 0 FROM doc_info WHERE hash = @doc_hash
           |}
@@ -285,7 +284,6 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
                      )
                      file_and_hash_list
                 )
-            )
         in
         let load_document ~env pool search_mode ~doc_hash path =
           do_if_debug (fun oc ->

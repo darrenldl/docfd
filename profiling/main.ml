@@ -62,9 +62,8 @@ let bench ~name ~cycle (f : unit -> 'a) =
 let main env =
   Eio.Switch.run @@ fun sw ->
   assert (Option.is_none (init ~db_path:"test.db"));
-  Sqlite3_utils.use_db (fun db ->
       let pool = Task_pool.make ~sw (Eio.Stdenv.domain_mgr env) in
-      Index.index_lines pool db ~doc_hash:"0123" (List.to_seq lines);
+      Index.index_lines pool ~doc_hash:"0123" (List.to_seq lines);
       Params'.max_fuzzy_edit_dist := 3;
       let search_exp = Search_exp.make "vestibul rutru" |> Option.get in
       let s = "PellentesquePellentesque" in
@@ -79,8 +78,7 @@ let main env =
             Spelll.of_string ~limit:1 (String.sub s 0 len))
       done;
       bench ~name:"Index.search" ~cycle:1000 (fun () ->
-          Index.search pool (Stop_signal.make ()) db None search_exp);
+          Index.search pool (Stop_signal.make ()) None search_exp);
       ()
-    )
 
 let () = Eio_main.run main
