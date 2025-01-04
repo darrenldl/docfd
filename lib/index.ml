@@ -279,9 +279,9 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
       step_stmt ~db
         {|
   INSERT INTO doc_info
-  (id, hash, page_count, global_line_count, max_pos)
+  (id, hash, page_count, global_line_count, max_pos, status)
   VALUES
-  (NULL, @doc_hash, @page_count, @global_line_count, @max_pos)
+  (NULL, @doc_hash, @page_count, @global_line_count, @max_pos, 'ONGOING')
   |}
         ~names:[ ("@doc_hash", TEXT doc_hash)
                ; ("@page_count", INT (Int64.of_int x.page_count))
@@ -371,7 +371,15 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
              x.pos_s_of_word
         );
       step_stmt ~db "COMMIT" ignore;
-      Word_db.load_into_db ~db ~doc_id x.word_db
+      Word_db.load_into_db ~db ~doc_id x.word_db;
+      step_stmt ~db
+        {|
+      UPDATE doc_info
+      SET status='COMPLETED'
+      WHERE hash=@doc_hash
+    |}
+        ~names:[ ("@doc_hash", TEXT doc_hash) ]
+        ignore;
     )
 
 let global_line_count =
@@ -418,6 +426,7 @@ let is_indexed ~doc_hash =
     SELECT 0
     FROM doc_info
     WHERE hash = @doc_hash
+    AND status = 'COMPLETED'
     |}
     ~names:[ ("@doc_hash", TEXT doc_hash) ]
     (fun stmt ->
