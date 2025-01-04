@@ -297,6 +297,7 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
   (doc_id, page_num, line_count, start_pos, end_inc_pos)
   VALUES
   (@doc_id, @page_num, @line_count, @start_pos, @end_inc_pos)
+  ON CONFLICT(doc_id, page_num) DO NOTHING
   |}
     (fun stmt ->
        Int_map.iter (fun page_num line_count ->
@@ -320,6 +321,7 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
   (doc_id, global_line_num, start_pos, end_inc_pos, page_num, line_num_in_page)
   VALUES
   (@doc_id, @global_line_num, @start_pos, @end_inc_pos, @page_num, @line_num_in_page)
+  ON CONFLICT(doc_id, global_line_num) DO NOTHING
   |}
     (fun stmt ->
        Int_map.iter (fun line_num line_loc ->
@@ -346,6 +348,7 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
   (doc_id, pos, word_id, global_line_num, pos_in_line)
   VALUES
   (@doc_id, @pos, @word_id, @global_line_num, @pos_in_line)
+  ON CONFLICT(doc_id, pos) DO NOTHING
     |}
     (fun stmt ->
        Int_map.iter (fun word_id pos_s ->
