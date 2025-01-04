@@ -427,20 +427,7 @@ let index_lines pool ~doc_hash s =
 
 let index_pages pool ~doc_hash s =
   Raw.of_pages pool s
-
-let word_of_id db ~doc_hash id : string =
-  let open Sqlite3_utils in
-  let doc_id = doc_id_of_doc_hash db doc_hash in
-  step_stmt db
-    {|
-    SELECT word FROM word
-    WHERE doc_id = @doc_id
-    AND id = @id
-    |}
-    ~names:[ ("@doc_id", INT doc_id); ("@id", INT id) ]
-    (fun stmt ->
-       column_text stmt 0
-    )
+  |> load_raw_into_db ~doc_hash
 
 let word_of_pos ~doc_hash pos : string =
   let open Sqlite3_utils in
