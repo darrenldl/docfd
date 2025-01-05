@@ -8,7 +8,7 @@ let db_pool =
     Task_pool.size
     (fun () ->
        db_open
-         ~mutex:`NO
+         ~mutex:`FULL
          (CCOption.get_exn_or "Docfd_lib.Params.db_path uninitialized" !Params.db_path)
     )
 
