@@ -2,7 +2,8 @@ type t = [
   | `Mark of string
   | `Unmark of string
   | `Unmark_all
-  | `Drop_path of string
+  | `Drop of string
+  | `Drop_all_except of string
   | `Drop_marked
   | `Drop_unmarked
   | `Drop_listed
@@ -17,7 +18,8 @@ let pp fmt (t : t) =
   | `Mark s -> Fmt.pf fmt "mark: %s" s
   | `Unmark s -> Fmt.pf fmt "unmark: %s" s
   | `Unmark_all -> Fmt.pf fmt "unmark all"
-  | `Drop_path s -> Fmt.pf fmt "drop path: %s" s
+  | `Drop s -> Fmt.pf fmt "drop: %s" s
+  | `Drop_all_except s -> Fmt.pf fmt "drop all except: %s" s
   | `Drop_marked -> Fmt.pf fmt "drop marked"
   | `Drop_unmarked -> Fmt.pf fmt "drop unmarked"
   | `Drop_listed -> Fmt.pf fmt "drop listed"
@@ -64,9 +66,11 @@ module Parsers = struct
       );
       string "drop" *> skip_spaces *> (
         choice [
-          string "path" *> skip_spaces *>
           char ':' *> skip_spaces *>
-          any_string_trimmed >>| (fun s -> (`Drop_path s));
+          any_string_trimmed >>| (fun s -> (`Drop s));
+          string "all" *> skip_spaces *>
+          string "except" *> skip_spaces *> char ':' *> skip_spaces *>
+          any_string_trimmed >>| (fun s -> (`Drop_all_except s));
           string "listed" *> skip_spaces *> return `Drop_listed;
           string "unlisted" *> skip_spaces *> return `Drop_unlisted;
           string "marked" *> skip_spaces *> return `Drop_marked;
@@ -103,7 +107,8 @@ let of_string (s : string) : t option =
 
 let equal (x : t) (y : t) =
   match x, y with
-  | `Drop_path x, `Drop_path y -> String.equal x y
+  | `Drop x, `Drop y -> String.equal x y
+  | `Drop_all_except x, `Drop_all_except y -> String.equal x y
   | `Drop_listed, `Drop_listed -> true
   | `Drop_unlisted, `Drop_unlisted -> true
   | `Narrow_level x, `Narrow_level y -> Int.equal x y

@@ -60,7 +60,7 @@ val toggle_mark : path:string -> t -> t
 
 val unmark_all : t -> t
 
-val drop : [ `Path of string | `Marked | `Unmarked | `Usable | `Unusable ] -> t -> t
+val drop : [ `Path of string | `All_except of string | `Marked | `Unmarked | `Usable | `Unusable ] -> t -> t
 
 val narrow_search_scope : level:int -> t -> t
 

@@ -171,13 +171,17 @@ let unmark_all () =
   in
   Document_store_manager.submit_update_req new_snapshot
 
-let drop ~document_count (choice : [`Path of string | `Marked | `Unmarked | `Listed | `Unlisted]) =
+let drop ~document_count (choice : [`Path of string | `All_except of string | `Marked | `Unmarked | `Listed | `Unlisted]) =
   let choice, new_command =
     match choice with
     | `Path path -> (
         let n = Lwd.peek Vars.index_of_document_selected in
         set_document_selected ~choice_count:(document_count - 1) n;
-        (`Path path, `Drop_path path)
+        (`Path path, `Drop path)
+      )
+    | `All_except path -> (
+        set_document_selected ~choice_count:1 0;
+        (`All_except path, `Drop_all_except path)
       )
     | `Marked -> (
         reset_document_selected ();

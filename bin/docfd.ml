@@ -912,7 +912,8 @@ let run
                       Fmt.str "# - %a" Command.pp (`Mark "/path/to/document");
                       Fmt.str "# - %a" Command.pp (`Unmark "/path/to/document");
                       Fmt.str "# - %a" Command.pp `Unmark_all;
-                      Fmt.str "# - %a" Command.pp (`Drop_path "/path/to/document");
+                      Fmt.str "# - %a" Command.pp (`Drop "/path/to/document");
+                      Fmt.str "# - %a" Command.pp (`Drop_all_except "/path/to/document");
                       Fmt.str "# - %a" Command.pp `Drop_marked;
                       Fmt.str "# - %a" Command.pp `Drop_unmarked;
                       Fmt.str "# - %a" Command.pp `Drop_listed;

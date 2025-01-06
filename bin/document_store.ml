@@ -264,7 +264,16 @@ let toggle_mark ~path t =
 let unmark_all t =
   {t with documents_marked = String_set.empty }
 
-let drop (choice : [ `Path of string | `Marked | `Unmarked | `Usable | `Unusable ]) (t : t) : t =
+let drop
+    (choice :
+       [ `Path of string
+       | `All_except of string
+       | `Marked
+       | `Unmarked
+       | `Usable
+       | `Unusable ])
+    (t : t)
+  : t =
   let aux ~(keep : string -> bool) =
     let keep' : 'a. string -> 'a -> bool =
       fun path _ ->
@@ -291,6 +300,12 @@ let drop (choice : [ `Path of string | `Marked | `Unmarked | `Usable | `Unusable
         search_exp_string = t.search_exp_string;
         search_results = String_map.remove path t.search_results;
       }
+    )
+  | `All_except path -> (
+      let keep path' =
+        String.equal path' path
+      in
+      aux ~keep
     )
   | `Marked -> (
       let keep path =
@@ -377,8 +392,11 @@ let run_command pool (command : Command.t) (t : t) : t option =
   | `Unmark_all -> (
       Some (unmark_all t)
     )
-  | `Drop_path s -> (
+  | `Drop s -> (
       Some (drop (`Path s) t)
+    )
+  | `Drop_all_except s -> (
+      Some (drop (`All_except s) t)
     )
   | `Drop_marked -> (
       Some (drop `Marked t)
