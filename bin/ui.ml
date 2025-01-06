@@ -587,10 +587,11 @@ module Bottom_pane = struct
           [
             { label = "d"; msg = "selected" };
             { label = "l"; msg = "listed" };
-            { label = "Shift+L"; msg = "unlisted" };
+            { label = "m"; msg = "marked" };
           ];
           [
-            { label = "m"; msg = "marked" };
+            { label = ""; msg = "" };
+            { label = "Shift+L"; msg = "unlisted" };
             { label = "Shift+M"; msg = "unmarked" };
           ];
           [
@@ -602,11 +603,11 @@ module Bottom_pane = struct
         [
           [
             { label = "y"; msg = "selected search result" };
-            { label = "a"; msg = "results of selected document" };
             { label = "m"; msg = "results of marked documents" };
+            { label = "l"; msg = "results of listed documents" };
           ];
           [
-            { label = "l"; msg = "results of list documents" };
+            { label = "a"; msg = "results of selected document" };
           ];
           [
             { label = "Esc"; msg = "cancel" };
@@ -618,10 +619,11 @@ module Bottom_pane = struct
           [
             { label = "y"; msg = "path of selected document" };
             { label = "m"; msg = "paths of marked documents" };
-            { label = "Shift+M"; msg = "paths of unmarked documents" };
+            { label = "l"; msg = "paths of listed documents" };
           ];
           [
-            { label = "l"; msg = "paths of listed documents" };
+            { label = ""; msg = "" };
+            { label = "Shift+M"; msg = "paths of unmarked documents" };
             { label = "Shift+L"; msg = "paths of unlisted documents" };
           ];
           [
