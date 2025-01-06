@@ -594,7 +594,7 @@ module Bottom_pane = struct
             { label = "m"; msg = "marked" };
           ];
           [
-            { label = ""; msg = "" };
+            { label = "Shift+D"; msg = "unselected" };
             { label = "Shift+L"; msg = "unlisted" };
             { label = "Shift+M"; msg = "unmarked" };
           ];
@@ -962,6 +962,12 @@ let keyboard_handler
         | (`ASCII 'd', []) -> (
             Option.iter (fun (doc, _search_results) ->
                 drop ~document_count (`Path (Document.path doc))
+              ) search_result_group;
+            true
+          )
+        | (`ASCII 'D', []) -> (
+            Option.iter (fun (doc, _search_results) ->
+                drop ~document_count (`All_except (Document.path doc))
               ) search_result_group;
             true
           )
