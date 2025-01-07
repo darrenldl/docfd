@@ -53,6 +53,7 @@ module Parsers = struct
     any_string >>| String.trim
 
   let p : t' Angstrom.t =
+    skip_spaces *>
     choice [
       string "mark" *> skip_spaces *>
       char ':' *> skip_spaces *>
