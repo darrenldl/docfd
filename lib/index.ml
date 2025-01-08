@@ -263,7 +263,7 @@ let doc_id_of_doc_hash : ?db:Sqlite3.db -> string -> int64 =
     CCCache.with_cache cache (fun doc_hash ->
         step_stmt ?db
           {|
-    SELECT ROWID
+    SELECT id
     FROM doc_info
     WHERE hash = @doc_hash
     |}
@@ -279,9 +279,16 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
       step_stmt ~db
         {|
   INSERT INTO doc_info
-  (hash, page_count, global_line_count, max_pos, status)
+  (id, hash, page_count, global_line_count, max_pos, status)
   VALUES
-  (@doc_hash, @page_count, @global_line_count, @max_pos, 'ONGOING')
+  (
+    (SELECT IFNULL(MAX(id), 0) + 1 FROM doc_info),
+    @doc_hash,
+    @page_count,
+    @global_line_count,
+    @max_pos,
+    'ONGOING'
+  )
   ON CONFLICT(hash) DO NOTHING
   |}
         ~names:[ ("@doc_hash", TEXT doc_hash)

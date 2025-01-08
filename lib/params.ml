@@ -64,11 +64,14 @@ CREATE TABLE IF NOT EXISTS page_info (
 
 CREATE TABLE IF NOT EXISTS doc_info (
   hash varchar(500) PRIMARY KEY,
+  id integer,
   page_count integer,
   global_line_count integer,
   max_pos integer,
   status varchar(100)
 );
+
+CREATE INDEX IF NOT EXISTS doc_info_index_1 ON doc_info (id);
 
 CREATE TABLE IF NOT EXISTS word (
   id integer,
