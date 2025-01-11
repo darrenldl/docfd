@@ -35,8 +35,9 @@ let compute_total_recognized_exts ~exts ~additional_exts =
   |> Seq.flat_map List.to_seq
   |> Seq.map (fun s ->
       s
-      |> String_utils.remove_leading_dots
       |> CCString.trim
+      |> String_utils.remove_leading_dots
+      |> String.lowercase_ascii
     )
   |> Seq.filter (fun s -> s <> "")
   |> Seq.map (fun s -> Printf.sprintf ".%s" s)
