@@ -27,6 +27,16 @@
 
 - Changed return code to be 1 when there are no results for `--sample` or `--search`
 
+- Added `--no-pdftotext` and `--no-pandoc` flags
+
+    - Docfd also notes the presence of these flags in error message if there
+      are PDF files but no pdftotext command is available, and same with files
+      relying on pandoc
+
+- Various key binding improvements
+
+- Various key binding help info grid adjustments
+
 ## 9.0.0-rc1
 
 - Changed default cache size from 100 to 10000
