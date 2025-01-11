@@ -1,6 +1,26 @@
 open Cmdliner
 open Misc_utils
 
+let no_pdftotext_arg_name = "no-pdftotext"
+
+let no_pdftotext_arg =
+  let doc =
+    Fmt.str {|Disable use of pdftotext command.
+    Files that require use of pdftotext are excluded.
+    |}
+  in
+  Arg.(value & flag & info [ no_pdftotext_arg_name ] ~doc)
+
+let no_pandoc_arg_name = "no-pandoc"
+
+let no_pandoc_arg =
+  let doc =
+    Fmt.str {|Disable use of pandoc command.
+    Files that require use of pandoc are excluded.
+    |}
+  in
+  Arg.(value & flag & info [ no_pandoc_arg_name ] ~doc)
+
 let hidden_arg_name = "hidden"
 
 let hidden_arg =

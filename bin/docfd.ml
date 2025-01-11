@@ -17,6 +17,8 @@ let compute_paths_from_globs ~report_progress globs =
   list_files_recursive_filter_by_globs ~report_progress globs
 
 type file_constraints = {
+  no_pdftotext : bool;
+  no_pandoc : bool;
   paths_were_originally_specified_by_user : bool;
   exts : string list;
   single_line_exts : string list;
@@ -26,6 +28,8 @@ type file_constraints = {
 }
 
 let make_file_constraints
+    ~no_pdftotext
+    ~no_pandoc
     ~(exts : string list)
     ~(single_line_exts : string list)
     ~(paths : string list)
@@ -41,6 +45,8 @@ let make_file_constraints
   with
   | [], None, [], [] -> (
       {
+        no_pdftotext;
+        no_pandoc;
         paths_were_originally_specified_by_user = false;
         exts;
         single_line_exts;
@@ -55,6 +61,8 @@ let make_file_constraints
       let globs = String_set.of_list globs in
       let single_line_globs = String_set.of_list single_line_globs in
       {
+        no_pdftotext;
+        no_pandoc;
         paths_were_originally_specified_by_user = true;
         exts;
         single_line_exts;
@@ -156,6 +164,26 @@ let files_satisfying_constraints
              failwith "check failed"
            )
          );
+       let filter_for_no_pdftotext_or_no_pandoc (s : String_set.t) =
+         if cons.no_pdftotext || cons.no_pandoc then (
+           String_set.filter
+             (fun s ->
+                match File_utils.format_of_file s with
+                | `PDF -> not cons.no_pdftotext
+                | `Pandoc_supported_format -> not cons.no_pandoc
+                | `Text -> true
+             )
+             s
+         ) else (
+           s
+         )
+       in
+       let default_search_mode_files =
+         filter_for_no_pdftotext_or_no_pandoc default_search_mode_files
+       in
+       let single_line_search_mode_files =
+         filter_for_no_pdftotext_or_no_pandoc single_line_search_mode_files
+       in
        {
          default_search_mode_files;
          single_line_search_mode_files;
@@ -373,6 +401,8 @@ let run
     ~(env : Eio_unix.Stdenv.base)
     ~sw
     (debug_log : string option)
+    (no_pdftotext : bool)
+    (no_pandoc : bool)
     (scan_hidden : bool)
     (max_depth : int)
     (max_fuzzy_edit_dist : int)
@@ -521,6 +551,8 @@ let run
   in
   let file_constraints =
     make_file_constraints
+      ~no_pdftotext
+      ~no_pandoc
       ~exts:recognized_exts
       ~single_line_exts:recognized_single_line_exts
       ~paths
@@ -630,12 +662,12 @@ let run
        in
        if not pdftotext_exists && File_format_set.mem `PDF formats then (
          exit_with_error_msg
-           (Fmt.str "command pdftotext not found")
+           (Fmt.str "command pdftotext not found, use --%s to disable use of pdftotext" Args.no_pdftotext_arg_name)
        );
        if File_format_set.mem `Pandoc_supported_format formats then (
          if not pandoc_exists then (
            exit_with_error_msg
-             (Fmt.str "command pandoc not found")
+             (Fmt.str "command pandoc not found, use --%s to disable use of pandoc" Args.no_pandoc_arg_name)
          );
        );
        let file_count = Document_src.file_collection_size file_collection in
@@ -1140,6 +1172,8 @@ let cmd ~env ~sw =
   Cmd.v (Cmd.info "docfd" ~version ~doc)
     (const (run ~env ~sw)
      $ debug_log_arg
+     $ no_pdftotext_arg
+     $ no_pandoc_arg
      $ hidden_arg
      $ max_depth_arg
      $ max_fuzzy_edit_dist_arg
