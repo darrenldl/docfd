@@ -33,7 +33,9 @@
       are PDF files but no pdftotext command is available, and same with files
       relying on pandoc
 
-- Various key binding improvements
+- Renamed `drop path` command to just `drop`
+
+- Added drop unselected key binding, and the associated command `drop all except`
 
 - Various key binding help info grid adjustments
 
