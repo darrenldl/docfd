@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-22.04
+          - ubuntu-latest
           - macos-latest
         ocaml-compiler:
           - "5.2"
@@ -37,7 +37,7 @@ jobs:
         run: echo "OS_SHORT_NAME=windows" >> $GITHUB_ENV
 
       - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
-        uses: ocaml/setup-ocaml@v2
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
