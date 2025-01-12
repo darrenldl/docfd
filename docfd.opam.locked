@@ -37,8 +37,6 @@ depends: [
   "dune" {= "3.17.1"}
   "dune-configurator" {= "3.17.1"}
   "eio" {= "1.2"}
-  "eio_linux" {= "1.2"}
-  "eio_main" {= "1.2"}
   "eio_posix" {= "1.2"}
   "either" {= "1.0.0"}
   "eqaf" {= "0.10"}
@@ -88,7 +86,6 @@ depends: [
   "timedesc-tzdb" {= "3.1.0"}
   "timedesc-tzlocal" {= "3.1.0"}
   "topkg" {= "1.0.7"}
-  "uring" {= "0.9"}
   "uucp" {= "16.0.0"}
   "uutf" {= "1.0.3"}
   "vector" {= "1.0.0"}

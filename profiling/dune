@@ -23,7 +23,7 @@
             lwd
             oseq
             eio
-            eio_main
+            eio_posix
             digestif.ocaml
             digestif
  )

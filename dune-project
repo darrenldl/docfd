@@ -52,7 +52,7 @@ Features:
    (cmdliner (>= "1.1.0"))
    (eio (>= "0.14"))
    digestif
-   eio_main
+   eio_posix
    containers-data
    (timedesc (>= "2.0.0"))
    (re (>= "1.11.0"))

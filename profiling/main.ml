@@ -81,4 +81,4 @@ let main env =
       Index.search pool (Stop_signal.make ()) None search_exp);
   ()
 
-let () = Eio_main.run main
+let () = Eio_posix.run main

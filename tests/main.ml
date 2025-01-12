@@ -1,7 +1,7 @@
 open Docfd_lib
 
 let () =
-  Eio_main.run (fun env ->
+  Eio_posix.run (fun env ->
       Eio.Switch.run (fun sw ->
           let _task_pool = Task_pool.make ~sw (Eio.Stdenv.domain_mgr env) in
           let alco_suites =

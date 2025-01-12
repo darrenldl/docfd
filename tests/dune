@@ -6,6 +6,6 @@
             alcotest
             docfd_lib
             eio
-            eio_main
+            eio_posix
             )
  )
