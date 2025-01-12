@@ -1,4 +1,4 @@
-FROM docker.io/ocaml/opam:alpine-ocaml-5.2
+FROM docker.io/ocaml/opam:alpine-ocaml-5.3
 
 USER root
 RUN apk add linux-headers
