@@ -16,46 +16,45 @@ depends: [
   "base-bigarray" {= "base"}
   "base-bytes" {= "base"}
   "base-domains" {= "base"}
+  "base-effects" {= "base"}
   "base-nnp" {= "base"}
   "base-threads" {= "base"}
   "base-unix" {= "base"}
   "bigstringaf" {= "0.10.0"}
-  "cbor" {= "0.5"}
   "checkseum" {= "0.5.2"}
   "cmdliner" {= "1.3.0"}
   "conf-pkg-config" {= "3"}
   "conf-sqlite3" {= "1"}
-  "containers" {= "3.14"}
-  "containers-data" {= "3.14"}
-  "cppo" {= "1.7.0"}
+  "containers" {= "3.15"}
+  "containers-data" {= "3.15"}
+  "cppo" {= "1.8.0"}
   "csexp" {= "1.5.2"}
   "cstruct" {= "6.2.0"}
   "decompress" {= "1.5.3"}
   "diet" {= "0.4"}
   "digestif" {= "1.2.0"}
   "domain-local-await" {= "1.0.1"}
-  "dune" {= "3.16.1"}
-  "dune-configurator" {= "3.16.1"}
-  "eio" {= "1.1"}
-  "eio_linux" {= "1.1"}
-  "eio_main" {= "1.1"}
-  "eio_posix" {= "1.1"}
+  "dune" {= "3.17.1"}
+  "dune-configurator" {= "3.17.1"}
+  "eio" {= "1.2"}
+  "eio_linux" {= "1.2"}
+  "eio_main" {= "1.2"}
+  "eio_posix" {= "1.2"}
   "either" {= "1.0.0"}
   "eqaf" {= "0.10"}
   "fmt" {= "0.9.0"}
   "hmap" {= "0.8.1"}
-  "host-arch-x86_64" {= "1"}
-  "host-system-other" {= "1"}
   "iomux" {= "0.3"}
   "logs" {= "0.7.0"}
   "lwd" {= "0.3"}
-  "lwt" {= "5.8.0"}
+  "lwt" {= "5.9.0"}
   "lwt-dllist" {= "1.0.1"}
   "mtime" {= "2.1.0"}
   "nottui" {= "0.3"}
   "notty" {= "0.2.3"}
-  "ocaml" {= "5.2.0"}
-  "ocaml-base-compiler" {= "5.2.0"}
+  "ocaml" {= "5.3.0"}
+  "ocaml-base-compiler" {= "5.3.0"}
+  "ocaml-compiler" {= "5.3.0"}
   "ocaml-compiler-libs" {= "v0.17.0"}
   "ocaml-config" {= "3"}
   "ocaml-options-vanilla" {= "1"}
@@ -68,14 +67,14 @@ depends: [
   "ounit2" {= "2.2.7" & with-test}
   "ppx_derivers" {= "1.2.1"}
   "ppx_deriving" {= "6.0.3"}
-  "ppxlib" {= "0.33.0"}
+  "ppxlib" {= "0.34.0"}
   "progress" {= "0.4.0"}
   "psq" {= "0.2.1"}
   "ptime" {= "1.2.0"}
-  "qcheck" {= "0.22" & with-test}
-  "qcheck-alcotest" {= "0.22" & with-test}
-  "qcheck-core" {= "0.22" & with-test}
-  "qcheck-ounit" {= "0.22" & with-test}
+  "qcheck" {= "0.23" & with-test}
+  "qcheck-alcotest" {= "0.23" & with-test}
+  "qcheck-core" {= "0.23" & with-test}
+  "qcheck-ounit" {= "0.23" & with-test}
   "re" {= "1.12.0"}
   "result" {= "1.5"}
   "seq" {= "base"}
@@ -107,10 +106,6 @@ pin-depends: [
   [
   "notty.0.2.3"
   "git+https://github.com/ocaml-dune/notty.git#b6e1036c61521be3b1f4d585895ac598bdf4ab8d"
-]
-  [
-  "ocaml-base-compiler.5.2.0"
-  "https://github.com/ocaml/ocaml/archive/5.2.0.tar.gz"
 ]
 ]
 description: """\
