@@ -1,6 +1,6 @@
 # Changelog
 
-## 9.0.0-rc2
+## 9.0.0
 
 - Swapped over to using SQLite for index
 
