@@ -11,6 +11,12 @@
 
     - Search is a bit slower
 
+    - Added token length limit of 500 bytes to accommodate word table limit in index DB
+
+        - This means during indexing, if Docfd encounters a very long token,
+          e.g. serial number, long hex string, it will be split into chunks of
+          up to 500 bytes
+
 - Added `Ctrl`+`C` exit key binding to key binding info on screen
 
 - Updated exit keys
