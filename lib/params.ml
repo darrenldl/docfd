@@ -2,6 +2,8 @@ let default_search_result_total_per_document = 50
 
 let search_result_min_per_start = 5
 
+let max_token_size = 500
+
 let default_max_token_search_dist = 50
 
 let max_token_search_dist = ref default_max_token_search_dist
