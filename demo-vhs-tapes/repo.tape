@@ -23,7 +23,7 @@ Sleep 1s
 Type "f"
 Type "read\cme*"
 Enter
-Sleep 1s
+Sleep 2s
 
 Enter
 Sleep 1s
