@@ -9,7 +9,7 @@ Set FontSize 15
 
 Set TypingSpeed 100ms
 
-Type@50ms 'docfd README.md --sample "one of: search phrase"'
+Type@50ms 'docfd README.md --sample "interactive grep across lines"'
 Enter
 
 Sleep 4s
