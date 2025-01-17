@@ -205,11 +205,14 @@ let search_result_groups (t : t) : (Document.t * Search_result.t array) array =
           Seq.map (fun (_path, doc) -> (doc, [||])) s
         ) else (
           Seq.filter_map (fun (path, doc) ->
-              let search_results = String_map.find path t.search_results in
-              if Array.length search_results = 0 then
-                None
-              else
-                Some (doc, search_results)
+              match String_map.find_opt path t.search_results with
+              | None -> None
+              | Some search_results -> (
+                  if Array.length search_results = 0 then
+                    None
+                  else
+                    Some (doc, search_results)
+                )
             ) s
         )
       )
