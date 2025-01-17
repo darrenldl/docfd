@@ -1,5 +1,19 @@
 # Changelog
 
+## 9.0.1
+
+- Fixed incomplete search results when file path filter field is updated while
+  search is ongoing
+
+    - Updating file path filter always cancels the current search (if there is one)
+      and start a new search after the filter is in place
+
+    - Previously, documents with partial search results due to cancellation
+      are kept
+
+    - Docfd now discards said documents, forcing the new search to complete the
+      search results of these documents
+
 ## 9.0.0
 
 - Swapped over to using SQLite for index
