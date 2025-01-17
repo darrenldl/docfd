@@ -85,17 +85,21 @@ let refresh_search_results pool stop_signal (t : t) : t =
            | `Single_line -> true
            | `Multiline -> false
          in
-         (path,
-          Index.search
-            pool
-            stop_signal
-            ~doc_hash:(Document.doc_hash doc)
-            ~within_same_line
-            (Document.search_scope doc)
-            t.search_exp
-         )
+         match
+           Index.search
+             pool
+             stop_signal
+             ~doc_hash:(Document.doc_hash doc)
+             ~within_same_line
+             (Document.search_scope doc)
+             t.search_exp
+         with
+         | None -> None
+         | Some results -> Some (path, results)
       )
-    |> String_map.of_list
+    |> List.to_seq
+    |> Seq.filter_map Fun.id
+    |> String_map.of_seq
   in
   let search_results =
     String_map.union (fun _k v1 _v2 -> Some v1)
@@ -167,6 +171,7 @@ let add_document pool (doc : Document.t) (t : t) : t =
          ~within_same_line
          (Document.search_scope doc)
          t.search_exp
+       |> Option.get
       )
       t.search_results
   in

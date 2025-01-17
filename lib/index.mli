@@ -47,7 +47,7 @@ val search :
   within_same_line:bool ->
   Diet.Int.t option ->
   Search_exp.t ->
-  Search_result.t array
+  Search_result.t array option
 
 val global_line_count : doc_hash:string -> int
 

@@ -892,6 +892,7 @@ module Search = struct
   let search_single
       pool
       stop_signal
+      (canceled : bool Atomic.t)
       ~doc_hash
       ~within_same_line
       ~consider_edit_dist
@@ -910,6 +911,7 @@ module Search = struct
             Eio.Fiber.first
               (fun () ->
                  Stop_signal.await stop_signal;
+                 Atomic.set canceled true;
                  Seq.empty)
               (fun () ->
                  usable_positions ~doc_hash ~consider_edit_dist first_word)
@@ -943,6 +945,7 @@ module Search = struct
                 Eio.Fiber.first
                   (fun () ->
                      Stop_signal.await stop_signal;
+                     Atomic.set canceled true;
                      Search_result_heap.empty)
                   (fun () ->
                      Eio.Fiber.yield ();
@@ -1045,6 +1048,7 @@ module Search = struct
   let search
       pool
       stop_signal
+      canceled
       ~doc_hash
       ~within_same_line
       ~consider_edit_dist
@@ -1053,7 +1057,7 @@ module Search = struct
     : Search_result_heap.t =
     Search_exp.flattened exp
     |> List.to_seq
-    |> Seq.map (fun phrase -> search_single pool stop_signal ~doc_hash ~within_same_line ~consider_edit_dist search_scope phrase)
+    |> Seq.map (fun phrase -> search_single pool stop_signal canceled ~doc_hash ~within_same_line ~consider_edit_dist search_scope phrase)
     |> Seq.fold_left search_result_heap_merge_with_yield Search_result_heap.empty
 end
 
@@ -1064,11 +1068,13 @@ let search
     ~within_same_line
     search_scope
     (exp : Search_exp.t)
-  : Search_result.t array =
+  : Search_result.t array option =
+  let canceled = Atomic.make false in
   let arr =
     Search.search
       pool
       stop_signal
+      canceled
       ~doc_hash
       ~within_same_line
       ~consider_edit_dist:true
@@ -1077,5 +1083,9 @@ let search
     |> Search_result_heap.to_seq
     |> Array.of_seq
   in
-  Array.sort Search_result.compare_relevance arr;
-  arr
+  if Atomic.get canceled then (
+    None
+  ) else (
+    Array.sort Search_result.compare_relevance arr;
+    Some arr
+  )
