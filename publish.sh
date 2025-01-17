@@ -25,7 +25,7 @@ echo "Computed git tag for Docfd:" $git_tag
 read -p "Are the version and git tag correct [y/n]? " ans
 
 if [[ $ans != "y" ]]; then
-  echo "Publishing cancelled"
+  echo "Publishing canceled"
   exit 0
 fi
 
@@ -41,7 +41,7 @@ else
     read -p "Type \"$RETAG_CONFIRM_TEXT\" to confirm: " ans
 
     if [[ $ans != "$RETAG_CONFIRM_TEXT" ]]; then
-      echo "Publishing cancelled"
+      echo "Publishing canceled"
       exit 0
     fi
 
