@@ -92,7 +92,7 @@ let manager_fiber () =
 let worker_fiber pool =
   (* This fiber runs in a background domain to allow the UI code in the main
      domain to immediately continue running after key presses that trigger
-     searches or search cancelations.
+     searches or search cancellations.
 
      This removes the need to make the code of document store always yield
      frequently.

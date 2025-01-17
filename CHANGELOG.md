@@ -106,13 +106,13 @@
 ## 8.0.2
 
 - Reworked asynchronous search/filter UI code to avoid noticeable lag due to
-  waiting for cancelations that take too long
+  waiting for cancellations that take too long
 
     - Previously there was still a lockstep somewhere that would prevent UI
       from progressing if previous search was still being canceled
 
     - The current implementation allows newest requests to override older
-      requests entirely, and not wait for cancelations at all
+      requests entirely, and not wait for cancellations at all
 
 - Adjusted document counter in multi-file view to be visible even when no files
   are listed
@@ -197,8 +197,8 @@
 
 - Fixed random UI freezes when updating search field
 
-    - This is due to a race condition in the search cancelation mechanism that
-      may cause UI fiber to starve and wait forever for a cancelation
+    - This is due to a race condition in the search cancellation mechanism that
+      may cause UI fiber to starve and wait forever for a cancellation
       acknowledgement
 
     - This mechanism was put in place for asynchronous search since 4.0.0
@@ -294,7 +294,7 @@
     - `...` means Docfd is searching
     - `ERR` means Docfd failed to parse the search expression
 
-- Added search cancelation. Triggered by editing or clearing search field.
+- Added search cancellation. Triggered by editing or clearing search field.
 
 - Added dynamic search distance adjustment based on notion of linked tokens
 
@@ -585,7 +585,7 @@
 
 ## 1.2.0
 
-- Removed UI components for search cancelation
+- Removed UI components for search cancellation
 
 - Added real time refresh of search
 
@@ -608,7 +608,7 @@
 
 - Added index saving and loading
 
-- Added search cancelation
+- Added search cancellation
 
 ## 1.0.2
 
