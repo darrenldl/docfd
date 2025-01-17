@@ -81,6 +81,7 @@ let manager_fiber () =
       )
     | Filtering_done snapshot -> (
         update_store snapshot;
+        Lwd.set search_ui_status `Idle;
         Lwd.set filter_ui_status `Ok
       )
     | Update snapshot -> (
@@ -126,6 +127,7 @@ let worker_fiber pool =
     let s = Misc_utils.normalize_filter_glob_if_not_empty original_string in
     match Glob.make s with
     | Some glob -> (
+        Eio.Stream.add egress Searching;
         let store =
           !store_snapshot
           |> Document_store_snapshot.store
