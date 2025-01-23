@@ -1,22 +1,3 @@
-module Parsers = struct
-  open Angstrom
-  open Parser_components
-
-  type token =
-    | Space of string
-    | Text of string
-
-  let token_p =
-    choice [
-      take_while1 is_alphanum >>| (fun s -> Text s);
-      take_while1 is_space >>| (fun s -> Space s);
-      utf_8_char >>| (fun s -> Text s);
-    ]
-
-  let tokens_p =
-    many token_p
-end
-
 let chunk_tokens (s : (int * string) Seq.t) : (int * string) Seq.t =
   let rec aux offset s =
     match s () with
@@ -41,25 +22,68 @@ let chunk_tokens (s : (int * string) Seq.t) : (int * string) Seq.t =
   in
   aux 0 s
 
+type token =
+  | Space of string
+  | Text of string
+
 let tokenize_with_pos ~drop_spaces (s : string) : (int * string) Seq.t =
+  let segmenter = Uuseg.create `Word in
   let s = Misc_utils.sanitize_string s in
-  match Angstrom.(parse_string ~consume:Consume.All) Parsers.tokens_p s with
-  | Ok l -> (
-      l
-      |> List.to_seq
-      |> Seq.mapi (fun i x -> (i, x))
-      |> Seq.filter_map (fun ((i, token) : int * Parsers.token) ->
-          match token with
-          | Text s -> Some (i, s)
-          | Space s ->
-            if drop_spaces then
-              None
-            else
-              Some (i, s)
-        )
-      |> chunk_tokens
+  let s_len = String.length s in
+  let acc : token Dynarray.t = Dynarray.create () in
+  let buf : Uchar.t Dynarray.t = Dynarray.create () in
+  let flush_to_acc () =
+    if Dynarray.length buf > 0 then (
+      let sbuf = Buffer.create 256 in
+      Dynarray.iter (Buffer.add_utf_8_uchar sbuf) buf;
+      if Uucp.White.is_white_space (Dynarray.get buf 0) then (
+        Dynarray.add_last acc (Space (Buffer.contents sbuf))
+      ) else (
+        Dynarray.add_last acc (Text (Buffer.contents sbuf))
+      );
+      Dynarray.clear buf
     )
-  | Error _ -> Seq.empty
+  in
+  let rec add v =
+    match Uuseg.add segmenter v with
+    | `Uchar uc -> (
+        Dynarray.add_last buf uc;
+        add `Await
+      )
+    | `Boundary -> (
+        flush_to_acc ();
+        add `Await
+      )
+    | `Await | `End -> ()
+  in
+  let rec aux pos =
+    if pos >= s_len then (
+      add `End;
+      flush_to_acc ()
+    ) else (
+      let decode = String.get_utf_8_uchar s pos in
+      if Uchar.utf_decode_is_valid decode then (
+        let uchar = Uchar.utf_decode_uchar decode in
+        add (`Uchar uchar);
+        aux (pos + Uchar.utf_decode_length decode)
+      ) else (
+        aux (pos + 1)
+      )
+    )
+  in
+  aux 0;
+  Dynarray.to_seq acc
+  |> Seq.mapi (fun i x -> (i, x))
+  |> Seq.filter_map (fun ((i, token) : int * token) ->
+      match token with
+      | Text s -> Some (i, s)
+      | Space s ->
+        if drop_spaces then
+          None
+        else
+          Some (i, s)
+    )
+  |> chunk_tokens
 
 let tokenize ~drop_spaces s =
   tokenize_with_pos ~drop_spaces s

@@ -18,5 +18,7 @@
             unix
             diet
             sqlite3
+            uuseg
+            uucp
  )
 )

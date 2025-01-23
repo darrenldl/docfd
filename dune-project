@@ -61,6 +61,8 @@ Features:
    progress
    diet
    sqlite3
+   uuseg
+   uucp
    (alcotest :with-test)
    (qcheck-alcotest :with-test)
    (qcheck :with-test)
