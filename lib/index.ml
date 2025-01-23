@@ -273,13 +273,27 @@ let doc_id_of_doc_hash : ?db:Sqlite3.db -> string -> int64 =
           )
       )
 
+let refresh_last_used ~doc_hash : unit =
+  let open Sqlite3_utils in
+  with_db (fun db ->
+      step_stmt ~db
+        {|
+  UPDATE doc_info
+  SET last_used = unixepoch()
+  WHERE hash = @doc_hash
+  |}
+        ~names:[ ("@doc_hash", TEXT doc_hash)
+               ]
+        ignore;
+    )
+
 let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
   let open Sqlite3_utils in
   with_db (fun db ->
       step_stmt ~db
         {|
   INSERT INTO doc_info
-  (id, hash, page_count, global_line_count, max_pos, status)
+  (id, hash, page_count, global_line_count, max_pos, last_used, status)
   VALUES
   (
     (SELECT IFNULL(MAX(id), 0) + 1 FROM doc_info),
@@ -287,6 +301,7 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
     @page_count,
     @global_line_count,
     @max_pos,
+    unixepoch(),
     'ONGOING'
   )
   ON CONFLICT(hash) DO NOTHING

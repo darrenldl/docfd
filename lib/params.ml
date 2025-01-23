@@ -70,10 +70,13 @@ CREATE TABLE IF NOT EXISTS doc_info (
   page_count integer,
   global_line_count integer,
   max_pos integer,
+  last_used integer,
   status varchar(100)
 );
 
 CREATE INDEX IF NOT EXISTS doc_info_index_1 ON doc_info (id);
+
+CREATE INDEX IF NOT EXISTS doc_info_index_2 ON doc_info (last_used);
 
 CREATE TABLE IF NOT EXISTS word (
   id integer,

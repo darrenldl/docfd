@@ -54,3 +54,5 @@ val global_line_count : doc_hash:string -> int
 val page_count : doc_hash:string -> int
 
 val is_indexed : doc_hash:string -> bool
+
+val refresh_last_used : doc_hash:string -> unit
