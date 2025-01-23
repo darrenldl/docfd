@@ -1,6 +1,6 @@
 # Changelog
 
-## 9.0.1
+## 10.0.0
 
 - Fixed incomplete search results when file path filter field is updated while
   search is ongoing
@@ -13,6 +13,22 @@
 
     - Docfd now discards said documents, forcing the new search to complete the
       search results of these documents
+
+- Removed `--no-cache` flag
+
+    - Previously was unused completey
+
+    - It is difficult to share an in-memory SQlite DB
+      between threads, so discarding this flag entirely
+
+- Swapped to using proper unicode segmentation for tokenisation
+
+    - This should reduce the index size for Western non-English languages
+      significantly
+
+- Added back index DB entry pruning
+
+    - Previously missing after swapping to SQLite DB
 
 ## 9.0.0
 
