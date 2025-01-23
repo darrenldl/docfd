@@ -191,7 +191,7 @@ let cache_soft_limit_arg_name = "cache-soft-limit"
 
 let cache_soft_limit_arg =
   let doc =
-    "Rough maximum number of indices to cache. One index corresponds to one file.
+    "Rough maximum number of documents to keep in index.
 For performance reasons Docfd does not adhere to a strict limit."
   in
   Arg.(
@@ -199,12 +199,6 @@ For performance reasons Docfd does not adhere to a strict limit."
     & opt int Params.default_cache_soft_limit
     & info [ cache_soft_limit_arg_name ] ~doc ~docv:"N"
   )
-
-let no_cache_arg =
-  let doc =
-    Fmt.str "Disable caching."
-  in
-  Arg.(value & flag & info [ "no-cache" ] ~doc)
 
 let index_only_arg =
   let doc =

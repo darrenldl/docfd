@@ -416,7 +416,6 @@ let run
     (single_line_additional_exts : string list)
     (cache_dir : string)
     (cache_soft_limit : int)
-    (no_cache : bool)
     (index_only : bool)
     (start_with_search : string option)
     (sample_search_exp : string option)
@@ -482,12 +481,8 @@ let run
     search_result_print_max_add_lines;
   Params.samples_per_document := samples_per_doc;
   Params.cache_dir := (
-    if no_cache then (
-      None
-    ) else (
-      mkdir_recursive cache_dir;
-      Some cache_dir
-    )
+    mkdir_recursive cache_dir;
+    Some cache_dir
   );
   Params.default_search_mode := (
     if single_line_search_mode_by_default then (
@@ -1187,7 +1182,6 @@ let cmd ~env ~sw =
      $ single_line_add_exts_arg
      $ cache_dir_arg
      $ cache_soft_limit_arg
-     $ no_cache_arg
      $ index_only_arg
      $ start_with_search_arg
      $ sample_arg
