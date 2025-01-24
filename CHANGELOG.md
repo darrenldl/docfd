@@ -2,6 +2,13 @@
 
 ## 10.0.0
 
+- Added back index DB entry pruning
+
+    - Previously missing after swapping to SQLite DB
+
+    - This is a **breaking** change - index DBs made by previous version of Docfd
+      are not compatible
+
 - Fixed incomplete search results when file path filter field is updated while
   search is ongoing
 
@@ -25,10 +32,6 @@
 
     - This should reduce the index size for Western non-English languages
       significantly
-
-- Added back index DB entry pruning
-
-    - Previously missing after swapping to SQLite DB
 
 ## 9.0.0
 
