@@ -55,8 +55,6 @@
             digestif.c
             digestif
             timedesc
-            timedesc-tzlocal.unix
-            timedesc-tzdb.full
             re
             progress
             diet
