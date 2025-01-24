@@ -20,5 +20,6 @@
             sqlite3
             uuseg
             uucp
+            timedesc
  )
 )

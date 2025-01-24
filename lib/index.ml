@@ -273,22 +273,29 @@ let doc_id_of_doc_hash : ?db:Sqlite3.db -> string -> int64 =
           )
       )
 
+let now_int64 () =
+  Timedesc.Timestamp.now ()
+  |> Timedesc.Timestamp.get_s
+
 let refresh_last_used ~doc_hash : unit =
   let open Sqlite3_utils in
+  let now = now_int64 () in
   with_db (fun db ->
       step_stmt ~db
         {|
   UPDATE doc_info
-  SET last_used = unixepoch()
+  SET last_used = @now
   WHERE hash = @doc_hash
   |}
         ~names:[ ("@doc_hash", TEXT doc_hash)
+               ; ("@now", INT now)
                ]
         ignore;
     )
 
 let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
   let open Sqlite3_utils in
+  let now = now_int64 () in
   with_db (fun db ->
       step_stmt ~db
         {|
@@ -301,7 +308,7 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
     @page_count,
     @global_line_count,
     @max_pos,
-    unixepoch(),
+    @now,
     'ONGOING'
   )
   ON CONFLICT(hash) DO NOTHING
@@ -310,6 +317,7 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
                ; ("@page_count", INT (Int64.of_int x.page_count))
                ; ("@global_line_count", INT (Int64.of_int x.global_line_count))
                ; ("@max_pos", INT (Int64.of_int (Int_map.max_binding x.word_of_pos |> fst)))
+               ; ("@now", INT now)
                ]
         ignore;
       let doc_id = doc_id_of_doc_hash ~db doc_hash in
