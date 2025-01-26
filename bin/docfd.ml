@@ -313,6 +313,12 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
                  file_and_hash_list
             )
         in
+        indexed_files
+        |> List.to_seq
+        |> Seq.map (fun (_, _, doc_hash) ->
+            doc_hash
+          )
+        |> Index.refresh_last_used_batch;
         let load_document ~env pool search_mode ~doc_hash path =
           do_if_debug (fun oc ->
               Printf.fprintf oc "Loading document: %s\n" (Filename.quote path);

@@ -204,7 +204,6 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, 
     | None -> BLAKE2B.hash_of_file ~env ~path
   in
   if Index.is_indexed ~doc_hash then (
-    Index.refresh_last_used ~doc_hash;
     let title =
       if Index.global_line_count ~doc_hash = 0 then
         None

@@ -277,20 +277,25 @@ let now_int64 () =
   Timedesc.Timestamp.now ()
   |> Timedesc.Timestamp.get_s
 
-let refresh_last_used ~doc_hash : unit =
+let refresh_last_used_batch doc_hashes : unit =
   let open Sqlite3_utils in
   let now = now_int64 () in
   with_db (fun db ->
-      step_stmt ~db
-        {|
+      step_stmt ~db "BEGIN IMMEDIATE" ignore;
+      Seq.iter (fun doc_hash ->
+          step_stmt ~db
+            {|
   UPDATE doc_info
   SET last_used = @now
   WHERE hash = @doc_hash
   |}
-        ~names:[ ("@doc_hash", TEXT doc_hash)
-               ; ("@now", INT now)
-               ]
-        ignore;
+            ~names:[ ("@doc_hash", TEXT doc_hash)
+                   ; ("@now", INT now)
+                   ]
+            ignore;
+        )
+        doc_hashes;
+      step_stmt ~db "COMMIT" ignore;
     )
 
 let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
