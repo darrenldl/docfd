@@ -43,17 +43,18 @@ CREATE TABLE IF NOT EXISTS line_info (
   PRIMARY KEY (doc_id, global_line_num)
 );
 
+CREATE INDEX IF NOT EXISTS line_info_index_1 ON line_info (start_pos);
+
+CREATE INDEX IF NOT EXISTS line_info_index_2 ON line_info (end_inc_pos);
+
 CREATE TABLE IF NOT EXISTS position (
   doc_id integer,
   pos integer,
   word_id integer,
-  global_line_num integer,
-  pos_in_line integer,
   PRIMARY KEY (doc_id, pos)
 );
 
-CREATE INDEX IF NOT EXISTS position_index_1 ON position (doc_id, word_id);
-CREATE INDEX IF NOT EXISTS position_index_2 ON position (doc_id, word_id, pos);
+CREATE INDEX IF NOT EXISTS position_index_1 ON position (doc_id, word_id, pos);
 
 CREATE TABLE IF NOT EXISTS page_info (
   doc_id integer,

@@ -376,23 +376,18 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
       with_stmt ~db
         {|
   INSERT INTO position
-  (doc_id, pos, word_id, global_line_num, pos_in_line)
+  (doc_id, pos, word_id)
   VALUES
-  (@doc_id, @pos, @word_id, @global_line_num, @pos_in_line)
+  (@doc_id, @pos, @word_id)
   ON CONFLICT(doc_id, pos) DO NOTHING
     |}
         (fun stmt ->
            Int_map.iter (fun word_id pos_s ->
                Int_set.iter (fun pos ->
-                   let loc = Int_map.find pos x.loc_of_pos in
-                   let global_line_num = loc.Loc.line_loc.global_line_num in
-                   let pos_in_line = loc.Loc.pos_in_line in
                    bind_names stmt
                      [ ("@doc_id", INT doc_id)
                      ; ("@pos", INT (Int64.of_int pos))
                      ; ("@word_id", INT (Int64.of_int word_id))
-                     ; ("@global_line_num", INT (Int64.of_int global_line_num))
-                     ; ("@pos_in_line", INT (Int64.of_int pos_in_line))
                      ];
                    step stmt;
                    reset stmt;
@@ -626,10 +621,10 @@ let loc_of_pos ~doc_hash pos : Loc.t =
   let pos_in_line, global_line_num =
     step_stmt
       {|
-      SELECT pos_in_line, global_line_num
-      FROM position
+      SELECT @pos - start_pos, global_line_num
+      FROM line_info
       WHERE doc_id = @doc_id
-      AND pos = @pos
+      AND @pos BETWEEN start_pos AND end_inc_pos
       |}
       ~names:[ ("@doc_id", INT doc_id)
              ; ("@pos", INT (Int64.of_int pos)) ]
