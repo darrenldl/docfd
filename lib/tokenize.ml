@@ -32,16 +32,17 @@ let tokenize_with_pos ~drop_spaces (s : string) : (int * string) Seq.t =
   let s_len = String.length s in
   let acc : token Dynarray.t = Dynarray.create () in
   let buf : Uchar.t Dynarray.t = Dynarray.create () in
+  let sbuf = Buffer.create 256 in
   let flush_to_acc () =
     if Dynarray.length buf > 0 then (
-      let sbuf = Buffer.create 256 in
       Dynarray.iter (Buffer.add_utf_8_uchar sbuf) buf;
       if Uucp.White.is_white_space (Dynarray.get buf 0) then (
         Dynarray.add_last acc (Space (Buffer.contents sbuf))
       ) else (
         Dynarray.add_last acc (Text (Buffer.contents sbuf))
       );
-      Dynarray.clear buf
+      Dynarray.clear buf;
+      Buffer.clear sbuf
     )
   in
   let rec add v =
