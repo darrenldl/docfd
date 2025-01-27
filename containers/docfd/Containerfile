@@ -4,6 +4,7 @@ USER root
 RUN apk add linux-headers
 RUN apk add poppler-utils
 RUN apk add sqlite sqlite-libs sqlite-dev sqlite-static
+RUN apk add sqlite-analyzer
 
 USER opam
 RUN sudo ln -s $(which opam-2.2) /usr/local/bin/opam
