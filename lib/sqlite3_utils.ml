@@ -1,17 +1,22 @@
 include Sqlite3
 
+let db_pool =
+  Eio.Pool.create
+    ~dispose:(fun db ->
+        while not (db_close db) do Unix.sleepf 0.5 done
+      )
+    Task_pool.size
+    (fun () ->
+       db_open
+         ~mutex:`FULL
+         (CCOption.get_exn_or "Docfd_lib.Params.db_path uninitialized" !Params.db_path)
+    )
+
 let with_db : type a. ?db:db -> (db -> a) -> a =
   fun ?db f ->
   match db with
   | None -> (
-      let db =
-        db_open
-          ~mutex:`FULL
-          (CCOption.get_exn_or "Docfd_lib.Params.db_path uninitialized" !Params.db_path)
-      in
-      let res = f db in
-      while not (db_close db) do Unix.sleepf 0.1 done;
-      res
+      Eio.Pool.use db_pool f
     )
   | Some db -> (
       f db
