@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS line_info (
   page_num integer,
   line_num_in_page integer,
   PRIMARY KEY (doc_id, global_line_num)
-);
+) WITHOUT ROWID;
 
 CREATE INDEX IF NOT EXISTS line_info_index_1 ON line_info (start_pos);
 
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS position (
   pos integer,
   word_id integer,
   PRIMARY KEY (doc_id, pos)
-);
+) WITHOUT ROWID;
 
 CREATE INDEX IF NOT EXISTS position_index_1 ON position (doc_id, word_id, pos);
 
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS page_info (
   start_pos integer,
   end_inc_pos integer,
   PRIMARY KEY (doc_id, page_num)
-);
+) WITHOUT ROWID;
 
 CREATE TABLE IF NOT EXISTS doc_info (
   hash varchar(500) PRIMARY KEY,
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS doc_info (
   max_pos integer,
   last_used integer,
   status varchar(100)
-);
+) WITHOUT ROWID;
 
 CREATE INDEX IF NOT EXISTS doc_info_index_1 ON doc_info (id);
 
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS word (
   doc_id integer,
   word varchar(500),
   PRIMARY KEY (doc_id, id)
-);
+) WITHOUT ROWID;
 
 CREATE INDEX IF NOT EXISTS word_index_3 ON word (word);
   |}
