@@ -28,10 +28,14 @@ let init ~db_path =
   let db_res =
     Sqlite3.exec db Params.db_schema
   in
-  if not (Rc.is_success db_res) then (
-    Some (Fmt.str
-            "failed to initialize index DB: %s" (Rc.to_string db_res))
-  ) else (
-    Params.db_path := Some db_path;
-    None
-  )
+  let res =
+    if not (Rc.is_success db_res) then (
+      Some (Fmt.str
+              "failed to initialize index DB: %s" (Rc.to_string db_res))
+    ) else (
+      Params.db_path := Some db_path;
+      None
+    )
+  in
+  while not (db_close db) do Unix.sleepf 0.1 done;
+  res
