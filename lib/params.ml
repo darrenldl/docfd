@@ -34,12 +34,12 @@ let max_fuzzy_edit_dist = ref default_max_fuzzy_edit_dist
 let db_schema =
   {|
 CREATE TABLE IF NOT EXISTS line_info (
-  doc_id integer,
-  global_line_num integer,
-  start_pos integer,
-  end_inc_pos integer,
-  page_num integer,
-  line_num_in_page integer,
+  doc_id INTEGER,
+  global_line_num INTEGER,
+  start_pos INTEGER,
+  end_inc_pos INTEGER,
+  page_num INTEGER,
+  line_num_in_page INTEGER,
   PRIMARY KEY (doc_id, global_line_num)
 ) WITHOUT ROWID;
 
@@ -48,31 +48,31 @@ CREATE INDEX IF NOT EXISTS line_info_index_1 ON line_info (start_pos);
 CREATE INDEX IF NOT EXISTS line_info_index_2 ON line_info (end_inc_pos);
 
 CREATE TABLE IF NOT EXISTS position (
-  doc_id integer,
-  pos integer,
-  word_id integer,
+  doc_id INTEGER,
+  pos INTEGER,
+  word_id INTEGER,
   PRIMARY KEY (doc_id, pos)
 ) WITHOUT ROWID;
 
 CREATE INDEX IF NOT EXISTS position_index_1 ON position (doc_id, word_id, pos);
 
 CREATE TABLE IF NOT EXISTS page_info (
-  doc_id integer,
-  page_num integer,
-  line_count integer,
-  start_pos integer,
-  end_inc_pos integer,
+  doc_id INTEGER,
+  page_num INTEGER,
+  line_count INTEGER,
+  start_pos INTEGER,
+  end_inc_pos INTEGER,
   PRIMARY KEY (doc_id, page_num)
 ) WITHOUT ROWID;
 
 CREATE TABLE IF NOT EXISTS doc_info (
-  hash varchar(500) PRIMARY KEY,
-  id integer,
-  page_count integer,
-  global_line_count integer,
-  max_pos integer,
-  last_used integer,
-  status varchar(100)
+  hash TEXT PRIMARY KEY,
+  id INTEGER,
+  page_count INTEGER,
+  global_line_count INTEGER,
+  max_pos INTEGER,
+  last_used INTEGER,
+  status TEXT
 ) WITHOUT ROWID;
 
 CREATE INDEX IF NOT EXISTS doc_info_index_1 ON doc_info (id);
@@ -80,9 +80,9 @@ CREATE INDEX IF NOT EXISTS doc_info_index_1 ON doc_info (id);
 CREATE INDEX IF NOT EXISTS doc_info_index_2 ON doc_info (last_used);
 
 CREATE TABLE IF NOT EXISTS word (
-  id integer,
-  doc_id integer,
-  word varchar(500),
+  id INTEGER,
+  doc_id INTEGER,
+  word TEXT,
   PRIMARY KEY (doc_id, id)
 ) WITHOUT ROWID;
 
