@@ -2,21 +2,33 @@ include Sqlite3
 
 let db_pool =
   Eio.Pool.create
-    ~dispose:(fun db ->
-        while not (db_close db) do Unix.sleepf 0.5 done
+    (* This is not ideal since validate is not called until next use of the
+       pool, so an idle DB connection could be held for a lot longer than
+       described here. But this seems to be the best we can do.
+    *)
+    ~validate:(fun (last_used, _db) ->
+        Unix.time () -. !last_used <= 30.0
+      )
+    ~dispose:(fun (_last_used, db) ->
+        while not (db_close db) do Unix.sleepf 0.01 done
       )
     Task_pool.size
     (fun () ->
-       db_open
-         ~mutex:`FULL
-         (CCOption.get_exn_or "Docfd_lib.Params.db_path uninitialized" !Params.db_path)
+       (ref (Unix.time ()),
+        db_open
+          ~mutex:`FULL
+          (CCOption.get_exn_or "Docfd_lib.Params.db_path uninitialized" !Params.db_path)
+       )
     )
 
 let with_db : type a. ?db:db -> (db -> a) -> a =
   fun ?db f ->
   match db with
   | None -> (
-      Eio.Pool.use db_pool f
+      Eio.Pool.use db_pool (fun (last_used, db) ->
+          last_used := Unix.time ();
+          f db
+        )
     )
   | Some db -> (
       f db
