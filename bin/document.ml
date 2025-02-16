@@ -118,14 +118,29 @@ let inter_search_scope (x : Diet.Int.t) (t : t) : t =
   in
   { t with search_scope = Some search_scope }
 
-module Of_path = struct
-  let text ~env pool ~doc_hash search_mode path : (t, string) result =
+type ir = {
+  search_mode : Search_mode.t;
+  doc_hash : string;
+  path : string;
+  data : [ `Lines of string Dynarray.t | `Pages of string list Dynarray.t ];
+}
+
+module Ir_of_path = struct
+  let text ~env ~doc_hash search_mode path : (ir, string) result =
     let fs = Eio.Stdenv.fs env in
     try
-      Eio.Path.(with_lines (fs / path))
-        (fun lines ->
-           Ok (parse_lines pool ~doc_hash search_mode ~path lines)
-        )
+      let data =
+        Eio.Path.(with_lines (fs / path))
+          (fun lines ->
+             `Lines (Dynarray.of_seq lines)
+          )
+      in
+      Ok {
+        search_mode;
+        doc_hash;
+        path;
+        data;
+      }
     with
     | Failure _
     | End_of_file
@@ -133,7 +148,7 @@ module Of_path = struct
         Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
       )
 
-  let pdf ~env pool ~doc_hash search_mode path : (t, string) result =
+  let pdf ~env ~doc_hash search_mode path : (ir, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
     let fs = Eio.Stdenv.fs env in
     try
@@ -146,7 +161,13 @@ module Of_path = struct
             |> Seq.map (fun page -> String.split_on_char '\n' page)
           )
       in
-      Ok (parse_pages pool ~doc_hash search_mode ~path pages)
+      let data = `Pages (Dynarray.of_seq pages) in
+      Ok {
+        search_mode;
+        doc_hash;
+        path;
+        data;
+      }
     with
     | Failure _
     | End_of_file
@@ -154,7 +175,7 @@ module Of_path = struct
         Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
       )
 
-  let pandoc_supported_format ~env pool ~doc_hash search_mode path : (t, string) result =
+  let pandoc_supported_format ~env ~doc_hash search_mode path : (ir, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
     let fs = Eio.Stdenv.fs env in
     let ext = File_utils.extension_of_file path in
@@ -188,14 +209,42 @@ module Of_path = struct
         Error error_msg
       )
     | Some lines -> (
-        try
-          List.to_seq lines
-          |> parse_lines pool ~doc_hash search_mode ~path
-          |> Result.ok
-        with
-        | _ -> Error error_msg
+        let data = `Lines (Dynarray.of_list lines) in
+        Ok {
+          search_mode;
+          doc_hash;
+          path;
+          data;
+        }
       )
 end
+
+let ir_of_path ~(env : Eio_unix.Stdenv.base) search_mode ?doc_hash path : (ir, string) result =
+  let* doc_hash =
+    match doc_hash with
+    | Some x -> Ok x
+    | None -> BLAKE2B.hash_of_file ~env ~path
+  in
+  match File_utils.format_of_file path with
+  | `PDF -> (
+      Ir_of_path.pdf ~env ~doc_hash search_mode path
+    )
+  | `Pandoc_supported_format -> (
+      Ir_of_path.pandoc_supported_format ~env ~doc_hash search_mode path
+    )
+  | `Text -> (
+      Ir_of_path.text ~env ~doc_hash search_mode path
+    )
+
+let of_ir pool (ir : ir) : t =
+  let { search_mode; doc_hash; path; data } = ir in
+  match data with
+  | `Lines x -> (
+      parse_lines pool ~doc_hash search_mode ~path (Dynarray.to_seq x)
+    )
+  | `Pages x -> (
+      parse_pages pool ~doc_hash search_mode ~path (Dynarray.to_seq x)
+    )
 
 let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, string) result =
   let* doc_hash =
@@ -220,14 +269,7 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, 
         last_scan = Timedesc.now ~tz_of_date_time:Params.tz ()
       }
   ) else (
-    match File_utils.format_of_file path with
-    | `PDF -> (
-        Of_path.pdf ~env pool ~doc_hash search_mode path
-      )
-    | `Pandoc_supported_format -> (
-        Of_path.pandoc_supported_format ~env pool ~doc_hash search_mode path
-      )
-    | `Text -> (
-        Of_path.text ~env pool ~doc_hash search_mode path
-      )
+    match ir_of_path ~env search_mode ~doc_hash path with
+    | Ok ir -> Ok (of_ir pool ir)
+    | Error msg -> Error msg
   )

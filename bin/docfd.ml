@@ -370,28 +370,61 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             ~file_count:unindexed_file_count
             ~total_byte_count:unindexed_files_byte_count;
         );
-        let unindexed_files =
-          match unindexed_files with
-          | [] -> []
-          | _ -> (
-              progress_with_reporter
-                ~interactive
-                (byte_bar ~total_byte_count:unindexed_files_byte_count)
-                (fun report_progress ->
-                   unindexed_files
-                   |> Eio.Fiber.List.filter_map ~max_fibers:Task_pool.size
-                     (fun (search_mode, path, doc_hash) ->
-                        let res = load_document ~env pool search_mode ~doc_hash path in
-                        (match String_map.find_opt path document_sizes with
-                         | None -> ()
-                         | Some x -> report_progress x
-                        );
-                        res
-                     )
-                )
-            )
-        in
-        [ indexed_files; unindexed_files ]
+        let processed_unindexed_files = ref [] in
+        Eio.Fiber.all
+          [
+            (fun () ->
+               Document_pipeline.worker_stage0 ~env
+            );
+            (fun () ->
+               Document_pipeline.worker_stage0 ~env
+            );
+            (fun () ->
+               Document_pipeline.worker_stage0 ~env
+            );
+            (fun () ->
+               Document_pipeline.worker_stage0 ~env
+            );
+            (fun () ->
+               Document_pipeline.worker_stage0 ~env
+            );
+            (fun () ->
+               Document_pipeline.worker_stage1 pool
+            );
+            (fun () ->
+               Document_pipeline.worker_stage1 pool
+            );
+            (fun () ->
+               Document_pipeline.worker_stage1 pool
+            );
+            (fun () ->
+               Document_pipeline.worker_stage1 pool
+            );
+            (fun () ->
+               Document_pipeline.worker_stage1 pool
+            );
+            (fun () ->
+               (match unindexed_files with
+                | [] -> ()
+                | _ -> (
+                    progress_with_reporter
+                      ~interactive
+                      (byte_bar ~total_byte_count:unindexed_files_byte_count)
+                      (fun report_progress ->
+                         unindexed_files
+                         |> List.iter (fun (search_mode, path, doc_hash) ->
+                             Document_pipeline.feed_document ~env search_mode ~doc_hash path;
+                             (match String_map.find_opt path document_sizes with
+                              | None -> ()
+                              | Some x -> report_progress x
+                             )
+                           )
+                      )
+                  ));
+               processed_unindexed_files := Document_pipeline.finalize ();
+            );
+          ];
+        [ indexed_files; !processed_unindexed_files ]
       )
   in
   let store =
