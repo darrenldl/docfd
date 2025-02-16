@@ -5,7 +5,7 @@ let ir_queue : Document.ir option Eio.Stream.t = Eio.Stream.create 100
 
 let documents : Document.t Dynarray.t = Dynarray.create ()
 
-let result : Document.t Dynarray.t Eio.Stream.t = Eio.Stream.create 1
+let result : Document.t Dynarray.t Eio.Stream.t = Eio.Stream.create 100
 
 let worker_stage0 ~env =
   let open Debug_utils in
@@ -13,6 +13,7 @@ let worker_stage0 ~env =
   while !run do
     match Eio.Stream.take path_queue with
     | None -> (
+        Eio.Stream.add path_queue None;
         Eio.Stream.add ir_queue None;
         run := false
       )
@@ -36,6 +37,7 @@ let worker_stage1 pool =
   while !run do
     match Eio.Stream.take ir_queue with
     | None -> (
+      Eio.Stream.add ir_queue None;
         Eio.Stream.add result documents;
         run := false
       )
