@@ -24,13 +24,24 @@ val of_path :
 
 val inter_search_scope : Diet.Int.t -> t -> t
 
-type ir
+module Ir0 : sig
+  type t
 
-val ir_of_path :
+  val of_path :
   env:Eio_unix.Stdenv.base ->
   Search_mode.t ->
   ?doc_hash:string ->
   string ->
-  (ir, string) result
+  (t, string) result
+end
 
-val of_ir : Task_pool.t -> ir -> t
+module Ir1 : sig
+  type t
+
+  val of_ir0 :
+  env:Eio_unix.Stdenv.base ->
+    Ir0.t ->
+      (t, string) result
+end
+
+val of_ir1 : Task_pool.t -> Ir1.t -> t

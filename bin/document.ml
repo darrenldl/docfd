@@ -118,15 +118,31 @@ let inter_search_scope (x : Diet.Int.t) (t : t) : t =
   in
   { t with search_scope = Some search_scope }
 
-type ir = {
+module Ir0 = struct
+type t = {
+  search_mode : Search_mode.t;
+  doc_hash : string;
+  path : string;
+}
+
+let of_path ~(env : Eio_unix.Stdenv.base) search_mode ?doc_hash path : (t, string) result =
+  let* doc_hash =
+    match doc_hash with
+    | Some x -> Ok x
+    | None -> BLAKE2B.hash_of_file ~env ~path
+  in
+  Ok { search_mode; doc_hash; path }
+end
+
+module Ir1 = struct
+type t = {
   search_mode : Search_mode.t;
   doc_hash : string;
   path : string;
   data : [ `Lines of string Dynarray.t | `Pages of string list Dynarray.t ];
 }
 
-module Ir_of_path = struct
-  let text ~env ~doc_hash search_mode path : (ir, string) result =
+  let of_path_to_text ~env ~doc_hash search_mode path : (t, string) result =
     let fs = Eio.Stdenv.fs env in
     try
       let data =
@@ -148,7 +164,7 @@ module Ir_of_path = struct
         Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
       )
 
-  let pdf ~env ~doc_hash search_mode path : (ir, string) result =
+  let of_path_to_pdf ~env ~doc_hash search_mode path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
     let fs = Eio.Stdenv.fs env in
     try
@@ -175,7 +191,7 @@ module Ir_of_path = struct
         Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
       )
 
-  let pandoc_supported_format ~env ~doc_hash search_mode path : (ir, string) result =
+  let of_path_to_pandoc_supported_format ~env ~doc_hash search_mode path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
     let fs = Eio.Stdenv.fs env in
     let ext = File_utils.extension_of_file path in
@@ -217,27 +233,23 @@ module Ir_of_path = struct
           data;
         }
       )
-end
 
-let ir_of_path ~(env : Eio_unix.Stdenv.base) search_mode ?doc_hash path : (ir, string) result =
-  let* doc_hash =
-    match doc_hash with
-    | Some x -> Ok x
-    | None -> BLAKE2B.hash_of_file ~env ~path
-  in
+let of_ir0 ~(env : Eio_unix.Stdenv.base) (ir0 : Ir0.t) : (t, string) result =
+  let { Ir0.search_mode; doc_hash; path } = ir0 in
   match File_utils.format_of_file path with
   | `PDF -> (
-      Ir_of_path.pdf ~env ~doc_hash search_mode path
+      of_path_to_pdf ~env ~doc_hash search_mode path
     )
   | `Pandoc_supported_format -> (
-      Ir_of_path.pandoc_supported_format ~env ~doc_hash search_mode path
+      of_path_to_pandoc_supported_format ~env ~doc_hash search_mode path
     )
   | `Text -> (
-      Ir_of_path.text ~env ~doc_hash search_mode path
+      of_path_to_text ~env ~doc_hash search_mode path
     )
+end
 
-let of_ir pool (ir : ir) : t =
-  let { search_mode; doc_hash; path; data } = ir in
+let of_ir1 pool (ir : Ir1.t) : t =
+  let { Ir1.search_mode; doc_hash; path; data } = ir in
   match data with
   | `Lines x -> (
       parse_lines pool ~doc_hash search_mode ~path (Dynarray.to_seq x)
@@ -269,7 +281,7 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, 
         last_scan = Timedesc.now ~tz_of_date_time:Params.tz ()
       }
   ) else (
-    match ir_of_path ~env search_mode ~doc_hash path with
-    | Ok ir -> Ok (of_ir pool ir)
-    | Error msg -> Error msg
+    let* ir0 = Ir0.of_path ~env search_mode ~doc_hash path in
+    let+ ir1 = Ir1.of_ir0 ~env ir0 in
+    of_ir1 pool ir1
   )
