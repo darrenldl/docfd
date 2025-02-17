@@ -63,10 +63,12 @@ let document_of_ir2_worker (t : t) =
   let open Sqlite3_utils in
   let run = ref true in
   let counter = ref 0 in
+  let outstanding_transaction = ref false in
   with_db (fun db ->
       while !run do
         if !counter = 0 then (
           step_stmt ~db "BEGIN IMMEDIATE" ignore;
+          outstanding_transaction := true;
         );
         (match Eio.Stream.take t.ir2_queue with
          | None -> (
@@ -74,19 +76,38 @@ let document_of_ir2_worker (t : t) =
            )
          | Some ir -> (
              Eio.Mutex.use_rw t.lock ~protect:true (fun () ->
-                 Dynarray.add_last t.documents (Document.of_ir2 db ir)
+                 let doc = Document.of_ir2 db ir in
+                 Dynarray.add_last t.documents doc;
+                 do_if_debug (fun oc ->
+                     Printf.fprintf oc "Document %s loaded successfully\n" (Filename.quote (Document.path doc));
+                   );
                )
            ));
         if !counter >= 100 then (
           step_stmt ~db "COMMIT" ignore;
+          outstanding_transaction := false;
           counter := 0;
         ) else (
           incr counter;
         );
       done;
+      if !outstanding_transaction then (
+        step_stmt ~db "COMMIT" ignore;
+      )
     )
 
 let feed (t : t) search_mode ~doc_hash path =
+  do_if_debug (fun oc ->
+      Printf.fprintf oc "Loading document: %s\n" (Filename.quote path);
+    );
+  do_if_debug (fun oc ->
+      Printf.fprintf oc "Using %s search mode for document %s\n"
+        (match search_mode with
+         | `Single_line -> "single line"
+         | `Multiline -> "multiline"
+        )
+        (Filename.quote path)
+    );
   match Document.Ir0.of_path ~env:t.env search_mode ~doc_hash path with
   | Error msg -> (
       do_if_debug (fun oc ->
