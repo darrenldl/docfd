@@ -44,7 +44,6 @@ let ir1_of_ir0_worker (t : t) =
             Eio.Stream.add t.ir1_queue (Some ir1)
           )
       )
-      )
   done
 
 let ir2_of_ir1_worker (t : t) =
