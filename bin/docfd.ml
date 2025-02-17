@@ -370,39 +370,12 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             ~file_count:unindexed_file_count
             ~total_byte_count:unindexed_files_byte_count;
         );
-        let processed_unindexed_files = ref [] in
-        Eio.Fiber.all
-          [
+        let pipeline = Document_pipeline.make ~env pool in
+        let _, unindexed_files =
+        Eio.Fiber.pair
             (fun () ->
-               Document_pipeline.worker_stage0 ~env
-            );
-            (fun () ->
-               Document_pipeline.worker_stage0 ~env
-            );
-            (fun () ->
-               Document_pipeline.worker_stage0 ~env
-            );
-            (fun () ->
-               Document_pipeline.worker_stage0 ~env
-            );
-            (fun () ->
-               Document_pipeline.worker_stage0 ~env
-            );
-            (fun () ->
-               Document_pipeline.worker_stage1 pool
-            );
-            (fun () ->
-               Document_pipeline.worker_stage1 pool
-            );
-            (fun () ->
-               Document_pipeline.worker_stage1 pool
-            );
-            (fun () ->
-               Document_pipeline.worker_stage1 pool
-            );
-            (fun () ->
-               Document_pipeline.worker_stage1 pool
-            );
+               Document_pipeline.run pipeline
+            )
             (fun () ->
                (match unindexed_files with
                 | [] -> ()
@@ -413,7 +386,11 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
                       (fun report_progress ->
                          unindexed_files
                          |> List.iter (fun (search_mode, path, doc_hash) ->
-                             Document_pipeline.feed_document ~env search_mode ~doc_hash path;
+                             Document_pipeline.feed
+                             pipeline
+                             search_mode
+                             ~doc_hash
+                             path;
                              (match String_map.find_opt path document_sizes with
                               | None -> ()
                               | Some x -> report_progress x
@@ -421,10 +398,10 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
                            )
                       )
                   ));
-               processed_unindexed_files := Document_pipeline.finalize ();
-            );
-          ];
-        [ indexed_files; !processed_unindexed_files ]
+               Document_pipeline.finalize pipeline
+            )
+        in
+        [ indexed_files; unindexed_files ]
       )
   in
   let store =

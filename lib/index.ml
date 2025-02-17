@@ -464,14 +464,6 @@ let is_indexed ~doc_hash =
        data_count stmt > 0
     )
 
-let index_lines pool ~doc_hash s =
-  Raw.of_lines pool s
-  |> load_raw_into_db ~doc_hash
-
-let index_pages pool ~doc_hash s =
-  Raw.of_pages pool s
-  |> load_raw_into_db ~doc_hash
-
 let word_of_pos ~doc_hash pos : string =
   let open Sqlite3_utils in
   let doc_id = doc_id_of_doc_hash doc_hash in

@@ -28,20 +28,26 @@ module Ir0 : sig
   type t
 
   val of_path :
-  env:Eio_unix.Stdenv.base ->
-  Search_mode.t ->
-  ?doc_hash:string ->
-  string ->
-  (t, string) result
+    env:Eio_unix.Stdenv.base ->
+    Search_mode.t ->
+    ?doc_hash:string ->
+    string ->
+    (t, string) result
 end
 
 module Ir1 : sig
   type t
 
   val of_ir0 :
-  env:Eio_unix.Stdenv.base ->
+    env:Eio_unix.Stdenv.base ->
     Ir0.t ->
-      (t, string) result
+    (t, string) result
 end
 
-val of_ir1 : Task_pool.t -> Ir1.t -> t
+module Ir2 : sig
+  type t
+
+  val of_ir1 : Task_pool.t -> Ir1.t -> t
+end
+
+val of_ir2 : Ir2.t -> t

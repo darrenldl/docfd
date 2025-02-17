@@ -33,6 +33,8 @@ let max_fuzzy_edit_dist = ref default_max_fuzzy_edit_dist
 
 let db_schema =
   {|
+PRAGMA journal_mode = wal2;
+
 CREATE TABLE IF NOT EXISTS line_info (
   doc_id INTEGER,
   global_line_num INTEGER,

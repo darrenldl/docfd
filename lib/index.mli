@@ -18,10 +18,6 @@ module Loc : sig
   val pos_in_line : t -> int
 end
 
-val index_lines : Task_pool.t -> doc_hash:string -> string Seq.t -> unit
-
-val index_pages : Task_pool.t -> doc_hash:string -> string list Seq.t -> unit
-
 val word_ci_of_pos : doc_hash:string -> int -> string
 
 val word_of_pos : doc_hash:string -> int -> string
@@ -56,3 +52,13 @@ val page_count : doc_hash:string -> int
 val is_indexed : doc_hash:string -> bool
 
 val refresh_last_used_batch : string Seq.t -> unit
+
+module Raw : sig
+  type t
+
+val of_lines : Task_pool.t -> string Seq.t -> t
+
+val of_pages : Task_pool.t -> string list Seq.t -> t
+end
+
+val load_raw_into_db : doc_hash:string -> Raw.t -> unit

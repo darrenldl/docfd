@@ -32,50 +32,6 @@ let make ~doc_hash ~path ~title search_mode : t =
     last_scan = Timedesc.now ~tz_of_date_time:Params.tz ();
   }
 
-type work_stage =
-  | Title
-  | Content
-
-let parse_lines pool ~doc_hash search_mode ~path (s : string Seq.t) : t =
-  let rec aux (stage : work_stage) title s =
-    match stage with
-    | Content -> (
-        Index.index_lines pool ~doc_hash s;
-        make ~doc_hash ~path ~title search_mode
-      )
-    | Title -> (
-        match s () with
-        | Seq.Nil -> aux Content title Seq.empty
-        | Seq.Cons (x, xs) -> (
-            aux Content (Some (Misc_utils.sanitize_string x)) (Seq.cons x xs)
-          )
-      )
-  in
-  aux Title None s
-
-let parse_pages pool ~doc_hash search_mode ~path (s : string list Seq.t) : t =
-  let rec aux (stage : work_stage) title s =
-    match stage with
-    | Content -> (
-        Index.index_pages pool ~doc_hash s;
-        make ~doc_hash ~path ~title search_mode
-      )
-    | Title -> (
-        match s () with
-        | Seq.Nil -> aux Content title Seq.empty
-        | Seq.Cons (x, xs) -> (
-            let title =
-              match x with
-              | [] -> None
-              | x :: _ ->
-                Some (Misc_utils.sanitize_string x)
-            in
-            aux Content title (Seq.cons x xs)
-          )
-      )
-  in
-  aux Title None s
-
 let refresh_modification_time ~path =
   let time = Unix.time () in
   Unix.utimes path time time
@@ -119,30 +75,37 @@ let inter_search_scope (x : Diet.Int.t) (t : t) : t =
   { t with search_scope = Some search_scope }
 
 module Ir0 = struct
-type t = {
-  search_mode : Search_mode.t;
-  doc_hash : string;
-  path : string;
-}
+  type t = {
+    search_mode : Search_mode.t;
+    doc_hash : string;
+    path : string;
+    last_scan : Timedesc.t;
+  }
 
-let of_path ~(env : Eio_unix.Stdenv.base) search_mode ?doc_hash path : (t, string) result =
-  let* doc_hash =
-    match doc_hash with
-    | Some x -> Ok x
-    | None -> BLAKE2B.hash_of_file ~env ~path
-  in
-  Ok { search_mode; doc_hash; path }
+  let of_path ~(env : Eio_unix.Stdenv.base) search_mode ?doc_hash path : (t, string) result =
+    let* doc_hash =
+      match doc_hash with
+      | Some x -> Ok x
+      | None -> BLAKE2B.hash_of_file ~env ~path
+    in
+    Ok {
+      search_mode;
+      doc_hash;
+      path;
+      last_scan = Timedesc.now ~tz_of_date_time:Params.tz ();
+    }
 end
 
 module Ir1 = struct
-type t = {
-  search_mode : Search_mode.t;
-  doc_hash : string;
-  path : string;
-  data : [ `Lines of string Dynarray.t | `Pages of string list Dynarray.t ];
-}
+  type t = {
+    search_mode : Search_mode.t;
+    doc_hash : string;
+    path : string;
+    data : [ `Lines of string Dynarray.t | `Pages of string list Dynarray.t ];
+    last_scan : Timedesc.t;
+  }
 
-  let of_path_to_text ~env ~doc_hash search_mode path : (t, string) result =
+  let of_path_to_text ~env ~doc_hash search_mode last_scan path : (t, string) result =
     let fs = Eio.Stdenv.fs env in
     try
       let data =
@@ -156,6 +119,7 @@ type t = {
         doc_hash;
         path;
         data;
+        last_scan;
       }
     with
     | Failure _
@@ -164,7 +128,7 @@ type t = {
         Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
       )
 
-  let of_path_to_pdf ~env ~doc_hash search_mode path : (t, string) result =
+  let of_path_to_pdf ~env ~doc_hash search_mode last_scan path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
     let fs = Eio.Stdenv.fs env in
     try
@@ -183,6 +147,7 @@ type t = {
         doc_hash;
         path;
         data;
+        last_scan;
       }
     with
     | Failure _
@@ -191,7 +156,7 @@ type t = {
         Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
       )
 
-  let of_path_to_pandoc_supported_format ~env ~doc_hash search_mode path : (t, string) result =
+  let of_path_to_pandoc_supported_format ~env ~doc_hash search_mode last_scan path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
     let fs = Eio.Stdenv.fs env in
     let ext = File_utils.extension_of_file path in
@@ -231,32 +196,100 @@ type t = {
           doc_hash;
           path;
           data;
+          last_scan;
         }
       )
 
-let of_ir0 ~(env : Eio_unix.Stdenv.base) (ir0 : Ir0.t) : (t, string) result =
-  let { Ir0.search_mode; doc_hash; path } = ir0 in
-  match File_utils.format_of_file path with
-  | `PDF -> (
-      of_path_to_pdf ~env ~doc_hash search_mode path
-    )
-  | `Pandoc_supported_format -> (
-      of_path_to_pandoc_supported_format ~env ~doc_hash search_mode path
-    )
-  | `Text -> (
-      of_path_to_text ~env ~doc_hash search_mode path
-    )
+  let of_ir0 ~(env : Eio_unix.Stdenv.base) (ir0 : Ir0.t) : (t, string) result =
+    let { Ir0.search_mode; doc_hash; path; last_scan } = ir0 in
+    match File_utils.format_of_file path with
+    | `PDF -> (
+        of_path_to_pdf ~env ~doc_hash search_mode last_scan path
+      )
+    | `Pandoc_supported_format -> (
+        of_path_to_pandoc_supported_format ~env ~doc_hash search_mode last_scan path
+      )
+    | `Text -> (
+        of_path_to_text ~env ~doc_hash search_mode last_scan path
+      )
 end
 
-let of_ir1 pool (ir : Ir1.t) : t =
-  let { Ir1.search_mode; doc_hash; path; data } = ir in
-  match data with
-  | `Lines x -> (
-      parse_lines pool ~doc_hash search_mode ~path (Dynarray.to_seq x)
-    )
-  | `Pages x -> (
-      parse_pages pool ~doc_hash search_mode ~path (Dynarray.to_seq x)
-    )
+module Ir2 = struct
+  type t = {
+    search_mode : Search_mode.t;
+    doc_hash : string;
+    path : string;
+    title : string option;
+    raw : Index.Raw.t;
+    last_scan : Timedesc.t;
+  }
+
+  type work_stage =
+    | Title
+    | Content
+
+  let parse_lines pool ~doc_hash search_mode last_scan ~path (s : string Seq.t) : t =
+    let rec aux (stage : work_stage) title s =
+      match stage with
+      | Content -> (
+          let raw = Index.Raw.of_lines pool s in
+          { search_mode; path; doc_hash; title; raw; last_scan }
+        )
+      | Title -> (
+          match s () with
+          | Seq.Nil -> aux Content title Seq.empty
+          | Seq.Cons (x, xs) -> (
+              aux Content (Some (Misc_utils.sanitize_string x)) (Seq.cons x xs)
+            )
+        )
+    in
+    aux Title None s
+
+  let parse_pages pool ~doc_hash search_mode last_scan ~path (s : string list Seq.t) : t =
+    let rec aux (stage : work_stage) title s =
+      match stage with
+      | Content -> (
+        let raw = Index.Raw.of_pages pool s in
+        { search_mode; path; doc_hash; title; raw; last_scan }
+        )
+      | Title -> (
+          match s () with
+          | Seq.Nil -> aux Content title Seq.empty
+          | Seq.Cons (x, xs) -> (
+              let title =
+                match x with
+                | [] -> None
+                | x :: _ ->
+                  Some (Misc_utils.sanitize_string x)
+              in
+              aux Content title (Seq.cons x xs)
+            )
+        )
+    in
+    aux Title None s
+
+  let of_ir1 pool (ir : Ir1.t) : t =
+    let { Ir1.search_mode; doc_hash; path; data; last_scan } = ir in
+    match data with
+    | `Lines x -> (
+        parse_lines pool ~doc_hash search_mode last_scan ~path (Dynarray.to_seq x)
+      )
+    | `Pages x -> (
+        parse_pages pool ~doc_hash search_mode last_scan ~path (Dynarray.to_seq x)
+      )
+end
+
+let of_ir2 (ir : Ir2.t) : t =
+  let { Ir2.search_mode; path; title; doc_hash; raw; last_scan } = ir in
+  Index.load_raw_into_db ~doc_hash raw;
+  {
+    search_mode;
+  path;
+  title;
+  doc_hash;
+  search_scope = None;
+  last_scan;
+  }
 
 let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, string) result =
   let* doc_hash =
@@ -282,6 +315,7 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, 
       }
   ) else (
     let* ir0 = Ir0.of_path ~env search_mode ~doc_hash path in
-    let+ ir1 = Ir1.of_ir0 ~env ir0 in
-    of_ir1 pool ir1
+    let* ir1 = Ir1.of_ir0 ~env ir0 in
+    let ir2 = Ir2.of_ir1 pool ir1 in
+    Ok (of_ir2 ir2)
   )
