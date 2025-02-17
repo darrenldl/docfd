@@ -21,3 +21,4 @@ perf.data*
 *.mp4
 dummy.gif
 *.db
+*.db-journal
