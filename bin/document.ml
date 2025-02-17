@@ -249,8 +249,8 @@ module Ir2 = struct
     let rec aux (stage : work_stage) title s =
       match stage with
       | Content -> (
-        let raw = Index.Raw.of_pages pool s in
-        { search_mode; path; doc_hash; title; raw; last_scan }
+          let raw = Index.Raw.of_pages pool s in
+          { search_mode; path; doc_hash; title; raw; last_scan }
         )
       | Title -> (
           match s () with
@@ -279,19 +279,20 @@ module Ir2 = struct
       )
 end
 
-let of_ir2 (ir : Ir2.t) : t =
+let of_ir2 db (ir : Ir2.t) : t =
   let { Ir2.search_mode; path; title; doc_hash; raw; last_scan } = ir in
-  Index.load_raw_into_db ~doc_hash raw;
+  Index.load_raw_into_db db ~doc_hash raw;
   {
     search_mode;
-  path;
-  title;
-  doc_hash;
-  search_scope = None;
-  last_scan;
+    path;
+    title;
+    doc_hash;
+    search_scope = None;
+    last_scan;
   }
 
 let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, string) result =
+  let open Sqlite3_utils in
   let* doc_hash =
     match doc_hash with
     | Some x -> Ok x
@@ -317,5 +318,7 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, 
     let* ir0 = Ir0.of_path ~env search_mode ~doc_hash path in
     let* ir1 = Ir1.of_ir0 ~env ir0 in
     let ir2 = Ir2.of_ir1 pool ir1 in
-    Ok (of_ir2 ir2)
+    with_db (fun db ->
+        Ok (of_ir2 db ir2)
+      )
   )

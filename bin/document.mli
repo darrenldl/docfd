@@ -50,4 +50,4 @@ module Ir2 : sig
   val of_ir1 : Task_pool.t -> Ir1.t -> t
 end
 
-val of_ir2 : Ir2.t -> t
+val of_ir2 : Sqlite3.db -> Ir2.t -> t

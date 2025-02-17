@@ -56,9 +56,9 @@ val refresh_last_used_batch : string Seq.t -> unit
 module Raw : sig
   type t
 
-val of_lines : Task_pool.t -> string Seq.t -> t
+  val of_lines : Task_pool.t -> string Seq.t -> t
 
-val of_pages : Task_pool.t -> string list Seq.t -> t
+  val of_pages : Task_pool.t -> string list Seq.t -> t
 end
 
-val load_raw_into_db : doc_hash:string -> Raw.t -> unit
+val load_raw_into_db : Sqlite3.db -> doc_hash:string -> Raw.t -> unit

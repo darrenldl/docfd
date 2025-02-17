@@ -298,10 +298,10 @@ let refresh_last_used_batch doc_hashes : unit =
       step_stmt ~db "COMMIT" ignore;
     )
 
-let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
+let load_raw_into_db db ~doc_hash (x : Raw.t) : unit =
   let open Sqlite3_utils in
   let now = now_int64 () in
-  with_db (fun db ->
+  with_db ~db (fun db ->
       step_stmt ~db
         {|
   INSERT INTO doc_info
@@ -326,7 +326,6 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
                ]
         ignore;
       let doc_id = doc_id_of_doc_hash ~db doc_hash in
-      step_stmt ~db "BEGIN IMMEDIATE" ignore;
       with_stmt ~db
         {|
   INSERT INTO page_info
@@ -401,7 +400,6 @@ let load_raw_into_db ~doc_hash (x : Raw.t) : unit =
              )
              x.pos_s_of_word
         );
-      step_stmt ~db "COMMIT" ignore;
       Word_db.load_into_db ~db ~doc_id x.word_db;
       step_stmt ~db
         {|

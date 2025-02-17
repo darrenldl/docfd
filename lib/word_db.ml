@@ -31,7 +31,6 @@ let index_of_word t s : int =
 
 let load_into_db ~db ~doc_id (t : t) : unit =
   let open Sqlite3_utils in
-  step_stmt ~db "BEGIN IMMEDIATE" ignore;
   with_stmt ~db
     {|
   INSERT INTO word
@@ -52,5 +51,4 @@ let load_into_db ~db ~doc_id (t : t) : unit =
            reset stmt;
          )
          t.word_of_index
-    );
-  step_stmt ~db "COMMIT" ignore
+    )

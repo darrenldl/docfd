@@ -372,7 +372,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
         );
         let pipeline = Document_pipeline.make ~env pool in
         let _, unindexed_files =
-        Eio.Fiber.pair
+          Eio.Fiber.pair
             (fun () ->
                Document_pipeline.run pipeline
             )
@@ -387,10 +387,10 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
                          unindexed_files
                          |> List.iter (fun (search_mode, path, doc_hash) ->
                              Document_pipeline.feed
-                             pipeline
-                             search_mode
-                             ~doc_hash
-                             path;
+                               pipeline
+                               search_mode
+                               ~doc_hash
+                               path;
                              (match String_map.find_opt path document_sizes with
                               | None -> ()
                               | Some x -> report_progress x
