@@ -29,7 +29,6 @@ let ir1_of_ir0_worker (t : t) =
   while !run do
     match Eio.Stream.take t.ir0_queue with
     | None -> (
-        Eio.Stream.add t.ir0_queue None;
         Eio.Stream.add t.ir1_queue None;
         run := false
       )
@@ -133,4 +132,6 @@ let run (t : t) =
 
 let finalize (t : t) =
   Eio.Stream.add t.ir0_queue None;
+  CCList.(0 --^ Task_pool.size)
+  |> List.iter (fun _ -> Eio.Stream.add t.ir0_queue None);
   Dynarray.to_list (Eio.Stream.take t.result)
