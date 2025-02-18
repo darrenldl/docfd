@@ -5,7 +5,9 @@ type t = {
   env : Eio_unix.Stdenv.base;
   pool : Task_pool.t;
   ir0_queue : Document.Ir0.t option Eio.Stream.t;
+  ir1_of_ir0_workers_batch_release : Eio.Semaphore.t;
   ir1_queue : Document.Ir1.t option Eio.Stream.t;
+  ir2_of_ir1_workers_batch_release : Eio.Semaphore.t;
   ir2_queue : Document.Ir2.t option Eio.Stream.t;
   documents : Document.t Dynarray.t;
   result : Document.t Dynarray.t Eio.Stream.t;
@@ -17,7 +19,9 @@ let make ~env pool : t =
     env;
     pool;
     ir0_queue = Eio.Stream.create 100;
+    ir1_of_ir0_workers_batch_release = Eio.Semaphore.make 0;
     ir1_queue = Eio.Stream.create 100;
+    ir2_of_ir1_workers_batch_release = Eio.Semaphore.make 0;
     ir2_queue = Eio.Stream.create 100;
     documents = Dynarray.create ();
     result = Eio.Stream.create 1;
@@ -29,7 +33,7 @@ let ir1_of_ir0_worker (t : t) =
   while !run do
     match Eio.Stream.take t.ir0_queue with
     | None -> (
-        Eio.Stream.add t.ir1_queue None;
+        Eio.Semaphore.release t.ir1_of_ir0_workers_batch_release;
         run := false
       )
     | Some ir0 -> (
@@ -50,7 +54,7 @@ let ir2_of_ir1_worker (t : t) =
   while !run do
     match Eio.Stream.take t.ir1_queue with
     | None -> (
-        Eio.Stream.add t.ir2_queue None;
+        Eio.Semaphore.release t.ir2_of_ir1_workers_batch_release;
         run := false
       )
     | Some ir -> (
@@ -124,14 +128,23 @@ let run (t : t) =
          |> List.map (fun _ -> (fun () -> ir1_of_ir0_worker t))
        ; CCList.(0 --^ Task_pool.size)
          |> List.map (fun _ -> (fun () -> ir2_of_ir1_worker t))
-       ; CCList.(0 --^ 1)
-         |> List.map (fun _ -> (fun () -> document_of_ir2_worker t))
+       ; [ fun () -> document_of_ir2_worker t ]
        ]
     );
   Eio.Stream.add t.result t.documents
 
 let finalize (t : t) =
-  Eio.Stream.add t.ir0_queue None;
-  CCList.(0 --^ Task_pool.size)
-  |> List.iter (fun _ -> Eio.Stream.add t.ir0_queue None);
+  for _ = 0 to Task_pool.size - 1 do
+    Eio.Stream.add t.ir0_queue None;
+  done;
+  for _ = 0 to Task_pool.size - 1 do
+    Eio.Semaphore.acquire t.ir1_of_ir0_workers_batch_release;
+  done;
+  for _ = 0 to Task_pool.size - 1 do
+    Eio.Stream.add t.ir1_queue None;
+  done;
+  for _ = 0 to Task_pool.size - 1 do
+    Eio.Semaphore.acquire t.ir2_of_ir1_workers_batch_release;
+  done;
+  Eio.Stream.add t.ir2_queue None;
   Dynarray.to_list (Eio.Stream.take t.result)
