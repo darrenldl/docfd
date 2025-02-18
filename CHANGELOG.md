@@ -2,12 +2,20 @@
 
 ## 10.0.0
 
-- Added back index DB entry pruning
+- Reworked document indexing into a multi-stage pipeline
 
-    - Previously missing after swapping to SQLite DB
+    - This significantly improves the indexing throughput by allowing
+      I/O tasks and computational tasks to run concurrently
 
-    - This is a **breaking** change - index DBs made by previous version of Docfd
-      are not compatible
+- **Breaking** changes in index DB design - index DBs made by previous version
+  of Docfd are not compatible
+
+    - Optimized DB design, on average the index DB is roughly 60% smaller
+      compared to Docfd 9.0.0 index DB
+
+    - Added back index DB entry pruning
+
+        - Previously missing after swapping to SQLite DB
 
 - Fixed incomplete search results when file path filter field is updated while
   search is ongoing
@@ -32,6 +40,14 @@
 
     - This should reduce the index size for Western non-English languages
       significantly
+
+- Minor UI/UX fixes
+
+    - Drop mode is disabled when search is still ongoing or when either search field or filter field has an error
+
+    - Added missing update of search and filter status when undoing/redoing, or when replaying command history
+
+        - This is most noticeable when the status indicates an error, but undoing does not return it to OK
 
 ## 9.0.0
 
