@@ -11,7 +11,6 @@ type t = {
   ir2_queue : Document.Ir2.t option Eio.Stream.t;
   documents : Document.t Dynarray.t;
   result : Document.t Dynarray.t Eio.Stream.t;
-  lock : Eio.Mutex.t;
 }
 
 let make ~env pool : t =
@@ -25,7 +24,6 @@ let make ~env pool : t =
     ir2_queue = Eio.Stream.create 100;
     documents = Dynarray.create ();
     result = Eio.Stream.create 1;
-    lock = Eio.Mutex.create ();
   }
 
 let ir1_of_ir0_worker (t : t) =
@@ -78,13 +76,11 @@ let document_of_ir2_worker (t : t) =
              run := false
            )
          | Some ir -> (
-             Eio.Mutex.use_rw t.lock ~protect:true (fun () ->
-                 let doc = Document.of_ir2 db ir in
-                 Dynarray.add_last t.documents doc;
-                 do_if_debug (fun oc ->
-                     Printf.fprintf oc "Document %s loaded successfully\n" (Filename.quote (Document.path doc));
-                   );
-               )
+             let doc = Document.of_ir2 db ir in
+             Dynarray.add_last t.documents doc;
+             do_if_debug (fun oc ->
+                 Printf.fprintf oc "Document %s loaded successfully\n" (Filename.quote (Document.path doc));
+               );
            ));
         if !counter >= 100 then (
           step_stmt ~db "COMMIT" ignore;
