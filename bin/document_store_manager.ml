@@ -86,6 +86,8 @@ let manager_fiber () =
       )
     | Update snapshot -> (
         update_store snapshot;
+        Lwd.set search_ui_status `Idle;
+        Lwd.set filter_ui_status `Ok;
         Eio.Stream.add egress_ack ();
       )
   done
