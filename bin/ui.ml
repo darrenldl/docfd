@@ -769,7 +769,14 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'd', []) -> (
-          Ui_base.set_input_mode Drop;
+          (match
+             Lwd.peek (Document_store_manager.filter_ui_status),
+             Lwd.peek (Document_store_manager.search_ui_status)
+           with
+           | `Ok, `Idle -> (
+               Ui_base.set_input_mode Drop;
+             )
+           | _, _ -> ());
           `Handled
         )
       | (`ASCII 'n', []) -> (
