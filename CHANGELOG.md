@@ -7,6 +7,8 @@
     - This significantly improves the indexing throughput by allowing
       I/O tasks and computational tasks to run concurrently
 
+    - See [issue #11](https://github.com/darrenldl/docfd/issues/11)
+
 - **Breaking** changes in index DB design - index DBs made by previous version
   of Docfd are not compatible
 
@@ -16,6 +18,8 @@
     - Added back index DB entry pruning
 
         - Previously missing after swapping to SQLite DB
+
+    - See [issue #11](https://github.com/darrenldl/docfd/issues/11)
 
 - Fixed incomplete search results when file path filter field is updated while
   search is ongoing
@@ -35,6 +39,8 @@
 
     - It is difficult to share an in-memory SQlite DB
       between threads, so discarding this flag entirely
+
+    - See [issue #11](https://github.com/darrenldl/docfd/issues/11)
 
 - Swapped to using proper unicode segmentation for tokenisation
 
