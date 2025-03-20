@@ -1073,6 +1073,39 @@ let run
                ));
             loop ()
           )
+        | Filter_files_using_fzf -> (
+            close_term ();
+            let snapshots = Ui.Vars.document_store_snapshots in
+            let latest_snapshot = Dynarray.get_last snapshots in
+            let store = Document_store_snapshot.store latest_snapshot in
+            let selection =
+              Document_store.usable_documents_paths store
+              |> String_set.to_seq
+              |> Proc_utils.pipe_to_fzf_for_selection
+            in
+            let commands : Command.t list =
+              `Unmark_all
+              ::
+              (List.rev selection
+               |> List.fold_left (fun acc file -> `Mark file :: acc)
+                 [ `Drop_marked ])
+            in
+            let store = ref store in
+            List.iter (fun command ->
+                let next_store =
+                  Option.get (Document_store.run_command pool command !store)
+                in
+                let snapshot =
+                  Document_store_snapshot.make
+                    ~last_command:(Some command)
+                    next_store
+                in
+                Dynarray.add_last snapshots snapshot;
+                store := next_store;
+              )
+              commands;
+            loop ()
+          )
       )
   in
   (match commands_from with
