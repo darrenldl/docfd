@@ -82,17 +82,36 @@ let hpane
     Int.to_float width *. l_ratio
     |> Float.floor
     |> Int.of_float
-    |> (fun x -> x - 1)
+    |> (fun x ->
+        if x = 0 || x = width then (
+          x
+        ) else (
+          x - 1
+        ))
   in
   let r_width = width - l_width in
-  let$* x = x ~width:l_width in
-  let$ y = y ~width: r_width in
   let crop w x = Nottui.Ui.resize ~w ~h:height x in
-  Nottui.Ui.hcat [
-    crop l_width x;
-    vbar ~height;
-    crop r_width y;
-  ]
+  let x () =
+    let$ x = x ~width:l_width in
+    crop l_width x
+  in
+  let y () =
+    let$ y = y ~width:r_width in
+    crop r_width y
+  in
+  if l_width = 0 then (
+    y ()
+  ) else if r_width = 0 then (
+    x ()
+  ) else (
+    let$* x = x () in
+    let$ y = y () in
+    Nottui.Ui.hcat [
+      x;
+      vbar ~height;
+      y;
+    ]
+  )
 
 let vpane
     ~width

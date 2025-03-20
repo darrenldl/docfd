@@ -23,7 +23,14 @@ module Vars = struct
 
   let document_store_cur_ver = Lwd.var 0
 
-  let document_list_screen_ratio : [ `Left_split | `Mid_split | `Right_split ] Lwd.var =
+  let document_list_screen_ratio
+    : [ `Hide_left
+      | `Left_split
+      | `Mid_split
+      | `Right_split
+      | `Hide_right ]
+        Lwd.var
+    =
     Lwd.var `Mid_split
 end
 
@@ -426,9 +433,11 @@ module Top_pane = struct
     let$* l_ratio = Lwd.get Vars.document_list_screen_ratio in
     let l_ratio =
       match l_ratio with
+      | `Hide_left -> 0.0
       | `Left_split -> 1.0 -. 0.618
       | `Mid_split -> 0.50
       | `Right_split -> 0.618
+      | `Hide_right -> 1.0
     in
     Ui_base.hpane ~l_ratio ~width ~height
       (Document_list.main
@@ -827,14 +836,20 @@ let keyboard_handler
         )
       | (`Tab, []) -> (
           (match Lwd.peek Vars.document_list_screen_ratio with
+           | `Hide_left -> (
+               Lwd.set Vars.document_list_screen_ratio `Hide_right
+             )
            | `Left_split -> (
-               Lwd.set Vars.document_list_screen_ratio `Right_split
+               Lwd.set Vars.document_list_screen_ratio `Hide_left
              )
            | `Mid_split -> (
                Lwd.set Vars.document_list_screen_ratio `Left_split
              )
            | `Right_split -> (
                Lwd.set Vars.document_list_screen_ratio `Mid_split
+             )
+           | `Hide_right -> (
+               Lwd.set Vars.document_list_screen_ratio `Right_split
              )
           );
           `Handled
