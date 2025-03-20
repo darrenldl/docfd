@@ -47,6 +47,8 @@
     - This should reduce the index size for Western non-English languages
       significantly
 
+- Added screen split ratios for hiding left or right pane completely
+
 - Minor UI/UX fixes
 
     - Drop mode is disabled when search is still ongoing or when either search field or filter field has an error
