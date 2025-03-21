@@ -971,6 +971,7 @@ let keyboard_handler
         | (`ASCII 'f', []) -> (
             Lwd.set Ui_base.Vars.quit true;
             Ui_base.Vars.action := Some Ui_base.Filter_files_via_fzf;
+            reset_document_selected ();
             true
           )
         | (`ASCII 'r', []) -> (

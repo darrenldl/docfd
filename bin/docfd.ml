@@ -1087,8 +1087,9 @@ let run
               `Unmark_all
               ::
               (List.rev selection
-               |> List.fold_left (fun acc file -> `Mark file :: acc)
-                 [ `Drop_marked ])
+               |> List.fold_left
+                 (fun acc file -> `Mark file :: acc)
+                 [ `Drop_unmarked; `Unmark_all ])
             in
             let store = ref store in
             List.iter (fun command ->
@@ -1104,6 +1105,11 @@ let run
                 store := next_store;
               )
               commands;
+            Lwd.set
+              Ui.Vars.document_store_cur_ver
+              (Dynarray.length snapshots - 1);
+            let final_snapshot = Dynarray.get_last snapshots in
+            Document_store_manager.submit_update_req final_snapshot;
             loop ()
           )
       )
