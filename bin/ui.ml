@@ -577,7 +577,19 @@ module Bottom_pane = struct
       let filter_grid =
         [
           [
-            { label = "Enter"; msg = "exit filter mode" };
+            { label = "f"; msg = "fzf" };
+            { label = "r"; msg = "regex" };
+          ];
+          [
+            { label = "Esc"; msg = "cancel" };
+          ];
+          empty_row;
+        ]
+      in
+      let filter_regex_grid =
+        [
+          [
+            { label = "Enter"; msg = "exit filter regex mode" };
           ];
           empty_row;
           empty_row;
@@ -676,6 +688,9 @@ module Bottom_pane = struct
         );
         ({ input_mode = Filter },
          filter_grid
+        );
+        ({ input_mode = Filter_regex },
+         filter_regex_grid
         );
         ({ input_mode = Clear },
          clear_grid
@@ -914,7 +929,6 @@ let keyboard_handler
         )
       | (`ASCII 'f', []) -> (
           commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff ();
-          Nottui.Focus.request Vars.file_path_filter_field_focus_handle;
           Ui_base.set_input_mode Filter;
           `Handled
         )
@@ -949,6 +963,27 @@ let keyboard_handler
           `Handled
         )
       | _ -> `Handled
+    )
+  | Filter -> (
+      let exit =
+        match key with
+        | (`Escape, []) -> true
+        | (`ASCII 'f', []) -> (
+            Lwd.set Ui_base.Vars.quit true;
+            Ui_base.Vars.action := Some Ui_base.Filter_files_via_fzf;
+            true
+          )
+        | (`ASCII 'r', []) -> (
+            Nottui.Focus.request Vars.file_path_filter_field_focus_handle;
+            Ui_base.set_input_mode Filter_regex;
+            false
+          )
+        | _ -> false
+      in
+      if exit then (
+        Ui_base.set_input_mode Navigate;
+      );
+      `Handled
     )
   | Clear -> (
       let exit =

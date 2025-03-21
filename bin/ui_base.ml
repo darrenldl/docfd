@@ -5,6 +5,7 @@ type input_mode =
   | Navigate
   | Search
   | Filter
+  | Filter_regex
   | Clear
   | Drop
   | Narrow
@@ -16,7 +17,7 @@ type top_level_action =
   | Recompute_document_src
   | Open_file_and_search_result of Document.t * Search_result.t option
   | Edit_command_history
-  | Filter_files_using_fzf
+  | Filter_files_via_fzf
 
 let empty_text_field = ("", 0)
 
@@ -253,6 +254,7 @@ module Status_bar = struct
       [ (Navigate, "NAVIGATE")
       ; (Search, "SEARCH")
       ; (Filter, "FILTER")
+      ; (Filter_regex, "FILTER-REGEX")
       ; (Clear, "CLEAR")
       ; (Drop, "DROP")
       ; (Narrow, "NARROW")
@@ -460,7 +462,7 @@ module File_path_filter_bar = struct
   let label ~(input_mode : input_mode) =
     let attr =
       match input_mode with
-      | Filter -> Notty.A.(st bold)
+      | Filter_regex -> Notty.A.(st bold)
       | _ -> Notty.A.empty
     in
     Notty.I.string attr label_string

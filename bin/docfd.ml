@@ -1073,7 +1073,7 @@ let run
                ));
             loop ()
           )
-        | Filter_files_using_fzf -> (
+        | Filter_files_via_fzf -> (
             close_term ();
             let snapshots = Ui.Vars.document_store_snapshots in
             let latest_snapshot = Dynarray.get_last snapshots in
