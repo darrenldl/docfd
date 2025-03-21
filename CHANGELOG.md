@@ -21,6 +21,18 @@
 
     - See [issue #11](https://github.com/darrenldl/docfd/issues/11)
 
+- Added functionality to filter files via fzf
+
+    - This is grouped under filter mode. The previous filter mode
+      is renamed to filter regex mode.
+
+    - `f` enters filter mode
+
+        - `f` again activates filter files via fzf functionality
+
+        - `r` activates the filter regex mode, which was previously
+          just called the filter mode
+
 - Fixed incomplete search results when file path filter field is updated while
   search is ongoing
 
