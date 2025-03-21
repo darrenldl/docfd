@@ -259,7 +259,7 @@ module Status_bar = struct
       ; (Drop, "DROP")
       ; (Narrow, "NARROW")
       ; (Copy, "COPY")
-      ; (Copy_paths, "COPY PATHS")
+      ; (Copy_paths, "COPY-PATHS")
       ; (Reload, "RELOAD")
       ]
     in
