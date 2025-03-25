@@ -17,8 +17,6 @@ jobs:
           - ubuntu-22.04
           - ubuntu-22.04-arm
           - macos-latest
-        ocaml-compiler:
-          - "ocaml-variants.5.2.1+options,ocaml-option-static"
 
     runs-on: ${{ matrix.os }}
 
@@ -40,12 +38,20 @@ jobs:
       - if: ${{ env.OS_SHORT_NAME == 'linux' }}
         run: |
           sudo apt-get install --yes musl-tools
-          export CC=musl-gcc
+          sudo apt-get install --yes libsqlite3-dev
+          sudo apt-get install --yes io_uring
 
-      - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
+      - name: Set up OCaml for Linux
         uses: ocaml/setup-ocaml@v3
+        if: ${{ env.OS_SHORT_NAME == 'linux' }}
         with:
-          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          ocaml-compiler: "ocaml-variants.5.2.1+options,ocaml-option-static"
+
+      - name: Set up OCaml for macOS
+        uses: ocaml/setup-ocaml@v3
+        if: ${{ env.OS_SHORT_NAME == 'macos' }}
+        with:
+          ocaml-compiler: "5.2.1"
 
       - run: opam install dune
 
