@@ -51,7 +51,7 @@ jobs:
         uses: ocaml/setup-ocaml@v3
         if: ${{ env.OS_SHORT_NAME == 'linux' }}
         with:
-          ocaml-compiler: "ocaml-variants.5.2.1+options,ocaml-option-static"
+          ocaml-compiler: "ocaml-variants.5.2.1+options,ocaml-option-musl,ocaml-option-static"
 
       - name: Set up OCaml for macOS
         uses: ocaml/setup-ocaml@v3
