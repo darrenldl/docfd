@@ -18,7 +18,7 @@ jobs:
           - ubuntu-22.04-arm
           - macos-latest
         ocaml-compiler:
-          - "5.2.1+options,ocaml-option-static"
+          - "ocaml-variants.5.2.1+options,ocaml-option-static"
 
     runs-on: ${{ matrix.os }}
 
