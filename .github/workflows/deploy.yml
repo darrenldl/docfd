@@ -37,7 +37,7 @@ jobs:
       - if: ${{ startsWith(matrix.os, 'windows') }}
         run: echo "OS_SHORT_NAME=windows" >> $GITHUB_ENV
 
-      - run: sudo apt install --yes musl-gcc
+      - run: sudo apt-get install --yes musl-tools
 
       - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
         uses: ocaml/setup-ocaml@v3
