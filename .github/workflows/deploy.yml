@@ -37,6 +37,8 @@ jobs:
       - if: ${{ startsWith(matrix.os, 'windows') }}
         run: echo "OS_SHORT_NAME=windows" >> $GITHUB_ENV
 
+      - run: sudo apt install --yes musl-gcc
+
       - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
         uses: ocaml/setup-ocaml@v3
         with:
@@ -54,7 +56,7 @@ jobs:
       - name: Create static build
         if: ${{ env.OS_SHORT_NAME == 'linux' || env.OS_SHORT_NAME == 'windows' }}
         run: |
-          opam exec -- make release-static-build
+          CC=musl-gcc opam exec -- make release-static-build
 
       - name: Package into tar.gz
         run: |
