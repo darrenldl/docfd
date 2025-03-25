@@ -35,11 +35,13 @@ jobs:
       - if: ${{ startsWith(matrix.os, 'windows') }}
         run: echo "OS_SHORT_NAME=windows" >> $GITHUB_ENV
 
-      - if: ${{ env.OS_SHORT_NAME == 'linux' }}
+      - name: Set up static linking for Linux
+        if: ${{ env.OS_SHORT_NAME == 'linux' }}
         run: |
           sudo apt-get install --yes musl-tools
           sudo apt-get install --yes libsqlite3-dev
           sudo apt-get install --yes liburing-dev
+          export CC=musl-gcc
 
       - name: Set up OCaml for Linux
         uses: ocaml/setup-ocaml@v3
