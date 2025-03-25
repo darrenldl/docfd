@@ -137,6 +137,10 @@ module Alco = struct
       [ ([ at "?" ],
          [ et "?" false false ])
       ];
+    test_exp "hello_world"
+      [ ([ at "hello"; at "_"; at "world" ],
+         [ et "hello" false true; et "_" true true; et "world" true false ])
+      ];
     test_exp "(hello)"
       [ ([ at "hello" ],
          [ et "hello" false false ])
