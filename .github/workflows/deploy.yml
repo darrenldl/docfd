@@ -39,7 +39,7 @@ jobs:
         run: |
           sudo apt-get install --yes musl-tools
           sudo apt-get install --yes libsqlite3-dev
-          sudo apt-get install --yes io_uring
+          sudo apt-get install --yes liburing-dev
 
       - name: Set up OCaml for Linux
         uses: ocaml/setup-ocaml@v3
