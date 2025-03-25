@@ -57,7 +57,11 @@ jobs:
 
       - run: opam install dune
 
-      - run: opam install . --deps-only --with-test
+      - run: |
+          export CC=musl-gcc
+          opam install sqlite3
+          opam install uring
+          opam install . --deps-only --with-test
 
       - name: Create build
         if: ${{ env.OS_SHORT_NAME == 'macos' }}
