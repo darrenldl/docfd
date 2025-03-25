@@ -47,7 +47,7 @@ jobs:
       - run: opam install . --deps-only --with-test
 
       - name: Run tests
-        run: make tests
+        run: opam exec -- make tests
 
       - name: Create build
         if: ${{ env.OS_SHORT_NAME == 'macos' }}
