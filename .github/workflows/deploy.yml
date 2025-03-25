@@ -38,7 +38,7 @@ jobs:
       - name: Set up static linking for Linux
         if: ${{ env.OS_SHORT_NAME == 'linux' }}
         run: |
-          sudo apt-get install --yes musl-tools musl-dev linux-musl-dev
+          sudo apt-get install --yes musl-tools musl-dev
           sudo apt-get install --yes libsqlite3-dev
           sudo apt-get install --yes liburing-dev
           sudo cp -rs /usr/include/sqlite*.h /usr/local/musl/include
