@@ -26,6 +26,20 @@ type token =
   | Space of string
   | Text of string
 
+let split_utf8_seg (s : string) : string list =
+  let open Angstrom in
+  let open Parser_components in
+  let token_p =
+    choice [
+      take_while1 is_alphanum;
+      utf_8_char;
+    ]
+  in
+  let tokens_p = many token_p in
+  match Angstrom.(parse_string ~consume:Consume.All) tokens_p s with
+  | Ok l -> l
+  | Error _ -> []
+
 let tokenize_with_pos ~drop_spaces (s : string) : (int * string) Seq.t =
   let segmenter = Uuseg.create `Word in
   let s = Misc_utils.sanitize_string s in
@@ -39,7 +53,11 @@ let tokenize_with_pos ~drop_spaces (s : string) : (int * string) Seq.t =
       if Uucp.White.is_white_space (Dynarray.get buf 0) then (
         Dynarray.add_last acc (Space (Buffer.contents sbuf))
       ) else (
-        Dynarray.add_last acc (Text (Buffer.contents sbuf))
+        Buffer.contents sbuf
+        |> split_utf8_seg
+        |> List.iter (fun s ->
+            Dynarray.add_last acc (Text s)
+          )
       );
       Dynarray.clear buf;
       Buffer.clear sbuf
