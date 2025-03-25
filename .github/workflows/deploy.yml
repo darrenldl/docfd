@@ -45,7 +45,7 @@ jobs:
           sudo cp -rs /usr/include/sqlite*.h .
           sudo cp -rs /usr/include/liburing*.h .
           sudo cp -rs /usr/include/liburing/ liburing/
-          ls sqlite.h
+          tree
 
       - name: Set up OCaml for Linux
         uses: ocaml/setup-ocaml@v3
