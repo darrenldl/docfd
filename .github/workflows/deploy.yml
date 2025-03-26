@@ -26,8 +26,11 @@ jobs:
 
       - run: echo "GITHUB_TAG=$(git describe --always --tags)" >> $GITHUB_ENV
 
-      - if: ${{ startsWith(matrix.os, 'ubuntu') }}
+      - if: ${{ startsWith(matrix.os, 'ubuntu') && !endsWith(matrix.os, 'arm') }}
         run: echo "OS_SHORT_NAME=linux" >> $GITHUB_ENV
+
+      - if: ${{ startsWith(matrix.os, 'ubuntu') && endsWith(matrix.os, 'arm') }}
+        run: echo "OS_SHORT_NAME=linux-arm" >> $GITHUB_ENV
 
       - if: ${{ startsWith(matrix.os, 'macos') }}
         run: echo "OS_SHORT_NAME=macos" >> $GITHUB_ENV
@@ -35,36 +38,14 @@ jobs:
       - if: ${{ startsWith(matrix.os, 'windows') }}
         run: echo "OS_SHORT_NAME=windows" >> $GITHUB_ENV
 
-      - name: Set up static linking for Linux
-        if: ${{ env.OS_SHORT_NAME == 'test' }}
-        run: |
-          sudo apt-get install --yes musl-tools musl-dev
-          sudo apt-get install --yes libsqlite3-dev
-          sudo apt-get install --yes liburing-dev
-          musl-gcc -xc -E -v -
-          pushd /usr/include/x86_64-linux-musl
-          sudo cp -rs /usr/include/sqlite*.h .
-          sudo cp -rs /usr/include/liburing*.h .
-          sudo cp -rs /usr/include/liburing/ liburing/
-          tree
-
       - name: Set up OCaml for Linux
         uses: ocaml/setup-ocaml@v3
-        if: ${{ env.OS_SHORT_NAME == 'linux' }}
-        with:
-          ocaml-compiler: "5.2.1"
-
-      - name: Set up OCaml for macOS
-        uses: ocaml/setup-ocaml@v3
-        if: ${{ env.OS_SHORT_NAME == 'macos' }}
         with:
           ocaml-compiler: "5.2.1"
 
       - run: opam install dune
 
       - run: |
-          opam install sqlite3
-          opam install uring
           opam install . --deps-only --with-test
 
       - name: Create build
@@ -73,9 +54,14 @@ jobs:
           opam exec -- make release-build
 
       - name: Create static build
-        if: ${{ env.OS_SHORT_NAME == 'linux' || env.OS_SHORT_NAME == 'windows' }}
+        if: ${{ env.OS_SHORT_NAME == 'linux' }}
         run: |
           opam exec -- make release-static-build
+
+      - name: Create static build
+        if: ${{ env.OS_SHORT_NAME == 'linux-arm' }}
+        run: |
+          opam exec -- make release-static-build-arm
 
       - name: Package into tar.gz
         run: |
