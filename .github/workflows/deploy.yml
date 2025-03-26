@@ -41,12 +41,12 @@ jobs:
           sudo apt-get install --yes musl-tools musl-dev
           sudo apt-get install --yes libsqlite3-dev
           sudo apt-get install --yes liburing-dev
-          pushd /usr/lib/x86_64-linux-musl/
+          musl-gcc -xc -E -v -
+          pushd /usr/include/x86_64-linux-musl
           sudo cp -rs /usr/include/sqlite*.h .
           sudo cp -rs /usr/include/liburing*.h .
           sudo cp -rs /usr/include/liburing/ liburing/
           tree
-          musl-gcc -xc -E -v -
 
       - name: Set up OCaml for Linux
         uses: ocaml/setup-ocaml@v3
