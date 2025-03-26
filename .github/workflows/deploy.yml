@@ -46,6 +46,7 @@ jobs:
           sudo cp -rs /usr/include/liburing*.h .
           sudo cp -rs /usr/include/liburing/ liburing/
           tree
+          musl-gcc -xc -E -v -
 
       - name: Set up OCaml for Linux
         uses: ocaml/setup-ocaml@v3
