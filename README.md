@@ -39,6 +39,12 @@ so you can jump directly to a search result with a single key press.
 
 - You want to script your search
 
+## Why not Docfd?
+
+- You don't want indexing
+
+- You only care about simple searches, and grep and similar tools already suffice for you
+
 ## Installation
 
 Statically linked binaries for Linux and macOS are available via
