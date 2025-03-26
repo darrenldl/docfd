@@ -577,7 +577,7 @@ module Bottom_pane = struct
       let filter_grid =
         [
           [
-            { label = "f"; msg = "fzf" };
+            { label = "f"; msg = "Pipe to fzf" };
             { label = "r"; msg = "regex" };
           ];
           [
@@ -969,10 +969,15 @@ let keyboard_handler
         match key with
         | (`Escape, []) -> true
         | (`ASCII 'f', []) -> (
-            Lwd.set Ui_base.Vars.quit true;
-            Ui_base.Vars.action := Some Ui_base.Filter_files_via_fzf;
-            reset_document_selected ();
-            true
+            if Proc_utils.command_exists "fzf" then (
+              Lwd.set Ui_base.Vars.quit true;
+              Ui_base.Vars.action := Some Ui_base.Filter_files_via_fzf;
+              reset_document_selected ();
+              true
+            ) else (
+              Ui_base.Key_binding_info.blink "f";
+              false
+            )
           )
         | (`ASCII 'r', []) -> (
             Nottui.Focus.request Vars.file_path_filter_field_focus_handle;
