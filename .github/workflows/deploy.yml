@@ -36,7 +36,7 @@ jobs:
         run: echo "OS_SHORT_NAME=windows" >> $GITHUB_ENV
 
       - name: Set up static linking for Linux
-        if: ${{ env.OS_SHORT_NAME == 'linux' }}
+        if: ${{ env.OS_SHORT_NAME == 'test' }}
         run: |
           sudo apt-get install --yes musl-tools musl-dev
           sudo apt-get install --yes libsqlite3-dev
@@ -52,7 +52,7 @@ jobs:
         uses: ocaml/setup-ocaml@v3
         if: ${{ env.OS_SHORT_NAME == 'linux' }}
         with:
-          ocaml-compiler: "ocaml-variants.5.2.1+options,ocaml-option-static"
+          ocaml-compiler: "5.2.1"
 
       - name: Set up OCaml for macOS
         uses: ocaml/setup-ocaml@v3
