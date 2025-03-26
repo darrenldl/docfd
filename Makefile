@@ -32,7 +32,7 @@ release-build :
 .PHONY: release-static-build
 release-static-build :
 	python3 update-version-string.py
-	OCAMLPARAM='_,ccopt=-static' dune build --release bin/docfd.exe
+	OCAMLPARAM='_,ccopt=-static,fPIC' dune build --release bin/docfd.exe
 	mkdir -p release
 	cp -f _build/default/bin/docfd.exe release/docfd
 	chmod 755 release/docfd
