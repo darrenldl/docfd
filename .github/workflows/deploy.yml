@@ -45,20 +45,19 @@ jobs:
 
       - run: opam install dune
 
-      - run: |
-          opam install . --deps-only --with-test
+      - run: opam install . --deps-only --with-test
 
-      - name: Create build
+      - name: Create build for macOS
         if: ${{ env.OS_SHORT_NAME == 'macos' }}
         run: |
           opam exec -- make release-build
 
-      - name: Create static build
+      - name: Create static build for Linux
         if: ${{ env.OS_SHORT_NAME == 'linux' }}
         run: |
           opam exec -- make release-static-build
 
-      - name: Create static build
+      - name: Create static build for Linux ARM
         if: ${{ env.OS_SHORT_NAME == 'linux-arm' }}
         run: |
           opam exec -- make release-static-build-arm
