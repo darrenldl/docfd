@@ -13,6 +13,8 @@ so you can jump directly to a search result with a single key press.
 
 ![](demo-vhs-gifs/repo.gif)
 
+![](demo-vhs-gifs/repo-non-interactive.gif)
+
 ## Features
 
 - Multithreaded indexing and searching
