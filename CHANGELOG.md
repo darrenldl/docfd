@@ -6,6 +6,8 @@
 
     - Previously missing after swapping to SQLite DB
 
+- Added blinking when drop mode is disabled but `d` is pressed
+
 ## 10.0.0
 
 - Reworked document indexing into a multi-stage pipeline
@@ -65,7 +67,7 @@
 
 - Minor UI/UX fixes
 
-    - Drop mode is disabled when search is still ongoing or when either search field or filter field has an error
+    - Drop mode is now disabled when search is still ongoing or when either search field or filter field has an error
 
     - Added missing update of search and filter status when undoing/redoing, or when replaying command history
 
