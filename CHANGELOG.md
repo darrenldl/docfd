@@ -1,5 +1,11 @@
 # Changelog
 
+## 10.1.0
+
+- Added back index DB entry pruning
+
+    - Previously missing after swapping to SQLite DB
+
 ## 10.0.0
 
 - Reworked document indexing into a multi-stage pipeline
@@ -14,10 +20,6 @@
 
     - Optimized DB design, on average the index DB is roughly 60% smaller
       compared to Docfd 9.0.0 index DB
-
-    - Added back index DB entry pruning
-
-        - Previously missing after swapping to SQLite DB
 
     - See [issue #11](https://github.com/darrenldl/docfd/issues/11)
 
