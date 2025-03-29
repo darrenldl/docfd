@@ -800,7 +800,9 @@ let keyboard_handler
            | `Ok, `Idle -> (
                Ui_base.set_input_mode Drop;
              )
-           | _, _ -> ());
+           | _, _ -> (
+               Ui_base.Key_binding_info.blink "d";
+             ));
           `Handled
         )
       | (`ASCII 'n', []) -> (
