@@ -9,6 +9,9 @@
     - Also renamed `--cache-soft-limit` to `--cache-limit` to
       reflect the new pruning logic
 
+- Swapped to a better `doc_id` allocation strategy to minimise
+  `doc_id` size in DB
+
 - Added blinking when drop mode is disabled but `d` is pressed
 
 ## 10.0.0
