@@ -6,6 +6,9 @@
 
     - Previously missing after swapping to SQLite DB
 
+    - Also renamed `--cache-soft-limit` to `--cache-limit` to
+      reflect the new pruning logic
+
 - Added blinking when drop mode is disabled but `d` is pressed
 
 ## 10.0.0
