@@ -431,7 +431,7 @@ let run
     (additional_exts : string list)
     (single_line_additional_exts : string list)
     (cache_dir : string)
-    (cache_soft_limit : int)
+    (cache_limit : int)
     (index_only : bool)
     (start_with_search : string option)
     (sample_search_exp : string option)
@@ -458,7 +458,7 @@ let run
     ~max_linked_token_search_dist
     ~tokens_per_search_scope_level
     ~index_chunk_size
-    ~cache_soft_limit
+    ~cache_limit
     ~samples_per_doc
     ~search_result_print_text_width
     ~search_result_print_snippet_min_size
