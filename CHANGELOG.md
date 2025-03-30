@@ -9,6 +9,8 @@
     - Also renamed `--cache-soft-limit` to `--cache-limit` to
       reflect the new pruning logic
 
+    - Fixes [issue #12](https://github.com/darrenldl/docfd/issues/12)
+
 - Swapped to a better `doc_id` allocation strategy to minimise
   `doc_id` size in DB
 
