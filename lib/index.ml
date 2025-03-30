@@ -358,7 +358,27 @@ let load_raw_into_db db ~doc_hash (x : Raw.t) : unit =
   (id, hash, page_count, global_line_count, max_pos, last_used, status)
   VALUES
   (
-    (SELECT IFNULL(MAX(id), 0) + 1 FROM doc_info),
+    (SELECT
+      IFNULL(
+        (
+          SELECT a.id - 1 AS id
+          FROM doc_info a
+          LEFT JOIN doc_info b ON a.id - 1 = b.id
+          WHERE b.id IS NULL AND a.id - 1 >= 0
+
+          UNION
+
+          SELECT a.id + 1 AS id
+          FROM doc_info a
+          LEFT JOIN doc_info b ON a.id + 1 = b.id
+          WHERE b.id IS NULL
+
+          ORDER BY id
+          LIMIT 1
+        ),
+        0
+      )
+    ),
     @doc_hash,
     @page_count,
     @global_line_count,
