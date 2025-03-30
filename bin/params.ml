@@ -66,9 +66,9 @@ let default_search_result_print_snippet_max_additional_lines_each_direction = 2
 let search_result_print_snippet_max_additional_lines_each_direction =
   ref default_search_result_print_snippet_max_additional_lines_each_direction
 
-let default_cache_soft_limit = 10_000
+let default_cache_limit = 10_000
 
-let cache_soft_limit = ref default_cache_soft_limit
+let cache_limit = ref default_cache_limit
 
 let cache_dir : string option ref = ref None
 

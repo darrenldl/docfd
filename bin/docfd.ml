@@ -490,7 +490,7 @@ let run
   Params.max_linked_token_search_dist := max_linked_token_search_dist;
   Params.tokens_per_search_scope_level := tokens_per_search_scope_level;
   Params.index_chunk_size := index_chunk_size;
-  Params.cache_soft_limit := cache_soft_limit;
+  Params.cache_limit := cache_limit;
   Params.search_result_print_text_width := search_result_print_text_width;
   Params.search_result_print_snippet_min_size := search_result_print_snippet_min_size;
   Params.search_result_print_snippet_max_additional_lines_each_direction :=
@@ -508,7 +508,7 @@ let run
     )
   );
   let db_path = Filename.concat cache_dir Params.db_file_name in
-  (match Docfd_lib.init ~db_path with
+  (match Docfd_lib.init ~db_path ~document_count_limit:cache_limit with
    | None -> ()
    | Some msg -> exit_with_error_msg msg
   );
@@ -681,15 +681,6 @@ let run
              (Fmt.str "command pandoc not found, use --%s to disable use of pandoc" Args.no_pandoc_arg_name)
          );
        );
-       let file_count = Document_src.file_collection_size file_collection in
-       if file_count > !Params.cache_soft_limit then (
-         do_if_debug (fun oc ->
-             Printf.fprintf oc "File count %d exceeds cache soft_limit %d, caching disabled\n"
-               file_count
-               !Params.cache_soft_limit
-           );
-         Params.cache_dir := None
-       )
      )
   );
   Lwd.set Ui_base.Vars.hide_document_list hide_document_list_initially;
@@ -1236,7 +1227,7 @@ let cmd ~env ~sw =
      $ add_exts_arg
      $ single_line_add_exts_arg
      $ cache_dir_arg
-     $ cache_soft_limit_arg
+     $ cache_limit_arg
      $ index_only_arg
      $ start_with_search_arg
      $ sample_arg
