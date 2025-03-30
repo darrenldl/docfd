@@ -22,7 +22,7 @@ module Misc_utils' = Misc_utils
 
 module Sqlite3_utils = Sqlite3_utils
 
-let init ~db_path =
+let init ~db_path ~document_count_limit =
   let open Sqlite3_utils in
   let db = db_open db_path in
   let db_res =
@@ -34,6 +34,9 @@ let init ~db_path =
               "failed to initialize index DB: %s" (Rc.to_string db_res))
     ) else (
       Params.db_path := Some db_path;
+      if Index.document_count () >= document_count_limit then (
+        Index.prune_old_documents ~keep_n_latest:document_count_limit
+      );
       None
     )
   in

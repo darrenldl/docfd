@@ -298,6 +298,56 @@ let refresh_last_used_batch doc_hashes : unit =
       step_stmt ~db "COMMIT" ignore;
     )
 
+let document_count () : int =
+  let open Sqlite3_utils in
+  with_db (fun db ->
+      step_stmt ~db "SELECT COUNT(1) FROM doc_info"
+        (fun stmt ->
+           Int64.to_int (column_int64 stmt 0)
+        )
+    )
+
+let prune_old_documents ~keep_n_latest : unit =
+  let open Sqlite3_utils in
+  with_db (fun db ->
+      step_stmt ~db "BEGIN IMMEDIATE" ignore;
+      step_stmt ~db "DROP TABLE IF EXISTS temp.docs_to_drop" ignore;
+      step_stmt ~db "CREATE TEMP TABLE docs_to_drop (hash TEXT, id INTEGER)" ignore;
+      step_stmt ~db
+        {|
+    INSERT INTO temp.docs_to_drop
+    SELECT hash, id
+    FROM doc_info
+    ORDER BY last_used DESC
+    LIMIT -1
+    OFFSET @offset
+    |}
+        ~names:[("@offset", INT (Int64.of_int keep_n_latest))]
+        ignore;
+      let drop_based_on_doc_id ?(id_column = "doc_id") table =
+        step_stmt ~db
+          (Fmt.str
+             {|
+      DELETE FROM %s
+      WHERE EXISTS (
+        SELECT 1 FROM temp.docs_to_drop WHERE %s.%s = temp.docs_to_drop.id
+      )
+      |}
+             table
+             table
+             id_column
+          )
+          ignore
+      in
+      drop_based_on_doc_id ~id_column:"id" "doc_info";
+      drop_based_on_doc_id "line_info";
+      drop_based_on_doc_id "page_info";
+      drop_based_on_doc_id "position";
+      drop_based_on_doc_id "word";
+      step_stmt ~db "DROP TABLE temp.docs_to_drop" ignore;
+      step_stmt ~db "COMMIT" ignore;
+    )
+
 let load_raw_into_db db ~doc_hash (x : Raw.t) : unit =
   let open Sqlite3_utils in
   let now = now_int64 () in

@@ -53,6 +53,10 @@ val is_indexed : doc_hash:string -> bool
 
 val refresh_last_used_batch : string Seq.t -> unit
 
+val document_count : unit -> int
+
+val prune_old_documents : keep_n_latest:int -> unit
+
 module Raw : sig
   type t
 
