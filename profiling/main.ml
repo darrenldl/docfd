@@ -61,9 +61,9 @@ let bench ~name ~cycle (f : unit -> 'a) =
 
 let main env =
   Eio.Switch.run @@ fun sw ->
-  assert (Option.is_none (init ~db_path:"test.db"));
+  assert (Option.is_none (init ~db_path:"test.db" ~document_count_limit:1000));
   let pool = Task_pool.make ~sw (Eio.Stdenv.domain_mgr env) in
-  let raw = Index.Raw.of_lines pool (List.to_seq lines) in
+  let _raw = Index.Raw.of_lines pool (List.to_seq lines) in
   Params'.max_fuzzy_edit_dist := 3;
   let search_exp = Search_exp.make "vestibul rutru" |> Option.get in
   let s = "PellentesquePellentesque" in
