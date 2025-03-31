@@ -1,5 +1,15 @@
 # Changelog
 
+## 10.1.1
+
+- Minor fix for "filter files via fzf" functionality
+
+    - Previously, if instead of making a selection,
+      the user quits fzf (e.g. pressing `Ctrl`+`C`, `Ctrl`+`Q`),
+      Docfd also closes with it
+
+    - Now Docfd just discards the interaction and goes back to the main UI
+
 ## 10.1.0
 
 - Added back index DB entry pruning
