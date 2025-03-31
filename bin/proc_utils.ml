@@ -65,7 +65,8 @@ let pipe_to_command (f : out_channel -> unit) command args =
   Out_channel.flush oc;
   Out_channel.close oc
 
-let pipe_to_fzf_for_selection (lines : string Seq.t) : string list =
+let pipe_to_fzf_for_selection (lines : string Seq.t)
+  : [ `Selection of string list | `Cancelled of int ] =
   if not (command_exists "fzf") then (
     exit_with_error_msg
       (Fmt.str "command fzf not found")
@@ -88,14 +89,13 @@ let pipe_to_fzf_for_selection (lines : string Seq.t) : string list =
   Unix.close stdout_for_fzf;
   let selection = CCIO.read_lines_l (Unix.in_channel_of_descr read_from_fzf) in
   In_channel.close read_from_fzf_ic;
-  (match process_status with
-   | WEXITED n -> (
-       if n <> 0 then (
-         exit n
-       )
-     )
-   | WSIGNALED _ | WSTOPPED _ -> (
-       exit 1
-     )
-  );
-  selection
+  match process_status with
+  | WEXITED n when n <> 0 -> (
+      `Cancelled n
+    )
+  | WSIGNALED _ | WSTOPPED _ -> (
+      `Cancelled 1
+    )
+  | _ -> (
+      `Selection selection
+    )

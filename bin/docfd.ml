@@ -590,7 +590,10 @@ let run
          | _ -> (
              let selection =
                Document_src.seq_of_file_collection file_collection
-               |> Proc_utils.pipe_to_fzf_for_selection
+               |> (fun l ->
+                   match Proc_utils.pipe_to_fzf_for_selection l with
+                   | `Selection l -> l
+                   | `Cancelled n -> exit n)
                |> String_set.of_list
              in
              let default_search_mode_files =
@@ -1074,33 +1077,38 @@ let run
               |> String_set.to_seq
               |> Proc_utils.pipe_to_fzf_for_selection
             in
-            let commands : Command.t list =
-              `Unmark_all
-              ::
-              (List.rev selection
-               |> List.fold_left
-                 (fun acc file -> `Mark file :: acc)
-                 [ `Drop_unmarked; `Unmark_all ])
-            in
-            let store = ref store in
-            List.iter (fun command ->
-                let next_store =
-                  Option.get (Document_store.run_command pool command !store)
-                in
-                let snapshot =
-                  Document_store_snapshot.make
-                    ~last_command:(Some command)
-                    next_store
-                in
-                Dynarray.add_last snapshots snapshot;
-                store := next_store;
-              )
-              commands;
-            Lwd.set
-              Ui.Vars.document_store_cur_ver
-              (Dynarray.length snapshots - 1);
-            let final_snapshot = Dynarray.get_last snapshots in
-            Document_store_manager.submit_update_req final_snapshot;
+            (match selection with
+             | `Selection selection -> (
+                 let commands : Command.t list =
+                   `Unmark_all
+                   ::
+                   (List.rev selection
+                    |> List.fold_left
+                      (fun acc file -> `Mark file :: acc)
+                      [ `Drop_unmarked; `Unmark_all ])
+                 in
+                 let store = ref store in
+                 List.iter (fun command ->
+                     let next_store =
+                       Option.get (Document_store.run_command pool command !store)
+                     in
+                     let snapshot =
+                       Document_store_snapshot.make
+                         ~last_command:(Some command)
+                         next_store
+                     in
+                     Dynarray.add_last snapshots snapshot;
+                     store := next_store;
+                   )
+                   commands;
+                 Lwd.set
+                   Ui.Vars.document_store_cur_ver
+                   (Dynarray.length snapshots - 1);
+                 let final_snapshot = Dynarray.get_last snapshots in
+                 Document_store_manager.submit_update_req final_snapshot;
+               )
+             | `Cancelled _ -> ()
+            );
             loop ()
           )
       )
