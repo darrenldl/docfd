@@ -11,7 +11,11 @@ so you can jump directly to a search result with a single key press.
 
 ---
 
+Interactive use
+
 ![](demo-vhs-gifs/repo.gif)
+
+Non-interactive use
 
 ![](demo-vhs-gifs/repo-non-interactive.gif)
 
