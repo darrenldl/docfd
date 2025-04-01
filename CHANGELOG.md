@@ -6,9 +6,10 @@
 
     - "Reload document" now removes the document if the document is no longer accessible
 
-    - Docfd now skips checking the existence of directly specified files,
-      e.g. `file.txt` in `docfd file.txt`, during "reload all documents"
-      operation
+    - Docfd now only checks the existence of directly specified files
+      at launch, e.g. `file.txt` in `docfd file.txt`. This means
+      "reload all documents" now does not error out due to files becoming
+      no longer accessible.
 
 ## 10.1.2
 
