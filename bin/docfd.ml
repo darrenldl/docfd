@@ -574,19 +574,19 @@ let run
   let pool = Task_pool.make ~sw (Eio.Stdenv.domain_mgr env) in
   Ui_base.Vars.pool := Some pool;
   let file_collection_to_reuse = ref None in
+  String_set.iter (fun path ->
+      if not (Sys.file_exists path) then (
+        exit_with_error_msg
+          (Fmt.str "path %s does not exist" (Filename.quote path))
+      )
+    )
+    file_constraints.directly_specified_paths;
   let compute_if_hide_document_list_initially_and_document_src : unit -> bool * Document_src.t =
     let stdin_tmp_file = ref None in
     (fun () ->
        let file_collection =
          match !file_collection_to_reuse with
          | None -> (
-             String_set.iter (fun path ->
-                 if not (Sys.file_exists path) then (
-                   exit_with_error_msg
-                     (Fmt.str "path %s does not exist" (Filename.quote path))
-                 )
-               )
-               file_constraints.directly_specified_paths;
              let file_collection = files_satisfying_constraints ~interactive file_constraints in
              match question_marks with
              | [] -> file_collection
