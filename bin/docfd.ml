@@ -300,7 +300,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
           let open Sqlite3_utils in
           with_stmt
             {|
-          SELECT 0 FROM doc_info WHERE hash = @doc_hash
+          SELECT 1 FROM doc_info WHERE hash = @doc_hash
           |}
             (fun stmt ->
                List.partition (fun (_, _, doc_hash) ->

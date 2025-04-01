@@ -522,7 +522,7 @@ let is_indexed ~doc_hash =
   let open Sqlite3_utils in
   step_stmt
     {|
-    SELECT 0
+    SELECT 1
     FROM doc_info
     WHERE hash = @doc_hash
     AND status = 'COMPLETED'
