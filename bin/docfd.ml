@@ -573,6 +573,7 @@ let run
   in
   let pool = Task_pool.make ~sw (Eio.Stdenv.domain_mgr env) in
   Ui_base.Vars.pool := Some pool;
+  let file_collection_to_reuse = ref None in
   let compute_if_hide_document_list_initially_and_document_src : unit -> bool * Document_src.t =
     let stdin_tmp_file = ref None in
     (fun () ->
@@ -583,29 +584,37 @@ let run
            )
          )
          file_constraints.directly_specified_paths;
-       let file_collection = files_satisfying_constraints ~interactive file_constraints in
        let file_collection =
-         match question_marks with
-         | [] -> file_collection
-         | _ -> (
-             let selection =
-               Document_src.seq_of_file_collection file_collection
-               |> (fun l ->
-                   match Proc_utils.pipe_to_fzf_for_selection l with
-                   | `Selection l -> l
-                   | `Cancelled n -> exit n)
-               |> String_set.of_list
-             in
-             let default_search_mode_files =
-               String_set.inter selection file_collection.default_search_mode_files
-             in
-             let single_line_search_mode_files =
-               String_set.inter selection file_collection.single_line_search_mode_files
-             in
-             { default_search_mode_files;
-               single_line_search_mode_files;
-             }
+         match !file_collection_to_reuse with
+         | None -> (
+             let file_collection = files_satisfying_constraints ~interactive file_constraints in
+             match question_marks with
+             | [] -> file_collection
+             | _ -> (
+                 let selection =
+                   Document_src.seq_of_file_collection file_collection
+                   |> (fun l ->
+                       match Proc_utils.pipe_to_fzf_for_selection l with
+                       | `Selection l -> l
+                       | `Cancelled n -> exit n)
+                   |> String_set.of_list
+                 in
+                 let default_search_mode_files =
+                   String_set.inter selection file_collection.default_search_mode_files
+                 in
+                 let single_line_search_mode_files =
+                   String_set.inter selection file_collection.single_line_search_mode_files
+                 in
+                 let collection =
+                   { Document_src.default_search_mode_files;
+                     single_line_search_mode_files;
+                   }
+                 in
+                 file_collection_to_reuse := Some collection;
+                 collection
+               )
            )
+         | Some x -> x
        in
        if file_constraints.paths_were_originally_specified_by_user
        || stdin_is_atty ()
