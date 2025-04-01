@@ -81,24 +81,35 @@ let update_starting_snapshot_and_recompute_rest
 let reload_document (doc : Document.t) =
   let pool = Ui_base.task_pool () in
   let path = Document.path doc in
-  match
-    Document.of_path ~env:(Ui_base.eio_env ()) pool (Document.search_mode doc) path
-  with
-  | Ok doc -> (
-      reset_document_selected ();
-      let document_store =
-        Dynarray.get Vars.document_store_snapshots 0
-        |> Document_store_snapshot.store
-        |> Document_store.add_document pool doc
-      in
-      let snapshot =
-        Document_store_snapshot.make
-          ~last_command:None
-          document_store
-      in
-      update_starting_snapshot_and_recompute_rest snapshot
-    )
-  | Error _ -> ()
+  let doc =
+    match
+      Document.of_path ~env:(Ui_base.eio_env ()) pool (Document.search_mode doc) path
+    with
+    | Ok doc -> Some doc
+    | Error _ -> (
+        reset_document_selected ();
+        None
+      )
+  in
+  let document_store =
+    Dynarray.get Vars.document_store_snapshots 0
+    |> Document_store_snapshot.store
+    |> (fun store ->
+        match doc with
+        | Some doc -> (
+            Document_store.add_document pool doc store
+          )
+        | None -> (
+            Document_store.drop (`Path path) store
+          )
+      )
+  in
+  let snapshot =
+    Document_store_snapshot.make
+      ~last_command:None
+      document_store
+  in
+  update_starting_snapshot_and_recompute_rest snapshot
 
 let reload_document_selected
     ~(search_result_groups : Document_store.search_result_group array)
