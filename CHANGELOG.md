@@ -1,5 +1,15 @@
 # Changelog
 
+## 10.1.3
+
+- Minor fixes
+
+    - "Reload document" now removes the document if the document is no longer accessible
+
+    - Docfd now skips checking the existence of directly specified files,
+      e.g. `file.txt` in `docfd file.txt`, during "reload all documents"
+      operation
+
 ## 10.1.2
 
 - Minor fix for "reload all doucments" when fzf was used to pick documents initially, i.e. `docfd [PATH]... ?`, or any variation where `?` appears anywhere in the path list
