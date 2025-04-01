@@ -119,6 +119,10 @@ unless any of the following is used:
 See [GitHub Wiki](https://github.com/darrenldl/docfd/wiki) for
 more examples/cookbook, and technical details.
 
+## Changelog
+
+[CHANGELOG](CHANGELOG.md)
+
 ## Limitations
 
 - File auto-reloading is not supported for PDF files,
