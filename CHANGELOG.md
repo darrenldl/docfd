@@ -1,5 +1,22 @@
 # Changelog
 
+## 10.1.2
+
+- Minor fix for "reload all doucments" when fzf was used to pick documents initially, i.e. `docfd [PATH]... ?`, or any variation where `?` appears anywhere in the path list
+
+    - Under this workflow, later "reload all" should use the same selection
+      instead of having the user select again in fzf, which is cumbersome
+
+    - Now Docfd correctly reuses the selection when "reload all" is requested,
+      if fzf was used initially to pick documents
+
+    - This does technically mean the functionality is now less flexible,
+      since if `docfd ?` alike is used, "reload all" no longer discovers
+      new files
+
+    - But the convenience from reusing the selection outweighs the flexibility
+      in practically all use cases from author's experience
+
 ## 10.1.1
 
 - Minor fix for "filter files via fzf" functionality
