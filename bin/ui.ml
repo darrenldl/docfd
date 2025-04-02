@@ -87,7 +87,6 @@ let reload_document (doc : Document.t) =
     with
     | Ok doc -> Some doc
     | Error _ -> (
-        reset_document_selected ();
         None
       )
   in
@@ -109,6 +108,7 @@ let reload_document (doc : Document.t) =
       ~last_command:None
       document_store
   in
+  reset_document_selected ();
   update_starting_snapshot_and_recompute_rest snapshot
 
 let reload_document_selected
