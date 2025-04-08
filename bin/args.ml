@@ -409,9 +409,16 @@ let files_with_match_arg_name = "files-with-match"
 
 let files_with_match_arg =
   let doc =
-    Fmt.str "If in non-interactive mode,
-print the paths of documents with at least one match
-instead of printing the search results."
+    Fmt.str "If paired with
+--%s or --%s,
+then print the paths of documents with at least one match
+instead of printing the search results.
+If paired with --%s, then print paths of documents
+that would have be listed in the UI
+after running the commands in interactive mode."
+      search_arg_name
+      sample_arg_name
+      commands_from_arg_name
   in
   Arg.(
     value
@@ -423,9 +430,16 @@ let files_without_match_arg_name = "files-without-match"
 
 let files_without_match_arg =
   let doc =
-    Fmt.str "If in non-interactive mode,
-print the paths of documents with no matches
-instead of printing the search results."
+    Fmt.str "If paired with
+--%s or --%s,
+then print the paths of documents with no matches
+instead of printing the search results.
+If paired with --%s, then print paths of documents
+that would have be unlisted in the UI
+after running the commands in interactive mode."
+      search_arg_name
+      sample_arg_name
+      commands_from_arg_name
   in
   Arg.(
     value
