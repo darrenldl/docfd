@@ -1,5 +1,11 @@
 # Changelog
 
+## 10.2.0
+
+- Added non-interactive use of `--commands-from`
+
+    - Non-interactive use can be triggered by pairing `--commands-from` with `-l`/`--files-with-match` or `--files-without-match`
+
 ## 10.1.3
 
 - Minor fixes
