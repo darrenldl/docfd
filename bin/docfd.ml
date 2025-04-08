@@ -559,6 +559,8 @@ let run
     Option.is_none sample_search_exp
     &&
     Option.is_none search_exp
+    &&
+    Option.is_none commands_from
   in
   let file_constraints =
     make_file_constraints
