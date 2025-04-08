@@ -706,17 +706,30 @@ let run
   if Option.is_some commands_from then (
     if Option.is_some sample_search_exp then (
       exit_with_error_msg
-        (Fmt.str "%s and %s cannot be used together" Args.commands_from_arg_name Args.sample_arg_name)
+        (Fmt.str "--%s and --%s cannot be used together" Args.commands_from_arg_name Args.sample_arg_name)
     );
     if Option.is_some search_exp then (
       exit_with_error_msg
-        (Fmt.str "%s and %s cannot be used together" Args.commands_from_arg_name Args.search_arg_name)
+        (Fmt.str "--%s and --%s cannot be used together" Args.commands_from_arg_name Args.search_arg_name)
     );
     if Option.is_some start_with_search then (
       exit_with_error_msg
-        (Fmt.str "%s and %s cannot be used together" Args.commands_from_arg_name Args.start_with_search_arg_name)
+        (Fmt.str "--%s and --%s cannot be used together" Args.commands_from_arg_name Args.start_with_search_arg_name)
     );
   );
+  let print_oc = stdout in
+  let print_with_color =
+    match print_color_mode with
+    | `Never -> false
+    | `Always -> true
+    | `Auto -> Out_channel.isatty print_oc
+  in
+  let print_with_underline =
+    match print_underline_mode with
+    | `Never -> false
+    | `Always -> true
+    | `Auto -> not (Out_channel.isatty print_oc)
+  in
   (match commands_from with
    | None -> ()
    | Some commands_from -> (
@@ -768,7 +781,37 @@ let run
            )
          )
          init_document_store
-       |> ignore
+       |> ignore;
+       let final_store = Dynarray.get_last snapshots
+                         |> Document_store_snapshot.store
+       in
+       let outcome =
+         if print_files_with_match then (
+           let s =
+             Document_store.usable_documents_paths final_store
+           in
+           String_set.iter (Printers.path_image ~color:print_with_color print_oc) s;
+           `Has_results (String_set.is_empty s)
+         ) else if print_files_without_match then (
+           let s =
+             Document_store.unusable_documents_paths final_store
+           in
+           Seq.iter (Printers.path_image ~color:print_with_color print_oc) s;
+           `Has_results (Seq.is_empty s)
+         ) else (
+           `Not_non_interactive
+         )
+       in
+       clean_up ();
+       match outcome with
+       | `Has_results true -> (
+           exit 0
+         )
+       | `Has_results false -> (
+           exit 1
+         )
+       | `Not_non_interactive -> (
+         )
      )
   );
   (match sample_search_exp, search_exp with
@@ -806,30 +849,18 @@ let run
                init_document_store
            in
            let oc = stdout in
-           let color =
-             match print_color_mode with
-             | `Never -> false
-             | `Always -> true
-             | `Auto -> Out_channel.isatty oc
-           in
-           let underline =
-             match print_underline_mode with
-             | `Never -> false
-             | `Always -> true
-             | `Auto -> not (Out_channel.isatty oc)
-           in
            let no_results =
              if print_files_with_match then (
                let s =
                  Document_store.usable_documents_paths document_store
                in
-               String_set.iter (Printers.path_image ~color oc) s;
+               String_set.iter (Printers.path_image ~color:print_with_color oc) s;
                String_set.is_empty s
              ) else if print_files_without_match then (
                let s =
                  Document_store.unusable_documents_paths document_store
                in
-               Seq.iter (Printers.path_image ~color oc) s;
+               Seq.iter (Printers.path_image ~color:print_with_color oc) s;
                Seq.is_empty s
              ) else (
                let s =
@@ -849,7 +880,11 @@ let run
                      (doc, arr)
                    )
                in
-               Printers.search_result_groups ~color ~underline oc s;
+               Printers.search_result_groups
+                 ~color:print_with_color
+                 ~underline:print_with_underline
+                 oc
+                 s;
                Seq.is_empty s
              )
            in
