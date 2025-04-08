@@ -717,6 +717,60 @@ let run
         (Fmt.str "%s and %s cannot be used together" Args.commands_from_arg_name Args.start_with_search_arg_name)
     );
   );
+  (match commands_from with
+   | None -> ()
+   | Some commands_from -> (
+       let snapshots = Ui.Vars.document_store_snapshots in
+       let lines =
+         try
+           CCIO.with_in commands_from CCIO.read_lines_l
+         with
+         | Sys_error _ -> (
+             exit_with_error_msg
+               (Fmt.str "failed to read command file %s" (Filename.quote commands_from))
+           )
+       in
+       Dynarray.clear snapshots;
+       Dynarray.add_last
+         snapshots
+         (Document_store_snapshot.make
+            ~last_command:None
+            init_document_store);
+       lines
+       |> CCList.foldi (fun store i line ->
+           let line_num_in_error_msg = i + 1 in
+           if String_utils.line_is_blank_or_comment line then (
+             store
+           ) else (
+             match Command.of_string line with
+             | None -> (
+                 exit_with_error_msg
+                   (Fmt.str "failed to parse command on line %d: %s"
+                      line_num_in_error_msg line)
+               )
+             | Some command -> (
+                 match Document_store.run_command pool command store with
+                 | None -> (
+                     exit_with_error_msg
+                       (Fmt.str "failed to run command on line %d: %s"
+                          line_num_in_error_msg line)
+                   )
+                 | Some store -> (
+                     let snapshot =
+                       Document_store_snapshot.make
+                         ~last_command:(Some command)
+                         store
+                     in
+                     Dynarray.add_last snapshots snapshot;
+                     store
+                   )
+               )
+           )
+         )
+         init_document_store
+       |> ignore
+     )
+  );
   (match sample_search_exp, search_exp with
    | None, None -> ()
    | Some _, Some _ -> (
@@ -1122,60 +1176,6 @@ let run
           )
       )
   in
-  (match commands_from with
-   | None -> ()
-   | Some commands_from -> (
-       let snapshots = Ui.Vars.document_store_snapshots in
-       let lines =
-         try
-           CCIO.with_in commands_from CCIO.read_lines_l
-         with
-         | Sys_error _ -> (
-             exit_with_error_msg
-               (Fmt.str "failed to read command file %s" (Filename.quote commands_from))
-           )
-       in
-       Dynarray.clear snapshots;
-       Dynarray.add_last
-         snapshots
-         (Document_store_snapshot.make
-            ~last_command:None
-            init_document_store);
-       lines
-       |> CCList.foldi (fun store i line ->
-           let line_num_in_error_msg = i + 1 in
-           if String_utils.line_is_blank_or_comment line then (
-             store
-           ) else (
-             match Command.of_string line with
-             | None -> (
-                 exit_with_error_msg
-                   (Fmt.str "failed to parse command on line %d: %s"
-                      line_num_in_error_msg line)
-               )
-             | Some command -> (
-                 match Document_store.run_command pool command store with
-                 | None -> (
-                     exit_with_error_msg
-                       (Fmt.str "failed to run command on line %d: %s"
-                          line_num_in_error_msg line)
-                   )
-                 | Some store -> (
-                     let snapshot =
-                       Document_store_snapshot.make
-                         ~last_command:(Some command)
-                         store
-                     in
-                     Dynarray.add_last snapshots snapshot;
-                     store
-                   )
-               )
-           )
-         )
-         init_document_store
-       |> ignore
-     )
-  );
   Eio.Fiber.any [
     (fun () ->
        Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env)
