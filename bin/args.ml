@@ -87,7 +87,8 @@ let add_exts_arg_name = "add-exts"
 
 let add_exts_arg =
   let doc =
-    "Additional file extensions to use, comma separated."
+    "Additional file extensions to use, comma separated.
+May be specified multiple times."
   in
   Arg.(
     value
@@ -411,11 +412,12 @@ let open_with_arg =
   let doc =
     Fmt.str "Specify custom command for
 opening files under a specific file extension.
+May be specified multiple times.
 Format of SPEC: [EXT]:[fg|foreground|bg|background]=[CMD].
 Leading dots of extension [EXT] are removed.
 Foreground is for commands which Docfd
 should run in the terminal and wait for completion,
-e.g. text editors, pager.
+e.g. text editors, pagers.
 Background is for background
 commands, such as PDF viewers or
 other GUI tools.
