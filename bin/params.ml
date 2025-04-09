@@ -39,6 +39,8 @@ let default_recognized_single_line_exts =
 
 let default_search_mode : Search_mode.t ref = ref `Multiline
 
+let path_open_specs : (string, [`Foreground | `Background] * string) Hashtbl.t = Hashtbl.create 128
+
 let index_file_ext = ".index"
 
 let db_file_name = "index.db"

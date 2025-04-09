@@ -447,6 +447,7 @@ let run
     (globs : string list)
     (single_line_globs : string list)
     (single_line_search_mode_by_default : bool)
+    (path_open_specs : string list)
     (print_files_with_match : bool)
     (print_files_without_match : bool)
     (paths : string list)
@@ -507,6 +508,15 @@ let run
       `Multiline
     )
   );
+  List.iter (fun spec ->
+      match Path_open.parse_spec spec with
+      | None -> (
+          exit_with_error_msg (Fmt.str "failed to parse %s" spec)
+        )
+      | Some (ext, fb, cmd) -> (
+          Hashtbl.replace Params.path_open_specs ext (fb, cmd)
+        )
+    ) path_open_specs;
   let db_path = Filename.concat cache_dir Params.db_file_name in
   (match Docfd_lib.init ~db_path ~document_count_limit:cache_limit with
    | None -> ()
@@ -1297,6 +1307,7 @@ let cmd ~env ~sw =
      $ glob_arg
      $ single_line_glob_arg
      $ single_line_arg
+     $ open_with_arg
      $ files_with_match_arg
      $ files_without_match_arg
      $ paths_arg)

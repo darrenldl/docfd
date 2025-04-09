@@ -405,6 +405,37 @@ let single_line_arg =
     & info [ "single-line" ] ~doc
   )
 
+let open_with_arg_name = "open-with"
+
+let open_with_arg =
+  let doc =
+    Fmt.str "Specify custom command for
+opening files under a specific file extension.
+Format of SPEC: [EXT]:[fg|foreground|bg|background]=[CMD].
+Leading dots of extension [EXT] are removed.
+Foreground is for commands which Docfd
+should run in the terminal and wait for completion,
+e.g. text editors, pager.
+Background is for background
+commands, such as PDF viewers or
+other GUI tools.
+[CMD] may contain the following placeholders
+to be filled in by Docfd:
+{path} - file path,
+{page_num} - page number,
+{line_num} - line number,
+{search_word} - most unique word of the page
+(useful for passing to PDF viewer).
+Example: \"--%s pdf:bg='okular --page {page_num} --find {search_word} {path}'\".
+"
+      open_with_arg_name
+  in
+  Arg.(
+    value
+    & opt_all string []
+    & info [ open_with_arg_name ] ~doc ~docv:"SPEC"
+  )
+
 let files_with_match_arg_name = "files-with-match"
 
 let files_with_match_arg =
