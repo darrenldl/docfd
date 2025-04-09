@@ -1,4 +1,69 @@
 open Docfd_lib
+module Parsers = struct
+  open Angstrom
+  open Parser_components
+
+  let inner ~path ~page_num ~line_num ~search_word : string t =
+    choice [
+      string "path" *> commit *> return path;
+      string "page_num" *> commit *> return (Fmt.str "%d" page_num);
+      string "line_num" *> commit *> return (Fmt.str "%d" line_num);
+      string "search_word" *> commit *> return search_word;
+    ]
+
+  let cmd ~path ~page_num ~line_num ~search_word : string t =
+    let single =
+      choice [
+        (string "{{" >>| fun _ -> Fmt.str "{");
+        (char '{' *> inner ~path ~page_num ~line_num ~search_word <* char '}');
+        (take_while1 (function '{' -> false | _ -> true));
+      ]
+    in
+    many single
+    >>| fun l -> String.concat "" l
+
+  let spec : (string * [ `Foreground | `Background ] * string) t =
+    take_while1 (function ':' -> false | _ -> true)
+    >>= fun ext ->
+    char ':' *>
+    choice [
+      string "fg" *> return `Foreground;
+      string "foreground" *> return `Foreground;
+      string "bg" *> return `Background;
+      string "background" *> return `Background;
+    ] >>= fun fb ->
+    char '=' *> any_string
+    >>= fun cmd ->
+    return (ext, fb, cmd)
+end
+
+let resolve_cmd ~quote_path ~path ~page_num ~line_num ~search_word (s : string) : string option =
+  let open Angstrom in
+  let path =
+    if quote_path then
+      Filename.quote path
+    else
+      path
+  in
+  match
+    parse_string ~consume:All (Parsers.cmd ~path ~page_num ~line_num ~search_word) s
+  with
+  | Error _ -> None
+  | Ok s -> Some s
+
+let parse_spec (s : string) : (string * [ `Foreground | `Background ] * string) option =
+  let open Angstrom in
+  match
+    parse_string ~consume:All Parsers.spec s
+  with
+  | Error _ -> None
+  | Ok (ext, fb, cmd) -> (
+      match
+        resolve_cmd ~quote_path:true ~path:"path" ~page_num:1 ~line_num:1 ~search_word:"word" cmd
+      with
+      | None -> None
+      | Some _ -> Some (ext, fb, cmd)
+    )
 
 let xdg_open_cmd ~path =
   Fmt.str "xdg-open %s" path
