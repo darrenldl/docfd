@@ -4,13 +4,15 @@
 
 - Added `--open-with` to allow customising the command used to open a file based on file extension
 
-    - Example: `--open-with pdf:background="okular {path}"`
+    - Example: `--open-with pdf:bg="okular {path}"` (or write `background` instead of `bg` for clarity)
 
     - Can be specified multiple times
 
 - Added non-interactive use of `--commands-from`
 
     - Non-interactive use can be triggered by pairing `--commands-from` with `-l`/`--files-with-match` or `--files-without-match`
+
+    - Useful for advanced document management workflow
 
 ## 10.1.3
 
