@@ -424,12 +424,14 @@ other GUI tools.
 [CMD] may contain the following placeholders
 to be filled in by Docfd:
 {path} - file path,
-{page_num} - page number,
+{page_num} - page number (PDF only),
 {line_num} - line number,
 {search_word} - most unique word of the page
-(useful for passing to PDF viewer).
-Example: \"--%s pdf:bg='okular --page {page_num} --find {search_word} {path}'\".
+(PDF only, useful for passing to PDF viewer).
+Examples: \"--%s pdf:bg='okular --page {page_num} --find {search_word} {path}'\",
+\"--%s txt:fg='nano +{line_num} {path}'\".
 "
+      open_with_arg_name
       open_with_arg_name
   in
   Arg.(
