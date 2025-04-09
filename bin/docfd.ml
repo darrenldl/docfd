@@ -510,10 +510,10 @@ let run
   );
   List.iter (fun spec ->
       match Path_open.parse_spec spec with
-      | None -> (
-          exit_with_error_msg (Fmt.str "failed to parse %s" spec)
+      | Error msg -> (
+          exit_with_error_msg (Fmt.str "failed to parse %s, %s" spec msg)
         )
-      | Some (ext, fb, cmd) -> (
+      | Ok (ext, fb, cmd) -> (
           Hashtbl.replace Params.path_open_specs ext (fb, cmd)
         )
     ) path_open_specs;
@@ -992,25 +992,17 @@ let run
             let doc_hash = Document.doc_hash doc in
             let path = Document.path doc in
             let old_stats = Unix.stat path in
-            (match File_utils.format_of_file path with
-             | `PDF -> (
-                 Path_open.pdf
-                   ~doc_hash
-                   ~path
-                   ~search_result
-               )
-             | `Pandoc_supported_format -> (
-                 Path_open.pandoc_supported_format ~path
-               )
-             | `Text -> (
-                 close_term ();
-                 Path_open.text
-                   ~doc_hash
-                   init_document_src
-                   ~editor:!Params.text_editor
-                   ~path
-                   ~search_result
-               ));
+            let document_src_is_stdin =
+              match init_document_src with
+              | Document_src.Stdin _ -> true
+              | _ -> false
+            in
+            Path_open.main
+              ~close_term
+              ~doc_hash
+              ~document_src_is_stdin
+              ~path
+              ~search_result;
             let new_stats = Unix.stat path in
             if
               Float.abs
@@ -1075,11 +1067,13 @@ let run
                 );
               let old_stats = Unix.stat file in
               close_term ();
-              Path_open.gen_command_to_open_text_file_to_line_num
-                ~editor:!Params.text_editor
-                ~quote_path:true
+              Path_open.config_and_cmd_to_open_text_file
                 ~path:file
                 ~line_num:(max 1 (Dynarray.length snapshots - 1))
+                ()
+              |> (fun (config, cmd) ->
+                  Result.get_ok (Path_open.resolve_cmd config cmd)
+                )
               |> Sys.command
               |> ignore;
               let new_stats = Unix.stat file in
