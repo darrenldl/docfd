@@ -201,6 +201,40 @@ let pdf ~doc_hash ~path ~search_result =
   in
   Proc_utils.run_in_background cmd |> ignore
 
+let gen_command_to_open_text_file_to_line_num ~editor ~quote_path ~path ~line_num =
+  let path =
+    if quote_path then
+      Filename.quote path
+    else
+      path
+  in
+  let fallback = Fmt.str "%s {path}" editor in
+  resolve_cmd
+    ~quote_path:false
+    ~path
+    ~page_num:0
+    ~line_num
+    ~search_word:""
+    (match Filename.basename editor with
+     | "nano" ->
+       Fmt.str "%s +{line_num} {path}" editor
+     | "nvim" | "vim" | "vi" ->
+       Fmt.str "%s +{line_num} {path}" editor
+     | "kak" ->
+       Fmt.str "%s +{line_num} {path}" editor
+     | "hx" ->
+       Fmt.str "%s {path}:{line_num}" editor
+     | "emacs" ->
+       Fmt.str "%s +{line_num} {path}" editor
+     | "micro" ->
+       Fmt.str "%s {path}:{line_num}" editor
+     | "jed" | "xjed" ->
+       Fmt.str "%s {path} -g {line_num}" editor
+     | _ ->
+       fallback
+    )
+  |> Option.get
+
 let text ~doc_hash document_src ~editor ~path ~search_result =
   let path = Filename.quote path in
   let fallback = Fmt.str "%s %s" editor path in
@@ -217,7 +251,7 @@ let text ~doc_hash document_src ~editor ~path ~search_result =
                        |> Index.Line_loc.line_num_in_page
                        |> (fun x -> x + 1)
         in
-        Misc_utils.gen_command_to_open_text_file_to_line_num
+        gen_command_to_open_text_file_to_line_num
           ~editor ~quote_path:false ~path ~line_num
       )
   in
