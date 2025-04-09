@@ -1,4 +1,6 @@
 open Docfd_lib
+open Debug_utils
+
 module Parsers = struct
   open Angstrom
   open Parser_components
@@ -199,6 +201,9 @@ let pdf ~doc_hash ~path ~search_result =
         | `Darwin -> fallback
       )
   in
+  do_if_debug (fun oc ->
+      Printf.fprintf oc "System command: %s\n" cmd
+    );
   Proc_utils.run_in_background cmd |> ignore
 
 let gen_command_to_open_text_file_to_line_num ~editor ~quote_path ~path ~line_num =
@@ -260,4 +265,7 @@ let text ~doc_hash document_src ~editor ~path ~search_result =
     | Document_src.Stdin _ -> Fmt.str "</dev/tty %s" cmd
     | _ -> cmd
   in
+  do_if_debug (fun oc ->
+      Printf.fprintf oc "System command: %s\n" cmd
+    );
   Sys.command cmd |> ignore
