@@ -164,27 +164,34 @@ let pdf ~doc_hash ~path ~search_result =
                 let contains sub =
                   CCString.find ~sub viewer_desktop_file_path_lowercase_ascii >= 0
                 in
-                let make_command name args =
-                  if contains "flatpak" then
-                    Fmt.str "flatpak run %s %s" flatpak_package_name args
-                  else
-                    Fmt.str "%s %s" name args
-                in
                 let page_num = most_unique_word_page_num + 1 in
+                let make_command name args =
+                  resolve_cmd
+                    ~quote_path:false
+                    ~path
+                    ~page_num
+                    ~line_num:0
+                    ~search_word:most_unique_word
+                    (if contains "flatpak" then
+                       Fmt.str "flatpak run %s %s" flatpak_package_name args
+                     else
+                       Fmt.str "%s %s" name args)
+                  |> Option.get
+                in
                 if contains "okular" then
                   make_command "okular"
-                    (Fmt.str "--page %d --find %s %s" page_num most_unique_word path)
+                    "--page {page_num} --find {search_word} {path}"
                 else if contains "evince" then
                   make_command "evince"
-                    (Fmt.str "--page-index %d --find %s %s" page_num most_unique_word path)
+                    "--page-index {page_num} --find {search_word} {path}"
                 else if contains "xreader" then
                   make_command "xreader"
-                    (Fmt.str "--page-index %d --find %s %s" page_num most_unique_word path)
+                    "--page-index {page_num} --find {search_word} {path}"
                 else if contains "atril" then
                   make_command "atril"
-                    (Fmt.str "--page-index %d --find %s %s" page_num most_unique_word path)
+                    "--page-index {page_num} --find {search_word} {path}"
                 else if contains "mupdf" then
-                  make_command "mupdf" (Fmt.str "%s %d" path page_num)
+                  make_command "mupdf" "{path} {page_num}"
                 else
                   fallback
               )
