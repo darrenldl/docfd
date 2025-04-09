@@ -289,7 +289,7 @@ let config_and_cmd_to_open_text_file ~path ?line_num () : Config.t * string =
         fallback
     )
 
-let text_config_and_cmd ~doc_hash ~document_src_is_stdin ~path ~search_result : Config.t * string =
+let text_config_and_cmd ~doc_hash ~path ~search_result : Config.t * string =
   let line_num =
     match search_result with
     | None -> None
@@ -321,7 +321,7 @@ let main ~close_term ~doc_hash ~document_src_is_stdin ~path ~search_result =
          pandoc_supported_format_config_and_cmd ~path
        )
      | `Text -> (
-         text_config_and_cmd ~doc_hash ~document_src_is_stdin ~path ~search_result
+         text_config_and_cmd ~doc_hash ~path ~search_result
        )
     )
     |> (fun (config, cmd) ->
