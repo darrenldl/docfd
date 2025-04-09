@@ -1,6 +1,8 @@
 open Docfd_lib
 open Debug_utils
 
+type spec = string * [ `Foreground | `Background ] * string
+
 module Parsers = struct
   open Angstrom
   open Parser_components
@@ -8,9 +10,23 @@ module Parsers = struct
   let inner ~path ~page_num ~line_num ~search_word : string t =
     choice [
       string "path" *> commit *> return path;
-      string "page_num" *> commit *> return (Fmt.str "%d" page_num);
-      string "line_num" *> commit *> return (Fmt.str "%d" line_num);
-      string "search_word" *> commit *> return search_word;
+      string "page_num" *> commit
+      >>= (fun _ ->
+          match page_num with
+          | None -> fail "page_num not available"
+          | Some n -> return (Fmt.str "%d" n)
+        );
+      string "line_num" *> commit
+      >>= (fun _ ->
+          match line_num with
+          | None -> fail "line_num not available"
+          | Some n -> return (Fmt.str "%d" n)
+        );
+      string "search_word" *> commit
+      >>= (fun _ ->
+          match search_word with
+          | None -> fail "search_word not available"
+          | Some s -> return s);
     ]
 
   let cmd ~path ~page_num ~line_num ~search_word : string t =
@@ -24,7 +40,7 @@ module Parsers = struct
     many single
     >>| fun l -> String.concat "" l
 
-  let spec : (string * [ `Foreground | `Background ] * string) t =
+  let spec : spec t =
     take_while1 (function ':' -> false | _ -> true)
     >>= fun ext ->
     char ':' *>
@@ -39,8 +55,30 @@ module Parsers = struct
     return (ext, fb, cmd)
 end
 
-let resolve_cmd ~quote_path ~path ~page_num ~line_num ~search_word (s : string) : string option =
+module Config = struct
+  type t = {
+    quote_path : bool;
+    path : string;
+    page_num : int option;
+    line_num : int option;
+    search_word : string option;
+    fb : [ `Foreground | `Background ];
+  }
+
+  let make ?(quote_path = true) ~path ?page_num ?line_num ?search_word ~fb () : t =
+    {
+      quote_path;
+      path;
+      page_num;
+      line_num;
+      search_word;
+      fb;
+    }
+end
+
+let resolve_cmd (config : Config.t) (s : string) : (string, string) result =
   let open Angstrom in
+  let { Config.quote_path; path; page_num; line_num; search_word } = config in
   let path =
     if quote_path then
       Filename.quote path
@@ -50,21 +88,36 @@ let resolve_cmd ~quote_path ~path ~page_num ~line_num ~search_word (s : string) 
   match
     parse_string ~consume:All (Parsers.cmd ~path ~page_num ~line_num ~search_word) s
   with
-  | Error _ -> None
-  | Ok s -> Some s
+  | Error msg -> Error msg
+  | Ok s -> Ok s
 
-let parse_spec (s : string) : (string * [ `Foreground | `Background ] * string) option =
+let parse_spec (s : string) : (string * [ `Foreground | `Background ] * string, string) result =
   let open Angstrom in
   match
     parse_string ~consume:All Parsers.spec s
   with
-  | Error _ -> None
+  | Error msg -> Error msg
   | Ok (ext, fb, cmd) -> (
+      let ext = ext
+                |> String.lowercase_ascii
+                |> String_utils.remove_leading_dots
+                |> Fmt.str ".%s"
+      in
+      let config =
+        let page_num, line_num =
+          if ext = ".pdf" then (
+            (Some 1, None)
+          ) else (
+            (None, Some 1)
+          )
+        in
+        Config.make ~path:"path" ?page_num ?line_num ~search_word:"word" ~fb:`Foreground ()
+      in
       match
-        resolve_cmd ~quote_path:true ~path:"path" ~page_num:1 ~line_num:1 ~search_word:"word" cmd
+        resolve_cmd config cmd
       with
-      | None -> None
-      | Some _ -> Some (ext, fb, cmd)
+      | Error msg -> Error msg
+      | Ok _ -> Ok (ext, fb, cmd)
     )
 
 let xdg_open_cmd ~path =
