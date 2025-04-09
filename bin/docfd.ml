@@ -1065,7 +1065,7 @@ let run
                 );
               let old_stats = Unix.stat file in
               close_term ();
-              Misc_utils.gen_command_to_open_text_file_to_line_num
+              Path_open.gen_command_to_open_text_file_to_line_num
                 ~editor:!Params.text_editor
                 ~quote_path:true
                 ~path:file

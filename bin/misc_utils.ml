@@ -100,29 +100,3 @@ let normalize_filter_glob_if_not_empty (s : string) =
   ) else (
     normalize_glob_to_absolute s
   )
-
-let gen_command_to_open_text_file_to_line_num ~editor ~quote_path ~path ~line_num =
-  let path =
-    if quote_path then
-      Filename.quote path
-    else
-      path
-  in
-  let fallback = Fmt.str "%s %s" editor path in
-  match Filename.basename editor with
-  | "nano" ->
-    Fmt.str "%s +%d %s" editor line_num path
-  | "nvim" | "vim" | "vi" ->
-    Fmt.str "%s +%d %s" editor line_num path
-  | "kak" ->
-    Fmt.str "%s +%d %s" editor line_num path
-  | "hx" ->
-    Fmt.str "%s %s:%d" editor path line_num
-  | "emacs" ->
-    Fmt.str "%s +%d %s" editor line_num path
-  | "micro" ->
-    Fmt.str "%s %s:%d" editor path line_num
-  | "jed" | "xjed" ->
-    Fmt.str "%s %s -g %d" editor path line_num
-  | _ ->
-    fallback
