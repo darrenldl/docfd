@@ -425,7 +425,7 @@ other GUI tools.
 to be filled in by Docfd:
 {path} - file path,
 {page_num} - page number (PDF only),
-{line_num} - line number,
+{line_num} - line number (not available in PDF),
 {search_word} - most unique word of the page
 (PDF only, useful for passing to PDF viewer).
 Examples: \"--%s pdf:bg='okular --page {page_num} --find {search_word} {path}'\",
