@@ -18,4 +18,3 @@ Setup:
 Commands:
   $ docfd -l --commands-from 0.docfd_commands .
   $TESTCASE_ROOT/test0.txt
-  [1]

@@ -807,7 +807,7 @@ let run
              Document_store.usable_documents_paths final_store
            in
            String_set.iter (Printers.path_image ~color:print_with_color print_oc) s;
-           `Has_results (String_set.is_empty s)
+           `Has_results (not (String_set.is_empty s))
          ) else (
            `Not_non_interactive
          )
