@@ -824,9 +824,7 @@ let run
        match
          Search_exp.make search_exp_string
        with
-       | None -> (
-           exit_with_error_msg "failed to parse search exp"
-         )
+       | None -> failwith "unexpected case"
        | Some search_exp -> (
            do_if_debug (fun oc ->
                Fmt.pf
