@@ -460,10 +460,14 @@ let run
     ~tokens_per_search_scope_level
     ~index_chunk_size
     ~cache_limit
+    ~start_with_search
+    ~sample_search_exp
     ~samples_per_doc
+    ~search_exp
     ~search_result_print_text_width
     ~search_result_print_snippet_min_size
     ~search_result_print_max_add_lines
+    ~commands_from
     ~print_files_with_match
     ~print_files_without_match;
   Params.debug_output := (match debug_log with
@@ -714,24 +718,6 @@ let run
   if index_only then (
     clean_up ();
     exit 0
-  );
-  if Option.is_some commands_from then (
-    if Option.is_some sample_search_exp then (
-      exit_with_error_msg
-        (Fmt.str "--%s and --%s cannot be used together" Args.commands_from_arg_name Args.sample_arg_name)
-    );
-    if Option.is_some search_exp then (
-      exit_with_error_msg
-        (Fmt.str "--%s and --%s cannot be used together" Args.commands_from_arg_name Args.search_arg_name)
-    );
-    if Option.is_some start_with_search then (
-      exit_with_error_msg
-        (Fmt.str "--%s and --%s cannot be used together" Args.commands_from_arg_name Args.start_with_search_arg_name)
-    );
-    if print_files_without_match then (
-      exit_with_error_msg
-        (Fmt.str "--%s and --%s cannot be used together" Args.commands_from_arg_name Args.files_without_match_arg_name)
-    );
   );
   let print_oc = stdout in
   let print_with_color =
