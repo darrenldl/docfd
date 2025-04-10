@@ -88,10 +88,7 @@ let resolve_cmd (config : Config.t) (s : string) : (string, string) result =
   match
     parse_string ~consume:All (Parsers.cmd ~path ~page_num ~line_num ~search_word) s
   with
-  | Error msg -> (
-      Error
-        (Option.value (CCString.chop_prefix ~pre:": " msg) ~default:msg)
-    )
+  | Error msg -> Error (Misc_utils.trim_angstrom_error_msg msg)
   | Ok s -> Ok s
 
 let parse_spec (s : string) : (string * [ `Foreground | `Background ] * string, string) result =
@@ -99,7 +96,7 @@ let parse_spec (s : string) : (string * [ `Foreground | `Background ] * string, 
   match
     parse_string ~consume:All Parsers.spec s
   with
-  | Error msg -> Error msg
+  | Error msg -> Error (Misc_utils.trim_angstrom_error_msg msg)
   | Ok (ext, fb, cmd) -> (
       let ext = ext
                 |> String.lowercase_ascii
