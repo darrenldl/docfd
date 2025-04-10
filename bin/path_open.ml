@@ -107,14 +107,20 @@ let parse_spec (s : string) : (string * [ `Foreground | `Background ] * string, 
                 |> Fmt.str ".%s"
       in
       let config =
-        let page_num, line_num =
-          if ext = ".pdf" then (
-            (Some 1, None)
-          ) else (
-            (None, Some 1)
-          )
-        in
-        Config.make ~path:"path" ?page_num ?line_num ~search_word:"word" ~fb:`Foreground ()
+        if ext = ".pdf" then (
+          Config.make
+            ~path:"path"
+            ~page_num:1
+            ~search_word:"word"
+            ~fb:`Foreground
+            ()
+        ) else (
+          Config.make
+            ~path:"path"
+            ~line_num:1
+            ~fb:`Foreground
+            ()
+        )
       in
       match
         resolve_cmd config cmd
