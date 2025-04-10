@@ -88,7 +88,10 @@ let resolve_cmd (config : Config.t) (s : string) : (string, string) result =
   match
     parse_string ~consume:All (Parsers.cmd ~path ~page_num ~line_num ~search_word) s
   with
-  | Error msg -> Error msg
+  | Error msg -> (
+      Error
+        (Option.value (CCString.chop_prefix ~pre:": " msg) ~default:msg)
+    )
   | Ok s -> Ok s
 
 let parse_spec (s : string) : (string * [ `Foreground | `Background ] * string, string) result =
