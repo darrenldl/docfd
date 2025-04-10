@@ -728,6 +728,10 @@ let run
       exit_with_error_msg
         (Fmt.str "--%s and --%s cannot be used together" Args.commands_from_arg_name Args.start_with_search_arg_name)
     );
+    if print_files_without_match then (
+      exit_with_error_msg
+        (Fmt.str "--%s and --%s cannot be used together" Args.commands_from_arg_name Args.files_without_match_arg_name)
+    );
   );
   let print_oc = stdout in
   let print_with_color =
@@ -804,12 +808,6 @@ let run
            in
            String_set.iter (Printers.path_image ~color:print_with_color print_oc) s;
            `Has_results (String_set.is_empty s)
-         ) else if print_files_without_match then (
-           let s =
-             Document_store.unusable_documents_paths final_store
-           in
-           Seq.iter (Printers.path_image ~color:print_with_color print_oc) s;
-           `Has_results (Seq.is_empty s)
          ) else (
            `Not_non_interactive
          )

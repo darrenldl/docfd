@@ -469,9 +469,7 @@ let files_without_match_arg =
 --%s or --%s,
 then print the paths of documents with no matches
 instead of printing the search results.
-If paired with --%s, then print paths of documents
-that would have be unlisted in the UI
-after running the commands in interactive mode."
+Cannot be paired with --%s."
       search_arg_name
       sample_arg_name
       commands_from_arg_name
