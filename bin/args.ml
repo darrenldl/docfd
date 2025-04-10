@@ -563,6 +563,10 @@ let check
     exit_with_error_msg
       (Fmt.str "cannot specify both --%s and --%s" files_with_match_arg_name files_without_match_arg_name)
   );
+  if Option.is_some sample_search_exp && Option.is_some search_exp then (
+    exit_with_error_msg
+      (Fmt.str "%s and %s cannot be used together" sample_arg_name search_arg_name)
+  );
   if Option.is_some commands_from then (
     if Option.is_some sample_search_exp then (
       exit_with_error_msg

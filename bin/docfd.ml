@@ -812,10 +812,7 @@ let run
   );
   (match sample_search_exp, search_exp with
    | None, None -> ()
-   | Some _, Some _ -> (
-       exit_with_error_msg
-         (Fmt.str "%s and %s cannot be used together" Args.sample_arg_name Args.search_arg_name)
-     )
+   | Some _, Some _ -> failwith "unexpected case"
    | Some search_exp_string, None
    | None, Some search_exp_string -> (
        (* Non-interactive mode *)
