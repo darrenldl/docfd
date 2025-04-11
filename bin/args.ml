@@ -560,9 +560,29 @@ let check
     exit_with_error_msg
       (Fmt.str "invalid %s: cannot be < 0" search_result_print_snippet_max_add_lines_arg_name)
   );
-  if print_files_with_match && print_files_without_match then (
-    exit_with_error_msg
-      (Fmt.str "cannot specify both --%s and --%s" files_with_match_arg_name files_without_match_arg_name)
+  (match print_files_with_match, print_files_without_match with
+   | true, true -> (
+       exit_with_error_msg
+         (Fmt.str "cannot specify both --%s and --%s" files_with_match_arg_name files_without_match_arg_name)
+     )
+   | true, false -> (
+       exit_with_error_msg
+         (Fmt.str "--%s cannot be used without one of: --%s, --%s, --%s"
+            files_with_match_arg_name
+            sample_arg_name
+            search_arg_name
+            commands_from_arg_name
+         )
+     )
+   | false, true -> (
+       exit_with_error_msg
+         (Fmt.str "--%s cannot be used without one of: --%s, --%s"
+            files_without_match_arg_name
+            sample_arg_name
+            search_arg_name
+         )
+     )
+   | false, false -> ()
   );
   (match sample_search_exp, search_exp with
    | None, None -> ()
