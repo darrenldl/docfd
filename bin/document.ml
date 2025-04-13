@@ -36,6 +36,9 @@ let refresh_modification_time ~path =
   let time = Unix.time () in
   Unix.utimes path time time
 
+let reset_search_scope_to_full (t : t) : t =
+  { t with search_scope = None }
+
 let inter_search_scope (x : Diet.Int.t) (t : t) : t =
   let search_scope =
     match t.search_scope with

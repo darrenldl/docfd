@@ -670,7 +670,7 @@ module Bottom_pane = struct
       let narrow_grid =
         [
           [
-            { label = "1-9"; msg = "narrow search scope to level N" };
+            { label = "0-9"; msg = "narrow search scope to level N" };
           ];
           [
             { label = "Esc"; msg = "cancel" };
@@ -1079,11 +1079,11 @@ let keyboard_handler
             false
           )
         | (`ASCII c, []) -> (
-            let code_1 = Char.code '1' in
+            let code_0 = Char.code '0' in
             let code_9 = Char.code '9' in
             let code_c = Char.code c in
-            if code_1 <= code_c && code_c <= code_9 then (
-              let level = 1 + (code_c - code_1) in
+            if code_0 <= code_c && code_c <= code_9 then (
+              let level = code_c - code_0 in
               narrow_search_scope ~level;
               true
             ) else (

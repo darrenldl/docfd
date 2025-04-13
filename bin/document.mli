@@ -22,6 +22,8 @@ val of_path :
   string ->
   (t, string) result
 
+val reset_search_scope_to_full : t -> t
+
 val inter_search_scope : Diet.Int.t -> t -> t
 
 module Ir0 : sig

@@ -82,8 +82,8 @@ module Parsers = struct
         choice [
           string "level" *> skip_spaces *>
           char ':' *> skip_spaces *>
-          satisfy (function '1'..'9' -> true | _ -> false) <* skip_spaces >>|
-          (fun c -> `Narrow_level (1 + (Char.code c - Char.code '1')));
+          satisfy (function '0'..'9' -> true | _ -> false) <* skip_spaces >>|
+          (fun c -> `Narrow_level (Char.code c - Char.code '0'));
         ]
       );
       string "clear" *> skip_spaces *> (
