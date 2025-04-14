@@ -14,6 +14,14 @@
 
     - Useful for advanced document management workflow
 
+- Adjustments to search scope narrowing
+
+    - Added `narrow level: 0` for resetting search scopes back to full
+
+    - Narrowing now no longer drops unlisted document, so the
+      previous set of documents remain accessible for later
+      searches after resetting the search scopes
+
 ## 10.1.3
 
 - Minor fixes
