@@ -344,18 +344,22 @@ let drop
     )
 
 let narrow_search_scope ~level (t : t) : t =
-  let t = drop `Unusable t in
   let all_documents =
     String_map.mapi (fun path doc ->
         if level = 0 then (
           Document.reset_search_scope_to_full doc
         ) else (
           let doc_hash = Document.doc_hash doc in
+          let doc_with_empty_search_scope =
+            Document.inter_search_scope
+              Diet.Int.empty
+              doc
+          in
           match String_map.find_opt path t.search_results with
-          | None -> doc
+          | None -> doc_with_empty_search_scope
           | Some search_results -> (
               if Array.length search_results = 0 then (
-                doc
+                doc_with_empty_search_scope
               ) else (
                 let search_scope =
                   Array.to_seq search_results
