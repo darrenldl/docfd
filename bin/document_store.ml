@@ -350,47 +350,38 @@ let narrow_search_scope ~level (t : t) : t =
           Document.reset_search_scope_to_full doc
         ) else (
           let doc_hash = Document.doc_hash doc in
-          let doc_with_empty_search_scope =
-            Document.inter_search_scope
-              Diet.Int.empty
-              doc
-          in
-          match String_map.find_opt path t.search_results with
-          | None -> doc_with_empty_search_scope
-          | Some search_results -> (
-              if Array.length search_results = 0 then (
-                doc_with_empty_search_scope
-              ) else (
-                let search_scope =
-                  Array.to_seq search_results
-                  |> Seq.fold_left (fun scope search_result ->
-                      let s, e =
-                        List.fold_left (fun s_e Search_result.{ found_word_pos; _ } ->
-                            match s_e with
-                            | None -> Some (found_word_pos, found_word_pos)
-                            | Some (s, e) -> (
-                                Some (min s found_word_pos, max found_word_pos e)
-                              )
-                          )
-                          None
-                          (Search_result.found_phrase search_result)
-                        |> Option.get
-                      in
-                      let offset = level * !Params.tokens_per_search_scope_level in
-                      let s, e =
-                        (max 0 (s - offset), min (Index.max_pos ~doc_hash) (e + offset))
-                      in
-                      Diet.Int.add
-                        (Diet.Int.Interval.make s e)
-                        scope
-                    )
-                    Diet.Int.empty
-                in
-                Document.inter_search_scope
-                  search_scope
-                  doc
+          let search_scope =
+            match String_map.find_opt path t.search_results with
+            | None -> Diet.Int.empty
+            | Some search_results -> (
+                Array.fold_left (fun scope search_result ->
+                    let s, e =
+                      List.fold_left (fun s_e Search_result.{ found_word_pos; _ } ->
+                          match s_e with
+                          | None -> Some (found_word_pos, found_word_pos)
+                          | Some (s, e) -> (
+                              Some (min s found_word_pos, max found_word_pos e)
+                            )
+                        )
+                        None
+                        (Search_result.found_phrase search_result)
+                      |> Option.get
+                    in
+                    let offset = level * !Params.tokens_per_search_scope_level in
+                    let s, e =
+                      (max 0 (s - offset), min (Index.max_pos ~doc_hash) (e + offset))
+                    in
+                    Diet.Int.add
+                      (Diet.Int.Interval.make s e)
+                      scope
+                  )
+                  Diet.Int.empty
+                  search_results
               )
-            )
+          in
+          Document.inter_search_scope
+            search_scope
+            doc
         )
       )
       t.all_documents
