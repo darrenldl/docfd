@@ -4,7 +4,7 @@
 
 - Added `--open-with` to allow customising the command used to open a file based on file extension
 
-    - Example: `--open-with pdf:bg="okular {path}"` (or write `background` instead of `bg` for clarity)
+    - Example: `--open-with pdf:detached='okular {path}'`
 
     - Can be specified multiple times
 
