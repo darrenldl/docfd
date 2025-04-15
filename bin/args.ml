@@ -411,34 +411,32 @@ let open_with_arg_name = "open-with"
 
 let open_with_arg =
   let doc =
-    Fmt.str "Specify custom command for
-opening files under a specific file extension.
+    Fmt.str "Specify custom command CMD for
+opening files with file extension EXT.
 May be specified multiple times.
-Format of SPEC: [EXT]:[fg|foreground|bg|background]=[CMD].
-Leading dots of extension [EXT] are removed.
-Foreground is for commands which Docfd
+Leading dots of EXT are removed.
+LAUNCH_MODE specifies how the command should be
+executed:
+`terminal` - for commands which Docfd
 should run in the terminal and wait for completion,
 e.g. text editors, pagers.
-Background is for background
+`detached` - for background
 commands, such as PDF viewers or
 other GUI tools.
-[CMD] may contain the following placeholders
-to be filled in by Docfd:
+CMD may contain the following placeholders:
 {path} - file path,
 {page_num} - page number (PDF only),
 {line_num} - line number (not available in PDF),
 {search_word} - most unique word of the page
 (PDF only, useful for passing to PDF viewer).
-Examples: \"--%s pdf:bg='okular --page {page_num} --find {search_word} {path}'\",
-\"--%s txt:fg='nano +{line_num} {path}'\".
+Examples: \"pdf:detached='okular --page {page_num} --find {search_word} {path}'\",
+\"txt:terminal='nano +{line_num} {path}'\".
 "
-      open_with_arg_name
-      open_with_arg_name
   in
   Arg.(
     value
     & opt_all string []
-    & info [ open_with_arg_name ] ~doc ~docv:"SPEC"
+    & info [ open_with_arg_name ] ~doc ~docv:"EXT:LAUNCH_MODE=CMD"
   )
 
 let files_with_match_arg_name = "files-with-match"
