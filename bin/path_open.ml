@@ -1,7 +1,11 @@
 open Docfd_lib
 open Debug_utils
 
-type spec = string * [ `Foreground | `Background ] * string
+type launch_mode = [ `Terminal | `Detached ]
+
+type spec = string * launch_mode * string
+
+let specs : (string, launch_mode * string) Hashtbl.t = Hashtbl.create 128
 
 module Parsers = struct
   open Angstrom
@@ -45,10 +49,8 @@ module Parsers = struct
     >>= fun ext ->
     char ':' *>
     choice [
-      string "fg" *> return `Foreground;
-      string "foreground" *> return `Foreground;
-      string "bg" *> return `Background;
-      string "background" *> return `Background;
+      string "terminal" *> return `Terminal;
+      string "detached" *> return `Detached;
     ] >>= fun fb ->
     char '=' *> any_string
     >>= fun cmd ->
@@ -62,17 +64,17 @@ module Config = struct
     page_num : int option;
     line_num : int option;
     search_word : string option;
-    fb : [ `Foreground | `Background ];
+    launch_mode : launch_mode;
   }
 
-  let make ?(quote_path = true) ~path ?page_num ?line_num ?search_word ~fb () : t =
+  let make ?(quote_path = true) ~path ?page_num ?line_num ?search_word ~launch_mode () : t =
     {
       quote_path;
       path;
       page_num;
       line_num;
       search_word;
-      fb;
+      launch_mode;
     }
 end
 
@@ -91,7 +93,7 @@ let resolve_cmd (config : Config.t) (s : string) : (string, string) result =
   | Error msg -> Error (Misc_utils.trim_angstrom_error_msg msg)
   | Ok s -> Ok s
 
-let parse_spec (s : string) : (string * [ `Foreground | `Background ] * string, string) result =
+let parse_spec (s : string) : (spec, string) result =
   let open Angstrom in
   match
     parse_string ~consume:All Parsers.spec s
@@ -109,13 +111,13 @@ let parse_spec (s : string) : (string * [ `Foreground | `Background ] * string, 
             ~path:"path"
             ~page_num:1
             ~search_word:"word"
-            ~fb:`Foreground
+            ~launch_mode:`Detached
             ()
         ) else (
           Config.make
             ~path:"path"
             ~line_num:1
-            ~fb:`Foreground
+            ~launch_mode:`Terminal
             ()
         )
       in
@@ -130,7 +132,7 @@ let xdg_open_cmd =
   "xdg-open {path}"
 
 let pandoc_supported_format_config_and_cmd ~path =
-  (Config.make ~path ~fb:`Background (),
+  (Config.make ~path ~launch_mode:`Detached (),
    xdg_open_cmd)
 
 let compute_most_unique_word_and_residing_page_num ~doc_hash found_phrase =
@@ -195,7 +197,7 @@ let compute_most_unique_word_and_residing_page_num ~doc_hash found_phrase =
 
 let pdf_config_and_cmd ~doc_hash ~path ~search_result : Config.t * string =
   let fallback : Config.t * string =
-    let config = Config.make ~path ~fb:`Background () in
+    let config = Config.make ~path ~launch_mode:`Detached () in
     match Params.os_typ with
     | `Linux -> (config, xdg_open_cmd)
     | `Darwin -> (config, "open {path}")
@@ -225,7 +227,7 @@ let pdf_config_and_cmd ~doc_hash ~path ~search_result : Config.t * string =
               in
               let page_num = most_unique_word_page_num + 1 in
               let config =
-                Config.make ~path ~page_num ~search_word:most_unique_word ~fb:`Background ()
+                Config.make ~path ~page_num ~search_word:most_unique_word ~launch_mode:`Detached ()
               in
               let make_command name args =
                 if contains "flatpak" then
@@ -261,13 +263,13 @@ let pdf_config_and_cmd ~doc_hash ~path ~search_result : Config.t * string =
 let config_and_cmd_to_open_text_file ~path ?line_num () : Config.t * string =
   let editor = !Params.text_editor in
   let fallback =
-    (Config.make ~path ~fb:`Foreground (), Fmt.str "%s {path}" editor)
+    (Config.make ~path ~launch_mode:`Terminal (), Fmt.str "%s {path}" editor)
   in
   match line_num with
   | None -> fallback
   | Some line_num -> (
       let config =
-        Config.make ~path ~line_num ~fb:`Foreground ()
+        Config.make ~path ~line_num ~launch_mode:`Terminal ()
       in
       match Filename.basename editor with
       | "nano" ->
@@ -331,19 +333,19 @@ let main ~close_term ~doc_hash ~document_src_is_stdin ~path ~search_result =
        )
     )
     |> (fun (config, cmd) ->
-        match Hashtbl.find_opt Params.path_open_specs ext with
+        match Hashtbl.find_opt specs ext with
         | None -> (
             (config, cmd)
           )
-        | Some (fb, cmd) -> (
-            ({ config with fb }, cmd)
+        | Some (launch_mode, cmd) -> (
+            ({ config with launch_mode }, cmd)
           )
       )
     |> (fun (config, cmd) ->
         (config, Result.get_ok (resolve_cmd config cmd)))
   in
-  match config.fb with
-  | `Foreground -> (
+  match config.launch_mode with
+  | `Terminal -> (
       let cmd =
         if document_src_is_stdin then (
           Fmt.str "</dev/tty %s" cmd
@@ -357,7 +359,7 @@ let main ~close_term ~doc_hash ~document_src_is_stdin ~path ~search_result =
         );
       Sys.command cmd |> ignore
     )
-  | `Background -> (
+  | `Detached -> (
       do_if_debug (fun oc ->
           Printf.fprintf oc "System command: %s\n" cmd
         );

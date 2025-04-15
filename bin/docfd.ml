@@ -517,8 +517,8 @@ let run
       | Error msg -> (
           exit_with_error_msg (Fmt.str "failed to parse %s, %s" spec msg)
         )
-      | Ok (ext, fb, cmd) -> (
-          Hashtbl.replace Params.path_open_specs ext (fb, cmd)
+      | Ok (ext, launch_mode, cmd) -> (
+          Hashtbl.replace Path_open.specs ext (launch_mode, cmd)
         )
     ) path_open_specs;
   let db_path = Filename.concat cache_dir Params.db_file_name in
