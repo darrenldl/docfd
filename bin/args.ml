@@ -428,7 +428,7 @@ CMD may contain the following placeholders:
 {page_num} - page number (PDF only),
 {line_num} - line number (not available in PDF),
 {search_word} - most unique word of the page
-(PDF only, useful for passing to PDF viewer).
+(PDF only, useful for passing to PDF viewer as search term).
 Examples: \"pdf:detached='okular --page {page_num} --find {search_word} {path}'\",
 \"txt:terminal='nano +{line_num} {path}'\".
 "
