@@ -558,27 +558,38 @@ let check
     exit_with_error_msg
       (Fmt.str "invalid %s: cannot be < 0" search_result_print_snippet_max_add_lines_arg_name)
   );
+  let sample_or_search_or_commands_from_specified =
+    Option.is_some sample_search_exp
+    ||
+    Option.is_some search_exp
+    ||
+    Option.is_some commands_from
+  in
   (match print_files_with_match, print_files_without_match with
    | true, true -> (
        exit_with_error_msg
          (Fmt.str "cannot specify both --%s and --%s" files_with_match_arg_name files_without_match_arg_name)
      )
    | true, false -> (
-       exit_with_error_msg
-         (Fmt.str "--%s cannot be used without one of: --%s, --%s, --%s"
-            files_with_match_arg_name
-            sample_arg_name
-            search_arg_name
-            commands_from_arg_name
-         )
+       if not sample_or_search_or_commands_from_specified then (
+         exit_with_error_msg
+           (Fmt.str "--%s cannot be used without one of: --%s, --%s, --%s"
+              files_with_match_arg_name
+              sample_arg_name
+              search_arg_name
+              commands_from_arg_name
+           )
+       )
      )
    | false, true -> (
-       exit_with_error_msg
-         (Fmt.str "--%s cannot be used without one of: --%s, --%s"
-            files_without_match_arg_name
-            sample_arg_name
-            search_arg_name
-         )
+       if not sample_or_search_or_commands_from_specified then (
+         exit_with_error_msg
+           (Fmt.str "--%s cannot be used without one of: --%s, --%s"
+              files_without_match_arg_name
+              sample_arg_name
+              search_arg_name
+           )
+       )
      )
    | false, false -> ()
   );
