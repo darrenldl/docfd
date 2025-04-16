@@ -11,6 +11,9 @@ module Parsers = struct
   open Angstrom
   open Parser_components
 
+  let expected_char c =
+    fail (Fmt.str "expected char %c" c)
+
   let inner ~path ~page_num ~line_num ~search_word : string t =
     choice [
       string "path" *> commit *> return path;
@@ -32,12 +35,16 @@ module Parsers = struct
           | None -> fail "search_word not available"
           | Some s -> return s);
     ]
+    <|>
+    fail "invalid placeholder"
 
   let cmd ~path ~page_num ~line_num ~search_word : string t =
     let single =
       choice [
         (string "{{" >>| fun _ -> Fmt.str "{");
-        (char '{' *> inner ~path ~page_num ~line_num ~search_word <* char '}');
+        (char '{' *> commit *>
+         inner ~path ~page_num ~line_num ~search_word <*
+         (char '}' <|> expected_char '}'));
         (take_while1 (function '{' -> false | _ -> true));
       ]
     in
@@ -47,14 +54,17 @@ module Parsers = struct
   let spec : spec t =
     take_while1 (function ':' -> false | _ -> true)
     >>= fun ext ->
-    char ':' *>
-    choice [
-      string "terminal" *> return `Terminal;
-      string "detached" *> return `Detached;
-    ] >>= fun fb ->
-    char '=' *> any_string
+    (char ':' <|> expected_char ':')*>
+    (choice [
+        string "terminal" *> return `Terminal;
+        string "detached" *> return `Detached;
+      ]
+     <|>
+     fail "invalid launch mode")
+    >>= fun launch_mode ->
+    (char '=' <|> expected_char '=') *> any_string
     >>= fun cmd ->
-    return (ext, fb, cmd)
+    return (ext, launch_mode, cmd)
 end
 
 module Config = struct
