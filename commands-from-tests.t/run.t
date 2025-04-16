@@ -4,6 +4,7 @@ Setup:
   $ echo "hijk" > test2.txt
   $ echo "0123" > test3.txt
   $ echo "search: ^ab" >> 0.docfd_commands
+  $ echo "search: 'xyz" >> 1.docfd_commands
   $ tree
   .
   |-- 0.docfd_commands
@@ -18,3 +19,4 @@ Setup:
 Commands:
   $ docfd -l --commands-from 0.docfd_commands .
   $TESTCASE_ROOT/test0.txt
+  $ docfd -l --commands-from 1.docfd_commands .
