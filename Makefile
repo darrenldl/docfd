@@ -60,6 +60,7 @@ tests :
 	dune build @match-type-tests
 	dune build @commands-from-tests
 	dune build @open-with-tests
+	dune build @non-interactive-return-code-tests
 
 .PHONY: demo-vhs
 demo-vhs :
