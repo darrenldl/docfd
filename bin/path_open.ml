@@ -109,7 +109,7 @@ let parse_spec (s : string) : (spec, string) result =
     parse_string ~consume:All Parsers.spec s
   with
   | Error msg -> Error (Misc_utils.trim_angstrom_error_msg msg)
-  | Ok (ext, fb, cmd) -> (
+  | Ok (ext, launch_mode, cmd) -> (
       let ext = ext
                 |> String.lowercase_ascii
                 |> String_utils.remove_leading_dots
@@ -135,7 +135,7 @@ let parse_spec (s : string) : (spec, string) result =
         resolve_cmd config cmd
       with
       | Error msg -> Error msg
-      | Ok _ -> Ok (ext, fb, cmd)
+      | Ok _ -> Ok (ext, launch_mode, cmd)
     )
 
 let xdg_open_cmd =
