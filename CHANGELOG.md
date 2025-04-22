@@ -22,6 +22,10 @@
       previous set of documents remain accessible for later
       searches after resetting the search scopes
 
+- Reworked search procedure into task-based pipeline
+
+    - This gives better workload distribution than the current multithreading approach
+
 ## 10.1.3
 
 - Minor fixes
