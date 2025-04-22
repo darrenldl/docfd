@@ -977,11 +977,29 @@ module Search = struct
     cancellation_notifier : bool Atomic.t;
     doc_hash : string;
     within_same_line : bool;
-    consider_edit_dist : bool;
     phrase : Search_phrase.t;
     start_pos : int;
     search_limit_per_start : int;
   }
+
+  let make_search_task
+      stop_signal
+      ~cancellation_notifier
+      ~doc_hash
+      ~within_same_line
+      ~phrase
+      ~start_pos
+      ~search_limit_per_start
+    =
+    {
+      stop_signal;
+      cancellation_notifier;
+      doc_hash;
+      within_same_line;
+      phrase;
+      start_pos;
+      search_limit_per_start;
+    }
 
   let process_search_task
       (search_task : search_task)
@@ -1006,7 +1024,7 @@ module Search = struct
           (fun () ->
              search_around_pos
                ~doc_hash
-               ~consider_edit_dist:search_task.consider_edit_dist
+               ~consider_edit_dist:true
                ~within
                search_task.start_pos
                rest
@@ -1093,19 +1111,17 @@ module Search = struct
     cancellation_notifier : bool Atomic.t;
     doc_hash : string;
     within_same_line : bool;
-    consider_edit_dist : bool;
     phrase : Search_phrase.t;
     possible_start_pos_list : int list;
     search_limit_per_start : int;
   }
 
   let make_search_task_groups
-      ~stop_signal
+      stop_signal
       ~(cancellation_notifier : bool Atomic.t)
       ~doc_hash
       ~within_same_line
-      ~consider_edit_dist
-      (search_scope : Diet.Int.t option)
+      ~(search_scope : Diet.Int.t option)
       (exp : Search_exp.t)
     : search_task_group Seq.t =
     Search_exp.flattened exp
@@ -1124,7 +1140,7 @@ module Search = struct
                      Atomic.set cancellation_notifier true;
                      Seq.empty)
                   (fun () ->
-                     usable_positions ~doc_hash ~consider_edit_dist first_word)
+                     usable_positions ~doc_hash ~consider_edit_dist:true first_word)
                 |> (fun s ->
                     match search_scope with
                     | None -> s
@@ -1158,7 +1174,6 @@ module Search = struct
                       cancellation_notifier;
                       doc_hash;
                       within_same_line;
-                      consider_edit_dist;
                       phrase;
                       possible_start_pos_list;
                       search_limit_per_start;
@@ -1168,6 +1183,40 @@ module Search = struct
             )
         )
       )
+
+  let search_tasks_of_search_task_group
+      (group : search_task_group)
+    : search_task Seq.t =
+    let
+      {
+        stop_signal;
+        cancellation_notifier;
+        doc_hash;
+        within_same_line;
+        phrase;
+        possible_start_pos_list;
+        search_limit_per_start;
+      } = group in
+    List.to_seq possible_start_pos_list
+    |> Seq.map (fun start_pos ->
+        make_search_task
+          stop_signal
+          ~cancellation_notifier
+          ~doc_hash
+          ~within_same_line
+          ~phrase
+          ~start_pos
+          ~search_limit_per_start
+      )
+
+  let process_search_task_group group : Search_result_heap.t =
+    search_tasks_of_search_task_group group
+    |> Seq.map process_search_task
+    |> Seq.fold_left (fun acc x ->
+        Eio.Fiber.yield ();
+        Search_result_heap.merge acc x
+      )
+      Search_result_heap.empty
 
   let search_single
       pool
@@ -1369,3 +1418,7 @@ let search
     Array.sort Search_result.compare_relevance arr;
     Some arr
   )
+
+type search_task_group = Search.search_task_group
+
+let make_search_task_groups = Search.make_search_task_groups
