@@ -1422,3 +1422,5 @@ let search
 type search_task_group = Search.search_task_group
 
 let make_search_task_groups = Search.make_search_task_groups
+
+let process_search_task_group = Search.process_search_task_group

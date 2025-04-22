@@ -56,6 +56,8 @@ val make_search_task_groups :
   Search_exp.t ->
   search_task_group Seq.t
 
+val process_search_task_group : search_task_group -> Search_result_heap.t
+
 val global_line_count : doc_hash:string -> int
 
 val page_count : doc_hash:string -> int
