@@ -170,7 +170,7 @@ let index_chunk_size_arg_name = "index-chunk-size"
 
 let index_chunk_size_arg =
   let doc =
-    "Number of tokens to send as a task unit to the thread pool for indexing."
+    "Number of tokens to send as a job unit to the thread pool for indexing."
   in
   Arg.(
     value
