@@ -45,18 +45,18 @@ val search :
   Search_exp.t ->
   Search_result.t array option
 
-type search_task_group
+type search_task
 
-val make_search_task_groups :
+val make_search_tasks :
   Stop_signal.t ->
   cancellation_notifier:bool Atomic.t ->
   doc_hash:string ->
   within_same_line:bool ->
   search_scope:Diet.Int.t option ->
   Search_exp.t ->
-  search_task_group Seq.t
+  search_task Seq.t
 
-val process_search_task_group : search_task_group -> Search_result_heap.t
+val process_search_task : search_task -> Search_result_heap.t
 
 val global_line_count : doc_hash:string -> int
 
