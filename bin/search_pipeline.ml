@@ -18,9 +18,9 @@ let make pool stop_signal ~cancellation_notifier search_exp : t =
     stop_signal;
     cancellation_notifier;
     search_exp;
-    search_job_group_queue = Eio.Stream.create 10;
+    search_job_group_queue = Eio.Stream.create 100;
     search_job_group_workers_batch_release = Eio.Semaphore.make 0;
-    search_result_heap_queue = Eio.Stream.create 10;
+    search_result_heap_queue = Eio.Stream.create 100;
     search_result_heap_workers_batch_release = Eio.Semaphore.make 0;
     result = Eio.Stream.create 1;
   }
@@ -76,6 +76,7 @@ let run (t : t) (documents : Document.t Seq.t) =
     (List.concat
        [
          [ (fun () ->
+           Task_pool.run t.pool (fun () ->
                Seq.iter (fun doc ->
                    let within_same_line =
                      match Document.search_mode doc with
@@ -97,12 +98,16 @@ let run (t : t) (documents : Document.t Seq.t) =
                  Eio.Stream.add t.search_job_group_queue None;
                done
              )
+         )
          ]
        ; CCList.(0 --^ search_job_group_worker_count)
          |> List.map (fun _ -> (fun () ->
              Task_pool.run t.pool (fun () ->
                  search_job_group_worker t)))
-       ; [ fun () -> search_result_heap_worker t ]
+       ; [ (fun () ->
+         Task_pool.run t.pool (fun () ->
+           search_result_heap_worker t))
+         ]
        ; [ (fun () ->
            for _ = 0 to search_job_group_worker_count - 1 do
              Eio.Semaphore.acquire t.search_job_group_workers_batch_release;
