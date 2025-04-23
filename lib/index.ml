@@ -1107,7 +1107,6 @@ module Search = struct
   end
 
   module Search_job_group = struct
-
     type t = {
       stop_signal : Stop_signal.t;
       cancellation_notifier : bool Atomic.t;
@@ -1210,175 +1209,25 @@ module Search = struct
         )
       )
 
-  let search_single
-      pool
-      stop_signal
-      (canceled : bool Atomic.t)
-      ~doc_hash
-      ~within_same_line
-      ~consider_edit_dist
-      (search_scope : Diet.Int.t option)
-      (phrase : Search_phrase.t)
-    : Search_result_heap.t =
-    Eio.Fiber.yield ();
-    if Search_phrase.is_empty phrase then (
-      Search_result_heap.empty
-    ) else (
-      match Search_phrase.enriched_tokens phrase with
-      | [] -> failwith "unexpected case"
-      | first_word :: rest -> (
-          Eio.Fiber.yield ();
-          let possible_start_count, possible_starts =
-            Eio.Fiber.first
-              (fun () ->
-                 Stop_signal.await stop_signal;
-                 Atomic.set canceled true;
-                 Seq.empty)
-              (fun () ->
-                 usable_positions ~doc_hash ~consider_edit_dist first_word)
-            |> (fun s ->
-                match search_scope with
-                | None -> s
-                | Some search_scope -> (
-                    Seq.filter (fun x ->
-                        Diet.Int.mem x search_scope
-                      ) s
-                  )
-              )
-            |> Misc_utils.length_and_list_of_seq
-          in
-          if possible_start_count = 0 then
-            Search_result_heap.empty
-          else (
-            let search_limit_per_start =
-              max
-                Params.search_result_min_per_start
-                (
-                  (Params.default_search_result_total_per_document + possible_start_count - 1) / possible_start_count
-                )
-            in
-            let search_chunk_size =
-              max 10 (possible_start_count / Task_pool.size)
-            in
-            possible_starts
-            |> CCList.chunks search_chunk_size
-            |> Task_pool.map_list pool (fun (pos_list : int list) : Search_result_heap.t ->
-                Eio.Fiber.first
-                  (fun () ->
-                     Stop_signal.await stop_signal;
-                     Atomic.set canceled true;
-                     Search_result_heap.empty)
-                  (fun () ->
-                     Eio.Fiber.yield ();
-                     pos_list
-                     |> List.map (fun pos ->
-                         Eio.Fiber.yield ();
-                         let within =
-                           if within_same_line then (
-                             let loc = loc_of_pos ~doc_hash pos in
-                             Some (start_end_inc_pos_of_global_line_num ~doc_hash loc.line_loc.global_line_num)
-                           ) else (
-                             None
-                           )
-                         in
-                         search_around_pos ~doc_hash ~consider_edit_dist ~within pos rest
-                         |> Seq.map (fun l -> pos :: l)
-                         |> Seq.map (fun (l : int list) ->
-                             Eio.Fiber.yield ();
-                             let opening_closing_symbol_pairs =
-                               List.map (fun pos -> word_of_pos ~doc_hash pos) l
-                               |>  Misc_utils.opening_closing_symbol_pairs
-                             in
-                             let found_phrase_opening_closing_symbol_match_count =
-                               let pos_arr : int array = Array.of_list l in
-                               List.fold_left (fun total (x, y) ->
-                                   let pos_x = pos_arr.(x) in
-                                   let pos_y = pos_arr.(y) in
-                                   let c_x = String.get (word_of_pos ~doc_hash pos_x) 0 in
-                                   let c_y = String.get (word_of_pos ~doc_hash pos_y) 0 in
-                                   assert (List.exists (fun (x, y) -> c_x = x && c_y = y)
-                                             Params.opening_closing_symbols);
-                                   if pos_x < pos_y then (
-                                     let outstanding_opening_symbol_count =
-                                       OSeq.(pos_x + 1 --^ pos_y)
-                                       |> Seq.fold_left (fun count pos ->
-                                           match count with
-                                           | Some count -> (
-                                               let word = word_of_pos ~doc_hash pos in
-                                               if String.length word = 1 then (
-                                                 if String.get word 0 = c_x then (
-                                                   Some (count + 1)
-                                                 ) else if String.get word 0 = c_y then (
-                                                   if count = 0 then (
-                                                     None
-                                                   ) else (
-                                                     Some (count - 1)
-                                                   )
-                                                 ) else (
-                                                   Some count
-                                                 )
-                                               ) else (
-                                                 Some count
-                                               )
-                                             )
-                                           | None -> None
-                                         )
-                                         (Some 0)
-                                     in
-                                     match outstanding_opening_symbol_count with
-                                     | Some 0 -> total + 1
-                                     | _ -> total
-                                   ) else (
-                                     total
-                                   )
-                                 )
-                                 0
-                                 opening_closing_symbol_pairs
-                             in
-                             Search_result.make
-                               phrase
-                               ~found_phrase:(List.map
-                                                (fun pos ->
-                                                   Search_result.{
-                                                     found_word_pos = pos;
-                                                     found_word_ci = word_ci_of_pos ~doc_hash pos;
-                                                     found_word = word_of_pos ~doc_hash pos;
-                                                   }) l)
-                               ~found_phrase_opening_closing_symbol_match_count
-                           )
-                         |> Seq.fold_left (fun best_results r ->
-                             Eio.Fiber.yield ();
-                             let best_results = Search_result_heap.add best_results r in
-                             if Search_result_heap.size best_results <= search_limit_per_start then (
-                               best_results
-                             ) else (
-                               let x = Search_result_heap.find_min_exn best_results in
-                               Search_result_heap.delete_one Search_result.equal x best_results
-                             )
-                           )
-                           Search_result_heap.empty
-                       )
-                     |> List.fold_left search_result_heap_merge_with_yield Search_result_heap.empty
-                  )
-              )
-            |> List.fold_left search_result_heap_merge_with_yield Search_result_heap.empty
-          )
-        )
-    )
-
   let search
       pool
       stop_signal
-      canceled
+      cancellation_notifier
       ~doc_hash
       ~within_same_line
       ~consider_edit_dist
       search_scope
       (exp : Search_exp.t)
     : Search_result_heap.t =
-    Search_exp.flattened exp
-    |> List.to_seq
-    |> Seq.map (fun phrase -> search_single pool stop_signal canceled ~doc_hash ~within_same_line ~consider_edit_dist search_scope phrase)
+    make_search_job_groups
+      stop_signal
+      ~cancellation_notifier
+      ~doc_hash
+      ~within_same_line
+      ~search_scope
+      exp
+    |> Seq.flat_map Search_job_group.unpack
+    |> Seq.map Search_job.run
     |> Seq.fold_left search_result_heap_merge_with_yield Search_result_heap.empty
 end
 
