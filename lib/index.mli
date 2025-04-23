@@ -45,11 +45,17 @@ val search :
   Search_exp.t ->
   Search_result.t array option
 
-type search_job
+module Search_job : sig
+  type t
 
-type search_job_group
+  val run : t -> Search_result_heap.t
+end
 
-val run_search_job : search_job -> Search_result_heap.t
+module Search_job_group : sig
+  type t
+
+  val unpack : t -> Search_job.t Seq.t
+end
 
 val make_search_job_groups :
   Stop_signal.t ->
@@ -58,10 +64,7 @@ val make_search_job_groups :
   within_same_line:bool ->
   search_scope:Diet.Int.t option ->
   Search_exp.t ->
-  search_job_group Seq.t
-
-val unpack_search_job_group :
-  search_job_group -> search_job Seq.t
+  Search_job_group.t Seq.t
 
 val global_line_count : doc_hash:string -> int
 
