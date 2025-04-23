@@ -972,7 +972,7 @@ module Search = struct
     Eio.Fiber.yield ();
     Search_result_heap.merge x y
 
-  type search_subtask = {
+  type search_job = {
     stop_signal : Stop_signal.t;
     cancellation_notifier : bool Atomic.t;
     doc_hash : string;
@@ -982,7 +982,7 @@ module Search = struct
     search_limit_per_start : int;
   }
 
-  let make_search_subtask
+  let make_search_job
       stop_signal
       ~cancellation_notifier
       ~doc_hash
@@ -1001,16 +1001,14 @@ module Search = struct
       search_limit_per_start;
     }
 
-  let process_search_subtask
-      (search_subtask : search_subtask)
-    : Search_result_heap.t =
-    match Search_phrase.enriched_tokens search_subtask.phrase with
+  let run_search_job (search_job : search_job) : Search_result_heap.t =
+    match Search_phrase.enriched_tokens search_job.phrase with
     | [] -> Search_result_heap.empty
     | _ :: rest -> (
-        let doc_hash = search_subtask.doc_hash in
+        let doc_hash = search_job.doc_hash in
         let within =
-          if search_subtask.within_same_line then (
-            let loc = loc_of_pos ~doc_hash search_subtask.start_pos in
+          if search_job.within_same_line then (
+            let loc = loc_of_pos ~doc_hash search_job.start_pos in
             Some (start_end_inc_pos_of_global_line_num ~doc_hash loc.line_loc.global_line_num)
           ) else (
             None
@@ -1018,17 +1016,17 @@ module Search = struct
         in
         Eio.Fiber.first
           (fun () ->
-             Stop_signal.await search_subtask.stop_signal;
-             Atomic.set search_subtask.cancellation_notifier true;
+             Stop_signal.await search_job.stop_signal;
+             Atomic.set search_job.cancellation_notifier true;
              Search_result_heap.empty)
           (fun () ->
              search_around_pos
                ~doc_hash
                ~consider_edit_dist:true
                ~within
-               search_subtask.start_pos
+               search_job.start_pos
                rest
-             |> Seq.map (fun l -> search_subtask.start_pos :: l)
+             |> Seq.map (fun l -> search_job.start_pos :: l)
              |> Seq.map (fun (l : int list) ->
                  Eio.Fiber.yield ();
                  let opening_closing_symbol_pairs =
@@ -1082,7 +1080,7 @@ module Search = struct
                      opening_closing_symbol_pairs
                  in
                  Search_result.make
-                   search_subtask.phrase
+                   search_job.phrase
                    ~found_phrase:(List.map
                                     (fun pos ->
                                        Search_result.{
@@ -1095,7 +1093,7 @@ module Search = struct
              |> Seq.fold_left (fun best_results r ->
                  Eio.Fiber.yield ();
                  let best_results = Search_result_heap.add best_results r in
-                 if Search_result_heap.size best_results <= search_subtask.search_limit_per_start then (
+                 if Search_result_heap.size best_results <= search_job.search_limit_per_start then (
                    best_results
                  ) else (
                    let x = Search_result_heap.find_min_exn best_results in
@@ -1106,7 +1104,7 @@ module Search = struct
           )
       )
 
-  type search_task = {
+  type search_job_group = {
     stop_signal : Stop_signal.t;
     cancellation_notifier : bool Atomic.t;
     doc_hash : string;
@@ -1116,14 +1114,14 @@ module Search = struct
     search_limit_per_start : int;
   }
 
-  let make_search_tasks
+  let make_search_job_groups
       stop_signal
       ~(cancellation_notifier : bool Atomic.t)
       ~doc_hash
       ~within_same_line
       ~(search_scope : Diet.Int.t option)
       (exp : Search_exp.t)
-    : search_task Seq.t =
+    : search_job_group Seq.t =
     Search_exp.flattened exp
     |> List.to_seq
     |> Seq.flat_map (fun phrase ->
@@ -1184,9 +1182,9 @@ module Search = struct
         )
       )
 
-  let search_subtasks_of_search_task
-      (task : search_task)
-    : search_subtask Seq.t =
+  let unpack_search_job_group
+      (group : search_job_group)
+    : search_job Seq.t =
     let
       {
         stop_signal;
@@ -1196,10 +1194,10 @@ module Search = struct
         phrase;
         possible_start_pos_list;
         search_limit_per_start;
-      } = task in
+      } = group in
     List.to_seq possible_start_pos_list
     |> Seq.map (fun start_pos ->
-        make_search_subtask
+        make_search_job
           stop_signal
           ~cancellation_notifier
           ~doc_hash
@@ -1208,15 +1206,6 @@ module Search = struct
           ~start_pos
           ~search_limit_per_start
       )
-
-  let process_search_task task : Search_result_heap.t =
-    search_subtasks_of_search_task task
-    |> Seq.map process_search_subtask
-    |> Seq.fold_left (fun acc x ->
-        Eio.Fiber.yield ();
-        Search_result_heap.merge acc x
-      )
-      Search_result_heap.empty
 
   let search_single
       pool
@@ -1419,8 +1408,12 @@ let search
     Some arr
   )
 
-type search_task = Search.search_task
+type search_job = Search.search_job
 
-let make_search_tasks = Search.make_search_tasks
+type search_job_group = Search.search_job_group
 
-let process_search_task = Search.process_search_task
+let make_search_job_groups = Search.make_search_job_groups
+
+let run_search_job = Search.run_search_job
+
+let unpack_search_job_group = Search.unpack_search_job_group
