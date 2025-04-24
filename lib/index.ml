@@ -1212,11 +1212,10 @@ module Search = struct
   let search
       pool
       stop_signal
-      cancellation_notifier
+      ~cancellation_notifier
       ~doc_hash
       ~within_same_line
-      ~consider_edit_dist
-      search_scope
+      ~search_scope
       (exp : Search_exp.t)
     : Search_result_heap.t =
     make_search_job_groups
@@ -1236,24 +1235,23 @@ let search
     stop_signal
     ~doc_hash
     ~within_same_line
-    search_scope
+    ~search_scope
     (exp : Search_exp.t)
   : Search_result.t array option =
-  let canceled = Atomic.make false in
+  let cancellation_notifier = Atomic.make false in
   let arr =
     Search.search
       pool
       stop_signal
-      canceled
+      ~cancellation_notifier
       ~doc_hash
       ~within_same_line
-      ~consider_edit_dist:true
-      search_scope
+      ~search_scope
       exp
     |> Search_result_heap.to_seq
     |> Array.of_seq
   in
-  if Atomic.get canceled then (
+  if Atomic.get cancellation_notifier then (
     None
   ) else (
     Array.sort Search_result.compare_relevance arr;

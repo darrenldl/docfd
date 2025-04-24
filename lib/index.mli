@@ -41,7 +41,7 @@ val search :
   Stop_signal.t ->
   doc_hash:string ->
   within_same_line:bool ->
-  Diet.Int.t option ->
+  search_scope:Diet.Int.t option ->
   Search_exp.t ->
   Search_result.t array option
 

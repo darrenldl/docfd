@@ -192,7 +192,7 @@ let add_document pool (doc : Document.t) (t : t) : t =
          (Stop_signal.make ())
          ~doc_hash:(Document.doc_hash doc)
          ~within_same_line
-         (Document.search_scope doc)
+         ~search_scope:(Document.search_scope doc)
          t.search_exp
        |> Option.get
       )
