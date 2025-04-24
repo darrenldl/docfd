@@ -97,10 +97,8 @@ let refresh_search_results pool stop_signal (t : t) : t =
       )
     |> List.concat
     |> Task_pool.map_list pool (fun (path, search_job_group) ->
-        Index.Search_job_group.unpack search_job_group
-        |> Seq.map Index.Search_job.run
-        |> Seq.fold_left Search_result_heap.merge Search_result_heap.empty
-        |> (fun heap -> (path, heap))
+        let heap = Index.Search_job_group.run search_job_group in
+        (path, heap)
       )
     |> List.fold_left (fun acc (path, heap) ->
         let heap =

@@ -55,6 +55,8 @@ module Search_job_group : sig
   type t
 
   val unpack : t -> Search_job.t Seq.t
+
+  val run : t -> Search_result_heap.t
 end
 
 val make_search_job_groups :

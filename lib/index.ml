@@ -1139,6 +1139,11 @@ module Search = struct
             ~start_pos
             ~search_limit_per_start
         )
+
+    let run (t : t) =
+      unpack t
+      |> Seq.map Search_job.run
+      |> Seq.fold_left Search_result_heap.merge Search_result_heap.empty
   end
 
   let make_search_job_groups
@@ -1226,11 +1231,7 @@ module Search = struct
       ~search_scope
       exp
     |> List.of_seq
-    |> Task_pool.map_list pool (fun group ->
-        Search_job_group.unpack group
-        |> Seq.map Search_job.run
-        |> Seq.fold_left Search_result_heap.merge Search_result_heap.empty
-      )
+    |> Task_pool.map_list pool Search_job_group.run
     |> List.fold_left search_result_heap_merge_with_yield Search_result_heap.empty
 end
 
