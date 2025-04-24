@@ -1225,9 +1225,13 @@ module Search = struct
       ~within_same_line
       ~search_scope
       exp
-    |> Seq.flat_map Search_job_group.unpack
-    |> Seq.map Search_job.run
-    |> Seq.fold_left search_result_heap_merge_with_yield Search_result_heap.empty
+    |> List.of_seq
+    |> Task_pool.map_list pool (fun group ->
+        Search_job_group.unpack group
+        |> Seq.map Search_job.run
+        |> Seq.fold_left Search_result_heap.merge Search_result_heap.empty
+      )
+    |> List.fold_left search_result_heap_merge_with_yield Search_result_heap.empty
 end
 
 let search
