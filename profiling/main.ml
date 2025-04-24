@@ -78,7 +78,7 @@ let main env =
         Spelll.of_string ~limit:1 (String.sub s 0 len))
   done;
   bench ~name:"Index.search" ~cycle:1000 (fun () ->
-      Index.search pool (Stop_signal.make ()) None search_exp);
+      Index.search pool (Stop_signal.make ()) ~search_scope:None search_exp);
   ()
 
 let () = Eio_main.run main
