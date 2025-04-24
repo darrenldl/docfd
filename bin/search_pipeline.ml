@@ -36,7 +36,9 @@ let search_job_group_worker (t : t) =
     | Some (path, search_job_group) -> (
         Index.Search_job_group.unpack search_job_group
         |> Seq.map Index.Search_job.run
-        |> Seq.iter (fun heap ->
+        |> Seq.fold_left Search_result_heap.merge
+          Search_result_heap.empty
+        |> (fun heap ->
             Eio.Stream.add t.search_result_heap_queue (Some (path, heap))
           )
       )
