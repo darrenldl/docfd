@@ -22,9 +22,15 @@
       previous set of documents remain accessible for later
       searches after resetting the search scopes
 
-- Reworked search procedure into task-based pipeline
+- Reworked search into multi-stage pipeline
 
-    - This gives better workload distribution than the current multithreading approach
+    - This improves the search speed by around 30%
+
+    - The core search procedure was reworked into an API that
+      generates grouped search jobs which can be easily distributed
+      to threads.
+      This gives a better workload distribution than the current
+      multithreading approach.
 
 ## 10.1.3
 
