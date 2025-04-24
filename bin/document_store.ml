@@ -77,7 +77,8 @@ let refresh_search_results pool stop_signal (t : t) : t =
     |> Seq.filter (fun path ->
         Option.is_none (String_map.find_opt path t.search_results)
       )
-    |> Seq.flat_map (fun path ->
+    |> List.of_seq
+    |> Task_pool.map_list pool (fun path ->
         let doc = String_map.find path t.all_documents in
         let within_same_line =
           match Document.search_mode doc with
@@ -92,8 +93,9 @@ let refresh_search_results pool stop_signal (t : t) : t =
           ~search_scope:(Document.search_scope doc)
           t.search_exp
         |> Seq.map (fun x -> (path, x))
+        |> List.of_seq
       )
-    |> List.of_seq
+    |> List.concat
     |> Task_pool.map_list pool (fun (path, search_job_group) ->
         Index.Search_job_group.unpack search_job_group
         |> Seq.map Index.Search_job.run
