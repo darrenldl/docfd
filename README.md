@@ -59,8 +59,8 @@ Statically linked binaries for Linux and macOS are available via
 Docfd is also packaged on the following platforms for Linux:
 
 - [opam](https://ocaml.org/p/docfd/latest)
-- [AUR](https://aur.archlinux.org/packages/docfd-bin) (as `docfd-bin`) by [kseistrup](https://github.com/kseistrup)
-- Nix (as `docfd`) by [chewblacka](https://github.com/chewblacka)
+- [AUR](https://aur.archlinux.org/packages/docfd-bin) (as `docfd-bin`)
+- Nix (as `docfd`)
 
 The only way to use Docfd on Windows right now is via WSL.
 
