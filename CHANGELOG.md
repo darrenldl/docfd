@@ -10,7 +10,7 @@
 
 - Added non-interactive use of `--commands-from`
 
-    - Non-interactive use can be triggered by pairing `--commands-from` with `-l`/`--files-with-match` or `--files-without-match`
+    - Non-interactive use can be triggered by pairing `--commands-from` with `-l`/`--files-with-match`
 
     - Useful for advanced document management workflow
 
