@@ -1085,7 +1085,7 @@ let run
                                 rerun := true;
                                 [
                                   line;
-                                  "# Failed to parse above command"
+                                  "# Failed to parse the above command"
                                 ]
                               )
                             | Some command -> (
@@ -1094,7 +1094,7 @@ let run
                                     rerun := true;
                                     [
                                       line;
-                                      "# Failed to play above command, check if arguments are correct"
+                                      "# Failed to run the above command, check if the arguments are correct"
                                     ]
                                   )
                                 | Some x -> (
