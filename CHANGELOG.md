@@ -16,7 +16,8 @@
 
 - Adjustments to search scope narrowing
 
-    - Added `narrow level: 0` for resetting search scopes back to full
+    - Added `narrow level: 0` for resetting the search scopes of
+      all documents back to full
 
     - Narrowing now no longer drops unlisted document, so the
       previous set of documents remain accessible for later
