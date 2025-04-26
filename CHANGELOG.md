@@ -14,6 +14,12 @@
       whatever reason, search scope of that document just becomes
       empty during narrowing
 
+- Added missing commands in the list of possible commands in the command history file template
+
+    - `clear search`
+
+    - `clear filter`
+
 ## 10.2.0
 
 - Added `--open-with` to allow customising the command used to open a file based on file extension
