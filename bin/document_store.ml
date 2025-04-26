@@ -366,46 +366,53 @@ let drop
 
 let narrow_search_scope_to_level ~level (t : t) : t =
   let all_documents =
-    String_map.mapi (fun path doc ->
-        if level = 0 then (
+    if level = 0 then (
+      String_map.mapi (fun path doc ->
           Document.reset_search_scope_to_full doc
-        ) else (
+        )
+        t.all_documents
+    ) else (
+      String_map.mapi (fun path doc ->
           let doc_hash = Document.doc_hash doc in
           let search_scope =
             match String_map.find_opt path t.search_results with
             | None -> Diet.Int.empty
             | Some search_results -> (
-                Array.fold_left (fun scope search_result ->
-                    let s, e =
-                      List.fold_left (fun s_e Search_result.{ found_word_pos; _ } ->
-                          match s_e with
-                          | None -> Some (found_word_pos, found_word_pos)
-                          | Some (s, e) -> (
-                              Some (min s found_word_pos, max found_word_pos e)
-                            )
-                        )
-                        None
-                        (Search_result.found_phrase search_result)
-                      |> Option.get
-                    in
-                    let offset = level * !Params.tokens_per_search_scope_level in
-                    let s, e =
-                      (max 0 (s - offset), min (Index.max_pos ~doc_hash) (e + offset))
-                    in
-                    Diet.Int.add
-                      (Diet.Int.Interval.make s e)
-                      scope
-                  )
+                if String_set.mem path t.documents_passing_filter then (
+                  Array.fold_left (fun scope search_result ->
+                      let s, e =
+                        List.fold_left (fun s_e Search_result.{ found_word_pos; _ } ->
+                            match s_e with
+                            | None -> Some (found_word_pos, found_word_pos)
+                            | Some (s, e) -> (
+                                Some (min s found_word_pos, max found_word_pos e)
+                              )
+                          )
+                          None
+                          (Search_result.found_phrase search_result)
+                        |> Option.get
+                      in
+                      let offset = level * !Params.tokens_per_search_scope_level in
+                      let s, e =
+                        (max 0 (s - offset), min (Index.max_pos ~doc_hash) (e + offset))
+                      in
+                      Diet.Int.add
+                        (Diet.Int.Interval.make s e)
+                        scope
+                    )
+                    Diet.Int.empty
+                    search_results
+                ) else (
                   Diet.Int.empty
-                  search_results
+                )
               )
           in
           Document.inter_search_scope
             search_scope
             doc
         )
-      )
-      t.all_documents
+        t.all_documents
+    )
   in
   { t with all_documents }
 
