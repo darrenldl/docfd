@@ -229,13 +229,13 @@ let drop ~document_count (choice : [`Path of string | `All_except of string | `M
   in
   Document_store_manager.submit_update_req new_snapshot
 
-let narrow_search_scope ~level =
+let narrow_search_scope_to_level ~level =
   let cur_snapshot = get_cur_document_store_snapshot () in
   commit_cur_document_store_snapshot ();
   let new_snapshot =
     Document_store_snapshot.make
       ~last_command:(Some (`Narrow_level level))
-      (Document_store.narrow_search_scope
+      (Document_store.narrow_search_scope_to_level
          ~level
          (Document_store_snapshot.store cur_snapshot))
   in
@@ -1084,7 +1084,7 @@ let keyboard_handler
             let code_c = Char.code c in
             if code_0 <= code_c && code_c <= code_9 then (
               let level = code_c - code_0 in
-              narrow_search_scope ~level;
+              narrow_search_scope_to_level ~level;
               true
             ) else (
               false

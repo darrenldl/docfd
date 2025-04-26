@@ -364,7 +364,7 @@ let drop
       aux ~keep
     )
 
-let narrow_search_scope ~level (t : t) : t =
+let narrow_search_scope_to_level ~level (t : t) : t =
   let all_documents =
     String_map.mapi (fun path doc ->
         if level = 0 then (
@@ -439,7 +439,7 @@ let run_command pool (command : Command.t) (t : t) : t option =
       Some (drop `Unusable t)
     )
   | `Narrow_level level -> (
-      Some (narrow_search_scope ~level t)
+      Some (narrow_search_scope_to_level ~level t)
     )
   | `Search s -> (
       match Search_exp.make s with

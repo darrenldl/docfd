@@ -62,6 +62,6 @@ val unmark_all : t -> t
 
 val drop : [ `Path of string | `All_except of string | `Marked | `Unmarked | `Usable | `Unusable ] -> t -> t
 
-val narrow_search_scope : level:int -> t -> t
+val narrow_search_scope_to_level : level:int -> t -> t
 
 val run_command : Task_pool.t -> Command.t -> t -> t option
