@@ -1,5 +1,19 @@
 # Changelog
 
+## 10.2.1
+
+- Minor fix for search scope narrowing logic:
+
+    - Search scope should also be set to empty if the document is not passing the file filter, not just when the search results are empty
+
+    - The old behavior can be confusing when a document passes an old file filter and thus has search results in memory,
+      but fail to pass a new file filter,
+      yet appears in later searches when file filter is reset
+
+    - It is simpler to make it so if a document is not listed for
+      whatever reason, search scope of that document just becomes
+      empty during narrowing
+
 ## 10.2.0
 
 - Added `--open-with` to allow customising the command used to open a file based on file extension
