@@ -367,7 +367,7 @@ let drop
 let narrow_search_scope_to_level ~level (t : t) : t =
   let all_documents =
     if level = 0 then (
-      String_map.mapi (fun path doc ->
+      String_map.mapi (fun _path doc ->
           Document.reset_search_scope_to_full doc
         )
         t.all_documents
