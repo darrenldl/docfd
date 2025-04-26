@@ -1025,7 +1025,9 @@ let run
                       "#";
                       "# Possible commands:";
                       Fmt.str "# - %a" Command.pp (`Search "search phrase");
+                      Fmt.str "# - %a" Command.pp (`Search "");
                       Fmt.str "# - %a" Command.pp (`Filter "file.*pattern");
+                      Fmt.str "# - %a" Command.pp (`Filter "");
                       Fmt.str "# - %a" Command.pp (`Narrow_level 1);
                       Fmt.str "# - %a" Command.pp (`Mark "/path/to/document");
                       Fmt.str "# - %a" Command.pp (`Unmark "/path/to/document");
