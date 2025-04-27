@@ -588,8 +588,8 @@ module Bottom_pane = struct
       let filter_grid =
         [
           [
-            { label = "f"; msg = "Pipe to fzf" };
-            { label = "r"; msg = "regex" };
+            { label = "f"; msg = "pipe to fzf" };
+            { label = "g"; msg = "glob" };
           ];
           [
             { label = "Esc"; msg = "cancel" };
@@ -597,10 +597,10 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
-      let filter_regex_grid =
+      let filter_glob_grid =
         [
           [
-            { label = "Enter"; msg = "exit filter regex mode" };
+            { label = "Enter"; msg = "exit filter glob mode" };
           ];
           empty_row;
           empty_row;
@@ -700,8 +700,8 @@ module Bottom_pane = struct
         ({ input_mode = Filter },
          filter_grid
         );
-        ({ input_mode = Filter_regex },
-         filter_regex_grid
+        ({ input_mode = Filter_glob },
+         filter_glob_grid
         );
         ({ input_mode = Clear },
          clear_grid
@@ -992,9 +992,9 @@ let keyboard_handler
               false
             )
           )
-        | (`ASCII 'r', []) -> (
+        | (`ASCII 'g', []) -> (
             Nottui.Focus.request Vars.file_path_filter_field_focus_handle;
-            Ui_base.set_input_mode Filter_regex;
+            Ui_base.set_input_mode Filter_glob;
             false
           )
         | _ -> false

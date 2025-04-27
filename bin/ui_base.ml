@@ -5,7 +5,7 @@ type input_mode =
   | Navigate
   | Search
   | Filter
-  | Filter_regex
+  | Filter_glob
   | Clear
   | Drop
   | Narrow
@@ -254,7 +254,7 @@ module Status_bar = struct
       [ (Navigate, "NAVIGATE")
       ; (Search, "SEARCH")
       ; (Filter, "FILTER")
-      ; (Filter_regex, "FILTER-REGEX")
+      ; (Filter_glob, "FILTER-GLOB")
       ; (Clear, "CLEAR")
       ; (Drop, "DROP")
       ; (Narrow, "NARROW")
@@ -462,7 +462,7 @@ module File_path_filter_bar = struct
   let label ~(input_mode : input_mode) =
     let attr =
       match input_mode with
-      | Filter_regex -> Notty.A.(st bold)
+      | Filter_glob -> Notty.A.(st bold)
       | _ -> Notty.A.empty
     in
     Notty.I.string attr label_string

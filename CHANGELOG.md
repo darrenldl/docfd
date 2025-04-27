@@ -20,6 +20,10 @@
 
     - `clear filter`
 
+- Minor fix, filter regex mode should have been called filter glob mode
+
+    - The key binding `fr` is changed to `fg`
+
 ## 10.2.0
 
 - Added `--open-with` to allow customising the command used to open a file based on file extension
