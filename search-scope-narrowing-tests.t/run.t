@@ -16,21 +16,21 @@ Setup:
   0 directories, 3 files
 
 Single restriction:
-  $ # case 0 for single restriction
+  $ # Case 0 for single restriction
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
   $ echo "narrow level: 1" >> test.docfd_commands
   $ echo "search: 'efgh" >> test.docfd_commands
   $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands test0.txt -l
   $TESTCASE_ROOT/test0.txt
-  $ # case 1 for single restriction
+  $ # Case 1 for single restriction
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
   $ echo "narrow level: 1" >> test.docfd_commands
   $ echo "search: '0123" >> test.docfd_commands
   $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands test0.txt -l
   [1]
-  $ # case 2 for single restriction
+  $ # Case 2 for single restriction
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
   $ echo "narrow level: 1" >> test.docfd_commands
@@ -40,7 +40,7 @@ Single restriction:
   $TESTCASE_ROOT/test0.txt
 
 Chained restriction:
-  $ # case 0 for chained restrictions
+  $ # Case 0 for chained restrictions
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
   $ echo "narrow level: 1" >> test.docfd_commands
@@ -49,7 +49,7 @@ Chained restriction:
   $ echo "search: 'efgh" >> test.docfd_commands
   $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands test0.txt -l
   [1]
-  $ # case 1 for chained restrictions
+  $ # Case 1 for chained restrictions
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
   $ echo "narrow level: 2" >> test.docfd_commands
@@ -58,7 +58,7 @@ Chained restriction:
   $ echo "search: 'efgh" >> test.docfd_commands
   $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands test0.txt -l
   $TESTCASE_ROOT/test0.txt
-  $ # case 2 for chained restrictions
+  $ # Case 2 for chained restrictions
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
   $ echo "narrow level: 2" >> test.docfd_commands
@@ -69,7 +69,8 @@ Chained restriction:
   $TESTCASE_ROOT/test0.txt
 
 File path filter + restrictions:
-  $ # case 0 for file path filter + restrictions
+  $ # Baseline case: "clear filter" after "search" should trigger a search for each file that has not been searched through yet
+  $ # So both documents should appear
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
   $ echo "filter: test0.txt" >> test.docfd_commands
@@ -78,7 +79,7 @@ File path filter + restrictions:
   $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands -l .
   $TESTCASE_ROOT/test0.txt
   $TESTCASE_ROOT/test1.txt
-  $ # case 1 for file path filter + restrictions
+  $ # Since there is no "search" after "narrow", both documents should still appear
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
   $ echo "filter: test0.txt" >> test.docfd_commands
@@ -87,7 +88,7 @@ File path filter + restrictions:
   $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands -l .
   $TESTCASE_ROOT/test0.txt
   $TESTCASE_ROOT/test1.txt
-  $ # case 1 for file path filter + restrictions
+  $ # "narrow" + "search" after filtering should prevent test1.txt from appearing, even after we clear the filter
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
   $ echo "filter: test0.txt" >> test.docfd_commands
@@ -96,7 +97,8 @@ File path filter + restrictions:
   $ echo "clear filter" >> test.docfd_commands
   $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands -l .
   $TESTCASE_ROOT/test0.txt
-  $ # case 2 for file path filter + restrictions
+  $ # Similar to above case, but the order of "search" and "clear filter" is swapped
+  $ # test1.txt still should not appear
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
   $ echo "filter: test0.txt" >> test.docfd_commands
@@ -105,7 +107,7 @@ File path filter + restrictions:
   $ echo "search: 'efgh" >> test.docfd_commands
   $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands -l .
   $TESTCASE_ROOT/test0.txt
-  $ # case 3 for file path filter + restrictions
+  $ # Since search scope is reset via "narrow level: 0", the second "search" should show both documents
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
   $ echo "filter: test0.txt" >> test.docfd_commands
@@ -116,7 +118,8 @@ File path filter + restrictions:
   $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands -l .
   $TESTCASE_ROOT/test0.txt
   $TESTCASE_ROOT/test1.txt
-  $ # case 4 for file path filter + restrictions
+  $ # Similar to above case, but the order of "clear filter" and "narrow level: 0" is swapped
+  $ # Both documents should still appear
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
   $ echo "filter: test0.txt" >> test.docfd_commands
@@ -124,6 +127,18 @@ File path filter + restrictions:
   $ echo "narrow level: 0" >> test.docfd_commands
   $ echo "clear filter" >> test.docfd_commands
   $ echo "search: 'efgh" >> test.docfd_commands
+  $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands -l .
+  $TESTCASE_ROOT/test0.txt
+  $TESTCASE_ROOT/test1.txt
+  $ # Similar to above case, but the order of "clear filter" and "search" is swapped
+  $ # Both documents should still appear
+  $ echo "" > test.docfd_commands
+  $ echo "search: 'abcd" >> test.docfd_commands
+  $ echo "filter: test0.txt" >> test.docfd_commands
+  $ echo "narrow level: 1" >> test.docfd_commands
+  $ echo "narrow level: 0" >> test.docfd_commands
+  $ echo "search: 'efgh" >> test.docfd_commands
+  $ echo "clear filter" >> test.docfd_commands
   $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands -l .
   $TESTCASE_ROOT/test0.txt
   $TESTCASE_ROOT/test1.txt
