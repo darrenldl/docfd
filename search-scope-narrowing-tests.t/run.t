@@ -97,7 +97,7 @@ File path filter + restrictions:
   $ echo "clear filter" >> test.docfd_commands
   $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands -l .
   $TESTCASE_ROOT/test0.txt
-  $ # Similar to above case, but the order of "search" and "clear filter" is swapped
+  $ # Similar to the above case, but the order of "search" and "clear filter" is swapped
   $ # test1.txt still should not appear
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
@@ -107,7 +107,30 @@ File path filter + restrictions:
   $ echo "search: 'efgh" >> test.docfd_commands
   $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands -l .
   $TESTCASE_ROOT/test0.txt
-  $ # Since search scope is reset via "narrow level: 0", the second "search" should show both documents
+  $ # Similar to the above case, but we also reset the search scope via "narrow level: 0"
+  $ # Since resetting the search scope does not refresh the search results, test1.txt should still not appear as there is not another "search"
+  $ echo "" > test.docfd_commands
+  $ echo "search: 'abcd" >> test.docfd_commands
+  $ echo "filter: test0.txt" >> test.docfd_commands
+  $ echo "narrow level: 1" >> test.docfd_commands
+  $ echo "clear filter" >> test.docfd_commands
+  $ echo "search: 'efgh" >> test.docfd_commands
+  $ echo "narrow level: 0" >> test.docfd_commands
+  $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands -l .
+  $TESTCASE_ROOT/test0.txt
+  $ # Similar to the above case, but we search again after resetting search scope
+  $ echo "" > test.docfd_commands
+  $ echo "search: 'abcd" >> test.docfd_commands
+  $ echo "filter: test0.txt" >> test.docfd_commands
+  $ echo "narrow level: 1" >> test.docfd_commands
+  $ echo "clear filter" >> test.docfd_commands
+  $ echo "search: 'efgh" >> test.docfd_commands
+  $ echo "narrow level: 0" >> test.docfd_commands
+  $ echo "search: 'efgh" >> test.docfd_commands
+  $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands -l .
+  $TESTCASE_ROOT/test0.txt
+  $TESTCASE_ROOT/test1.txt
+  $ # Simplified version of the above case where we skip the search before "narrow level: 0"
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
   $ echo "filter: test0.txt" >> test.docfd_commands
@@ -118,7 +141,7 @@ File path filter + restrictions:
   $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands -l .
   $TESTCASE_ROOT/test0.txt
   $TESTCASE_ROOT/test1.txt
-  $ # Similar to above case, but the order of "clear filter" and "narrow level: 0" is swapped
+  $ # Similar to the above case, but the order of "clear filter" and "narrow level: 0" is swapped
   $ # Both documents should still appear
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
@@ -130,7 +153,7 @@ File path filter + restrictions:
   $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands -l .
   $TESTCASE_ROOT/test0.txt
   $TESTCASE_ROOT/test1.txt
-  $ # Similar to above case, but the order of "clear filter" and "search" is swapped
+  $ # Similar to the above case, but the order of "clear filter" and "search" is swapped
   $ # Both documents should still appear
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
