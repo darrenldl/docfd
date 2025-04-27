@@ -1,6 +1,6 @@
 # Changelog
 
-## 10.2.1
+## 11.0.0
 
 - Minor fix for search scope narrowing logic:
 
@@ -20,7 +20,7 @@
 
     - `clear filter`
 
-- Minor fix, filter regex mode should have been called filter glob mode
+- Minor breaking change, filter regex mode should have been called filter glob mode
 
     - The key binding `fr` is changed to `fg`
 
