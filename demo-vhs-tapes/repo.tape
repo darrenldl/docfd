@@ -22,7 +22,7 @@ Sleep 1s
 
 Type "f"
 Sleep 0.5s
-Type "r"
+Type "g"
 Type "read\cme*"
 Enter
 Sleep 2s
