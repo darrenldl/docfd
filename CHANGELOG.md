@@ -24,6 +24,8 @@
 
     - The key binding `fr` is changed to `fg`
 
+- Changed UI text "File path filter" to "File path glob" to be more descriptive
+
 ## 10.2.0
 
 - Added `--open-with` to allow customising the command used to open a file based on file extension
