@@ -610,7 +610,7 @@ module Bottom_pane = struct
         [
           [
             { label = "/"; msg = "search field" };
-            { label = "f"; msg = "file path filter field" };
+            { label = "f"; msg = "file path glob field" };
           ];
           [
             { label = "Esc"; msg = "cancel" };

@@ -440,7 +440,7 @@ module Key_binding_info = struct
     List.assoc { input_mode; } grid_lookup
 end
 
-let file_path_filter_bar_label_string = "File path filter" 
+let file_path_filter_bar_label_string = "File path glob"
 
 let search_bar_label_string = "Search" 
 
