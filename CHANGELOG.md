@@ -1,5 +1,9 @@
 # Changelog
 
+## 11.0.1
+
+- Added better search cancellation handling, removing massive lags in some scenarios
+
 ## 11.0.0
 
 - Minor fix for search scope narrowing logic:
