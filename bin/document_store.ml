@@ -72,50 +72,59 @@ let min_binding (t : t) =
 let refresh_search_results pool stop_signal (t : t) : t =
   let cancellation_notifier = Atomic.make false in
   let updates =
-    t.documents_passing_filter
-    |> String_set.to_seq
-    |> Seq.filter (fun path ->
-        Option.is_none (String_map.find_opt path t.search_results)
-      )
-    |> List.of_seq
-    |> Task_pool.map_list pool (fun path ->
-        let doc = String_map.find path t.all_documents in
-        let within_same_line =
-          match Document.search_mode doc with
-          | `Single_line -> true
-          | `Multiline -> false
-        in
-        Index.make_search_job_groups
-          stop_signal
-          ~cancellation_notifier
-          ~doc_hash:(Document.doc_hash doc)
-          ~within_same_line
-          ~search_scope:(Document.search_scope doc)
-          t.search_exp
-        |> Seq.map (fun x -> (path, x))
-        |> List.of_seq
-      )
-    |> List.concat
-    |> Task_pool.map_list pool (fun (path, search_job_group) ->
-        let heap = Index.Search_job_group.run search_job_group in
-        (path, heap)
-      )
-    |> List.fold_left (fun acc (path, heap) ->
-        let heap =
-          String_map.find_opt path acc
-          |> Option.value ~default:Search_result_heap.empty
-          |> Search_result_heap.merge heap
-        in
-        String_map.add path heap acc
-      )
-      String_map.empty
-    |> String_map.map (fun v ->
-        let arr =
-          Search_result_heap.to_seq v
-          |> Array.of_seq
-        in
-        Array.sort Search_result.compare_relevance arr;
-        arr
+    Eio.Fiber.first
+      (fun () ->
+         Stop_signal.await stop_signal;
+         Atomic.set cancellation_notifier true;
+         String_map.empty)
+      (fun () ->
+         t.documents_passing_filter
+         |> String_set.to_seq
+         |> Seq.filter (fun path ->
+             Option.is_none (String_map.find_opt path t.search_results)
+           )
+         |> List.of_seq
+         |> Task_pool.map_list pool (fun path ->
+             let doc = String_map.find path t.all_documents in
+             let within_same_line =
+               match Document.search_mode doc with
+               | `Single_line -> true
+               | `Multiline -> false
+             in
+             Index.make_search_job_groups
+               stop_signal
+               ~cancellation_notifier
+               ~doc_hash:(Document.doc_hash doc)
+               ~within_same_line
+               ~search_scope:(Document.search_scope doc)
+               t.search_exp
+             |> Seq.map (fun x -> (path, x))
+             |> List.of_seq
+           )
+         |> List.concat
+         |> Task_pool.map_list pool (fun (path, search_job_group) ->
+             let heap = Index.Search_job_group.run search_job_group in
+             (path, heap)
+           )
+         |> List.fold_left (fun acc (path, heap) ->
+             Eio.Fiber.yield ();
+             let heap =
+               String_map.find_opt path acc
+               |> Option.value ~default:Search_result_heap.empty
+               |> Search_result_heap.merge heap
+             in
+             String_map.add path heap acc
+           )
+           String_map.empty
+         |> String_map.map (fun v ->
+             Eio.Fiber.yield ();
+             let arr =
+               Search_result_heap.to_seq v
+               |> Array.of_seq
+             in
+             Array.sort Search_result.compare_relevance arr;
+             arr
+           )
       )
   in
   let search_results =
