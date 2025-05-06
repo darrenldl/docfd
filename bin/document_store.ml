@@ -6,8 +6,7 @@ type search_result_group = Document.t * Search_result.t array
 
 type t = {
   all_documents : Document.t String_map.t;
-  file_path_filter_glob : Glob.t;
-  file_path_filter_glob_string : string;
+  filter : Query_exp.t;
   documents_passing_filter : String_set.t;
   documents_marked : String_set.t;
   search_exp : Search_exp.t;
@@ -21,8 +20,7 @@ let size (t : t) =
 let empty : t =
   {
     all_documents = String_map.empty;
-    file_path_filter_glob = Option.get (Glob.make "");
-    file_path_filter_glob_string = "";
+    filter = Query_exp.empty;
     documents_passing_filter = String_set.empty;
     documents_marked = String_set.empty;
     search_exp = Search_exp.empty;
@@ -30,9 +28,7 @@ let empty : t =
     search_results = String_map.empty;
   }
 
-let file_path_filter_glob (t : t) = t.file_path_filter_glob
-
-let file_path_filter_glob_string (t : t) = t.file_path_filter_glob_string
+let filter (t : t) = t.filter
 
 let search_exp (t : t) = t.search_exp
 

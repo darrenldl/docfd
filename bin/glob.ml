@@ -4,6 +4,11 @@ type t = {
   re : Re.re;
 }
 
+let equal x y =
+  x.case_sensitive = y.case_sensitive
+  &&
+  String.equal x.string y.string
+
 let case_sensitive t = t.case_sensitive
 
 let string t = t.string

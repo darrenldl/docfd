@@ -1,0 +1,92 @@
+open Docfd_lib
+
+type t =
+  | Empty
+  | Path_date of Timedesc.Date.t
+  | Path_fuzzy of Search_exp.t
+  | Path_glob of Glob.t
+  | Ext of string
+  | Binary_op of binary_op * t * t
+
+and binary_op =
+  | And
+  | Or
+
+let empty = Empty
+
+let is_empty (e : t) =
+  match e with
+  | Empty -> true
+  | _ -> false
+
+let equal (e1 : t) (e2 : t) =
+  let rec aux e1 e2 =
+    match e1, e2 with
+    | Empty, Empty -> true
+    | Path_date x, Path_date y -> Timedesc.Date.equal x y
+    | Path_fuzzy x, Path_fuzzy y -> Search_exp.equal x y
+    | Path_glob x, Path_glob y -> Glob.equal x y
+    | Ext x, Ext y -> String.equal x y
+    | Binary_op (op1, x1, y1), Binary_op (op2, x2, y2) ->
+      op1 = op2 && aux x1 x2 && aux y1 y2
+    | _, _ -> false
+  in
+  aux e1 e2
+
+module Parsers = struct
+  type exp = t
+
+  open Angstrom
+  open Parser_components
+
+  let search_exp =
+    many1 (
+      take_while1 (fun c ->
+          match c with
+          | '\'' | '"' | '\\' | '(' | ')' -> false
+          | _ -> true
+        )
+      <|>
+      (char '\\' *> any_char >>| fun c -> Printf.sprintf "%c" c)
+    )
+    >>= fun l ->
+    let s = String.concat "" l in
+    match Search_exp.make s with
+    | None -> fail ""
+    | Some x -> return x
+
+  let binary_op op =
+    take_while1 is_alphanum >>= fun s ->
+      skip_spaces *>
+      (
+      if String.lowercase_ascii s = op then (
+        return (fun x y -> Binary_op (And, x, y))
+      ) else (
+        fail ""
+      )
+      )
+
+  let and_op = binary_op "and"
+
+  let or_op = binary_op "or"
+
+  let p =
+    skip_spaces *>
+    fix (fun (exp : exp Angstrom.t) ->
+        let base =
+          choice [
+            (end_of_input *> return empty);
+            (search_exp >>| fun e -> Path_fuzzy e);
+            (char '(' *> skip_spaces *> exp <* char ')' <* skip_spaces);
+          ]
+        in
+        let conj = chainl1 base and_op in
+        chainl1 conj or_op
+      )
+    <* skip_spaces
+end
+
+let make s =
+  match Angstrom.(parse_string ~consume:Consume.All) Parsers.p s with
+  | Ok e -> Some e
+  | Error _ -> None
