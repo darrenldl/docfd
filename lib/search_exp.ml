@@ -190,7 +190,7 @@ let flatten (exp : exp) : Search_phrase.t list =
   |> List.of_seq
   |> List.sort_uniq Search_phrase.compare
 
-let make s =
+let parse s =
   if String.length s = 0 || String.for_all Parser_components.is_space s then (
     Some empty
   ) else (

@@ -51,7 +51,7 @@ module Parsers = struct
     )
     >>= fun l ->
     let s = String.concat "" l in
-    match Search_exp.make s with
+    match Search_exp.parse s with
     | None -> fail ""
     | Some x -> return x
 

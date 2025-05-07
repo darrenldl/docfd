@@ -602,7 +602,7 @@ let check
    | Some search_exp_string, None
    | None, Some search_exp_string -> (
        match
-         Search_exp.make search_exp_string
+         Search_exp.parse search_exp_string
        with
        | None -> (
            exit_with_error_msg "failed to parse search exp"

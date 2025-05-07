@@ -8,6 +8,6 @@ val is_empty : t -> bool
 
 val flattened : t -> Search_phrase.t list
 
-val make : string -> t option
+val parse : string -> t option
 
 val equal : t -> t -> bool

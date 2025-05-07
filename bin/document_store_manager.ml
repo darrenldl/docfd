@@ -104,7 +104,7 @@ let worker_fiber pool =
     ref (Document_store_snapshot.make_empty ())
   in
   let process_search_req search_stop_signal (s : string) =
-    match Search_exp.make s with
+    match Search_exp.parse s with
     | None -> (
         Eio.Stream.add egress Search_exp_parse_error
       )
