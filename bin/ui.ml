@@ -781,8 +781,7 @@ let keyboard_handler
   | Navigate -> (
       match key with
       | (`ASCII 'C', [`Ctrl])
-      | (`ASCII 'Q', [`Ctrl])
-      | (`ASCII 'q', []) -> (
+      | (`ASCII 'Q', [`Ctrl]) -> (
           Lwd.set Ui_base.Vars.quit true;
           Ui_base.Vars.action := None;
           `Handled
