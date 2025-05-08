@@ -1,6 +1,6 @@
 type t
 
-val make : ?case_sensitive:bool -> string -> t option
+val parse : ?case_sensitive:bool -> string -> t option
 
 val equal : t -> t -> bool
 

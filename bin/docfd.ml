@@ -7,7 +7,7 @@ open File_utils
 
 let compute_paths_from_globs ~report_progress globs =
   Seq.iter (fun s ->
-      match Glob.make s with
+      match Glob.parse s with
       | Some _ -> ()
       | None -> (
           exit_with_error_msg
