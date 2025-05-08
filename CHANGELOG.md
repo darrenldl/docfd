@@ -1,5 +1,15 @@
 # Changelog
 
+## 12.0.0
+
+- Added a more powerful filter query mode that replaces the filter glob mode
+
+    - Filter query mode uses a proper query language that supports file path globbing among other features
+
+    - This mode uses key binding `fq`
+
+- Removed `q` exit key binding to avoid accidental exiting from trying to trigger filter query mode
+
 ## 11.0.1
 
 - Added better search cancellation handling, removing massive lags in some scenarios
