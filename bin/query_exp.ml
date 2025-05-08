@@ -39,32 +39,62 @@ module Parsers = struct
   open Angstrom
   open Parser_components
 
-  let search_exp =
+  let non_space_string = take_while1 is_not_space
+
+  let maybe_quoted_string =
+    (
+      (choice
+       [
+         char '"';
+         char '\'';
+       ]
+       >>= fun c -> return (Some c)
+      )
+     <|>
+     return None
+    )
+    >>= fun quote_char ->
     many1 (
       take_while1 (fun c ->
           match c with
-          | '\'' | '"' | '\\' | '(' | ')' -> false
-          | _ -> true
+          | '\\' -> false
+          | c -> (
+              match quote_char with
+              | None -> true
+              | Some quote_char -> c <> quote_char
+            )
         )
       <|>
       (char '\\' *> any_char >>| fun c -> Printf.sprintf "%c" c)
     )
-    >>= fun l ->
-    let s = String.concat "" l in
+    >>| fun l ->
+    String.concat "" l
+
+  let search_exp =
+    maybe_quoted_string
+    >>= fun s ->
     match Search_exp.parse s with
+    | None -> fail ""
+    | Some x -> return x
+
+  let glob ~quote_char =
+    maybe_quoted_string
+    >>= fun s ->
+    let s = Misc_utils.normalize_filter_glob_if_not_empty s in
+    match Glob.parse s with
     | None -> fail ""
     | Some x -> return x
 
   let binary_op op =
     take_while1 is_alphanum >>= fun s ->
-      skip_spaces *>
-      (
+    skip_spaces *>
+    (
       if String.lowercase_ascii s = op then (
         return (fun x y -> Binary_op (And, x, y))
       ) else (
         fail ""
       )
-      )
+    )
 
   let and_op = binary_op "and"
 
@@ -76,7 +106,8 @@ module Parsers = struct
         let base =
           choice [
             (end_of_input *> return empty);
-            (search_exp >>| fun e -> Path_fuzzy e);
+            (string "path-fuzzy:" *>
+             search_exp >>| fun e -> Path_fuzzy e);
             (char '(' *> skip_spaces *> exp <* char ')' <* skip_spaces);
           ]
         in
@@ -86,7 +117,7 @@ module Parsers = struct
     <* skip_spaces
 end
 
-let make s =
+let parse s =
   match Angstrom.(parse_string ~consume:Consume.All) Parsers.p s with
   | Ok e -> Some e
   | Error _ -> None
