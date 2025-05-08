@@ -454,7 +454,7 @@ let run_command pool (command : Command.t) (t : t) : t option =
       Some (narrow_search_scope_to_level ~level t)
     )
   | `Search s -> (
-      match Search_exp.make s with
+      match Search_exp.parse s with
       | None -> None
       | Some search_exp -> (
           Some (

@@ -822,7 +822,7 @@ let run
          | None -> None
        in
        match
-         Search_exp.make search_exp_string
+         Search_exp.parse search_exp_string
        with
        | None -> failwith "unexpected case"
        | Some search_exp -> (
