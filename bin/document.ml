@@ -295,3 +295,24 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, 
         Ok (of_ir2 db ir2)
       )
   )
+
+let satisfies_query (exp : Query_exp.t) (t : t) : bool =
+  let open Query_exp in
+  let rec aux exp =
+    match exp with
+    | Empty -> true
+    | Path_date _ -> false
+    | Path_fuzzy _ -> false
+    | Path_glob glob -> (
+        Glob.is_empty glob || Glob.match_ glob t.path
+      )
+    | Ext ext -> (
+        Filename.extension t.path = ext
+      )
+    | Binary_op (op, e1, e2) -> (
+        match op with
+        | And -> aux e1 && aux e2
+        | Or -> aux e1 || aux e2
+      )
+  in
+  aux exp

@@ -125,21 +125,20 @@ let worker_fiber pool =
         Eio.Stream.add egress (Search_done snapshot)
       )
   in
-  let process_filter_req search_stop_signal (original_string : string) =
-    let s = Misc_utils.normalize_filter_glob_if_not_empty original_string in
-    match Glob.make s with
-    | Some glob -> (
+  let process_filter_req search_stop_signal (s : string) =
+    match Query_exp.parse s with
+    | Some filter -> (
         Eio.Stream.add egress Searching;
         let store =
           !store_snapshot
           |> Document_store_snapshot.store
-          |> Document_store.update_file_path_filter_glob
+          |> Document_store.update_filter
             pool
             search_stop_signal
-            original_string
-            glob
+            s
+            filter
         in
-        let command = Some (`Filter original_string) in
+        let command = Some (`Filter s) in
         let snapshot = Document_store_snapshot.make ~last_command:command store in
         store_snapshot := snapshot;
         Eio.Stream.add egress (Filtering_done snapshot)

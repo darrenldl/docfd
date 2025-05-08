@@ -10,11 +10,11 @@ val size : t -> int
 
 val empty : t
 
-val update_file_path_filter_glob :
+val update_filter :
   Task_pool.t ->
   Stop_signal.t ->
   string ->
-  Glob.t ->
+  Query_exp.t ->
   t ->
   t
 
@@ -26,9 +26,9 @@ val update_search_exp :
   t ->
   t
 
-val file_path_filter_glob : t -> Glob.t
+val filter : t -> Query_exp.t
 
-val file_path_filter_glob_string : t -> string
+val filter_string : t -> string
 
 val search_exp : t -> Search_exp.t
 

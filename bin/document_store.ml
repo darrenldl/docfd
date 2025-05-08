@@ -7,6 +7,7 @@ type search_result_group = Document.t * Search_result.t array
 type t = {
   all_documents : Document.t String_map.t;
   filter : Query_exp.t;
+  filter_string : string;
   documents_passing_filter : String_set.t;
   documents_marked : String_set.t;
   search_exp : Search_exp.t;
@@ -21,6 +22,7 @@ let empty : t =
   {
     all_documents = String_map.empty;
     filter = Query_exp.empty;
+    filter_string = "";
     documents_passing_filter = String_set.empty;
     documents_marked = String_set.empty;
     search_exp = Search_exp.empty;
@@ -29,6 +31,8 @@ let empty : t =
   }
 
 let filter (t : t) = t.filter
+
+let filter_string (t : t) = t.filter_string
 
 let search_exp (t : t) = t.search_exp
 
@@ -134,29 +138,30 @@ let refresh_search_results pool stop_signal (t : t) : t =
   in
   { t with search_results }
 
-let update_file_path_filter_glob
+let update_filter
     pool
     stop_signal
-    file_path_filter_glob_string
-    file_path_filter_glob
+    filter_string
+    filter
     (t : t)
   : t =
   let documents_passing_filter =
     t.all_documents
     |> String_map.to_seq
-    |> Seq.map fst
+    |> Seq.map snd
     |> (fun s ->
-        if Glob.is_empty file_path_filter_glob then (
+        if Query_exp.is_empty filter then (
           s
         ) else (
-          Seq.filter (Glob.match_ file_path_filter_glob) s
+          Seq.filter (Document.satisfies_query filter) s
         )
       )
+    |> Seq.map Document.path
     |> String_set.of_seq
   in
   { t with
-    file_path_filter_glob;
-    file_path_filter_glob_string;
+    filter_string;
+    filter;
     documents_passing_filter;
   }
   |> refresh_search_results pool stop_signal
@@ -181,7 +186,7 @@ let add_document pool (doc : Document.t) (t : t) : t =
   in
   let path = Document.path doc in
   let documents_passing_filter =
-    if Glob.match_ t.file_path_filter_glob path
+    if Document.satisfies_query t.filter doc
     then
       String_set.add path t.documents_passing_filter
     else
@@ -204,7 +209,7 @@ let add_document pool (doc : Document.t) (t : t) : t =
   { t with
     all_documents =
       String_map.add
-        (Document.path doc)
+        path
         doc
         t.all_documents;
     documents_passing_filter;
@@ -314,8 +319,8 @@ let drop
         keep path
     in
     { all_documents = String_map.filter keep' t.all_documents;
-      file_path_filter_glob = t.file_path_filter_glob;
-      file_path_filter_glob_string = t.file_path_filter_glob_string;
+      filter = t.filter;
+      filter_string = t.filter_string;
       documents_passing_filter = String_set.filter keep t.documents_passing_filter;
       documents_marked = String_set.filter keep t.documents_marked;
       search_exp = t.search_exp;
@@ -326,8 +331,8 @@ let drop
   match choice with
   | `Path path -> (
       { all_documents = String_map.remove path t.all_documents;
-        file_path_filter_glob = t.file_path_filter_glob;
-        file_path_filter_glob_string = t.file_path_filter_glob_string;
+        filter = t.filter;
+        filter_string = t.filter_string;
         documents_passing_filter = String_set.remove path t.documents_passing_filter;
         documents_marked = String_set.remove path t.documents_marked;
         search_exp = t.search_exp;
@@ -469,15 +474,15 @@ let run_command pool (command : Command.t) (t : t) : t option =
     )
   | `Filter original_string -> (
       let s = Misc_utils.normalize_filter_glob_if_not_empty original_string in
-      match Glob.make s with
+      match Query_exp.parse s with
       | None -> None
-      | Some glob -> (
+      | Some exp -> (
           Some (
-            update_file_path_filter_glob
+            update_filter
               pool
               (Stop_signal.make ())
-              original_string
-              glob
+              s
+              exp
               t
           )
         )

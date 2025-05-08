@@ -123,7 +123,7 @@ let reload_document_selected
 let sync_input_fields_from_document_store
     (x : Document_store.t)
   =
-  Document_store.file_path_filter_glob_string x
+  Document_store.filter_string x
   |> (fun s ->
       Lwd.set Vars.file_path_filter_field (s, String.length s));
   Document_store.search_exp_string x
