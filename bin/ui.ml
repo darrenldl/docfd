@@ -589,7 +589,7 @@ module Bottom_pane = struct
         [
           [
             { label = "f"; msg = "pipe to fzf" };
-            { label = "g"; msg = "glob" };
+            { label = "q"; msg = "filter via query" };
           ];
           [
             { label = "Esc"; msg = "cancel" };
@@ -597,10 +597,10 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
-      let filter_glob_grid =
+      let filter_query_grid =
         [
           [
-            { label = "Enter"; msg = "exit filter glob mode" };
+            { label = "Enter"; msg = "exit filter query mode" };
           ];
           empty_row;
           empty_row;
@@ -610,7 +610,7 @@ module Bottom_pane = struct
         [
           [
             { label = "/"; msg = "search field" };
-            { label = "f"; msg = "file path glob field" };
+            { label = "f"; msg = "filter field" };
           ];
           [
             { label = "Esc"; msg = "cancel" };
@@ -700,8 +700,8 @@ module Bottom_pane = struct
         ({ input_mode = Filter },
          filter_grid
         );
-        ({ input_mode = Filter_glob },
-         filter_glob_grid
+        ({ input_mode = Filter_query },
+         filter_query_grid
         );
         ({ input_mode = Clear },
          clear_grid
@@ -992,9 +992,9 @@ let keyboard_handler
               false
             )
           )
-        | (`ASCII 'g', []) -> (
+        | (`ASCII 'q', []) -> (
             Nottui.Focus.request Vars.file_path_filter_field_focus_handle;
-            Ui_base.set_input_mode Filter_glob;
+            Ui_base.set_input_mode Filter_query;
             false
           )
         | _ -> false

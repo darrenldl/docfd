@@ -5,7 +5,7 @@ type input_mode =
   | Navigate
   | Search
   | Filter
-  | Filter_glob
+  | Filter_query
   | Clear
   | Drop
   | Narrow
@@ -254,7 +254,7 @@ module Status_bar = struct
       [ (Navigate, "NAVIGATE")
       ; (Search, "SEARCH")
       ; (Filter, "FILTER")
-      ; (Filter_glob, "FILTER-GLOB")
+      ; (Filter_query, "FILTER-QUERY")
       ; (Clear, "CLEAR")
       ; (Drop, "DROP")
       ; (Narrow, "NARROW")
@@ -440,7 +440,7 @@ module Key_binding_info = struct
     List.assoc { input_mode; } grid_lookup
 end
 
-let file_path_filter_bar_label_string = "File path glob"
+let filter_bar_label_string = "Filter"
 
 let search_bar_label_string = "Search" 
 
@@ -449,7 +449,7 @@ let max_label_length =
       max acc (String.length s)
     )
     0
-    [ file_path_filter_bar_label_string
+    [ filter_bar_label_string
     ; search_bar_label_string
     ]
 
@@ -457,12 +457,12 @@ let pad_label_string s =
   CCString.pad ~side:`Right ~c:' ' max_label_length s
 
 module File_path_filter_bar = struct
-  let label_string = pad_label_string file_path_filter_bar_label_string
+  let label_string = pad_label_string filter_bar_label_string
 
   let label ~(input_mode : input_mode) =
     let attr =
       match input_mode with
-      | Filter_glob -> Notty.A.(st bold)
+      | Filter_query -> Notty.A.(st bold)
       | _ -> Notty.A.empty
     in
     Notty.I.string attr label_string
