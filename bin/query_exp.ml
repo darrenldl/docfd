@@ -44,14 +44,14 @@ module Parsers = struct
   let maybe_quoted_string =
     (
       (choice
-       [
-         char '"';
-         char '\'';
-       ]
+         [
+           char '"';
+           char '\'';
+         ]
        >>= fun c -> return (Some c)
       )
-     <|>
-     return None
+      <|>
+      return None
     )
     >>= fun quote_char ->
     many1 (
