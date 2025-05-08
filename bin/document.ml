@@ -307,7 +307,7 @@ let satisfies_query (exp : Query_exp.t) (t : t) : bool =
         Glob.is_empty glob || Glob.match_ glob t.path
       )
     | Ext ext -> (
-        Filename.extension t.path = ext
+        File_utils.extension_of_file t.path = ext
       )
     | Binary_op (op, e1, e2) -> (
         match op with

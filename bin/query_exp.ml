@@ -60,7 +60,7 @@ module Parsers = struct
           | '\\' -> false
           | c -> (
               match quote_char with
-              | None -> true
+              | None -> is_not_space c
               | Some quote_char -> c <> quote_char
             )
         )
@@ -77,7 +77,7 @@ module Parsers = struct
     | None -> fail ""
     | Some x -> return x
 
-  let glob ~quote_char =
+  let glob =
     maybe_quoted_string
     >>= fun s ->
     let s = Misc_utils.normalize_filter_glob_if_not_empty s in
@@ -85,20 +85,28 @@ module Parsers = struct
     | None -> fail ""
     | Some x -> return x
 
-  let binary_op op =
+  let ext =
+    maybe_quoted_string
+    >>| fun s ->
+      s
+                |> String.lowercase_ascii
+                |> String_utils.remove_leading_dots
+                |> Fmt.str ".%s"
+
+  let binary_op op_string op =
     take_while1 is_alphanum >>= fun s ->
     skip_spaces *>
     (
-      if String.lowercase_ascii s = op then (
-        return (fun x y -> Binary_op (And, x, y))
+      if String.lowercase_ascii s = op_string then (
+        return (fun x y -> Binary_op (op, x, y))
       ) else (
         fail ""
       )
     )
 
-  let and_op = binary_op "and"
+  let and_op = binary_op "and" And
 
-  let or_op = binary_op "or"
+  let or_op = binary_op "or" Or
 
   let p =
     skip_spaces *>
@@ -107,9 +115,14 @@ module Parsers = struct
           choice [
             (end_of_input *> return empty);
             (string "path-fuzzy:" *>
-             search_exp >>| fun e -> Path_fuzzy e);
-            (char '(' *> skip_spaces *> exp <* char ')' <* skip_spaces);
+             search_exp >>| fun x -> Path_fuzzy x);
+            (string "path-glob:" *>
+             glob >>| fun x -> Path_glob x);
+            (string "ext:" *>
+             ext >>| fun x -> Ext x);
+            (char '(' *> skip_spaces *> exp <* char ')');
           ]
+          <* skip_spaces
         in
         let conj = chainl1 base and_op in
         chainl1 conj or_op
