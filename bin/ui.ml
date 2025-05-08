@@ -730,7 +730,7 @@ module Bottom_pane = struct
   end
 
   let file_path_filter_bar =
-    Ui_base.File_path_filter_bar.main
+    Ui_base.Filter_bar.main
       ~edit_field:Vars.file_path_filter_field
       ~focus_handle:Vars.file_path_filter_field_focus_handle
       ~f:update_file_path_filter

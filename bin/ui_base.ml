@@ -456,7 +456,7 @@ let max_label_length =
 let pad_label_string s =
   CCString.pad ~side:`Right ~c:' ' max_label_length s
 
-module File_path_filter_bar = struct
+module Filter_bar = struct
   let label_string = pad_label_string filter_bar_label_string
 
   let label ~(input_mode : input_mode) =
