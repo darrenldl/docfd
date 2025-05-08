@@ -10,6 +10,8 @@ let is_space c =
 
 let skip_spaces = skip_while is_space
 
+let is_not_space c = not (is_space c)
+
 let any_string : string t = take_while1 (fun _ -> true)
 
 let is_letter c =
