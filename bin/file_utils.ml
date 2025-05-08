@@ -147,7 +147,7 @@ let list_files_recursive_filter_by_globs
         | "**" -> (
             let glob_string = String.concat Filename.dir_sep (path :: glob_parts) in
             do_if_debug (fun oc ->
-                Printf.fprintf oc "Compiling glob regex using pattern: %s\n" re_string
+                Printf.fprintf oc "Compiling glob using pattern: %s\n" glob_string
               );
             let glob = parse_glob ~case_sensitive glob_string in
             path
@@ -158,7 +158,7 @@ let list_files_recursive_filter_by_globs
                 )
             |> String_set.iter (fun path ->
                 do_if_debug (fun oc ->
-                    Printf.fprintf oc "Glob regex %s matches path %s\n" re_string path
+                    Printf.fprintf oc "Glob %s matches path %s\n" glob_string path
                   );
                 add path
               )

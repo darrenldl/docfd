@@ -568,7 +568,7 @@ Current working directory is symlink:
   $ cd ..
 
 './' in glob:
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob './*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob './*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
@@ -576,7 +576,7 @@ Current working directory is symlink:
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
 
 '..' in glob:
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'test1/../*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'test1/../*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
@@ -584,40 +584,40 @@ Current working directory is symlink:
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
 
 Directories in glob:
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob '.' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob '..' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'test0/' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'test3' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob '.' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob '..' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'test0/' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'test3' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
 
 Crossing symlinks explicitly in glob:
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'test3/../*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'test3/../*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test-symlink.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'test3/abcd/*.txt' --glob 'test3/abcd/*.md' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'test3/abcd/*.txt' --glob 'test3/abcd/*.md' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.txt'
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'test3/ijkl/*.txt' --glob 'test3/ijkl/*.md' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'test3/ijkl/*.txt' --glob 'test3/ijkl/*.md' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.md'
   Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
 
 '**' in glob:
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob '**/*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/single-path0.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/single-path1.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test-symlink.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test0/abcd.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test0/abcd/efgh.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl/mnop.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test2/abcd/efgh.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test2/ijkl/mnop.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test3/abcd/efgh.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test3/ijkl/mnop.txt
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob '**/*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/single-path0.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/single-path1.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test-symlink.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test0/abcd.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test0/abcd/efgh.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl/mnop.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test2/abcd/efgh.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test2/ijkl/mnop.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test3/abcd/efgh.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test3/ijkl/mnop.txt
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
@@ -631,20 +631,20 @@ Crossing symlinks explicitly in glob:
   Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob '**/**/*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/single-path0.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/single-path1.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test-symlink.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test0/abcd.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test0/abcd/efgh.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl/mnop.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test2/abcd/efgh.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test2/ijkl/mnop.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test3/abcd/efgh.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test3/ijkl/mnop.txt
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob '**/**/*.txt' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/single-path0.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/single-path1.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test-symlink.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test0/abcd.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test0/abcd/efgh.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl/mnop.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test2/abcd/efgh.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test2/ijkl/mnop.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test3/abcd/efgh.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test3/ijkl/mnop.txt
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
@@ -658,20 +658,20 @@ Crossing symlinks explicitly in glob:
   Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob "$(pwd)/**/*.txt" 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/single-path0.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/single-path1.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test-symlink.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test0/abcd.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test0/abcd/efgh.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl/mnop.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test2/abcd/efgh.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test2/ijkl/mnop.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test3/abcd/efgh.txt
-  Glob regex $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test3/ijkl/mnop.txt
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob "$(pwd)/**/*.txt" 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/single-path0.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/single-path1.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test-symlink.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test0/abcd.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test0/abcd/efgh.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl/mnop.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test2/abcd/efgh.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test2/ijkl/mnop.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test3/abcd/efgh.txt
+  Glob $TESTCASE_ROOT/**/*.txt matches path $TESTCASE_ROOT/test3/ijkl/mnop.txt
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
@@ -685,20 +685,20 @@ Crossing symlinks explicitly in glob:
   Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob "$(pwd)/**/**/*.txt" 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/single-path0.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/single-path1.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test-symlink.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test0/abcd.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test0/abcd/efgh.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl/mnop.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test2/abcd/efgh.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test2/ijkl/mnop.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test3/abcd/efgh.txt
-  Glob regex $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test3/ijkl/mnop.txt
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob "$(pwd)/**/**/*.txt" 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/empty-paths.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/single-path0.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/single-path1.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test-symlink.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test0/abcd.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test0/abcd/efgh.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test1/ijkl/mnop.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test2/abcd/efgh.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test2/ijkl/mnop.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test3/abcd/efgh.txt
+  Glob $TESTCASE_ROOT/**/**/*.txt matches path $TESTCASE_ROOT/test3/ijkl/mnop.txt
   Using multiline search mode for document '$TESTCASE_ROOT/empty-paths.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/single-path0.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/single-path1.txt'
@@ -712,48 +712,48 @@ Crossing symlinks explicitly in glob:
   Using multiline search mode for document '$TESTCASE_ROOT/test2/ijkl/mnop.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test3/abcd/efgh.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob "**/test[01]/*.txt" 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
-  Glob regex $TESTCASE_ROOT/**/test[01]/*.txt matches path $TESTCASE_ROOT/test0/abcd.txt
-  Glob regex $TESTCASE_ROOT/**/test[01]/*.txt matches path $TESTCASE_ROOT/test1/ijkl.txt
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob "**/test[01]/*.txt" 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
+  Glob $TESTCASE_ROOT/**/test[01]/*.txt matches path $TESTCASE_ROOT/test0/abcd.txt
+  Glob $TESTCASE_ROOT/**/test[01]/*.txt matches path $TESTCASE_ROOT/test1/ijkl.txt
   Using multiline search mode for document '$TESTCASE_ROOT/test0/abcd.txt'
   Using multiline search mode for document '$TESTCASE_ROOT/test1/ijkl.txt'
 
 Case insensitive marker:
   $ # Exact match without marker
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'miXeD-CaSe/AbCd.md' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'miXeD-CaSe/AbCd.md' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/miXeD-CaSe/AbCd.md'
   $ # All lowercase glob
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'mixed-case/abcd.md' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob '\cmixed-case/abcd.md' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'mixed-case/abcd.md' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob '\cmixed-case/abcd.md' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/miXeD-CaSe/AbCd.md'
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'mixed-\ccase/abcd.md' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'mixed-\ccase/abcd.md' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/miXeD-CaSe/AbCd.md'
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'mixed-case/\cabcd.md' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'mixed-case/\cabcd.md' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/miXeD-CaSe/AbCd.md'
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'mixed-case/abcd.md\c' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'mixed-case/abcd.md\c' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/miXeD-CaSe/AbCd.md'
   $ # All uppercase glob
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MIXED-CASE/ABCD.MD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob '\cMIXED-CASE/ABCD.MD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MIXED-CASE/ABCD.MD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob '\cMIXED-CASE/ABCD.MD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/miXeD-CaSe/AbCd.md'
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MIX\cED-CASE/ABCD.MD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MIX\cED-CASE/ABCD.MD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/miXeD-CaSe/AbCd.md'
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MIXED-CASE/\cABCD.MD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MIXED-CASE/\cABCD.MD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/miXeD-CaSe/AbCd.md'
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MIXED-CASE/ABCD.MD\c' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MIXED-CASE/ABCD.MD\c' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/miXeD-CaSe/AbCd.md'
   $ # Mixed case glob
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MixeD-CaSE/aBcD.mD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob '\cMixeD-CaSE/aBcD.mD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MixeD-CaSE/aBcD.mD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob '\cMixeD-CaSE/aBcD.mD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/miXeD-CaSe/AbCd.md'
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MixeD\c-CaSE/aBcD.mD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MixeD\c-CaSE/aBcD.mD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/miXeD-CaSe/AbCd.md'
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MixeD-CaSE/\caBcD.mD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MixeD-CaSE/\caBcD.mD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/miXeD-CaSe/AbCd.md'
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MixeD-CaSE/aBcD.mD\c' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MixeD-CaSE/aBcD.mD\c' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/miXeD-CaSe/AbCd.md'
 
 Double escape characters:
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob '\\cMixeD-CaSE/AbCd.mD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MixeD\\c-CaSE/AbCd.mD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
-  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MixeD-CaSE/AbCd.mD\\c' 2>&1 | grep -e '^Using .* search mode' -e '^Glob regex' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob '\\cMixeD-CaSE/AbCd.mD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MixeD\\c-CaSE/AbCd.mD' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
+  $ docfd --debug-log - --cache-dir .cache --index-only --glob 'MixeD-CaSE/AbCd.mD\\c' 2>&1 | grep -e '^Using .* search mode' -e '^Glob' | sort
