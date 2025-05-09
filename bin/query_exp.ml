@@ -96,20 +96,20 @@ module Parsers = struct
     |> String_utils.remove_leading_dots
     |> Fmt.str ".%s"
 
-  let binary_op op_string op =
-    take_while1 is_alphanum >>= fun s ->
+  let binary_op op_strings op =
+    non_space_string >>= fun s ->
     skip_spaces *>
     (
-      if String.lowercase_ascii s = op_string then (
+      if List.mem (String.lowercase_ascii s) op_strings then (
         return (fun x y -> Binary_op (op, x, y))
       ) else (
         fail ""
       )
     )
 
-  let and_op = binary_op "and" And
+  let and_op = binary_op [ "and"; "&&" ] And
 
-  let or_op = binary_op "or" Or
+  let or_op = binary_op [ "or"; "||" ] Or
 
   let p =
     skip_spaces *>
