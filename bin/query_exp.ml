@@ -113,23 +113,26 @@ module Parsers = struct
 
   let p =
     skip_spaces *>
-    fix (fun (exp : exp Angstrom.t) ->
-        let base =
-          choice [
-            (end_of_input *> return empty);
-            (string "path-fuzzy:" *>
-             search_exp >>| fun x -> Path_fuzzy x);
-            (string "path-glob:" *>
-             glob >>| fun x -> Path_glob x);
-            (string "ext:" *>
-             ext >>| fun x -> Ext x);
-            (char '(' *> skip_spaces *> exp <* char ')');
-          ]
-          <* skip_spaces
-        in
-        let conj = chainl1 base and_op in
-        chainl1 conj or_op
-      )
+    (
+      (end_of_input *> return empty)
+      <|>
+      fix (fun (exp : exp Angstrom.t) ->
+          let base =
+            choice [
+              (string "path-fuzzy:" *>
+               search_exp >>| fun x -> Path_fuzzy x);
+              (string "path-glob:" *>
+               glob >>| fun x -> Path_glob x);
+              (string "ext:" *>
+               ext >>| fun x -> Ext x);
+              (char '(' *> skip_spaces *> exp <* char ')');
+            ]
+            <* skip_spaces
+          in
+          let conj = chainl1 base and_op in
+          chainl1 conj or_op
+        )
+    )
     <* skip_spaces
 end
 
