@@ -91,10 +91,10 @@ module Parsers = struct
   let ext =
     maybe_quoted_string
     >>| fun s ->
-      s
-                |> String.lowercase_ascii
-                |> String_utils.remove_leading_dots
-                |> Fmt.str ".%s"
+    s
+    |> String.lowercase_ascii
+    |> String_utils.remove_leading_dots
+    |> Fmt.str ".%s"
 
   let binary_op op_string op =
     take_while1 is_alphanum >>= fun s ->
