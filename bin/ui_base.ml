@@ -440,9 +440,9 @@ module Key_binding_info = struct
     List.assoc { input_mode; } grid_lookup
 end
 
-let filter_bar_label_string = "Filter"
+let filter_bar_label_string = "Document filter"
 
-let search_bar_label_string = "Search" 
+let search_bar_label_string = "Content search"
 
 let max_label_length =
   List.fold_left (fun acc s ->
