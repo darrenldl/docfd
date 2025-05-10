@@ -10,7 +10,7 @@ module Alco = struct
          (Search_exp.parse s))
 
   let test_empty_phrase (s : string) =
-    let phrase = Search_phrase.make s in
+    let phrase = Search_phrase.parse s in
     Alcotest.(check bool)
       "case0"
       true
