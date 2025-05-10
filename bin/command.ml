@@ -114,5 +114,5 @@ let equal (x : t) (y : t) =
   | `Drop_unlisted, `Drop_unlisted -> true
   | `Narrow_level x, `Narrow_level y -> Int.equal x y
   | `Search x, `Search y -> String.equal (String.trim x) (String.trim y)
-  | `Filter x, `Filter y -> String.equal (CCString.ltrim x) (CCString.ltrim y)
+  | `Filter x, `Filter y -> String.equal (String.trim x) (String.trim y)
   | _, _ -> false

@@ -472,8 +472,7 @@ let run_command pool (command : Command.t) (t : t) : t option =
           )
         )
     )
-  | `Filter original_string -> (
-      let s = Misc_utils.normalize_filter_glob_if_not_empty original_string in
+  | `Filter s -> (
       match Query_exp.parse s with
       | None -> None
       | Some exp -> (
