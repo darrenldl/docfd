@@ -6,9 +6,9 @@ module Vars = struct
 
   let index_of_search_result_selected = Lwd.var 0
 
-  let file_path_filter_field = Lwd.var Ui_base.empty_text_field
+  let filter_field = Lwd.var Ui_base.empty_text_field
 
-  let file_path_filter_field_focus_handle = Nottui.Focus.make ()
+  let filter_field_focus_handle = Nottui.Focus.make ()
 
   let search_field = Lwd.var Ui_base.empty_text_field
 
@@ -125,7 +125,7 @@ let sync_input_fields_from_document_store
   =
   Document_store.filter_string x
   |> (fun s ->
-      Lwd.set Vars.file_path_filter_field (s, String.length s));
+      Lwd.set Vars.filter_field (s, String.length s));
   Document_store.search_exp_string x
   |> (fun s ->
       Lwd.set Vars.search_field (s, String.length s))
@@ -241,9 +241,9 @@ let narrow_search_scope_to_level ~level =
   in
   Document_store_manager.submit_update_req new_snapshot
 
-let update_file_path_filter () =
+let update_filter () =
   reset_document_selected ();
-  let s = fst @@ Lwd.peek Vars.file_path_filter_field in
+  let s = fst @@ Lwd.peek Vars.filter_field in
   Document_store_manager.submit_filter_req s
 
 let update_search_phrase () =
@@ -714,11 +714,11 @@ module Bottom_pane = struct
       Ui_base.Key_binding_info.main ~grid_lookup ~input_mode
   end
 
-  let file_path_filter_bar =
+  let filter_bar =
     Ui_base.Filter_bar.main
-      ~edit_field:Vars.file_path_filter_field
-      ~focus_handle:Vars.file_path_filter_field_focus_handle
-      ~f:update_file_path_filter
+      ~edit_field:Vars.filter_field
+      ~focus_handle:Vars.filter_field_focus_handle
+      ~f:update_filter
 
   let search_bar ~input_mode =
     Ui_base.Search_bar.main ~input_mode
@@ -732,7 +732,7 @@ module Bottom_pane = struct
       [
         status_bar ~width ~search_result_groups ~input_mode;
         Key_binding_info.main ~input_mode;
-        file_path_filter_bar ~input_mode;
+        filter_bar ~input_mode;
         search_bar ~input_mode;
       ]
 end
@@ -936,7 +936,7 @@ let keyboard_handler
         )
       | (`ASCII 'f', []) -> (
           commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff ();
-          Nottui.Focus.request Vars.file_path_filter_field_focus_handle;
+          Nottui.Focus.request Vars.filter_field_focus_handle;
           Ui_base.set_input_mode Filter;
           `Handled
         )
@@ -984,8 +984,8 @@ let keyboard_handler
           )
         | (`ASCII 'f', []) -> (
             commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff ();
-            Lwd.set Vars.file_path_filter_field Ui_base.empty_text_field;
-            update_file_path_filter ();
+            Lwd.set Vars.filter_field Ui_base.empty_text_field;
+            update_filter ();
             true
           )
         | _ -> false
