@@ -69,9 +69,11 @@ module Parsers = struct
     )
     >>= fun l ->
     let s = String.concat "" l in
-    match quote_char with
-    | None -> return s
-    | Some quote_char -> char quote_char *> return s
+    (end_of_input *> return s)
+    <|>
+    (match quote_char with
+     | None -> return s
+     | Some quote_char -> char quote_char *> return s)
 
   let search_exp =
     maybe_quoted_string
