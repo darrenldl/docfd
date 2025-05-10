@@ -47,10 +47,10 @@ let egress : egress_payload Eio.Stream.t =
 let egress_ack : unit Eio.Stream.t =
   Eio.Stream.create 0
 
-let search_stop_signal = Atomic.make (Stop_signal.make ())
+let stop_signal = Atomic.make (Stop_signal.make ())
 
-let signal_search_stop () =
-  let x = Atomic.exchange search_stop_signal (Stop_signal.make ()) in
+let signal_stop () =
+  let x = Atomic.exchange stop_signal (Stop_signal.make ()) in
   Stop_signal.broadcast x
 
 let document_store_snapshot =
@@ -103,7 +103,7 @@ let worker_fiber pool =
   let store_snapshot =
     ref (Document_store_snapshot.make_empty ())
   in
-  let process_search_req search_stop_signal (s : string) =
+  let process_search_req stop_signal (s : string) =
     match Search_exp.parse s with
     | None -> (
         Eio.Stream.add egress Search_exp_parse_error
@@ -115,7 +115,7 @@ let worker_fiber pool =
           |> Document_store_snapshot.store
           |> Document_store.update_search_exp
             pool
-            search_stop_signal
+            stop_signal
             s
             search_exp
         in
@@ -125,7 +125,7 @@ let worker_fiber pool =
         Eio.Stream.add egress (Search_done snapshot)
       )
   in
-  let process_filter_req search_stop_signal (s : string) =
+  let process_filter_req stop_signal (s : string) =
     match Query_exp.parse s with
     | Some filter -> (
         Eio.Stream.add egress Searching;
@@ -134,7 +134,7 @@ let worker_fiber pool =
           |> Document_store_snapshot.store
           |> Document_store.update_filter
             pool
-            search_stop_signal
+            stop_signal
             s
             filter
         in
@@ -155,14 +155,14 @@ let worker_fiber pool =
   while true do
     Ping.wait worker_ping;
     Ping.clear requester_ping;
-    let search_stop_signal' = Atomic.get search_stop_signal in
+    let stop_signal' = Atomic.get stop_signal in
     (match Lock_protected_cell.get filter_request with
      | None -> ()
-     | Some s -> process_filter_req search_stop_signal' s
+     | Some s -> process_filter_req stop_signal' s
     );
     (match Lock_protected_cell.get search_request with
      | None -> ()
-     | Some s -> process_search_req search_stop_signal' s
+     | Some s -> process_search_req stop_signal' s
     );
     (match Lock_protected_cell.get update_request with
      | None -> ()
@@ -173,21 +173,21 @@ let worker_fiber pool =
 
 let submit_filter_req (s : string) =
   Eio.Mutex.use_rw requester_lock ~protect:false (fun () ->
-      signal_search_stop ();
+      signal_stop ();
       Lock_protected_cell.set filter_request s;
       Ping.ping worker_ping
     )
 
 let submit_search_req (s : string) =
   Eio.Mutex.use_rw requester_lock ~protect:false (fun () ->
-      signal_search_stop ();
+      signal_stop ();
       Lock_protected_cell.set search_request s;
       Ping.ping worker_ping
     )
 
 let submit_update_req snapshot =
   Eio.Mutex.use_rw requester_lock ~protect:false (fun () ->
-      signal_search_stop ();
+      signal_stop ();
       Lock_protected_cell.unset search_request;
       Lock_protected_cell.unset filter_request;
       Lock_protected_cell.set update_request snapshot;
