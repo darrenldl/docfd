@@ -7,7 +7,7 @@ module Alco = struct
       "true"
       true
       (Option.is_none
-         (Search_exp.make s))
+         (Search_exp.parse s))
 
   let test_empty_phrase (s : string) =
     let phrase = Search_phrase.make s in
@@ -21,7 +21,7 @@ module Alco = struct
       (List.is_empty (Search_phrase.enriched_tokens phrase))
 
   let test_empty_exp (s : string) =
-    let exp = Search_exp.make s |> Option.get in
+    let exp = Search_exp.parse s |> Option.get in
     Alcotest.(check bool)
       "case0"
       true
@@ -94,7 +94,7 @@ module Alco = struct
                  )))
       (Fmt.str "case0 of %S" s)
       (List.sort Search_phrase.compare phrases)
-      (Search_exp.make s
+      (Search_exp.parse s
        |> Option.get
        |> Search_exp.flattened
        |> List.sort Search_phrase.compare
