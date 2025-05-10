@@ -5,7 +5,6 @@ type input_mode =
   | Navigate
   | Search
   | Filter
-  | Filter_query
   | Clear
   | Drop
   | Narrow
@@ -254,7 +253,6 @@ module Status_bar = struct
       [ (Navigate, "NAVIGATE")
       ; (Search, "SEARCH")
       ; (Filter, "FILTER")
-      ; (Filter_query, "FILTER-QUERY")
       ; (Clear, "CLEAR")
       ; (Drop, "DROP")
       ; (Narrow, "NARROW")
@@ -462,7 +460,7 @@ module Filter_bar = struct
   let label ~(input_mode : input_mode) =
     let attr =
       match input_mode with
-      | Filter_query -> Notty.A.(st bold)
+      | Filter -> Notty.A.(st bold)
       | _ -> Notty.A.empty
     in
     Notty.I.string attr label_string
