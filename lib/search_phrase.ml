@@ -374,7 +374,7 @@ let of_tokens
   |> Seq.map (fun s -> { data = `String s; group_id = 0 })
   |> of_annotated_tokens
 
-let make phrase =
+let parse phrase =
   phrase
   |> Tokenize.tokenize ~drop_spaces:false
   |> of_tokens

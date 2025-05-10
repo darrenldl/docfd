@@ -62,7 +62,7 @@ val of_annotated_tokens : annotated_token Seq.t -> t
 
 val of_tokens : string Seq.t -> t
 
-val make : string -> t
+val parse : string -> t
 
 val is_empty : t -> bool
 
