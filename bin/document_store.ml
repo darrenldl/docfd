@@ -146,18 +146,28 @@ let update_filter
     (t : t)
   : t =
   let documents_passing_filter =
-    t.all_documents
-    |> String_map.to_seq
-    |> Seq.map snd
-    |> (fun s ->
-        if Query_exp.is_empty filter then (
-          s
-        ) else (
-          Seq.filter (Document.satisfies_query filter) s
-        )
+    Eio.Fiber.first
+      (fun () ->
+         Stop_signal.await stop_signal;
+         String_set.empty
       )
-    |> Seq.map Document.path
-    |> String_set.of_seq
+      (fun () ->
+         t.all_documents
+         |> String_map.to_seq
+         |> Seq.map snd
+         |> (fun s ->
+             if Query_exp.is_empty filter then (
+               s
+             ) else (
+               Seq.filter (fun s ->
+                   Eio.Fiber.yield ();
+                   Document.satisfies_query filter s
+                 ) s
+             )
+           )
+         |> Seq.map Document.path
+         |> String_set.of_seq
+      )
   in
   { t with
     filter_string;
