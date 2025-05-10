@@ -73,7 +73,25 @@ File path filter + restrictions:
   $ # So both documents should appear
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
-  $ echo "filter: test0.txt" >> test.docfd_commands
+  $ echo "filter: path-glob:test0.txt" >> test.docfd_commands
+  $ echo "search: 'efgh" >> test.docfd_commands
+  $ echo "clear filter" >> test.docfd_commands
+  $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands -l .
+  $TESTCASE_ROOT/test0.txt
+  $TESTCASE_ROOT/test1.txt
+  $ # Baseline case quoted string using single quote
+  $ echo "" > test.docfd_commands
+  $ echo "search: 'abcd" >> test.docfd_commands
+  $ echo "filter: path-glob:'test0.txt'" >> test.docfd_commands
+  $ echo "search: 'efgh" >> test.docfd_commands
+  $ echo "clear filter" >> test.docfd_commands
+  $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands -l .
+  $TESTCASE_ROOT/test0.txt
+  $TESTCASE_ROOT/test1.txt
+  $ # Baseline case quoted string using double quote
+  $ echo "" > test.docfd_commands
+  $ echo "search: 'abcd" >> test.docfd_commands
+  $ echo 'filter: path-glob:"test0.txt"' >> test.docfd_commands
   $ echo "search: 'efgh" >> test.docfd_commands
   $ echo "clear filter" >> test.docfd_commands
   $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands -l .
@@ -82,7 +100,7 @@ File path filter + restrictions:
   $ # Since there is no "search" after "narrow", both documents should still appear
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
-  $ echo "filter: test0.txt" >> test.docfd_commands
+  $ echo "filter: path-glob:test0.txt" >> test.docfd_commands
   $ echo "narrow level: 1" >> test.docfd_commands
   $ echo "clear filter" >> test.docfd_commands
   $ docfd --tokens-per-search-scope-level 1 --commands-from test.docfd_commands -l .
@@ -91,7 +109,7 @@ File path filter + restrictions:
   $ # "narrow" + "search" after filtering should prevent test1.txt from appearing, even after we clear the filter
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
-  $ echo "filter: test0.txt" >> test.docfd_commands
+  $ echo "filter: path-glob:test0.txt" >> test.docfd_commands
   $ echo "narrow level: 1" >> test.docfd_commands
   $ echo "search: 'efgh" >> test.docfd_commands
   $ echo "clear filter" >> test.docfd_commands
@@ -101,7 +119,7 @@ File path filter + restrictions:
   $ # test1.txt still should not appear
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
-  $ echo "filter: test0.txt" >> test.docfd_commands
+  $ echo "filter: path-glob:test0.txt" >> test.docfd_commands
   $ echo "narrow level: 1" >> test.docfd_commands
   $ echo "clear filter" >> test.docfd_commands
   $ echo "search: 'efgh" >> test.docfd_commands
@@ -111,7 +129,7 @@ File path filter + restrictions:
   $ # Since resetting the search scope does not refresh the search results, test1.txt should still not appear as there is not another "search"
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
-  $ echo "filter: test0.txt" >> test.docfd_commands
+  $ echo "filter: path-glob:test0.txt" >> test.docfd_commands
   $ echo "narrow level: 1" >> test.docfd_commands
   $ echo "clear filter" >> test.docfd_commands
   $ echo "search: 'efgh" >> test.docfd_commands
@@ -121,7 +139,7 @@ File path filter + restrictions:
   $ # Similar to the above case, but we search again after resetting search scope
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
-  $ echo "filter: test0.txt" >> test.docfd_commands
+  $ echo "filter: path-glob:test0.txt" >> test.docfd_commands
   $ echo "narrow level: 1" >> test.docfd_commands
   $ echo "clear filter" >> test.docfd_commands
   $ echo "search: 'efgh" >> test.docfd_commands
@@ -133,7 +151,7 @@ File path filter + restrictions:
   $ # Simplified version of the above case where we skip the search before "narrow level: 0"
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
-  $ echo "filter: test0.txt" >> test.docfd_commands
+  $ echo "filter: path-glob:test0.txt" >> test.docfd_commands
   $ echo "narrow level: 1" >> test.docfd_commands
   $ echo "clear filter" >> test.docfd_commands
   $ echo "narrow level: 0" >> test.docfd_commands
@@ -145,7 +163,7 @@ File path filter + restrictions:
   $ # Both documents should still appear
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
-  $ echo "filter: test0.txt" >> test.docfd_commands
+  $ echo "filter: path-glob:test0.txt" >> test.docfd_commands
   $ echo "narrow level: 1" >> test.docfd_commands
   $ echo "narrow level: 0" >> test.docfd_commands
   $ echo "clear filter" >> test.docfd_commands
@@ -157,7 +175,7 @@ File path filter + restrictions:
   $ # Both documents should still appear
   $ echo "" > test.docfd_commands
   $ echo "search: 'abcd" >> test.docfd_commands
-  $ echo "filter: test0.txt" >> test.docfd_commands
+  $ echo "filter: path-glob:test0.txt" >> test.docfd_commands
   $ echo "narrow level: 1" >> test.docfd_commands
   $ echo "narrow level: 0" >> test.docfd_commands
   $ echo "search: 'efgh" >> test.docfd_commands
