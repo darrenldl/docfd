@@ -4,15 +4,28 @@ open Docfd_lib
 type t = {
   search_mode : Search_mode.t;
   path : string;
+  path_parts : string list;
+  path_parts_ci : string list;
   title : string option;
   doc_hash : string;
   search_scope : Diet.Int.t option;
   last_scan : Timedesc.t;
 }
 
+let compute_path_parts (path : string) =
+  let path_parts = Tokenize.tokenize ~drop_spaces:false path
+                   |> List.of_seq
+  in
+  let path_parts_ci = List.map String.lowercase_ascii path_parts in
+  (path_parts, path_parts_ci)
+
 let search_mode (t : t) = t.search_mode
 
 let path (t : t) = t.path
+
+let path_parts (t : t) = t.path_parts
+
+let path_parts_ci (t : t) = t.path_parts_ci
 
 let title (t : t) = t.title
 
@@ -21,16 +34,6 @@ let doc_hash (t : t) = t.doc_hash
 let search_scope (t : t) = t.search_scope
 
 let last_scan (t : t) = t.last_scan
-
-let make ~doc_hash ~path ~title search_mode : t =
-  {
-    search_mode;
-    path;
-    title;
-    doc_hash;
-    search_scope = None;
-    last_scan = Timedesc.now ~tz_of_date_time:Params.tz ();
-  }
 
 let refresh_modification_time ~path =
   let time = Unix.time () in
@@ -192,6 +195,8 @@ module Ir2 = struct
     search_mode : Search_mode.t;
     doc_hash : string;
     path : string;
+    path_parts : string list;
+    path_parts_ci : string list;
     title : string option;
     raw : Index.Raw.t;
     last_scan : Timedesc.t;
@@ -201,12 +206,12 @@ module Ir2 = struct
     | Title
     | Content
 
-  let parse_lines pool ~doc_hash search_mode last_scan ~path (s : string Seq.t) : t =
+  let parse_lines pool ~doc_hash search_mode last_scan ~path ~path_parts ~path_parts_ci (s : string Seq.t) : t =
     let rec aux (stage : work_stage) title s =
       match stage with
       | Content -> (
           let raw = Index.Raw.of_lines pool s in
-          { search_mode; path; doc_hash; title; raw; last_scan }
+          { search_mode; path; path_parts; path_parts_ci; doc_hash; title; raw; last_scan }
         )
       | Title -> (
           match s () with
@@ -218,12 +223,12 @@ module Ir2 = struct
     in
     aux Title None s
 
-  let parse_pages pool ~doc_hash search_mode last_scan ~path (s : string list Seq.t) : t =
+  let parse_pages pool ~doc_hash search_mode last_scan ~path ~path_parts ~path_parts_ci (s : string list Seq.t) : t =
     let rec aux (stage : work_stage) title s =
       match stage with
       | Content -> (
           let raw = Index.Raw.of_pages pool s in
-          { search_mode; path; doc_hash; title; raw; last_scan }
+          { search_mode; path; path_parts; path_parts_ci; doc_hash; title; raw; last_scan }
         )
       | Title -> (
           match s () with
@@ -243,21 +248,24 @@ module Ir2 = struct
 
   let of_ir1 pool (ir : Ir1.t) : t =
     let { Ir1.search_mode; doc_hash; path; data; last_scan } = ir in
+    let path_parts, path_parts_ci = compute_path_parts path in
     match data with
     | `Lines x -> (
-        parse_lines pool ~doc_hash search_mode last_scan ~path (Dynarray.to_seq x)
+        parse_lines pool ~doc_hash search_mode last_scan ~path ~path_parts ~path_parts_ci (Dynarray.to_seq x)
       )
     | `Pages x -> (
-        parse_pages pool ~doc_hash search_mode last_scan ~path (Dynarray.to_seq x)
+        parse_pages pool ~doc_hash search_mode last_scan ~path ~path_parts ~path_parts_ci (Dynarray.to_seq x)
       )
 end
 
 let of_ir2 db (ir : Ir2.t) : t =
-  let { Ir2.search_mode; path; title; doc_hash; raw; last_scan } = ir in
+  let { Ir2.search_mode; path; path_parts; path_parts_ci; title; doc_hash; raw; last_scan } = ir in
   Index.load_raw_into_db db ~doc_hash raw;
   {
     search_mode;
     path;
+    path_parts;
+    path_parts_ci;
     title;
     doc_hash;
     search_scope = None;
@@ -278,10 +286,13 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, 
       else
         Some (Index.line_of_global_line_num ~doc_hash 0)
     in
+    let path_parts, path_parts_ci = compute_path_parts path in
     Ok
       {
         search_mode;
         path;
+        path_parts;
+        path_parts_ci;
         title;
         doc_hash;
         search_scope = None;
@@ -296,13 +307,62 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, 
       )
   )
 
+module ET = Search_phrase.Enriched_token
+
 let satisfies_query (exp : Query_exp.t) (t : t) : bool =
   let open Query_exp in
   let rec aux exp =
     match exp with
     | Empty -> true
     | Path_date _ -> false
-    | Path_fuzzy _ -> false
+    | Path_fuzzy phrase -> (
+        List.for_all (fun token ->
+            match ET.data token with
+            | `Explicit_spaces -> (
+                List.exists (fun path_part ->
+                    Parser_components.is_space path_part.[0]
+                  )
+                  t.path_parts
+              )
+            | `String token_word -> (
+                let token_word_ci = String.lowercase_ascii token_word in
+                let use_ci_match = String.equal token_word token_word_ci in
+                List.exists2 (fun path_part path_part_ci ->
+                    match ET.match_typ token with
+                    | `Fuzzy -> (
+                        String.equal path_part_ci token_word_ci
+                        || CCString.find ~sub:token_word_ci path_part_ci >= 0
+                        || (Misc_utils.first_n_chars_of_string_contains ~n:5 path_part_ci token_word_ci.[0]
+                            && Spelll.match_with (ET.automaton token) path_part_ci)
+                      )
+                    | `Exact -> (
+                        if use_ci_match then (
+                          String.equal token_word_ci path_part_ci
+                        ) else (
+                          String.equal token_word path_part
+                        )
+                      )
+                    | `Prefix -> (
+                        if use_ci_match then (
+                          CCString.prefix ~pre:token_word_ci path_part_ci
+                        ) else (
+                          CCString.prefix ~pre:token_word path_part
+                        )
+                      )
+                    | `Suffix -> (
+                        if use_ci_match then (
+                          CCString.suffix ~suf:token_word_ci path_part_ci
+                        ) else (
+                          CCString.suffix ~suf:token_word path_part
+                        )
+                      )
+                  )
+                  t.path_parts
+                  t.path_parts_ci
+              )
+          )
+          (Search_phrase.enriched_tokens phrase)
+      )
     | Path_glob glob -> (
         Glob.is_empty glob || Glob.match_ glob t.path
       )
