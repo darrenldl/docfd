@@ -3,7 +3,7 @@ open Docfd_lib
 type t =
   | Empty
   | Path_date of Timedesc.Date.t
-  | Path_fuzzy of Search_exp.t
+  | Path_fuzzy of Search_phrase.t
   | Path_glob of Glob.t
   | Ext of string
   | Binary_op of binary_op * t * t
@@ -24,7 +24,7 @@ let equal (e1 : t) (e2 : t) =
     match e1, e2 with
     | Empty, Empty -> true
     | Path_date x, Path_date y -> Timedesc.Date.equal x y
-    | Path_fuzzy x, Path_fuzzy y -> Search_exp.equal x y
+    | Path_fuzzy x, Path_fuzzy y -> Search_phrase.equal x y
     | Path_glob x, Path_glob y -> Glob.equal x y
     | Ext x, Ext y -> String.equal x y
     | Binary_op (op1, x1, y1), Binary_op (op2, x2, y2) ->
@@ -75,10 +75,8 @@ module Parsers = struct
 
   let search_exp =
     maybe_quoted_string
-    >>= fun s ->
-    match Search_exp.parse s with
-    | None -> fail ""
-    | Some x -> return x
+    >>| fun s ->
+    Search_phrase.parse s
 
   let glob =
     maybe_quoted_string
