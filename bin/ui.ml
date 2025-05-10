@@ -924,16 +924,6 @@ let keyboard_handler
             (document_count - 1);
           `Handled
         )
-      | (`ASCII 'F', []) -> (
-          if Proc_utils.command_exists "fzf" then (
-            Lwd.set Ui_base.Vars.quit true;
-            Ui_base.Vars.action := Some Ui_base.Filter_files_via_fzf;
-            reset_document_selected ();
-          ) else (
-            Ui_base.Key_binding_info.blink "F";
-          );
-          `Handled
-        )
       | (`ASCII 'f', []) -> (
           commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff ();
           Nottui.Focus.request Vars.filter_field_focus_handle;
