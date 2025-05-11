@@ -2,13 +2,13 @@
 
 ## 12.0.0
 
-- Added a more powerful filter query mode that replaces the filter glob mode
+- Added a more powerful filter query mode that replaces the filter glob mode and "pipe to fzf" feature
 
-    - Filter query mode uses a proper query language that supports file path globbing among other features
+    - Filter query mode uses a proper query language that supports file path globbing and file path fuzzy matching among other features
 
-    - This mode uses key binding `fq`
+    - This mode uses key binding `f`
 
-- Removed `q` exit key binding to avoid accidental exiting from trying to trigger filter query mode
+- Removed `q` exit key binding to avoid accidental exiting
 
 ## 11.0.1
 
