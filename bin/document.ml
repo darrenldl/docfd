@@ -315,53 +315,56 @@ let satisfies_query (exp : Query_exp.t) (t : t) : bool =
     match exp with
     | Empty -> true
     | Path_date _ -> false
-    | Path_fuzzy phrase -> (
-        List.for_all (fun token ->
-            match ET.data token with
-            | `Explicit_spaces -> (
-                List.exists (fun path_part ->
-                    Parser_components.is_space path_part.[0]
+    | Path_fuzzy exp -> (
+        List.exists (fun phrase ->
+            List.for_all (fun token ->
+                match ET.data token with
+                | `Explicit_spaces -> (
+                    List.exists (fun path_part ->
+                        Parser_components.is_space path_part.[0]
+                      )
+                      t.path_parts
                   )
-                  t.path_parts
-              )
-            | `String token_word -> (
-                let token_word_ci = String.lowercase_ascii token_word in
-                let use_ci_match = String.equal token_word token_word_ci in
-                List.exists2 (fun path_part path_part_ci ->
-                    match ET.match_typ token with
-                    | `Fuzzy -> (
-                        String.equal path_part_ci token_word_ci
-                        || CCString.find ~sub:token_word_ci path_part_ci >= 0
-                        || (Misc_utils.first_n_chars_of_string_contains ~n:5 path_part_ci token_word_ci.[0]
-                            && Spelll.match_with (ET.automaton token) path_part_ci)
+                | `String token_word -> (
+                    let token_word_ci = String.lowercase_ascii token_word in
+                    let use_ci_match = String.equal token_word token_word_ci in
+                    List.exists2 (fun path_part path_part_ci ->
+                        match ET.match_typ token with
+                        | `Fuzzy -> (
+                            String.equal path_part_ci token_word_ci
+                            || CCString.find ~sub:token_word_ci path_part_ci >= 0
+                            || (Misc_utils.first_n_chars_of_string_contains ~n:5 path_part_ci token_word_ci.[0]
+                                && Spelll.match_with (ET.automaton token) path_part_ci)
+                          )
+                        | `Exact -> (
+                            if use_ci_match then (
+                              String.equal token_word_ci path_part_ci
+                            ) else (
+                              String.equal token_word path_part
+                            )
+                          )
+                        | `Prefix -> (
+                            if use_ci_match then (
+                              CCString.prefix ~pre:token_word_ci path_part_ci
+                            ) else (
+                              CCString.prefix ~pre:token_word path_part
+                            )
+                          )
+                        | `Suffix -> (
+                            if use_ci_match then (
+                              CCString.suffix ~suf:token_word_ci path_part_ci
+                            ) else (
+                              CCString.suffix ~suf:token_word path_part
+                            )
+                          )
                       )
-                    | `Exact -> (
-                        if use_ci_match then (
-                          String.equal token_word_ci path_part_ci
-                        ) else (
-                          String.equal token_word path_part
-                        )
-                      )
-                    | `Prefix -> (
-                        if use_ci_match then (
-                          CCString.prefix ~pre:token_word_ci path_part_ci
-                        ) else (
-                          CCString.prefix ~pre:token_word path_part
-                        )
-                      )
-                    | `Suffix -> (
-                        if use_ci_match then (
-                          CCString.suffix ~suf:token_word_ci path_part_ci
-                        ) else (
-                          CCString.suffix ~suf:token_word path_part
-                        )
-                      )
+                      t.path_parts
+                      t.path_parts_ci
                   )
-                  t.path_parts
-                  t.path_parts_ci
               )
+              (Search_phrase.enriched_tokens phrase)
           )
-          (Search_phrase.enriched_tokens phrase)
+          (Search_exp.flattened exp)
       )
     | Path_glob glob -> (
         Glob.is_empty glob || Glob.match_ glob t.path
