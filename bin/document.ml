@@ -374,5 +374,9 @@ let satisfies_query (exp : Query_exp.t) (t : t) : bool =
         | And -> aux e1 && aux e2
         | Or -> aux e1 || aux e2
       )
+    | Unary_op (op, e) -> (
+        match op with
+        | Not -> not (aux e)
+      )
   in
   aux exp

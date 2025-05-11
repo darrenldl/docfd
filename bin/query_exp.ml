@@ -7,10 +7,14 @@ type t =
   | Path_glob of Glob.t
   | Ext of string
   | Binary_op of binary_op * t * t
+  | Unary_op of unary_op * t
 
 and binary_op =
   | And
   | Or
+
+and unary_op =
+  | Not
 
 let empty = Empty
 
@@ -29,6 +33,8 @@ let equal (e1 : t) (e2 : t) =
     | Ext x, Ext y -> String.equal x y
     | Binary_op (op1, x1, y1), Binary_op (op2, x2, y2) ->
       op1 = op2 && aux x1 x2 && aux y1 y2
+    | Unary_op (op1, x1), Unary_op (op2, x2) ->
+      op1 = op2 && aux x1 x2
     | _, _ -> false
   in
   aux e1 e2
@@ -111,6 +117,19 @@ module Parsers = struct
 
   let or_op = binary_op [ "or"; "||" ] Or
 
+  let unary_op op_strings op =
+    non_space_string >>= fun s ->
+    skip_spaces *>
+    (
+      if List.mem (String.lowercase_ascii s) op_strings then (
+        return (fun x -> Unary_op (op, x))
+      ) else (
+        fail ""
+      )
+    )
+
+  let not_op = unary_op [ "not"; "!" ] Not
+
   let p =
     skip_spaces *>
     (
@@ -126,6 +145,8 @@ module Parsers = struct
               (string "ext:" *>
                ext >>| fun x -> Ext x);
               (char '(' *> skip_spaces *> exp <* char ')');
+              (not_op >>= fun f ->
+               skip_spaces *> exp >>| f);
             ]
             <* skip_spaces
           in
