@@ -113,9 +113,9 @@ module Parsers = struct
       )
     )
 
-  let and_op = binary_op [ "and"; "&&" ] And
+  let and_op = binary_op [ "and" ] And
 
-  let or_op = binary_op [ "or"; "||" ] Or
+  let or_op = binary_op [ "or" ] Or
 
   let unary_op op_strings op =
     non_space_string >>= fun s ->
@@ -128,7 +128,7 @@ module Parsers = struct
       )
     )
 
-  let not_op = unary_op [ "not"; "!" ] Not
+  let not_op = unary_op [ "not" ] Not
 
   let p =
     skip_spaces *>
