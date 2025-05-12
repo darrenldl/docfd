@@ -68,7 +68,15 @@ module Parsers = struct
           | '\\' -> false
           | c -> (
               match quote_char with
-              | None -> is_not_space c
+              | None -> (
+                  is_not_space c
+                  &&
+                  (match c with
+                   | '('
+                   | ')' -> false
+                   | _ -> true
+                  )
+                )
               | Some quote_char -> c <> quote_char
             )
         )
