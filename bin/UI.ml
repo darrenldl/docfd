@@ -6,15 +6,15 @@ module Vars = struct
 
   let index_of_search_result_selected = Lwd.var 0
 
-  let filter_field = Lwd.var Ui_base.empty_text_field
+  let filter_field = Lwd.var UI_base.empty_text_field
 
   let filter_field_focus_handle = Nottui.Focus.make ()
 
-  let search_field = Lwd.var Ui_base.empty_text_field
+  let search_field = Lwd.var UI_base.empty_text_field
 
   let search_field_focus_handle = Nottui.Focus.make ()
 
-  let require_field = Lwd.var Ui_base.empty_text_field
+  let require_field = Lwd.var UI_base.empty_text_field
 
   let require_field_focus_handle = Nottui.Focus.make ()
 
@@ -55,7 +55,7 @@ let get_cur_document_store_snapshot () =
 let update_starting_snapshot_and_recompute_rest
     (starting_snapshot : Document_store_snapshot.t)
   =
-  let pool = Ui_base.task_pool () in
+  let pool = UI_base.task_pool () in
   let snapshots = Vars.document_store_snapshots in
   Dynarray.set snapshots 0 starting_snapshot;
   for i=1 to Dynarray.length snapshots - 1 do
@@ -79,11 +79,11 @@ let update_starting_snapshot_and_recompute_rest
     cur_snapshot
 
 let reload_document (doc : Document.t) =
-  let pool = Ui_base.task_pool () in
+  let pool = UI_base.task_pool () in
   let path = Document.path doc in
   let doc =
     match
-      Document.of_path ~env:(Ui_base.eio_env ()) pool (Document.search_mode doc) path
+      Document.of_path ~env:(UI_base.eio_env ()) pool (Document.search_mode doc) path
     with
     | Ok doc -> Some doc
     | Error _ -> (
@@ -385,10 +385,10 @@ module Top_pane = struct
           aux document_selected 0 []
         )
       in
-      let$ background = Ui_base.full_term_sized_background in
+      let$ background = UI_base.full_term_sized_background in
       Nottui.Ui.join_z background (render_pane ())
       |> Nottui.Ui.mouse_area
-        (Ui_base.mouse_handler
+        (UI_base.mouse_handler
            ~f:(fun direction ->
                let offset =
                  match direction with
@@ -417,17 +417,17 @@ module Top_pane = struct
           let _ = height in
           Nottui_widgets.empty_lwd
         in
-        Ui_base.vpane ~width ~height
+        UI_base.vpane ~width ~height
           blank blank
       ) else (
         let$* search_result_selected = Lwd.get Vars.index_of_search_result_selected in
         let search_result_group = search_result_groups.(document_selected) in
-        Ui_base.vpane ~width ~height
-          (Ui_base.Content_view.main
+        UI_base.vpane ~width ~height
+          (UI_base.Content_view.main
              ~width
              ~search_result_group
              ~search_result_selected)
-          (Ui_base.Search_result_list.main
+          (UI_base.Search_result_list.main
              ~width
              ~search_result_group
              ~index_of_search_result_selected:Vars.index_of_search_result_selected)
@@ -450,7 +450,7 @@ module Top_pane = struct
       | `Right_split -> 0.618
       | `Hide_right -> 1.0
     in
-    Ui_base.hpane ~l_ratio ~width ~height
+    UI_base.hpane ~l_ratio ~width ~height
       (Document_list.main
          ~height
          ~documents_marked
@@ -466,13 +466,13 @@ module Bottom_pane = struct
   let status_bar
       ~width
       ~(search_result_groups : Document_store.search_result_group array)
-      ~(input_mode : Ui_base.input_mode)
+      ~(input_mode : UI_base.input_mode)
     : Nottui.Ui.t Lwd.t =
     let open Notty.Infix in
     let$* index_of_document_selected = Lwd.get Vars.index_of_document_selected in
     let document_count = Array.length search_result_groups in
     let input_mode_image =
-      List.assoc input_mode Ui_base.Status_bar.input_mode_images
+      List.assoc input_mode UI_base.Status_bar.input_mode_images
     in
     let$* cur_ver = Lwd.get Vars.document_store_cur_ver in
     let$* snapshot =
@@ -480,19 +480,19 @@ module Bottom_pane = struct
     in
     let content =
       let file_shown_count =
-        Notty.I.strf ~attr:Ui_base.Status_bar.attr
+        Notty.I.strf ~attr:UI_base.Status_bar.attr
           "%5d/%d documents listed"
           document_count
           (Document_store_snapshot.store snapshot
            |> Document_store.size)
       in
       let version =
-        Notty.I.strf ~attr:Ui_base.Status_bar.attr
+        Notty.I.strf ~attr:UI_base.Status_bar.attr
           "v%d "
           cur_ver
       in
       let desc =
-        Notty.I.strf ~attr:Ui_base.Status_bar.attr
+        Notty.I.strf ~attr:UI_base.Status_bar.attr
           "Last command: %s"
           (match Document_store_snapshot.last_command snapshot with
            | None -> "N/A"
@@ -502,7 +502,7 @@ module Bottom_pane = struct
       let desc_len = Notty.I.width desc in
       let desc_overlay =
         Notty.I.void
-          (width - desc_len - Ui_base.Status_bar.element_spacing - ver_len) 1
+          (width - desc_len - UI_base.Status_bar.element_spacing - ver_len) 1
         <|>
         desc
       in
@@ -512,18 +512,18 @@ module Bottom_pane = struct
       let core =
         if document_count = 0 then (
           [
-            Ui_base.Status_bar.element_spacer;
+            UI_base.Status_bar.element_spacer;
             file_shown_count;
           ]
         ) else (
           let index_of_selected =
-            Notty.I.strf ~attr:Ui_base.Status_bar.attr
+            Notty.I.strf ~attr:UI_base.Status_bar.attr
               "Index of document selected: %d"
               index_of_document_selected
           in
           [
             file_shown_count;
-            Ui_base.Status_bar.element_spacer;
+            UI_base.Status_bar.element_spacer;
             index_of_selected;
           ]
         )
@@ -533,7 +533,7 @@ module Bottom_pane = struct
           Notty.I.hcat
             (input_mode_image
              ::
-             Ui_base.Status_bar.element_spacer
+             UI_base.Status_bar.element_spacer
              ::
              core);
           desc_overlay;
@@ -541,12 +541,12 @@ module Bottom_pane = struct
         ]
       |> Nottui.Ui.atom
     in
-    let$ bar = Ui_base.Status_bar.background_bar in
+    let$ bar = UI_base.Status_bar.background_bar in
     Nottui.Ui.join_z bar content
 
   module Key_binding_info = struct
-    let grid_contents : Ui_base.Key_binding_info.grid_contents =
-      let open Ui_base.Key_binding_info in
+    let grid_contents : UI_base.Key_binding_info.grid_contents =
+      let open UI_base.Key_binding_info in
       let empty_row =
         [
           { label = ""; msg = "" };
@@ -708,26 +708,26 @@ module Bottom_pane = struct
         );
       ]
 
-    let grid_lookup = Ui_base.Key_binding_info.make_grid_lookup grid_contents
+    let grid_lookup = UI_base.Key_binding_info.make_grid_lookup grid_contents
 
     let main ~input_mode =
-      Ui_base.Key_binding_info.main ~grid_lookup ~input_mode
+      UI_base.Key_binding_info.main ~grid_lookup ~input_mode
   end
 
   let filter_bar =
-    Ui_base.Filter_bar.main
+    UI_base.Filter_bar.main
       ~edit_field:Vars.filter_field
       ~focus_handle:Vars.filter_field_focus_handle
       ~f:update_filter
 
   let search_bar ~input_mode =
-    Ui_base.Search_bar.main ~input_mode
+    UI_base.Search_bar.main ~input_mode
       ~edit_field:Vars.search_field
       ~focus_handle:Vars.search_field_focus_handle
       ~f:update_search
 
   let main ~width ~search_result_groups =
-    let$* input_mode = Lwd.get Ui_base.Vars.input_mode in
+    let$* input_mode = Lwd.get UI_base.Vars.input_mode in
     Nottui_widgets.vbox
       [
         status_bar ~width ~search_result_groups ~input_mode;
@@ -762,17 +762,17 @@ let keyboard_handler
   let search_result_current_choice =
     Lwd.peek Vars.index_of_search_result_selected
   in
-  match Lwd.peek Ui_base.Vars.input_mode with
+  match Lwd.peek UI_base.Vars.input_mode with
   | Navigate -> (
       match key with
       | (`ASCII 'C', [`Ctrl])
       | (`ASCII 'Q', [`Ctrl]) -> (
-          Lwd.set Ui_base.Vars.quit true;
-          Ui_base.Vars.action := None;
+          Lwd.set UI_base.Vars.quit true;
+          UI_base.Vars.action := None;
           `Handled
         )
       | (`ASCII '?', []) -> (
-          Ui_base.Key_binding_info.incr_rotation ();
+          UI_base.Key_binding_info.incr_rotation ();
           `Handled
         )
       | (`ASCII 'm', []) -> (
@@ -793,27 +793,27 @@ let keyboard_handler
              Lwd.peek (Document_store_manager.search_ui_status)
            with
            | `Ok, `Idle -> (
-               Ui_base.set_input_mode Drop;
+               UI_base.set_input_mode Drop;
              )
            | _, _ -> (
-               Ui_base.Key_binding_info.blink "d";
+               UI_base.Key_binding_info.blink "d";
              ));
           `Handled
         )
       | (`ASCII 'n', []) -> (
-          Ui_base.set_input_mode Narrow;
+          UI_base.set_input_mode Narrow;
           `Handled
         )
       | (`ASCII 'r', []) -> (
-          Ui_base.set_input_mode Reload;
+          UI_base.set_input_mode Reload;
           `Handled
         )
       | (`ASCII 'y', []) -> (
-          Ui_base.set_input_mode Copy;
+          UI_base.set_input_mode Copy;
           `Handled
         )
       | (`ASCII 'Y', []) -> (
-          Ui_base.set_input_mode Copy_paths;
+          UI_base.set_input_mode Copy_paths;
           `Handled
         )
       | (`Arrow `Left, [])
@@ -927,22 +927,22 @@ let keyboard_handler
       | (`ASCII 'f', []) -> (
           commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff ();
           Nottui.Focus.request Vars.filter_field_focus_handle;
-          Ui_base.set_input_mode Filter;
+          UI_base.set_input_mode Filter;
           `Handled
         )
       | (`ASCII '/', []) -> (
           commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff ();
           Nottui.Focus.request Vars.search_field_focus_handle;
-          Ui_base.set_input_mode Search;
+          UI_base.set_input_mode Search;
           `Handled
         )
       | (`ASCII 'h', []) -> (
-          Lwd.set Ui_base.Vars.quit true;
-          Ui_base.Vars.action := Some Ui_base.Edit_command_history;
+          Lwd.set UI_base.Vars.quit true;
+          UI_base.Vars.action := Some UI_base.Edit_command_history;
           `Handled
         )
       | (`ASCII 'x', []) -> (
-          Ui_base.set_input_mode Clear;
+          UI_base.set_input_mode Clear;
           `Handled
         )
       | (`Enter, []) -> (
@@ -953,9 +953,9 @@ let keyboard_handler
                 else
                   None
               in
-              Lwd.set Ui_base.Vars.quit true;
-              Ui_base.Vars.action :=
-                Some (Ui_base.Open_file_and_search_result (doc, search_result));
+              Lwd.set UI_base.Vars.quit true;
+              UI_base.Vars.action :=
+                Some (UI_base.Open_file_and_search_result (doc, search_result));
             )
             search_result_group;
           `Handled
@@ -968,20 +968,20 @@ let keyboard_handler
         | (`Escape, []) -> true
         | (`ASCII '/', []) -> (
             commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff ();
-            Lwd.set Vars.search_field Ui_base.empty_text_field;
+            Lwd.set Vars.search_field UI_base.empty_text_field;
             update_search ();
             true
           )
         | (`ASCII 'f', []) -> (
             commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff ();
-            Lwd.set Vars.filter_field Ui_base.empty_text_field;
+            Lwd.set Vars.filter_field UI_base.empty_text_field;
             update_filter ();
             true
           )
         | _ -> false
       in
       if exit then (
-        Ui_base.set_input_mode Navigate;
+        UI_base.set_input_mode Navigate;
       );
       `Handled
     )
@@ -990,7 +990,7 @@ let keyboard_handler
         match key with
         | (`Escape, []) -> true
         | (`ASCII '?', []) -> (
-            Ui_base.Key_binding_info.incr_rotation ();
+            UI_base.Key_binding_info.incr_rotation ();
             false
           )
         | (`ASCII 'd', []) -> (
@@ -1024,7 +1024,7 @@ let keyboard_handler
         | _ -> false
       in
       if exit then (
-        Ui_base.set_input_mode Navigate;
+        UI_base.set_input_mode Navigate;
       );
       `Handled
     )
@@ -1033,7 +1033,7 @@ let keyboard_handler
         match key with
         | (`Escape, []) -> true
         | (`ASCII '?', []) -> (
-            Ui_base.Key_binding_info.incr_rotation ();
+            UI_base.Key_binding_info.incr_rotation ();
             false
           )
         | (`ASCII c, []) -> (
@@ -1051,7 +1051,7 @@ let keyboard_handler
         | _ -> false
       in
       if exit then (
-        Ui_base.set_input_mode Navigate;
+        UI_base.set_input_mode Navigate;
       );
       `Handled
     )
@@ -1072,7 +1072,7 @@ let keyboard_handler
         match key with
         | (`Escape, []) -> true
         | (`ASCII '?', []) -> (
-            Ui_base.Key_binding_info.incr_rotation ();
+            UI_base.Key_binding_info.incr_rotation ();
             false
           )
         | (`ASCII 'y', []) -> (
@@ -1114,7 +1114,7 @@ let keyboard_handler
         | _ -> false
       in
       if exit then (
-        Ui_base.set_input_mode Navigate;
+        UI_base.set_input_mode Navigate;
       );
       `Handled
     )
@@ -1128,7 +1128,7 @@ let keyboard_handler
         match key with
         | (`Escape, []) -> true
         | (`ASCII '?', []) -> (
-            Ui_base.Key_binding_info.incr_rotation ();
+            UI_base.Key_binding_info.incr_rotation ();
             false
           )
         | (`ASCII 'y', []) -> (
@@ -1168,7 +1168,7 @@ let keyboard_handler
         | _ -> false
       in
       if exit then (
-        Ui_base.set_input_mode Navigate;
+        UI_base.set_input_mode Navigate;
       );
       `Handled
     )
@@ -1177,7 +1177,7 @@ let keyboard_handler
         (match key with
          | (`Escape, []) -> true
          | (`ASCII '?', []) -> (
-             Ui_base.Key_binding_info.incr_rotation ();
+             UI_base.Key_binding_info.incr_rotation ();
              false
            )
          | (`ASCII 'r', []) -> (
@@ -1186,15 +1186,15 @@ let keyboard_handler
            )
          | (`ASCII 'a', []) -> (
              reset_document_selected ();
-             Lwd.set Ui_base.Vars.quit true;
-             Ui_base.Vars.action := Some Ui_base.Recompute_document_src;
+             Lwd.set UI_base.Vars.quit true;
+             UI_base.Vars.action := Some UI_base.Recompute_document_src;
              true
            )
          | _ -> false
         );
       in
       if exit then (
-        Ui_base.set_input_mode Navigate;
+        UI_base.set_input_mode Navigate;
       );
       `Handled
     )
@@ -1229,7 +1229,7 @@ let main : Nottui.ui Lwd.t =
                        (snd search_result_groups.(Lwd.peek Vars.index_of_document_selected)))
       (Lwd.peek Vars.index_of_search_result_selected)
   );
-  let$* (term_width, term_height) = Lwd.get Ui_base.Vars.term_width_height in
+  let$* (term_width, term_height) = Lwd.get UI_base.Vars.term_width_height in
   let$* bottom_pane =
     Bottom_pane.main
       ~width:term_width

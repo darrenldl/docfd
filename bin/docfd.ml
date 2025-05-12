@@ -594,7 +594,7 @@ let run
       ~single_line_globs
   in
   let pool = Task_pool.make ~sw (Eio.Stdenv.domain_mgr env) in
-  Ui_base.Vars.pool := Some pool;
+  UI_base.Vars.pool := Some pool;
   let file_collection_to_reuse = ref None in
   String_set.iter (fun path ->
       if not (Sys.file_exists path) then (
@@ -717,7 +717,7 @@ let run
        );
      )
   );
-  Lwd.set Ui_base.Vars.hide_document_list hide_document_list_initially;
+  Lwd.set UI_base.Vars.hide_document_list hide_document_list_initially;
   let init_document_store =
     document_store_of_document_src ~env pool ~interactive init_document_src
   in
@@ -741,7 +741,7 @@ let run
   (match commands_from with
    | None -> ()
    | Some commands_from -> (
-       let snapshots = Ui.Vars.document_store_snapshots in
+       let snapshots = UI.Vars.document_store_snapshots in
        let lines =
          try
            CCIO.with_in commands_from CCIO.read_lines_l
@@ -918,9 +918,9 @@ let run
       exit 0
     )
   );
-  Ui_base.Vars.eio_env := Some env;
+  UI_base.Vars.eio_env := Some env;
   let root : Nottui.ui Lwd.t =
-    let$* (term_width, term_height) = Lwd.get Ui_base.Vars.term_width_height in
+    let$* (term_width, term_height) = Lwd.get UI_base.Vars.term_width_height in
     if term_width <= 40 || term_height <= 20 then (
       let msg = Nottui.Ui.atom (Notty.I.strf "Terminal size too small") in
       let keyboard_handler (key : Nottui.Ui.key) =
@@ -928,15 +928,15 @@ let run
         | (`Escape, [])
         | (`ASCII 'Q', [`Ctrl])
         | (`ASCII 'C', [`Ctrl]) -> (
-            Lwd.set Ui_base.Vars.quit true;
-            Ui_base.Vars.action := None;
+            Lwd.set UI_base.Vars.quit true;
+            UI_base.Vars.action := None;
             `Handled
           )
         | _ -> `Unhandled
       in
       Lwd.return (Nottui.Ui.keyboard_area keyboard_handler msg)
     ) else (
-      Ui.main
+      UI.main
     )
   in
   let get_term, close_term =
@@ -975,25 +975,25 @@ let run
   let rec loop () =
     Sys.command "clear -x" |> ignore;
     let term = get_term () in
-    Ui_base.Vars.term := Some term;
-    Ui_base.Vars.action := None;
-    Lwd.set Ui_base.Vars.quit false;
-    Ui_base.ui_loop
-      ~quit:Ui_base.Vars.quit
+    UI_base.Vars.term := Some term;
+    UI_base.Vars.action := None;
+    Lwd.set UI_base.Vars.quit false;
+    UI_base.ui_loop
+      ~quit:UI_base.Vars.quit
       ~term
       root;
-    match !Ui_base.Vars.action with
+    match !UI_base.Vars.action with
     | None -> ()
     | Some action -> (
         match action with
-        | Ui_base.Recompute_document_src -> (
+        | UI_base.Recompute_document_src -> (
             close_term ();
             let new_starting_snapshot =
               compute_document_src ()
               |> document_store_of_document_src ~env ~interactive pool
               |> Document_store_snapshot.make ~last_command:None
             in
-            Ui.update_starting_snapshot_and_recompute_rest
+            UI.update_starting_snapshot_and_recompute_rest
               new_starting_snapshot;
             loop ()
           )
@@ -1017,13 +1017,13 @@ let run
               Float.abs
                 (new_stats.st_mtime -. old_stats.st_mtime) >= Params.float_compare_margin
             then (
-              Ui.reload_document doc
+              UI.reload_document doc
             );
             loop ()
           )
         | Edit_command_history -> (
             let file = Filename.temp_file "" ".docfd_commands" in
-            let snapshots = Ui.Vars.document_store_snapshots in
+            let snapshots = UI.Vars.document_store_snapshots in
             let lines =
               Seq.append
                 (
@@ -1095,7 +1095,7 @@ let run
                   (new_stats.st_mtime -. old_stats.st_mtime) >= Params.float_compare_margin
               then (
                 Dynarray.clear snapshots;
-                Lwd.set Ui.Vars.document_store_cur_ver 0;
+                Lwd.set UI.Vars.document_store_cur_ver 0;
                 Dynarray.add_last
                   snapshots
                   (Document_store_snapshot.make
@@ -1166,12 +1166,12 @@ let run
                 | `No_changes -> ()
                 | `Changes_made -> (
                     Lwd.set
-                      Ui.Vars.document_store_cur_ver
+                      UI.Vars.document_store_cur_ver
                       (Dynarray.length snapshots - 1);
                     let final_snapshot = Dynarray.get_last snapshots in
                     Document_store_manager.submit_update_req final_snapshot;
-                    Ui.reset_document_selected ();
-                    Ui.sync_input_fields_from_document_store
+                    UI.reset_document_selected ();
+                    UI.sync_input_fields_from_document_store
                       (Document_store_snapshot.store final_snapshot);
                   )
                );
@@ -1184,7 +1184,7 @@ let run
           )
         | Filter_files_via_fzf -> (
             close_term ();
-            let snapshots = Ui.Vars.document_store_snapshots in
+            let snapshots = UI.Vars.document_store_snapshots in
             let latest_snapshot = Dynarray.get_last snapshots in
             let store = Document_store_snapshot.store latest_snapshot in
             let selection =
@@ -1217,7 +1217,7 @@ let run
                    )
                    commands;
                  Lwd.set
-                   Ui.Vars.document_store_cur_ver
+                   UI.Vars.document_store_cur_ver
                    (Dynarray.length snapshots - 1);
                  let final_snapshot = Dynarray.get_last snapshots in
                  Document_store_manager.submit_update_req final_snapshot;
@@ -1233,9 +1233,9 @@ let run
        Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env)
          (fun () -> Document_store_manager.worker_fiber pool));
     Document_store_manager.manager_fiber;
-    Ui_base.Key_binding_info.grid_light_fiber;
+    UI_base.Key_binding_info.grid_light_fiber;
     (fun () ->
-       let snapshots = Ui.Vars.document_store_snapshots in
+       let snapshots = UI.Vars.document_store_snapshots in
        let snapshot =
          if Dynarray.length snapshots = 0 then (
            Document_store_snapshot.make
@@ -1243,9 +1243,9 @@ let run
              init_document_store
          ) else (
            let last_index = Dynarray.length snapshots - 1 in
-           Lwd.set Ui.Vars.document_store_cur_ver last_index;
+           Lwd.set UI.Vars.document_store_cur_ver last_index;
            let snapshot = Dynarray.get snapshots last_index in
-           Ui.sync_input_fields_from_document_store
+           UI.sync_input_fields_from_document_store
              (Document_store_snapshot.store snapshot);
            snapshot
          )
@@ -1255,15 +1255,15 @@ let run
         | None -> ()
         | Some start_with_filter -> (
             let start_with_filter_len = String.length start_with_filter in
-            Lwd.set Ui.Vars.filter_field (start_with_filter, start_with_filter_len);
-            Ui.update_filter ();
+            Lwd.set UI.Vars.filter_field (start_with_filter, start_with_filter_len);
+            UI.update_filter ();
           ));
        (match start_with_search with
         | None -> ()
         | Some start_with_search -> (
             let start_with_search_len = String.length start_with_search in
-            Lwd.set Ui.Vars.search_field (start_with_search, start_with_search_len);
-            Ui.update_search ();
+            Lwd.set UI.Vars.search_field (start_with_search, start_with_search_len);
+            UI.update_search ();
           ));
        loop ();
     );
