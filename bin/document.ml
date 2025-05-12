@@ -309,7 +309,7 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, 
 
 module ET = Search_phrase.Enriched_token
 
-let satisfies_query (exp : Query_exp.t) (t : t) : bool =
+let satisfies_query pool (exp : Query_exp.t) (t : t) : bool =
   let open Query_exp in
   let rec aux exp =
     match exp with
@@ -371,6 +371,21 @@ let satisfies_query (exp : Query_exp.t) (t : t) : bool =
       )
     | Ext ext -> (
         File_utils.extension_of_file t.path = ext
+      )
+    | Content exp -> (
+        try
+          Index.search
+            pool
+            (Stop_signal.make ())
+            ~terminate_on_result_found:true
+            ~doc_hash:t.doc_hash
+            ~within_same_line:false
+            ~search_scope:None
+            exp
+          |> ignore;
+          false
+        with
+        | Index.Search_job.Result_found -> true
       )
     | Binary_op (op, e1, e2) -> (
         match op with

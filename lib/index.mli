@@ -39,6 +39,7 @@ val line_count_of_page_num : doc_hash:string -> int -> int
 val search :
   Task_pool.t ->
   Stop_signal.t ->
+  ?terminate_on_result_found : bool ->
   doc_hash:string ->
   within_same_line:bool ->
   search_scope:Diet.Int.t option ->
@@ -46,6 +47,8 @@ val search :
   Search_result.t array option
 
 module Search_job : sig
+  exception Result_found
+
   type t
 
   val run : t -> Search_result_heap.t
@@ -61,6 +64,7 @@ end
 
 val make_search_job_groups :
   Stop_signal.t ->
+  ?terminate_on_result_found : bool ->
   cancellation_notifier:bool Atomic.t ->
   doc_hash:string ->
   within_same_line:bool ->

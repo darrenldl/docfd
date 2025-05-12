@@ -973,8 +973,11 @@ module Search = struct
     Search_result_heap.merge x y
 
   module Search_job = struct
+    exception Result_found
+
     type t = {
       stop_signal : Stop_signal.t;
+      terminate_on_result_found : bool;
       cancellation_notifier : bool Atomic.t;
       doc_hash : string;
       within_same_line : bool;
@@ -985,6 +988,7 @@ module Search = struct
 
     let make
         stop_signal
+        ~terminate_on_result_found
         ~cancellation_notifier
         ~doc_hash
         ~within_same_line
@@ -994,6 +998,7 @@ module Search = struct
       =
       {
         stop_signal;
+        terminate_on_result_found;
         cancellation_notifier;
         doc_hash;
         within_same_line;
@@ -1029,6 +1034,9 @@ module Search = struct
                  rest
                |> Seq.map (fun l -> t.start_pos :: l)
                |> Seq.map (fun (l : int list) ->
+                   if t.terminate_on_result_found then (
+                     raise Result_found
+                   );
                    Eio.Fiber.yield ();
                    let opening_closing_symbol_pairs =
                      List.map (fun pos -> word_of_pos ~doc_hash pos) l
@@ -1108,6 +1116,7 @@ module Search = struct
 
   module Search_job_group = struct
     type t = {
+      terminate_on_result_found : bool;
       stop_signal : Stop_signal.t;
       cancellation_notifier : bool Atomic.t;
       doc_hash : string;
@@ -1121,6 +1130,7 @@ module Search = struct
       let
         {
           stop_signal;
+          terminate_on_result_found;
           cancellation_notifier;
           doc_hash;
           within_same_line;
@@ -1132,6 +1142,7 @@ module Search = struct
       |> Seq.map (fun start_pos ->
           Search_job.make
             stop_signal
+            ~terminate_on_result_found
             ~cancellation_notifier
             ~doc_hash
             ~within_same_line
@@ -1148,6 +1159,7 @@ module Search = struct
 
   let make_search_job_groups
       stop_signal
+      ?(terminate_on_result_found = false)
       ~(cancellation_notifier : bool Atomic.t)
       ~doc_hash
       ~within_same_line
@@ -1201,6 +1213,7 @@ module Search = struct
                 |> Seq.map (fun possible_start_pos_list ->
                     {
                       Search_job_group.stop_signal;
+                      terminate_on_result_found;
                       cancellation_notifier;
                       doc_hash;
                       within_same_line;
@@ -1217,6 +1230,7 @@ module Search = struct
   let search
       pool
       stop_signal
+      ?terminate_on_result_found
       ~cancellation_notifier
       ~doc_hash
       ~within_same_line
@@ -1225,6 +1239,7 @@ module Search = struct
     : Search_result_heap.t =
     make_search_job_groups
       stop_signal
+      ?terminate_on_result_found
       ~cancellation_notifier
       ~doc_hash
       ~within_same_line
@@ -1238,6 +1253,7 @@ end
 let search
     pool
     stop_signal
+    ?terminate_on_result_found
     ~doc_hash
     ~within_same_line
     ~search_scope
@@ -1248,6 +1264,7 @@ let search
     Search.search
       pool
       stop_signal
+      ?terminate_on_result_found
       ~cancellation_notifier
       ~doc_hash
       ~within_same_line

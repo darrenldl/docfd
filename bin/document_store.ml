@@ -161,7 +161,7 @@ let update_filter
              ) else (
                Seq.filter (fun s ->
                    Eio.Fiber.yield ();
-                   Document.satisfies_query filter s
+                   Document.satisfies_query pool filter s
                  ) s
              )
            )
@@ -196,7 +196,7 @@ let add_document pool (doc : Document.t) (t : t) : t =
   in
   let path = Document.path doc in
   let documents_passing_filter =
-    if Document.satisfies_query t.filter doc
+    if Document.satisfies_query pool t.filter doc
     then
       String_set.add path t.documents_passing_filter
     else

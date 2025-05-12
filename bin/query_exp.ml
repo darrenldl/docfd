@@ -6,6 +6,7 @@ type t =
   | Path_fuzzy of Search_exp.t
   | Path_glob of Glob.t
   | Ext of string
+  | Content of Search_exp.t
   | Binary_op of binary_op * t * t
   | Unary_op of unary_op * t
 
@@ -31,6 +32,7 @@ let equal (e1 : t) (e2 : t) =
     | Path_fuzzy x, Path_fuzzy y -> Search_exp.equal x y
     | Path_glob x, Path_glob y -> Glob.equal x y
     | Ext x, Ext y -> String.equal x y
+    | Content x, Content y -> Search_exp.equal x y
     | Binary_op (op1, x1, y1), Binary_op (op2, x2, y2) ->
       op1 = op2 && aux x1 x2 && aux y1 y2
     | Unary_op (op1, x1), Unary_op (op2, x2) ->
@@ -146,6 +148,8 @@ module Parsers = struct
                glob >>| fun x -> Path_glob x);
               (string "ext:" *>
                ext >>| fun x -> Ext x);
+              (string "content:" *>
+               search_exp >>| fun x -> Content x);
               (char '(' *> skip_spaces *> exp <* char ')');
               (not_op >>= fun f ->
                skip_spaces *> exp >>| f);

@@ -14,7 +14,7 @@ val search_scope : t -> Diet.Int.t option
 
 val last_scan : t -> Timedesc.t
 
-val satisfies_query : Query_exp.t -> t -> bool
+val satisfies_query : Task_pool.t -> Query_exp.t -> t -> bool
 
 val of_path :
   env:Eio_unix.Stdenv.base ->
