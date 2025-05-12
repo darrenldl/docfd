@@ -10,6 +10,8 @@
 
 - Removed `q` exit key binding to avoid accidental exiting
 
+- Minor SQL search query optimization to speed up searching through documents with large number of unique words
+
 ## 11.0.1
 
 - Added better search cancellation handling, removing massive lags in some scenarios
