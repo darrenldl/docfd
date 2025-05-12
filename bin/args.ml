@@ -221,6 +221,18 @@ Otherwise FILE is opened in append mode for log writing."
     & info [ "debug-log" ] ~doc ~docv:"FILE"
   )
 
+let start_with_filter_arg_name = "start-with-filter"
+
+let start_with_filter_arg =
+  let doc =
+    Fmt.str "Start interactive mode with an initial filter using query expression EXP."
+  in
+  Arg.(
+    value
+    & opt (some string) None
+    & info [ start_with_filter_arg_name ] ~doc ~docv:"EXP"
+  )
+
 let start_with_search_arg_name = "start-with-search"
 
 let start_with_search_arg =
@@ -272,6 +284,21 @@ let search_arg =
     value
     & opt (some string) None
     & info [ search_arg_name ] ~doc ~docv:"EXP"
+  )
+
+let filter_arg_name = "filter"
+
+let filter_arg =
+  let doc =
+    Fmt.str
+      "Filter with query expression EXP in non-interactive mode. May be combined with --%s or --%s."
+      search_arg_name
+      sample_arg_name
+  in
+  Arg.(
+    value
+    & opt (some string) None
+    & info [ filter_arg_name ] ~doc ~docv:"EXP"
   )
 
 let style_mode_options = [ ("never", `Never); ("always", `Always); ("auto", `Auto) ]
@@ -503,7 +530,9 @@ let check
     ~tokens_per_search_scope_level
     ~index_chunk_size
     ~cache_limit
+    ~start_with_filter
     ~start_with_search
+    ~filter_query_exp
     ~sample_search_exp
     ~samples_per_doc
     ~search_exp
@@ -558,23 +587,47 @@ let check
     exit_with_error_msg
       (Fmt.str "invalid %s: cannot be < 0" search_result_print_snippet_max_add_lines_arg_name)
   );
-  let sample_or_search_or_commands_from_specified =
-    Option.is_some sample_search_exp
-    ||
-    Option.is_some search_exp
-    ||
-    Option.is_some commands_from
-  in
+  if Option.is_some filter_query_exp then (
+    if not (
+        Option.is_some sample_search_exp
+        ||
+        Option.is_some search_exp
+        ||
+        print_files_with_match
+        ||
+        print_files_without_match
+      )
+    then (
+      exit_with_error_msg
+        (Fmt.str "--%s must be used with at least one of: --%s, --%s, --%s, --%s"
+           filter_arg_name
+           search_arg_name
+           sample_arg_name
+           files_with_match_arg_name
+           files_without_match_arg_name
+        )
+    )
+  );
   (match print_files_with_match, print_files_without_match with
    | true, true -> (
        exit_with_error_msg
          (Fmt.str "cannot specify both --%s and --%s" files_with_match_arg_name files_without_match_arg_name)
      )
    | true, false -> (
-       if not sample_or_search_or_commands_from_specified then (
+       if not (
+           Option.is_some filter_query_exp
+           ||
+           Option.is_some sample_search_exp
+           ||
+           Option.is_some search_exp
+           ||
+           Option.is_some commands_from
+         )
+       then (
          exit_with_error_msg
-           (Fmt.str "--%s cannot be used without one of: --%s, --%s, --%s"
+           (Fmt.str "--%s cannot be used without one of: --%s, --%s, --%s, --%s"
               files_with_match_arg_name
+              filter_arg_name
               sample_arg_name
               search_arg_name
               commands_from_arg_name
@@ -582,16 +635,36 @@ let check
        )
      )
    | false, true -> (
-       if not sample_or_search_or_commands_from_specified then (
+       if not (
+           Option.is_some filter_query_exp
+           ||
+           Option.is_some sample_search_exp
+           ||
+           Option.is_some search_exp
+         )
+       then (
          exit_with_error_msg
-           (Fmt.str "--%s cannot be used without one of: --%s, --%s"
+           (Fmt.str "--%s cannot be used without one of: --%s, --%s, --%s"
               files_without_match_arg_name
+              filter_arg_name
               sample_arg_name
               search_arg_name
            )
        )
      )
    | false, false -> ()
+  );
+  (match filter_query_exp with
+   | None -> ()
+   | Some query_exp_string -> (
+       match
+         Query_exp.parse query_exp_string
+       with
+       | None -> (
+           exit_with_error_msg "failed to parse query exp"
+         )
+       | Some _ -> ()
+     )
   );
   (match sample_search_exp, search_exp with
    | None, None -> ()
@@ -611,6 +684,10 @@ let check
      )
   );
   if Option.is_some commands_from then (
+    if Option.is_some filter_query_exp then (
+      exit_with_error_msg
+        (Fmt.str "--%s and --%s cannot be used together" commands_from_arg_name filter_arg_name)
+    );
     if Option.is_some sample_search_exp then (
       exit_with_error_msg
         (Fmt.str "--%s and --%s cannot be used together" commands_from_arg_name sample_arg_name)
@@ -618,6 +695,10 @@ let check
     if Option.is_some search_exp then (
       exit_with_error_msg
         (Fmt.str "--%s and --%s cannot be used together" commands_from_arg_name search_arg_name)
+    );
+    if Option.is_some start_with_filter then (
+      exit_with_error_msg
+        (Fmt.str "--%s and --%s cannot be used together" commands_from_arg_name start_with_filter_arg_name)
     );
     if Option.is_some start_with_search then (
       exit_with_error_msg

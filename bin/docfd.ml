@@ -433,7 +433,9 @@ let run
     (cache_dir : string)
     (cache_limit : int)
     (index_only : bool)
+    (start_with_filter : string option)
     (start_with_search : string option)
+    (filter_query_exp : string option)
     (sample_search_exp : string option)
     (samples_per_doc : int)
     (search_exp : string option)
@@ -460,7 +462,9 @@ let run
     ~tokens_per_search_scope_level
     ~index_chunk_size
     ~cache_limit
+    ~start_with_filter
     ~start_with_search
+    ~filter_query_exp
     ~sample_search_exp
     ~samples_per_doc
     ~search_exp
@@ -570,6 +574,8 @@ let run
       )
   in
   let interactive =
+    Option.is_none filter_query_exp
+    &&
     Option.is_none sample_search_exp
     &&
     Option.is_none search_exp
@@ -810,83 +816,107 @@ let run
          )
      )
   );
-  (match sample_search_exp, search_exp with
-   | None, None -> ()
-   | Some _, Some _ -> failwith "unexpected case"
-   | Some search_exp_string, None
-   | None, Some search_exp_string -> (
-       (* Non-interactive mode *)
-       let print_limit =
-         match sample_search_exp with
-         | Some _ -> Some samples_per_doc
-         | None -> None
-       in
-       match
-         Search_exp.parse search_exp_string
-       with
-       | None -> failwith "unexpected case"
-       | Some search_exp -> (
-           do_if_debug (fun oc ->
-               Fmt.pf
-                 (Format.formatter_of_out_channel oc)
-                 "Search expression: @[<v>%a@]@." Search_exp.pp search_exp
-             );
-           let document_store =
-             Document_store.update_search_exp
-               pool
-               (Stop_signal.make ())
-               search_exp_string
-               search_exp
-               init_document_store
-           in
-           let oc = stdout in
-           let no_results =
-             if print_files_with_match then (
-               let s =
-                 Document_store.usable_documents_paths document_store
-               in
-               String_set.iter (Printers.path_image ~color:print_with_color oc) s;
-               String_set.is_empty s
-             ) else if print_files_without_match then (
-               let s =
-                 Document_store.unusable_documents_paths document_store
-               in
-               Seq.iter (Printers.path_image ~color:print_with_color oc) s;
-               Seq.is_empty s
-             ) else (
-               let s =
-                 Document_store.search_result_groups document_store
-                 |> Array.to_seq
-                 |> Seq.map (fun (doc, arr) ->
-                     let arr =
-                       match print_limit with
-                       | None -> arr
-                       | Some n -> (
-                           Array.sub
-                             arr
-                             0
-                             (min (Array.length arr) n)
-                         )
-                     in
-                     (doc, arr)
-                   )
-               in
-               Printers.search_result_groups
-                 ~color:print_with_color
-                 ~underline:print_with_underline
-                 oc
-                 s;
-               Seq.is_empty s
-             )
-           in
-           clean_up ();
-           if no_results then (
-             exit 1
-           ) else (
-             exit 0
-           )
-         )
-     )
+  if not interactive then (
+    let filter_query_exp_and_original_string =
+      match filter_query_exp with
+      | None -> None
+      | Some s ->
+        Some (Option.get (Query_exp.parse s), s)
+    in
+    let print_limit_per_doc, search_exp_and_original_string =
+      match sample_search_exp, search_exp with
+      | None, None -> (None, None)
+      | Some _, Some _ -> failwith "unexpected case"
+      | Some search_exp_string, None
+      | None, Some search_exp_string -> (
+          let print_limit_per_doc =
+            match sample_search_exp with
+            | Some _ -> Some samples_per_doc
+            | None -> None
+          in
+          let search_exp =
+            Option.get (Search_exp.parse search_exp_string)
+          in
+          do_if_debug (fun oc ->
+              Fmt.pf
+                (Format.formatter_of_out_channel oc)
+                "Search expression: @[<v>%a@]@." Search_exp.pp search_exp
+            );
+          (print_limit_per_doc, Some (search_exp, search_exp_string))
+        )
+    in
+    let document_store =
+      init_document_store
+      |> (fun store ->
+          match filter_query_exp_and_original_string with
+          | None -> store
+          | Some (filter_query_exp, filter_query_exp_string) -> (
+              Document_store.update_filter
+                pool
+                (Stop_signal.make ())
+                filter_query_exp_string
+                filter_query_exp
+                store
+            )
+        )
+      |> (fun store ->
+          match search_exp_and_original_string with
+          | None -> store
+          | Some (search_exp, search_exp_string) ->
+            Document_store.update_search_exp
+              pool
+              (Stop_signal.make ())
+              search_exp_string
+              search_exp
+              store
+        )
+    in
+    let oc = stdout in
+    let no_results =
+      if print_files_with_match then (
+        let s =
+          Document_store.usable_documents_paths document_store
+        in
+        String_set.iter (Printers.path_image ~color:print_with_color oc) s;
+        String_set.is_empty s
+      ) else if print_files_without_match then (
+        let s =
+          Document_store.unusable_documents_paths document_store
+        in
+        Seq.iter (Printers.path_image ~color:print_with_color oc) s;
+        Seq.is_empty s
+      ) else (
+        let s =
+          Document_store.search_result_groups document_store
+          |> Array.to_seq
+          |> Seq.map (fun (doc, arr) ->
+              let arr =
+                match print_limit_per_doc with
+                | None -> arr
+                | Some n -> (
+                    Array.sub
+                      arr
+                      0
+                      (min (Array.length arr) n)
+                  )
+              in
+              (doc, arr)
+            )
+        in
+        Printers.search_result_groups
+          ~color:print_with_color
+          ~underline:print_with_underline
+          oc
+          s;
+        Seq.is_empty s
+      )
+    in
+    clean_up ();
+    if no_results then (
+      exit 1
+    ) else (
+      exit 0
+    )
   );
   Ui_base.Vars.eio_env := Some env;
   let root : Nottui.ui Lwd.t =
@@ -1221,6 +1251,13 @@ let run
          )
        in
        Document_store_manager.submit_update_req snapshot;
+       (match start_with_filter with
+        | None -> ()
+        | Some start_with_filter -> (
+            let start_with_filter_len = String.length start_with_filter in
+            Lwd.set Ui.Vars.filter_field (start_with_filter, start_with_filter_len);
+            Ui.update_filter ();
+          ));
        (match start_with_search with
         | None -> ()
         | Some start_with_search -> (
@@ -1268,7 +1305,9 @@ let cmd ~env ~sw =
      $ cache_dir_arg
      $ cache_limit_arg
      $ index_only_arg
+     $ start_with_filter_arg
      $ start_with_search_arg
+     $ filter_arg
      $ sample_arg
      $ samples_per_doc_arg
      $ search_arg
