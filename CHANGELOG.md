@@ -1,6 +1,6 @@
 # Changelog
 
-## 12.0.0
+## 12.0.0-alpha.1
 
 - Added a more powerful filter query mode that replaces the filter glob mode and "pipe to fzf" feature
 
