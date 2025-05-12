@@ -860,24 +860,40 @@ module Search = struct
           Dynarray.add_last acc word_id
         )
       in
+      let word_condition =
+        match ET.data token with
+        | `Explicit_spaces -> (
+            "(word.word LIKE ' %' OR word.word LIKE CHAR(9) + '%' OR word.word LIKE CHAR(10) + '%' OR word.word LIKE CHAR(13) + '%')"
+          )
+        | `String word -> (
+            let n = String.length word in
+            Fmt.str "(%d <= LENGTH(word.word) AND LENGTH(word.word) <= %d)"
+              (max 1 (n - 2)) (n + 2)
+          )
+      in
       (
         match start_end_inc with
         | None -> (
             iter_stmt
-              {|
+              (Fmt.str
+                 {|
               SELECT
                   word.id AS word_id,
                   word.word AS word
               FROM word
               WHERE doc_id = @doc_id
+              AND %s
               |}
+                 word_condition
+              )
               ~names:[ ("@doc_id", INT doc_id)
                      ]
               f
           )
         | Some (start, end_inc) -> (
             iter_stmt
-              {|
+              (Fmt.str
+                 {|
               SELECT DISTINCT
                   word.id AS word_id,
                   word.word AS word
@@ -887,7 +903,10 @@ module Search = struct
                   AND p.word_id = word.id
               WHERE p.doc_id = @doc_id
               AND p.pos BETWEEN @start AND @end_inc
+              AND %s
               |}
+                 word_condition
+              )
               ~names:[ ("@doc_id", INT doc_id)
                      ; ("@start", INT (Int64.of_int start))
                      ; ("@end_inc", INT (Int64.of_int end_inc))
