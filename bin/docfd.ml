@@ -1226,7 +1226,7 @@ let run
         | Some start_with_search -> (
             let start_with_search_len = String.length start_with_search in
             Lwd.set Ui.Vars.search_field (start_with_search, start_with_search_len);
-            Ui.update_search_phrase ();
+            Ui.update_search ();
           ));
        loop ();
     );

@@ -246,7 +246,7 @@ let update_filter () =
   let s = fst @@ Lwd.peek Vars.filter_field in
   Document_store_manager.submit_filter_req s
 
-let update_search_phrase () =
+let update_search () =
   reset_document_selected ();
   let s = fst @@ Lwd.peek Vars.search_field in
   Document_store_manager.submit_search_req s
@@ -724,7 +724,7 @@ module Bottom_pane = struct
     Ui_base.Search_bar.main ~input_mode
       ~edit_field:Vars.search_field
       ~focus_handle:Vars.search_field_focus_handle
-      ~f:update_search_phrase
+      ~f:update_search
 
   let main ~width ~search_result_groups =
     let$* input_mode = Lwd.get Ui_base.Vars.input_mode in
@@ -969,7 +969,7 @@ let keyboard_handler
         | (`ASCII '/', []) -> (
             commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff ();
             Lwd.set Vars.search_field Ui_base.empty_text_field;
-            update_search_phrase ();
+            update_search ();
             true
           )
         | (`ASCII 'f', []) -> (
