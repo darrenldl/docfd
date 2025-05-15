@@ -2,7 +2,7 @@
 
 ## 12.0.0-alpha.1
 
-- Added a more powerful filter query mode that replaces the filter glob mode and "pipe to fzf" feature
+- Added a more powerful filter mode that replaces the filter glob mode and "pipe to fzf" feature
 
     - Filter query mode uses a proper query language that supports file path globbing and file path fuzzy matching among other features
 
