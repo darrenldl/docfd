@@ -206,12 +206,12 @@ module Ir2 = struct
     | Title
     | Content
 
-  let parse_lines pool ~doc_hash search_mode last_scan ~path ~path_parts ~path_parts_ci (s : string Seq.t) : t =
+  let parse_lines pool (s : string Seq.t) : string option * Index.Raw.t =
     let rec aux (stage : work_stage) title s =
       match stage with
       | Content -> (
           let raw = Index.Raw.of_lines pool s in
-          { search_mode; path; path_parts; path_parts_ci; doc_hash; title; raw; last_scan }
+          (title, raw)
         )
       | Title -> (
           match s () with
@@ -223,12 +223,12 @@ module Ir2 = struct
     in
     aux Title None s
 
-  let parse_pages pool ~doc_hash search_mode last_scan ~path ~path_parts ~path_parts_ci (s : string list Seq.t) : t =
+  let parse_pages pool (s : string list Seq.t) : string option * Index.Raw.t =
     let rec aux (stage : work_stage) title s =
       match stage with
       | Content -> (
           let raw = Index.Raw.of_pages pool s in
-          { search_mode; path; path_parts; path_parts_ci; doc_hash; title; raw; last_scan }
+          (title, raw)
         )
       | Title -> (
           match s () with
@@ -249,13 +249,25 @@ module Ir2 = struct
   let of_ir1 pool (ir : Ir1.t) : t =
     let { Ir1.search_mode; doc_hash; path; data; last_scan } = ir in
     let path_parts, path_parts_ci = compute_path_parts path in
+    let title, raw =
     match data with
     | `Lines x -> (
-        parse_lines pool ~doc_hash search_mode last_scan ~path ~path_parts ~path_parts_ci (Dynarray.to_seq x)
+        parse_lines pool (Dynarray.to_seq x)
       )
     | `Pages x -> (
-        parse_pages pool ~doc_hash search_mode last_scan ~path ~path_parts ~path_parts_ci (Dynarray.to_seq x)
+        parse_pages pool (Dynarray.to_seq x)
       )
+    in
+    {
+      search_mode;
+      path;
+      path_parts;
+      path_parts_ci;
+      doc_hash;
+      title;
+      raw;
+      last_scan;
+    }
 end
 
 let of_ir2 db (ir : Ir2.t) : t =
