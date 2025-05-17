@@ -55,7 +55,18 @@ module Parsers = struct
   open Angstrom
   open Parser_components
 
-  let non_space_string = take_while1 is_not_space
+  let alphanum_symbol_string =
+    take_while1 (fun c ->
+        is_letter c
+        ||
+        is_digit c
+        ||
+        (match c with
+         | '&'
+         | '|' -> true
+         | _ -> false
+        )
+      )
 
   let maybe_quoted_string =
     (
@@ -133,14 +144,26 @@ module Parsers = struct
       ]
 
   let date =
-    maybe_quoted_string
+    any_string
     >>= fun s ->
     match Timedesc.Date.Ymd.of_iso8601 s with
     | Ok x -> return x
     | Error _ -> fail ""
 
+  let path_date =
+    let p =
+      compare_op >>= fun op ->
+      date >>| fun date ->
+      Path_date (op, date)
+    in
+    maybe_quoted_string
+    >>= fun s ->
+    match Angstrom.(parse_string ~consume:Consume.All) p s with
+    | Ok x -> return x
+    | Error s -> fail s
+
   let binary_op op_strings op =
-    non_space_string >>= fun s ->
+    alphanum_symbol_string >>= fun s ->
     skip_spaces *>
     (
       if List.mem (String.lowercase_ascii s) op_strings then (
@@ -155,7 +178,7 @@ module Parsers = struct
   let or_op = binary_op [ "or" ] Or
 
   let unary_op op_strings op =
-    non_space_string >>= fun s ->
+    alphanum_symbol_string >>= fun s ->
     skip_spaces *>
     (
       if List.mem (String.lowercase_ascii s) op_strings then (
@@ -175,10 +198,7 @@ module Parsers = struct
       fix (fun (exp : exp Angstrom.t) ->
           let base =
             choice [
-              (string "path-date:" *>
-               compare_op >>= fun op ->
-               date >>| fun date ->
-               Path_date (op, date));
+              (string "path-date:" *> path_date);
               (string "path-fuzzy:" *>
                search_exp >>| fun x -> Path_fuzzy x);
               (string "path-glob:" *>
