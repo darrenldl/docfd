@@ -191,6 +191,41 @@ module Ir1 = struct
       )
 end
 
+module Date_extract = struct
+  let yyyy_mm_dd =
+    let re = Re.Posix.re "([[:digit:]]{4}).*([[:digit:]]{2}).*([[:digit:]]{2})"
+             |> Re.compile
+    in
+    fun s ->
+      try
+        let g = Re.exec re s in
+        let y = Re.Group.get g 1 |> int_of_string in
+        let m = Re.Group.get g 2 |> int_of_string in
+        let d = Re.Group.get g 3 |> int_of_string in
+        Some (y, m, d)
+      with
+      | _ -> None
+
+  let extract s =
+    let rec aux l =
+      match l with
+      | [] -> None
+      | f :: fs -> (
+          match f s with
+          | Some (year, month, day) -> (
+              match Timedesc.Date.Ymd.make ~year ~month ~day with
+              | Ok date -> Some date
+              | Error _ -> None
+            )
+          | None -> aux fs
+        )
+    in
+    aux
+      [
+        yyyy_mm_dd;
+      ]
+end
+
 module Ir2 = struct
   type t = {
     search_mode : Search_mode.t;
@@ -198,7 +233,7 @@ module Ir2 = struct
     path : string;
     path_parts : string list;
     path_parts_ci : string list;
-    path_date : Timedesc.Date.t;
+    path_date : Timedesc.Date.t option;
     title : string option;
     raw : Index.Raw.t;
     last_scan : Timedesc.t;
@@ -251,7 +286,7 @@ module Ir2 = struct
   let of_ir1 pool (ir : Ir1.t) : t =
     let { Ir1.search_mode; doc_hash; path; data; last_scan } = ir in
     let path_parts, path_parts_ci = compute_path_parts path in
-    let path_date = None in
+    let path_date = Date_extract.extract path in
     let title, raw =
       match data with
       | `Lines x -> (
@@ -315,12 +350,14 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, 
         Some (Index.line_of_global_line_num ~doc_hash 0)
     in
     let path_parts, path_parts_ci = compute_path_parts path in
+    let path_date = Date_extract.extract path in
     Ok
       {
         search_mode;
         path;
         path_parts;
         path_parts_ci;
+        path_date;
         title;
         doc_hash;
         search_scope = None;
@@ -342,7 +379,21 @@ let satisfies_query pool (exp : Query_exp.t) (t : t) : bool =
   let rec aux exp =
     match exp with
     | Empty -> true
-    | Path_date _ -> false
+    | Path_date (op, date) -> (
+        match t.path_date with
+        | None -> false
+        | Some path_date -> (
+            let f =
+              match op with
+              | Eq -> Timedesc.Date.equal
+              | Le -> Timedesc.Date.le
+              | Ge -> Timedesc.Date.ge
+              | Lt -> Timedesc.Date.lt
+              | Gt -> Timedesc.Date.gt
+            in
+            f path_date date
+          )
+      )
     | Path_fuzzy exp -> (
         List.exists (fun phrase ->
             List.for_all (fun token ->
