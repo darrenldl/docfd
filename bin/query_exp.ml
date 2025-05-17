@@ -2,7 +2,7 @@ open Docfd_lib
 
 type t =
   | Empty
-  | Path_date of Timedesc.Date.t
+  | Path_date of compare_op * Timedesc.Date.t
   | Path_fuzzy of Search_exp.t
   | Path_glob of Glob.t
   | Ext of string
@@ -17,6 +17,13 @@ and binary_op =
 and unary_op =
   | Not
 
+and compare_op =
+  | Eq
+  | Le
+  | Ge
+  | Lt
+  | Gt
+
 let empty = Empty
 
 let is_empty (e : t) =
@@ -28,7 +35,8 @@ let equal (e1 : t) (e2 : t) =
   let rec aux e1 e2 =
     match e1, e2 with
     | Empty, Empty -> true
-    | Path_date x, Path_date y -> Timedesc.Date.equal x y
+    | Path_date (op1, x1), Path_date (op2, x2) ->
+      op1 = op2 && Timedesc.Date.equal x1 x2
     | Path_fuzzy x, Path_fuzzy y -> Search_exp.equal x y
     | Path_glob x, Path_glob y -> Glob.equal x y
     | Ext x, Ext y -> String.equal x y
@@ -114,6 +122,23 @@ module Parsers = struct
     |> String_utils.remove_leading_dots
     |> Fmt.str ".%s"
 
+  let compare_op =
+    choice
+      [
+        char '=' *> skip_spaces *> return Eq;
+        string "<=" *> skip_spaces *> return Le;
+        string ">=" *> skip_spaces *> return Ge;
+        char '<' *> skip_spaces *> return Lt;
+        char '>' *> skip_spaces *> return Gt;
+      ]
+
+  let date =
+    maybe_quoted_string
+    >>= fun s ->
+    match Timedesc.Date.Ymd.of_iso8601 s with
+    | Ok x -> return x
+    | Error _ -> fail ""
+
   let binary_op op_strings op =
     non_space_string >>= fun s ->
     skip_spaces *>
@@ -150,6 +175,10 @@ module Parsers = struct
       fix (fun (exp : exp Angstrom.t) ->
           let base =
             choice [
+              (string "path-date:" *>
+               compare_op >>= fun op ->
+               date >>| fun date ->
+               Path_date (op, date));
               (string "path-fuzzy:" *>
                search_exp >>| fun x -> Path_fuzzy x);
               (string "path-glob:" *>
