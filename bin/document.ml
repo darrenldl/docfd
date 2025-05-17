@@ -253,13 +253,13 @@ module Ir2 = struct
     let path_parts, path_parts_ci = compute_path_parts path in
     let path_date = None in
     let title, raw =
-    match data with
-    | `Lines x -> (
-        parse_lines pool (Dynarray.to_seq x)
-      )
-    | `Pages x -> (
-        parse_pages pool (Dynarray.to_seq x)
-      )
+      match data with
+      | `Lines x -> (
+          parse_lines pool (Dynarray.to_seq x)
+        )
+      | `Pages x -> (
+          parse_pages pool (Dynarray.to_seq x)
+        )
     in
     {
       search_mode;
@@ -276,16 +276,16 @@ end
 
 let of_ir2 db (ir : Ir2.t) : t =
   let
-  {
-    Ir2.search_mode;
-    path;
-    path_parts;
-    path_parts_ci;
-    path_date;
-    title;
-    doc_hash;
-    raw;
-    last_scan;
+    {
+      Ir2.search_mode;
+      path;
+      path_parts;
+      path_parts_ci;
+      path_date;
+      title;
+      doc_hash;
+      raw;
+      last_scan;
     } = ir in
   Index.load_raw_into_db db ~doc_hash raw;
   {
