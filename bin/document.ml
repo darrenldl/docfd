@@ -6,6 +6,7 @@ type t = {
   path : string;
   path_parts : string list;
   path_parts_ci : string list;
+  path_date : Timedesc.Date.t option;
   title : string option;
   doc_hash : string;
   search_scope : Diet.Int.t option;
@@ -197,6 +198,7 @@ module Ir2 = struct
     path : string;
     path_parts : string list;
     path_parts_ci : string list;
+    path_date : Timedesc.Date.t;
     title : string option;
     raw : Index.Raw.t;
     last_scan : Timedesc.t;
@@ -249,6 +251,7 @@ module Ir2 = struct
   let of_ir1 pool (ir : Ir1.t) : t =
     let { Ir1.search_mode; doc_hash; path; data; last_scan } = ir in
     let path_parts, path_parts_ci = compute_path_parts path in
+    let path_date = None in
     let title, raw =
     match data with
     | `Lines x -> (
@@ -263,6 +266,7 @@ module Ir2 = struct
       path;
       path_parts;
       path_parts_ci;
+      path_date;
       doc_hash;
       title;
       raw;
@@ -271,13 +275,25 @@ module Ir2 = struct
 end
 
 let of_ir2 db (ir : Ir2.t) : t =
-  let { Ir2.search_mode; path; path_parts; path_parts_ci; title; doc_hash; raw; last_scan } = ir in
+  let
+  {
+    Ir2.search_mode;
+    path;
+    path_parts;
+    path_parts_ci;
+    path_date;
+    title;
+    doc_hash;
+    raw;
+    last_scan;
+    } = ir in
   Index.load_raw_into_db db ~doc_hash raw;
   {
     search_mode;
     path;
     path_parts;
     path_parts_ci;
+    path_date;
     title;
     doc_hash;
     search_scope = None;
