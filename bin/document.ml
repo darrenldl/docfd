@@ -193,34 +193,51 @@ end
 
 module Date_extract = struct
   let yyyy_mm_dd =
-    let re = Re.Posix.re "([[:digit:]]{4}).*([[:digit:]]{2}).*([[:digit:]]{2})"
+    let re = Re.Pcre.re "(?:^|.*[^\\d])(\\d{4})[^\\d]([01]\\d)[^\\d]([0-3]\\d)(?:$|[^\\d])"
              |> Re.compile
     in
     fun s ->
       try
         let g = Re.exec re s in
+        let start = Re.Group.start g 1 in
         let y = Re.Group.get g 1 |> int_of_string in
         let m = Re.Group.get g 2 |> int_of_string in
         let d = Re.Group.get g 3 |> int_of_string in
-        Some (y, m, d)
+        Some (start, (y, m, d))
       with
       | _ -> None
 
   let extract s =
-    let rec aux l =
+    let rec aux acc l =
       match l with
-      | [] -> None
-      | f :: fs -> (
-          match f s with
-          | Some (year, month, day) -> (
+      | [] -> (
+          match acc with
+          | None -> None
+          | Some (_start_match_pos, (year, month, day)) -> (
               match Timedesc.Date.Ymd.make ~year ~month ~day with
               | Ok date -> Some date
               | Error _ -> None
             )
-          | None -> aux fs
+        )
+      | f :: fs -> (
+          let acc =
+            match acc, f s with
+            | None, x -> x
+            | Some x, None -> Some x
+            | Some (start_match_pos, ymd),
+              Some (start_match_pos', ymd') -> (
+                if start_match_pos' > start_match_pos then (
+                  Some (start_match_pos', ymd')
+                ) else (
+                  Some (start_match_pos, ymd)
+                )
+              )
+          in
+          aux acc fs
         )
     in
     aux
+      None
       [
         yyyy_mm_dd;
       ]
