@@ -1,5 +1,16 @@
 # Changelog
 
+## 12.0.0-alpha.2
+
+- Added `path-date` clause to query expression
+
+    - This allows filtering based on date recognized from document path, for example, `path-date:>=2025-01-01 AND path-date:<2025-02-01`
+      would allow `/home/user/meeting-notes-2025-01-10.md` to pass through
+
+    - This gives a very lightweight method of attaching date information to any document
+
+    - See [relevant Wiki page](https://github.com/darrenldl/docfd/wiki/Document-filtering) for details
+
 ## 12.0.0-alpha.1
 
 - Added a more powerful filter mode that replaces the filter glob mode and "pipe to fzf" feature
