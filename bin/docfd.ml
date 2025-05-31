@@ -1094,14 +1094,9 @@ let run
                 Float.abs
                   (new_stats.st_mtime -. old_stats.st_mtime) >= Params.float_compare_margin
               then (
-                Dynarray.clear snapshots;
+                Dynarray.truncate snapshots 1;
                 Lwd.set UI.Vars.document_store_cur_ver 0;
-                Dynarray.add_last
-                  snapshots
-                  (Document_store_snapshot.make
-                     ~last_command:None
-                     (init_document_store));
-                let store = ref init_document_store in
+                let store = ref (Document_store_snapshot.store (Dynarray.get snapshots 0)) in
                 let rerun = ref false in
                 let lines =
                   CCIO.with_in file (fun ic ->

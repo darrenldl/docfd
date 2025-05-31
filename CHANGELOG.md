@@ -1,5 +1,15 @@
 # Changelog
 
+## 12.0.0-alpha.3
+
+- Fixed command history recomputation not using the reloaded version
+  of document store
+
+    - This issue is most noticeable when you've edited a text file after hitting `Enter` in Docfd (after which Docfd reloads the file for you),
+      and you hit `h` to modify the command history
+
+    - The replaying of the command history would use the old copy of the file instead of the new edited version of the text file
+
 ## 12.0.0-alpha.2
 
 - Added `path-date` clause to query expression
