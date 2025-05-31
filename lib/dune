@@ -20,6 +20,7 @@
             sqlite3
             uuseg
             uucp
+            kcas_data
             timedesc
  )
 )

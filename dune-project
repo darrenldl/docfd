@@ -63,6 +63,7 @@ Features:
    sqlite3
    uuseg
    uucp
+   (kcas_data (>= "0.7.0"))
    (alcotest :with-test)
    (qcheck-alcotest :with-test)
    (qcheck :with-test)

@@ -753,6 +753,7 @@ module Search = struct
   module ET = Search_phrase.Enriched_token
 
   let indexed_word_is_usable
+      ~word_candidate_cache
       (match_typ : [ `Fuzzy | `Exact | `Prefix | `Suffix ])
       ~consider_edit_dist
       (token : Search_phrase.Enriched_token.t)
@@ -766,49 +767,58 @@ module Search = struct
          Parser_components.is_space indexed_word.[0]
        )
      | `String search_word -> (
-         let search_word_ci = String.lowercase_ascii search_word in
-         let indexed_word_ci = String.lowercase_ascii indexed_word in
-         let use_ci_match = String.equal search_word search_word_ci in
-         let indexed_word_len = String.length indexed_word in
-         if Parser_components.is_possibly_utf_8 indexed_word.[0] then (
-           String.equal search_word indexed_word
-         ) else (
-           match match_typ with
-           | `Fuzzy -> (
-               String.equal search_word_ci indexed_word_ci
-               || CCString.find ~sub:search_word_ci indexed_word_ci >= 0
-               || (indexed_word_len >= 2
-                   && CCString.find ~sub:indexed_word_ci search_word_ci >= 0)
-               || (consider_edit_dist
-                   && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word_ci search_word_ci.[0]
-                   && Spelll.match_with (ET.automaton token) indexed_word_ci)
-             )
-           | `Exact -> (
-               if use_ci_match then (
-                 String.equal search_word_ci indexed_word_ci
-               ) else (
+         match Kcas_data.Hashtbl.find_opt word_candidate_cache (search_word, indexed_word) with
+         | None -> (
+             let search_word_ci = String.lowercase_ascii search_word in
+             let indexed_word_ci = String.lowercase_ascii indexed_word in
+             let use_ci_match = String.equal search_word search_word_ci in
+             let indexed_word_len = String.length indexed_word in
+             let is_match =
+               if Parser_components.is_possibly_utf_8 indexed_word.[0] then (
                  String.equal search_word indexed_word
-               )
-             )
-           | `Prefix -> (
-               if use_ci_match then (
-                 CCString.prefix ~pre:search_word_ci indexed_word_ci
                ) else (
-                 CCString.prefix ~pre:search_word indexed_word
+                 match match_typ with
+                 | `Fuzzy -> (
+                     String.equal search_word_ci indexed_word_ci
+                     || CCString.find ~sub:search_word_ci indexed_word_ci >= 0
+                     || (indexed_word_len >= 2
+                         && CCString.find ~sub:indexed_word_ci search_word_ci >= 0)
+                     || (consider_edit_dist
+                         && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word_ci search_word_ci.[0]
+                         && Spelll.match_with (ET.automaton token) indexed_word_ci)
+                   )
+                 | `Exact -> (
+                     if use_ci_match then (
+                       String.equal search_word_ci indexed_word_ci
+                     ) else (
+                       String.equal search_word indexed_word
+                     )
+                   )
+                 | `Prefix -> (
+                     if use_ci_match then (
+                       CCString.prefix ~pre:search_word_ci indexed_word_ci
+                     ) else (
+                       CCString.prefix ~pre:search_word indexed_word
+                     )
+                   )
+                 | `Suffix -> (
+                     if use_ci_match then (
+                       CCString.suffix ~suf:search_word_ci indexed_word_ci
+                     ) else (
+                       CCString.suffix ~suf:search_word indexed_word
+                     )
+                   )
                )
-             )
-           | `Suffix -> (
-               if use_ci_match then (
-                 CCString.suffix ~suf:search_word_ci indexed_word_ci
-               ) else (
-                 CCString.suffix ~suf:search_word indexed_word
-               )
-             )
-         )
+             in
+             Kcas_data.Hashtbl.replace word_candidate_cache (search_word, indexed_word) is_match;
+             is_match
+           )
+         | Some is_match -> is_match
        )
     )
 
   let usable_positions
+      ~word_candidate_cache
       ~doc_hash
       ?within
       ?around_pos
@@ -851,6 +861,7 @@ module Search = struct
         Eio.Fiber.yield ();
         let indexed_word = Data.to_string_exn data.(1) in
         if indexed_word_is_usable
+            ~word_candidate_cache
             match_typ
             ~consider_edit_dist
             token
@@ -943,6 +954,7 @@ module Search = struct
     Dynarray.to_seq positions
 
   let search_around_pos
+      ~word_candidate_cache
       ~doc_hash
       ~consider_edit_dist
       ~(within : (int * int) option)
@@ -955,6 +967,7 @@ module Search = struct
       | [] -> Seq.return []
       | token :: rest -> (
           usable_positions
+            ~word_candidate_cache
             ~doc_hash
             ?within
             ~around_pos
@@ -977,6 +990,7 @@ module Search = struct
 
     type t = {
       stop_signal : Stop_signal.t;
+      word_candidate_cache : (string * string, bool) Kcas_data.Hashtbl.t;
       terminate_on_result_found : bool;
       cancellation_notifier : bool Atomic.t;
       doc_hash : string;
@@ -988,6 +1002,7 @@ module Search = struct
 
     let make
         stop_signal
+        ~word_candidate_cache
         ~terminate_on_result_found
         ~cancellation_notifier
         ~doc_hash
@@ -998,6 +1013,7 @@ module Search = struct
       =
       {
         stop_signal;
+        word_candidate_cache;
         terminate_on_result_found;
         cancellation_notifier;
         doc_hash;
@@ -1027,6 +1043,7 @@ module Search = struct
                Search_result_heap.empty)
             (fun () ->
                search_around_pos
+                 ~word_candidate_cache:t.word_candidate_cache
                  ~doc_hash
                  ~consider_edit_dist:true
                  ~within
@@ -1118,6 +1135,7 @@ module Search = struct
     type t = {
       terminate_on_result_found : bool;
       stop_signal : Stop_signal.t;
+      word_candidate_cache : (string * string, bool) Kcas_data.Hashtbl.t;
       cancellation_notifier : bool Atomic.t;
       doc_hash : string;
       within_same_line : bool;
@@ -1130,6 +1148,7 @@ module Search = struct
       let
         {
           stop_signal;
+          word_candidate_cache;
           terminate_on_result_found;
           cancellation_notifier;
           doc_hash;
@@ -1142,6 +1161,7 @@ module Search = struct
       |> Seq.map (fun start_pos ->
           Search_job.make
             stop_signal
+            ~word_candidate_cache
             ~terminate_on_result_found
             ~cancellation_notifier
             ~doc_hash
@@ -1160,6 +1180,7 @@ module Search = struct
   let make_search_job_groups
       stop_signal
       ?(terminate_on_result_found = false)
+      ~(word_candidate_cache : (string * string, bool) Kcas_data.Hashtbl.t)
       ~(cancellation_notifier : bool Atomic.t)
       ~doc_hash
       ~within_same_line
@@ -1182,7 +1203,11 @@ module Search = struct
                      Atomic.set cancellation_notifier true;
                      Seq.empty)
                   (fun () ->
-                     usable_positions ~doc_hash ~consider_edit_dist:true first_word)
+                     usable_positions
+                       ~word_candidate_cache
+                       ~doc_hash
+                       ~consider_edit_dist:true
+                       first_word)
                 |> (fun s ->
                     match search_scope with
                     | None -> s
@@ -1214,6 +1239,7 @@ module Search = struct
                     {
                       Search_job_group.stop_signal;
                       terminate_on_result_found;
+                      word_candidate_cache;
                       cancellation_notifier;
                       doc_hash;
                       within_same_line;
@@ -1237,9 +1263,11 @@ module Search = struct
       ~search_scope
       (exp : Search_exp.t)
     : Search_result_heap.t =
+    let word_candidate_cache = Kcas_data.Hashtbl.create () in
     make_search_job_groups
       stop_signal
       ?terminate_on_result_found
+      ~word_candidate_cache
       ~cancellation_notifier
       ~doc_hash
       ~within_same_line

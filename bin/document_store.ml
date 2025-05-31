@@ -71,6 +71,7 @@ let min_binding (t : t) =
 
 let refresh_search_results pool stop_signal (t : t) : t =
   let cancellation_notifier = Atomic.make false in
+  let word_candidate_cache = Kcas_data.Hashtbl.create () in
   let updates =
     Eio.Fiber.first
       (fun () ->
@@ -93,6 +94,7 @@ let refresh_search_results pool stop_signal (t : t) : t =
              in
              Index.make_search_job_groups
                stop_signal
+               ~word_candidate_cache
                ~cancellation_notifier
                ~doc_hash:(Document.doc_hash doc)
                ~within_same_line

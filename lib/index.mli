@@ -65,6 +65,7 @@ end
 val make_search_job_groups :
   Stop_signal.t ->
   ?terminate_on_result_found : bool ->
+  word_candidate_cache:(string * string, bool) Kcas_data.Hashtbl.t ->
   cancellation_notifier:bool Atomic.t ->
   doc_hash:string ->
   within_same_line:bool ->
