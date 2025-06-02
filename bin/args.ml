@@ -382,13 +382,20 @@ let paths_from_arg_name = "paths-from"
 
 let paths_from_arg =
   let doc =
-    Fmt.str "Read list of paths from FILE
-and add to the final list of paths to be scanned."
+    Fmt.str "Read list of paths from FILES,
+which is a comma separated list of files,
+and add to the final list of paths to be scanned.
+For example, \"--%s path-list0.txt,path-list1.txt\".
+If - is in FILES, then stdin is also read for
+list of paths to be scanned. This is useful
+for piping, e.g. \"find -name '*.txt' | docfd --%s -\""
+      paths_from_arg_name
+      paths_from_arg_name
   in
   Arg.(
     value
     & opt_all string []
-    & info [ paths_from_arg_name ] ~doc ~docv:"FILE"
+    & info [ paths_from_arg_name ] ~doc ~docv:"FILES"
   )
 
 let glob_arg_name = "glob"
@@ -540,6 +547,7 @@ let check
     ~search_result_print_snippet_min_size
     ~search_result_print_max_add_lines
     ~commands_from
+    ~paths_from
     ~print_files_with_match
     ~print_files_without_match
   =
@@ -653,6 +661,13 @@ let check
        )
      )
    | false, false -> ()
+  );
+  (
+    let l = List.filter (fun x -> x = "-") paths_from in
+    if List.length l > 1 then (
+      exit_with_error_msg
+        (Fmt.str "at most one \"-\" may be supplied to --%s" paths_from_arg_name)
+    )
   );
   (match filter_query_exp with
    | None -> ()

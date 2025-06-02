@@ -15,6 +15,12 @@
 
     - Handling of these terms is now 10-20% faster
 
+- Updated `--paths-from` argument handling
+
+    - Added `--paths-from -` for accepting list of paths from stdin
+
+    - Adjusted to accept comma separated list of paths, e.g. `--paths-from path-list0.txt,path-list1.txt`
+
 ## 12.0.0-alpha.2
 
 - Added `path-date` clause to query expression

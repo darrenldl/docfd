@@ -472,6 +472,7 @@ let run
     ~search_result_print_snippet_min_size
     ~search_result_print_max_add_lines
     ~commands_from
+    ~paths_from
     ~print_files_with_match
     ~print_files_without_match;
   Params.debug_output := (match debug_log with
@@ -561,15 +562,27 @@ let run
     | [] -> None
     | l -> (
         l
-        |> CCList.flat_map (fun paths_from ->
-            try
-              CCIO.with_in paths_from CCIO.read_lines_l
-            with
-            | Sys_error _ -> (
-                exit_with_error_msg
-                  (Fmt.str "failed to read list of paths from %s" (Filename.quote paths_from))
-              )
+        |> List.to_seq
+        |> Seq.map (String.split_on_char ',')
+        |> Seq.flat_map List.to_seq
+        |> Seq.flat_map (fun paths_from ->
+            (match paths_from with
+             | "-" -> (
+                 CCIO.read_lines_l stdin
+               )
+             | _ -> (
+                 try
+                   CCIO.with_in paths_from CCIO.read_lines_l
+                 with
+                 | Sys_error _ -> (
+                     exit_with_error_msg
+                       (Fmt.str "failed to read list of paths from %s" (Filename.quote paths_from))
+                   )
+               )
+            )
+            |> List.to_seq
           )
+        |> List.of_seq
         |> Option.some
       )
   in
