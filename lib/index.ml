@@ -574,8 +574,8 @@ let words_between_start_and_end_inc : doc_hash:string -> int * int -> string Dyn
     SELECT word.word
     FROM position p
     JOIN word
-        ON word.doc_id = p.doc_id
-        AND word.id = p.word_id
+      ON word.doc_id = p.doc_id
+      AND word.id = p.word_id
     WHERE p.doc_id = @doc_id
     AND p.pos BETWEEN @start AND @end_inc
     ORDER BY p.pos
@@ -897,8 +897,8 @@ module Search = struct
               (Fmt.str
                  {|
               SELECT
-                  word.id AS word_id,
-                  word.word AS word
+                word.id AS word_id,
+                word.word AS word
               FROM word
               WHERE doc_id = @doc_id
               %s
@@ -913,8 +913,8 @@ module Search = struct
               (Fmt.str
                  {|
               SELECT DISTINCT
-                  word.id AS word_id,
-                  word.word AS word
+                word.id AS word_id,
+                word.word AS word
               FROM position p
               JOIN word
                   ON p.doc_id = word.doc_id
@@ -946,7 +946,7 @@ module Search = struct
             iter_stmt
               {|
               SELECT
-                  p.pos
+                p.pos
               FROM position p
               WHERE doc_id = @doc_id
               AND word_id = @word_id
@@ -961,7 +961,7 @@ module Search = struct
             iter_stmt
               {|
               SELECT
-                  p.pos
+                p.pos
               FROM position p
               WHERE doc_id = @doc_id
               AND word_id = @word_id
