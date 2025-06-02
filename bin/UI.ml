@@ -792,7 +792,7 @@ let keyboard_handler
              Lwd.peek (Document_store_manager.filter_ui_status),
              Lwd.peek (Document_store_manager.search_ui_status)
            with
-           | `Ok, `Idle -> (
+           | `Idle, `Idle -> (
                UI_base.set_input_mode Drop;
              )
            | _, _ -> (

@@ -6,11 +6,15 @@ type search_status = [
   | `Parse_error
 ]
 
-type filter_status = [ `Ok | `Parse_error ]
+type filter_status = [
+  | `Idle
+  | `Filtering
+  | `Parse_error
+]
 
 let search_ui_status : search_status Lwd.var = Lwd.var `Idle
 
-let filter_ui_status : filter_status Lwd.var = Lwd.var `Ok
+let filter_ui_status : filter_status Lwd.var = Lwd.var `Idle
 
 let single_file_view_search_request : string Lock_protected_cell.t =
   Lock_protected_cell.make ()
@@ -38,6 +42,7 @@ type egress_payload =
   | Searching
   | Search_done of Document_store_snapshot.t
   | Filter_glob_parse_error
+  | Filtering
   | Filtering_done of Document_store_snapshot.t
   | Update of Document_store_snapshot.t
 
@@ -47,10 +52,16 @@ let egress : egress_payload Eio.Stream.t =
 let egress_ack : unit Eio.Stream.t =
   Eio.Stream.create 0
 
-let stop_signal = Atomic.make (Stop_signal.make ())
+let stop_filter_signal = Atomic.make (Stop_signal.make ())
 
-let signal_stop () =
-  let x = Atomic.exchange stop_signal (Stop_signal.make ()) in
+let stop_search_signal = Atomic.make (Stop_signal.make ())
+
+let stop_filter () =
+  let x = Atomic.exchange stop_filter_signal (Stop_signal.make ()) in
+  Stop_signal.broadcast x
+
+let stop_search () =
+  let x = Atomic.exchange stop_search_signal (Stop_signal.make ()) in
   Stop_signal.broadcast x
 
 let document_store_snapshot =
@@ -72,6 +83,9 @@ let manager_fiber () =
     | Searching -> (
         Lwd.set search_ui_status `Searching
       )
+    | Filtering -> (
+        Lwd.set filter_ui_status `Filtering
+      )
     | Search_done snapshot -> (
         update_store snapshot;
         Lwd.set search_ui_status `Idle
@@ -81,13 +95,12 @@ let manager_fiber () =
       )
     | Filtering_done snapshot -> (
         update_store snapshot;
-        Lwd.set search_ui_status `Idle;
-        Lwd.set filter_ui_status `Ok
+        Lwd.set filter_ui_status `Idle
       )
     | Update snapshot -> (
         update_store snapshot;
         Lwd.set search_ui_status `Idle;
-        Lwd.set filter_ui_status `Ok;
+        Lwd.set filter_ui_status `Idle;
         Eio.Stream.add egress_ack ();
       )
   done
@@ -128,7 +141,7 @@ let worker_fiber pool =
   let process_filter_req stop_signal (s : string) =
     match Query_exp.parse s with
     | Some filter -> (
-        Eio.Stream.add egress Searching;
+        Eio.Stream.add egress Filtering;
         let store =
           !store_snapshot
           |> Document_store_snapshot.store
@@ -155,14 +168,17 @@ let worker_fiber pool =
   while true do
     Ping.wait worker_ping;
     Ping.clear requester_ping;
-    let stop_signal' = Atomic.get stop_signal in
     (match Lock_protected_cell.get filter_request with
      | None -> ()
-     | Some s -> process_filter_req stop_signal' s
+     | Some s -> (
+         process_filter_req (Atomic.get stop_filter_signal) s
+       )
     );
     (match Lock_protected_cell.get search_request with
      | None -> ()
-     | Some s -> process_search_req stop_signal' s
+     | Some s -> (
+         process_search_req (Atomic.get stop_search_signal) s
+       )
     );
     (match Lock_protected_cell.get update_request with
      | None -> ()
@@ -173,21 +189,23 @@ let worker_fiber pool =
 
 let submit_filter_req (s : string) =
   Eio.Mutex.use_rw requester_lock ~protect:false (fun () ->
-      signal_stop ();
+      stop_filter ();
+      stop_search ();
       Lock_protected_cell.set filter_request s;
       Ping.ping worker_ping
     )
 
 let submit_search_req (s : string) =
   Eio.Mutex.use_rw requester_lock ~protect:false (fun () ->
-      signal_stop ();
+      stop_search ();
       Lock_protected_cell.set search_request s;
       Ping.ping worker_ping
     )
 
 let submit_update_req snapshot =
   Eio.Mutex.use_rw requester_lock ~protect:false (fun () ->
-      signal_stop ();
+      stop_filter ();
+      stop_search ();
       Lock_protected_cell.unset search_request;
       Lock_protected_cell.unset filter_request;
       Lock_protected_cell.set update_request snapshot;

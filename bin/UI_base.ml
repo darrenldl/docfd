@@ -470,9 +470,13 @@ module Filter_bar = struct
   let status =
     let$* status = Lwd.get Document_store_manager.filter_ui_status in
     (match status with
-     | `Ok -> (
+     | `Idle -> (
          Notty.I.string Notty.A.(fg lightgreen)
            "  OK"
+       )
+     | `Filtering -> (
+         Notty.I.string Notty.A.(fg lightyellow)
+           " ..."
        )
      | `Parse_error -> (
          Notty.I.string Notty.A.(fg lightred)

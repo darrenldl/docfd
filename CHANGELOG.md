@@ -21,6 +21,31 @@
 
     - Adjusted to accept comma separated list of paths, e.g. `--paths-from path-list0.txt,path-list1.txt`
 
+- Fixed interaction between search and filter
+
+    - Previously, starting a search would incorrectly cancel an ongoing filtering operation.
+      Now only a new filtering operation can cancel an ongoing filtering operation.
+      A new search still cancels an ongoing search.
+
+    - Starting a new filtering operation also still cancels any ongoing search. This is fine since the search results
+      are refreshed after the filtering has been completed.
+
+        - The refreshing of the search results also means that the following sequences of events are still handled correctly,
+          namely they still arrive at the same normal form of the document store:
+
+            - Example 1:
+
+                0. Filter (filtering is canceled by 2, but the updating of query expression is never canceled)
+                1. Search (search is canceled by 2, but the updating of search expression is never canceled)
+                2. Filter (refreshes search results)
+
+            - Exampele 2:
+
+                0. Search (search is canceled by 1, but updating of search expression is never canceled)
+                1. Filter (this stage is canceled by 2, either during the filtering or during the refreshing of search results,
+                   but the updating of query expression is never canceled)
+                2. Filter (refreshes search results)
+
 ## 12.0.0-alpha.2
 
 - Added `path-date` clause to query expression
