@@ -861,23 +861,57 @@ module Search = struct
         )
       in
       (
+        let extra_sql =
+          match ET.data token with
+          | `Explicit_spaces -> (
+              {|AND (
+                  word LIKE ' %'
+                  OR
+                  word LIKE char(9) || '%'
+                  OR
+                  word LIKE char(10) || '%'
+                  OR
+                  word LIKE char(13) || '%'
+                )
+            |}
+            )
+          | `String search_word -> (
+              let search_word = search_word
+                                |> CCString.replace ~sub:"'" ~by:"''"
+                                |> CCString.replace ~sub:"\\" ~by:"\\\\"
+                                |> CCString.replace ~sub:"%" ~by:"\\%"
+              in
+              match match_typ with
+              | `Fuzzy | `Suffix -> ""
+              | `Exact -> (
+                  Fmt.str "AND word LIKE '%s' ESCAPE '\\'" search_word
+                )
+              | `Prefix -> (
+                  Fmt.str "AND word LIKE '%s%%' ESCAPE '\\'" search_word
+                )
+            )
+        in
         match start_end_inc with
         | None -> (
             iter_stmt
-              {|
+              (Fmt.str
+                 {|
               SELECT
                   word.id AS word_id,
                   word.word AS word
               FROM word
               WHERE doc_id = @doc_id
+              %s
               |}
+                 extra_sql)
               ~names:[ ("@doc_id", INT doc_id)
                      ]
               f
           )
         | Some (start, end_inc) -> (
             iter_stmt
-              {|
+              (Fmt.str
+                 {|
               SELECT DISTINCT
                   word.id AS word_id,
                   word.word AS word
@@ -887,7 +921,9 @@ module Search = struct
                   AND p.word_id = word.id
               WHERE p.doc_id = @doc_id
               AND p.pos BETWEEN @start AND @end_inc
+              %s
               |}
+                 extra_sql)
               ~names:[ ("@doc_id", INT doc_id)
                      ; ("@start", INT (Int64.of_int start))
                      ; ("@end_inc", INT (Int64.of_int end_inc))

@@ -86,7 +86,9 @@ CREATE TABLE IF NOT EXISTS word (
   PRIMARY KEY (doc_id, id)
 ) WITHOUT ROWID;
 
-CREATE INDEX IF NOT EXISTS word_index_3 ON word (word);
+CREATE INDEX IF NOT EXISTS word_index_1 ON word (word);
+
+CREATE INDEX IF NOT EXISTS word_index_2 ON word (word COLLATE NOCASE);
   |}
 
 let db_path : string option ref = ref None

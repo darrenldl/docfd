@@ -10,6 +10,11 @@
 
     - The replaying of the command history would use the old copy of the file instead of the new edited version of the text file
 
+- Adjusted SQL indices and swapped to specialized SQL queries
+  for exact and prefix search terms, e.g. `'hello`, `^worl`
+
+    - Handling of these terms is now 10-20% faster
+
 ## 12.0.0-alpha.2
 
 - Added `path-date` clause to query expression
