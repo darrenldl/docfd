@@ -50,6 +50,8 @@
 
 - Renaming query expression/language to filter expression/language in help text and documentation
 
+- Added a separate loading indicator for filter field
+
 ## 12.0.0-alpha.2
 
 - Added `path-date` clause to query expression
