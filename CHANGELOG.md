@@ -48,6 +48,7 @@
                    but the updating of filter expression is never canceled)
                 2. Filter `f_exp1` (refreshes search results using `s_exp0`)
 
+- Renaming query expression/language to filter expression/language in help text and documentation
 
 ## 12.0.0-alpha.2
 

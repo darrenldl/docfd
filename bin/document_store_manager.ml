@@ -139,7 +139,7 @@ let worker_fiber pool =
       )
   in
   let process_filter_req stop_signal (s : string) =
-    match Query_exp.parse s with
+    match Filter_exp.parse s with
     | Some filter -> (
         Eio.Stream.add egress Filtering;
         let store =

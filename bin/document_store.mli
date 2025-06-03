@@ -14,7 +14,7 @@ val update_filter :
   Task_pool.t ->
   Stop_signal.t ->
   string ->
-  Query_exp.t ->
+  Filter_exp.t ->
   t ->
   t
 
@@ -26,7 +26,7 @@ val update_search_exp :
   t ->
   t
 
-val filter : t -> Query_exp.t
+val filter : t -> Filter_exp.t
 
 val filter_string : t -> string
 

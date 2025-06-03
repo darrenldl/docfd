@@ -391,8 +391,8 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, 
 
 module ET = Search_phrase.Enriched_token
 
-let satisfies_query pool (exp : Query_exp.t) (t : t) : bool =
-  let open Query_exp in
+let satisfies_filter pool (exp : Filter_exp.t) (t : t) : bool =
+  let open Filter_exp in
   let rec aux exp =
     match exp with
     | Empty -> true

@@ -6,7 +6,7 @@ type search_result_group = Document.t * Search_result.t array
 
 type t = {
   all_documents : Document.t String_map.t;
-  filter : Query_exp.t;
+  filter : Filter_exp.t;
   filter_string : string;
   documents_passing_filter : String_set.t;
   documents_marked : String_set.t;
@@ -21,7 +21,7 @@ let size (t : t) =
 let empty : t =
   {
     all_documents = String_map.empty;
-    filter = Query_exp.empty;
+    filter = Filter_exp.empty;
     filter_string = "";
     documents_passing_filter = String_set.empty;
     documents_marked = String_set.empty;
@@ -156,12 +156,12 @@ let update_filter
          |> String_map.to_seq
          |> Seq.map snd
          |> (fun s ->
-             if Query_exp.is_empty filter then (
+             if Filter_exp.is_empty filter then (
                s
              ) else (
                Seq.filter (fun s ->
                    Eio.Fiber.yield ();
-                   Document.satisfies_query pool filter s
+                   Document.satisfies_filter pool filter s
                  ) s
              )
            )
@@ -196,7 +196,7 @@ let add_document pool (doc : Document.t) (t : t) : t =
   in
   let path = Document.path doc in
   let documents_passing_filter =
-    if Document.satisfies_query pool t.filter doc
+    if Document.satisfies_filter pool t.filter doc
     then
       String_set.add path t.documents_passing_filter
     else
@@ -483,7 +483,7 @@ let run_command pool (command : Command.t) (t : t) : t option =
         )
     )
   | `Filter s -> (
-      match Query_exp.parse s with
+      match Filter_exp.parse s with
       | None -> None
       | Some exp -> (
           Some (

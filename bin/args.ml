@@ -225,7 +225,7 @@ let start_with_filter_arg_name = "start-with-filter"
 
 let start_with_filter_arg =
   let doc =
-    Fmt.str "Start interactive mode with an initial filter using query expression EXP."
+    Fmt.str "Start interactive mode with an initial filter using expression EXP."
   in
   Arg.(
     value
@@ -291,7 +291,7 @@ let filter_arg_name = "filter"
 let filter_arg =
   let doc =
     Fmt.str
-      "Filter with query expression EXP in non-interactive mode. May be combined with --%s or --%s."
+      "Filter with expression EXP in non-interactive mode. May be combined with --%s or --%s."
       search_arg_name
       sample_arg_name
   in
@@ -539,7 +539,7 @@ let check
     ~cache_limit
     ~start_with_filter
     ~start_with_search
-    ~filter_query_exp
+    ~filter_exp
     ~sample_search_exp
     ~samples_per_doc
     ~search_exp
@@ -595,7 +595,7 @@ let check
     exit_with_error_msg
       (Fmt.str "invalid %s: cannot be < 0" search_result_print_snippet_max_add_lines_arg_name)
   );
-  if Option.is_some filter_query_exp then (
+  if Option.is_some filter_exp then (
     if not (
         Option.is_some sample_search_exp
         ||
@@ -623,7 +623,7 @@ let check
      )
    | true, false -> (
        if not (
-           Option.is_some filter_query_exp
+           Option.is_some filter_exp
            ||
            Option.is_some sample_search_exp
            ||
@@ -644,7 +644,7 @@ let check
      )
    | false, true -> (
        if not (
-           Option.is_some filter_query_exp
+           Option.is_some filter_exp
            ||
            Option.is_some sample_search_exp
            ||
@@ -669,14 +669,14 @@ let check
         (Fmt.str "at most one \"-\" may be supplied to --%s" paths_from_arg_name)
     )
   );
-  (match filter_query_exp with
+  (match filter_exp with
    | None -> ()
-   | Some query_exp_string -> (
+   | Some filter_exp_string -> (
        match
-         Query_exp.parse query_exp_string
+         Filter_exp.parse filter_exp_string
        with
        | None -> (
-           exit_with_error_msg "failed to parse query exp"
+           exit_with_error_msg "failed to parse filter exp"
          )
        | Some _ -> ()
      )
@@ -699,7 +699,7 @@ let check
      )
   );
   if Option.is_some commands_from then (
-    if Option.is_some filter_query_exp then (
+    if Option.is_some filter_exp then (
       exit_with_error_msg
         (Fmt.str "--%s and --%s cannot be used together" commands_from_arg_name filter_arg_name)
     );

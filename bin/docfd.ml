@@ -435,7 +435,7 @@ let run
     (index_only : bool)
     (start_with_filter : string option)
     (start_with_search : string option)
-    (filter_query_exp : string option)
+    (filter_exp : string option)
     (sample_search_exp : string option)
     (samples_per_doc : int)
     (search_exp : string option)
@@ -464,7 +464,7 @@ let run
     ~cache_limit
     ~start_with_filter
     ~start_with_search
-    ~filter_query_exp
+    ~filter_exp
     ~sample_search_exp
     ~samples_per_doc
     ~search_exp
@@ -587,7 +587,7 @@ let run
       )
   in
   let interactive =
-    Option.is_none filter_query_exp
+    Option.is_none filter_exp
     &&
     Option.is_none sample_search_exp
     &&
@@ -830,11 +830,11 @@ let run
      )
   );
   if not interactive then (
-    let filter_query_exp_and_original_string =
-      match filter_query_exp with
+    let filter_exp_and_original_string =
+      match filter_exp with
       | None -> None
       | Some s ->
-        Some (Option.get (Query_exp.parse s), s)
+        Some (Option.get (Filter_exp.parse s), s)
     in
     let print_limit_per_doc, search_exp_and_original_string =
       match sample_search_exp, search_exp with
@@ -861,14 +861,14 @@ let run
     let document_store =
       init_document_store
       |> (fun store ->
-          match filter_query_exp_and_original_string with
+          match filter_exp_and_original_string with
           | None -> store
-          | Some (filter_query_exp, filter_query_exp_string) -> (
+          | Some (filter_exp, filter_exp_string) -> (
               Document_store.update_filter
                 pool
                 (Stop_signal.make ())
-                filter_query_exp_string
-                filter_query_exp
+                filter_exp_string
+                filter_exp
                 store
             )
         )
