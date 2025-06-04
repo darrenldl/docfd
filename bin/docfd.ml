@@ -1207,12 +1207,10 @@ let run
            let last_index = Dynarray.length snapshots - 1 in
            Lwd.set UI.Vars.document_store_cur_ver last_index;
            let snapshot = Dynarray.get snapshots last_index in
-           UI.sync_input_fields_from_document_store
-             (Document_store_snapshot.store snapshot);
            snapshot
          )
        in
-       Document_store_manager.submit_update_req snapshot;
+       UI.submit_update_req_and_sync_input_fields snapshot;
        (match start_with_filter with
         | None -> ()
         | Some start_with_filter -> (
