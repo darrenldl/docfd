@@ -64,8 +64,8 @@ let sync_input_fields_from_document_store
 
 let submit_update_req_and_sync_input_fields snapshot =
   Document_store_manager.submit_update_req snapshot;
-            sync_input_fields_from_document_store
-              (Document_store_snapshot.store snapshot)
+  sync_input_fields_from_document_store
+    (Document_store_snapshot.store snapshot)
 
 let update_starting_snapshot_and_recompute_rest
     (starting_snapshot : Document_store_snapshot.t)
