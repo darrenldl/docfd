@@ -37,64 +37,47 @@
 
             - Example 1:
 
-                1.  Filter `f_exp0` (filtering is canceled by step
-                    3, but the updating of filter expression is
-                    never canceled)
-                2.  Search `s_exp0` (search is canceled by step 3,
-                    but the updating of search expression is never
-                    canceled)
-                3.  Filter `f_exp1` (refreshes search results using
-                    `s_exp0`)
+                0.  Filter `f_exp0` (filtering is canceled by 2, but the updating of filter expression is never canceled)
+                1.  Search `s_exp0` (search is canceled by 2, but the updating of search expression is never canceled)
+                2.  Filter `f_exp1` (refreshes search results using `s_exp0`)
 
             - Exampele 2:
 
-                1.  Search `s_exp0` (search is canceled by step 2,
-                    but updating of search expression is never
-                    canceled)
-                2.  Filter `f_exp0` (this stage is canceled by step
-                    3, either during the filtering or during the
+                0.  Search `s_exp0` (search is canceled by 1, but updating of search expression is never canceled)
+                1.  Filter `f_exp0` (this stage is canceled by 2,
+                    either during the filtering or during the
                     refreshing of search results, but the updating
                     of filter expression is never canceled)
-                3.  Filter `f_exp1` (refreshes search results using
-                    `s_exp0`)
+                2.  Filter `f_exp1` (refreshes search results using `s_exp0`)
 
 - Renaming query expression/language to filter expression/language in help text and documentation
 
 - Added a separate loading indicator for filter field
 
-- Fixed concurrency issue where a document store update may cause
-  filter field and search field in UI to be out of sync with the
-  actual filter expression and search expression used by the
-  underlying document store
+- Fixed concurrency issue where update of document store may cause
+  filter and search fields in UI to be out of sync with the actual
+  filter/search expression being being processed
 
     - Suppose we have the following sequence of events:
 
-        1.  Document store `store0` carries filter expression
+        0.  Document store `store0` carries filter expression
             `f_exp0` and search expression `s_exp0`, which we write
             as pair `(f_exp0, s_exp0)`
-        2.  User initiates filter/search by placing `(f_exp1,
-            s_exp1)` into the input fields.
-
-            We name the document store resulting from this
-            filter/search as `store1a`,
+        1.  User initiates filter/search by placing `(f_exp1, s_exp1)` into the input fields.
+            We name the document store resulting from this filter/search as `store1a`,
             which carries `(f_exp1, s_exp1)` when finalized.
-        3.  While filter/search is ongoing, user drops a set of
-            documents from the current document store. Since
-            `store1a` is not finalized yet, the current document
-            store is still `store0`, thus the new document store
-            encoding the result of the drop operation, `store1b`,
-            is computed from `store0` instead of `store1a`.
+        2.  While filter/search is ongoing,
+        user drops a set of documents from the
+            current document store. Since `store1a` is not
+            finalized yet, the current document store is still `store0`, thus the new document store encoding the result of the drop operation, `store1b`, is computed from `store0` instead of `store1a`.
 
             In other words, both `store1a` and `store1b` share
             `store0` as their parent.
             Note that `store1b` carries `(f_exp0, s_exp0)`
             inherited from `store0`,
-            as a drop operation does not alter the filter
-            expression or search expression.
-        4.  As a drop operation immediately updates the document
-            store and cancels ongoing filter/search, step 3
-            canceled the computation of `store1a`, and instead
-            places `store1b` as the current document store.
+            as a drop operation does not alter the filter expression or search expression.
+        3.  As a drop operation immediately updates the document store
+        and cancels ongoing filter/search, step 2 canceled the computation of `store1a`, and instead places `store1b` as the current document store.
 
     - However, this means the input fields are `(f_exp1, s_exp1)`
       while the current document store `store1b` actually carries
@@ -105,9 +88,9 @@
       carries out the following step missing from previous
       versions.
 
-        5.  Update input fields to `(f_exp0, s_exp0)`
+        4.  Update input fields to `(f_exp0, s_exp0)`
 
-    - This addresses the mismatch between the underlying document store fields and the UI fields.
+    - This addresses the mismatch between underlying data and the UI.
 
 ## 12.0.0-alpha.2
 
