@@ -90,8 +90,7 @@ let update_starting_snapshot_and_recompute_rest
       (Document_store_snapshot.update_store store cur)
   done;
   let cur_snapshot = get_cur_document_store_snapshot () in
-  Document_store_manager.submit_update_req
-    cur_snapshot
+  submit_update_req_and_sync_input_fields cur_snapshot
 
 let reload_document (doc : Document.t) =
   let pool = UI_base.task_pool () in
@@ -181,7 +180,7 @@ let toggle_mark ~path =
         (Document_store.mark ~path store)
     )
   in
-  Document_store_manager.submit_update_req new_snapshot
+  submit_update_req_and_sync_input_fields new_snapshot
 
 let unmark_all () =
   let cur_snapshot = get_cur_document_store_snapshot () in
@@ -192,7 +191,7 @@ let unmark_all () =
       (Document_store.unmark_all
          (Document_store_snapshot.store cur_snapshot))
   in
-  Document_store_manager.submit_update_req new_snapshot
+  submit_update_req_and_sync_input_fields new_snapshot
 
 let drop ~document_count (choice : [`Path of string | `All_except of string | `Marked | `Unmarked | `Listed | `Unlisted]) =
   let choice, new_command =
@@ -232,7 +231,7 @@ let drop ~document_count (choice : [`Path of string | `All_except of string | `M
          choice
          (Document_store_snapshot.store cur_snapshot))
   in
-  Document_store_manager.submit_update_req new_snapshot
+  submit_update_req_and_sync_input_fields new_snapshot
 
 let narrow_search_scope_to_level ~level =
   let cur_snapshot = get_cur_document_store_snapshot () in
@@ -244,7 +243,7 @@ let narrow_search_scope_to_level ~level =
          ~level
          (Document_store_snapshot.store cur_snapshot))
   in
-  Document_store_manager.submit_update_req new_snapshot
+  submit_update_req_and_sync_input_fields new_snapshot
 
 let update_filter () =
   reset_document_selected ();
@@ -829,9 +828,7 @@ let keyboard_handler
           if new_ver >= 0 then (
             Lwd.set Vars.document_store_cur_ver new_ver;
             let new_snapshot = Dynarray.get Vars.document_store_snapshots new_ver in
-            Document_store_manager.submit_update_req new_snapshot;
-            sync_input_fields_from_document_store
-              (Document_store_snapshot.store new_snapshot);
+            submit_update_req_and_sync_input_fields new_snapshot;
             reset_document_selected ();
           );
           `Handled
@@ -844,9 +841,7 @@ let keyboard_handler
           if new_ver < Dynarray.length Vars.document_store_snapshots then (
             Lwd.set Vars.document_store_cur_ver new_ver;
             let new_snapshot = Dynarray.get Vars.document_store_snapshots new_ver in
-            Document_store_manager.submit_update_req new_snapshot;
-            sync_input_fields_from_document_store
-              (Document_store_snapshot.store new_snapshot);
+            submit_update_req_and_sync_input_fields new_snapshot;
             reset_document_selected ();
           );
           `Handled
