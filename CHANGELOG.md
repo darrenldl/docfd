@@ -54,6 +54,44 @@
 
 - Added a separate loading indicator for filter field
 
+- Fixed concurrency issue where update of document store may cause
+  filter and search fields in UI to be out of sync with the actual
+  filter/search expression being being processed
+
+    - Suppose we have the following sequence of events:
+
+        0.  Document store `store0` carries filter expression
+            `f_exp0` and search expression `s_exp0`, which we write
+            as pair `(f_exp0, s_exp0)`
+        1.  User initiates filter/search by placing `(f_exp1, s_exp1)` into the input fields.
+            We name the document store resulting from this filter/search as `store1a`,
+            which carries `(f_exp1, s_exp1)` when finalized.
+        2.  While filter/search is ongoing,
+        user drops a set of documents from the
+            current document store. Since `store1a` is not
+            finalized yet, the current document store is still `store0`, thus the new document store encoding the result of the drop operation, `store1b`, is computed from `store0` instead of `store1a`.
+
+            In other words, both `store1a` and `store1b` share
+            `store0` as their parent.
+            Note that `store1b` carries `(f_exp0, s_exp0)`
+            inherited from `store0`,
+            as a drop operation does not alter the filter expression or search expression.
+        3.  As a drop operation immediately updates the document store
+        and cancels ongoing filter/search, step 2 canceled the computation of `store1a`, and instead places `store1b` as the current document store.
+
+    - However, this means the input fields are `(f_exp1, s_exp1)`
+      while the current document store `store1b` actually carries
+      `(f_exp0, s_exp0)`. The fix in this update is then to add an
+      extra "sync from input fields" step whenever a document store
+      is updated. To illustrate, we continue from the above
+      sequence of events, where the updated version of Docfd
+      carries out the following step missing from previous
+      versions.
+
+        4.  Update input fields to `(f_exp0, s_exp0)`
+
+    - This addresses the mismatch between underlying data and the UI.
+
 ## 12.0.0-alpha.2
 
 - Added `path-date` clause to query expression
