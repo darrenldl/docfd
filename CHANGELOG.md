@@ -37,18 +37,18 @@
 
             - Example 1:
 
-                0.  Filter `f_exp0` (filtering is canceled by 2, but the updating of filter expression is never canceled)
-                1.  Search `s_exp0` (search is canceled by 2, but the updating of search expression is never canceled)
-                2.  Filter `f_exp1` (refreshes search results using `s_exp0`)
+                - 0. Filter `f_exp0` (filtering is canceled by 2, but the updating of filter expression is never canceled)
+                - 1. Search `s_exp0` (search is canceled by 2, but the updating of search expression is never canceled)
+                - 2. Filter `f_exp1` (refreshes search results using `s_exp0`)
 
             - Exampele 2:
 
-                0.  Search `s_exp0` (search is canceled by 1, but updating of search expression is never canceled)
-                1.  Filter `f_exp0` (this stage is canceled by 2,
+                - 0. Search `s_exp0` (search is canceled by 1, but updating of search expression is never canceled)
+                - 1. Filter `f_exp0` (this stage is canceled by 2,
                     either during the filtering or during the
                     refreshing of search results, but the updating
                     of filter expression is never canceled)
-                2.  Filter `f_exp1` (refreshes search results using `s_exp0`)
+                - 2. Filter `f_exp1` (refreshes search results using `s_exp0`)
 
 - Renaming query expression/language to filter expression/language in help text and documentation
 
@@ -60,13 +60,13 @@
 
     - Suppose we have the following sequence of events:
 
-        0.  Document store `store0` carries filter expression
+        - 0. Document store `store0` carries filter expression
             `f_exp0` and search expression `s_exp0`, which we write
             as pair `(f_exp0, s_exp0)`
-        1.  User initiates filter/search by placing `(f_exp1, s_exp1)` into the input fields.
+        - 1. User initiates filter/search by placing `(f_exp1, s_exp1)` into the input fields.
             We name the document store resulting from this filter/search as `store1a`,
             which carries `(f_exp1, s_exp1)` when finalized.
-        2.  While filter/search is ongoing,
+        - 2. While filter/search is ongoing,
         user drops a set of documents from the
             current document store. Since `store1a` is not
             finalized yet, the current document store is still `store0`, thus the new document store encoding the result of the drop operation, `store1b`, is computed from `store0` instead of `store1a`.
@@ -76,7 +76,7 @@
             Note that `store1b` carries `(f_exp0, s_exp0)`
             inherited from `store0`,
             as a drop operation does not alter the filter expression or search expression.
-        3.  As a drop operation immediately updates the document store
+        - 3. As a drop operation immediately updates the document store
         and cancels ongoing filter/search, step 2 canceled the computation of `store1a`, and instead places `store1b` as the current document store.
 
     - However, this means the input fields are `(f_exp1, s_exp1)`
@@ -88,9 +88,9 @@
       carries out the following step missing from previous
       versions.
 
-        4.  Update input fields to `(f_exp0, s_exp0)`
+        - 4. Update input fields to `(f_exp0, s_exp0)`
 
-    - This addresses the mismatch between underlying data and the UI.
+    - This addresses the mismatch between underlying document store fields and the UI input fields.
 
 ## 12.0.0-alpha.2
 
