@@ -1177,10 +1177,8 @@ let run
                       UI.Vars.document_store_cur_ver
                       (Dynarray.length snapshots - 1);
                     let final_snapshot = Dynarray.get_last snapshots in
-                    Document_store_manager.submit_update_req final_snapshot;
+                    UI.submit_update_req_and_sync_input_fields final_snapshot;
                     UI.reset_document_selected ();
-                    UI.sync_input_fields_from_document_store
-                      (Document_store_snapshot.store final_snapshot);
                   )
                );
              with
