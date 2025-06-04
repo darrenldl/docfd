@@ -37,16 +37,18 @@
 
             - Example 1:
 
-                0. Filter `f_exp0` (filtering is canceled by 2, but the updating of filter expression is never canceled)
-                1. Search `s_exp0` (search is canceled by 2, but the updating of search expression is never canceled)
-                2. Filter `f_exp1` (refreshes search results using `s_exp0`)
+                0.  Filter `f_exp0` (filtering is canceled by 2, but the updating of filter expression is never canceled)
+                1.  Search `s_exp0` (search is canceled by 2, but the updating of search expression is never canceled)
+                2.  Filter `f_exp1` (refreshes search results using `s_exp0`)
 
             - Exampele 2:
 
-                0. Search `s_exp0` (search is canceled by 1, but updating of search expression is never canceled)
-                1. Filter `f_exp0` (this stage is canceled by 2, either during the filtering or during the refreshing of search results,
-                   but the updating of filter expression is never canceled)
-                2. Filter `f_exp1` (refreshes search results using `s_exp0`)
+                0.  Search `s_exp0` (search is canceled by 1, but updating of search expression is never canceled)
+                1.  Filter `f_exp0` (this stage is canceled by 2,
+                    either during the filtering or during the
+                    refreshing of search results, but the updating
+                    of filter expression is never canceled)
+                2.  Filter `f_exp1` (refreshes search results using `s_exp0`)
 
 - Renaming query expression/language to filter expression/language in help text and documentation
 
