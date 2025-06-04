@@ -592,7 +592,7 @@ module Bottom_pane = struct
       let filter_grid =
         [
           [
-            { label = "Enter"; msg = "exit filter query mode" };
+            { label = "Enter"; msg = "exit filter mode" };
           ];
           empty_row;
           empty_row;
