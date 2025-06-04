@@ -52,6 +52,21 @@ let get_cur_document_store_snapshot () =
     Vars.document_store_snapshots
     (Lwd.peek Vars.document_store_cur_ver)
 
+let sync_input_fields_from_document_store
+    (x : Document_store.t)
+  =
+  Document_store.filter_string x
+  |> (fun s ->
+      Lwd.set Vars.filter_field (s, String.length s));
+  Document_store.search_exp_string x
+  |> (fun s ->
+      Lwd.set Vars.search_field (s, String.length s))
+
+let submit_update_req_and_sync_input_fields snapshot =
+  Document_store_manager.submit_update_req snapshot;
+            sync_input_fields_from_document_store
+              (Document_store_snapshot.store snapshot)
+
 let update_starting_snapshot_and_recompute_rest
     (starting_snapshot : Document_store_snapshot.t)
   =
@@ -119,16 +134,6 @@ let reload_document_selected
     let doc, _search_results = search_result_groups.(index) in
     reload_document doc;
   )
-
-let sync_input_fields_from_document_store
-    (x : Document_store.t)
-  =
-  Document_store.filter_string x
-  |> (fun s ->
-      Lwd.set Vars.filter_field (s, String.length s));
-  Document_store.search_exp_string x
-  |> (fun s ->
-      Lwd.set Vars.search_field (s, String.length s))
 
 let commit_cur_document_store_snapshot () =
   let cur_ver = Lwd.peek Vars.document_store_cur_ver in
