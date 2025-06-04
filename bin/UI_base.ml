@@ -502,7 +502,9 @@ module Filter_bar = struct
               Lwd.set edit_field (text, x);
               f ();
             )
-          ~on_submit:(fun _ ->
+          ~on_submit:(fun (text, x) ->
+              Lwd.set edit_field (text, x);
+              f ();
               Nottui.Focus.release focus_handle;
               Lwd.set Vars.input_mode Navigate
             );
@@ -558,7 +560,9 @@ module Search_bar = struct
               Lwd.set edit_field (text, x);
               f ();
             )
-          ~on_submit:(fun _ ->
+          ~on_submit:(fun (text, x) ->
+              Lwd.set edit_field (text, x);
+              f ();
               Nottui.Focus.release focus_handle;
               Lwd.set Vars.input_mode Navigate
             );
