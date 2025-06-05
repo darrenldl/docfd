@@ -864,24 +864,29 @@ let run
           match filter_exp_and_original_string with
           | None -> store
           | Some (filter_exp, filter_exp_string) -> (
-              Document_store.update_filter
-                pool
-                (Stop_signal.make ())
-                filter_exp_string
-                filter_exp
-                store
+              Option.get
+                (Document_store.update_filter
+                   pool
+                   (Stop_signal.make ())
+                   filter_exp_string
+                   filter_exp
+                   store
+                )
             )
         )
       |> (fun store ->
           match search_exp_and_original_string with
           | None -> store
-          | Some (search_exp, search_exp_string) ->
-            Document_store.update_search_exp
-              pool
-              (Stop_signal.make ())
-              search_exp_string
-              search_exp
-              store
+          | Some (search_exp, search_exp_string) -> (
+              Option.get
+                (Document_store.update_search_exp
+                   pool
+                   (Stop_signal.make ())
+                   search_exp_string
+                   search_exp
+                   store
+                )
+            )
         )
     in
     let oc = stdout in

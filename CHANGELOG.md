@@ -102,6 +102,9 @@
       opening up to TOCTOU problems.
       So there is always a chance that a document store update will be requested before the modes are are disabled.
 
+- Made interrupted filter/search operation to not yield a document store at all instead of yielding an empty document store
+  to simplify reasoning about filter/search cancellations and UI fields being in sync
+
 ## 12.0.0-alpha.2
 
 - Added `path-date` clause to query expression

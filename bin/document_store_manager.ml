@@ -132,10 +132,14 @@ let worker_fiber pool =
             s
             search_exp
         in
-        let command = Some (`Search s) in
-        let snapshot = Document_store_snapshot.make ~last_command:command store in
-        store_snapshot := snapshot;
-        Eio.Stream.add egress (Search_done snapshot)
+        match store with
+        | None -> ()
+        | Some store -> (
+            let command = Some (`Search s) in
+            let snapshot = Document_store_snapshot.make ~last_command:command store in
+            store_snapshot := snapshot;
+            Eio.Stream.add egress (Search_done snapshot)
+          )
       )
   in
   let process_filter_req stop_signal (s : string) =
@@ -151,10 +155,14 @@ let worker_fiber pool =
             s
             filter
         in
-        let command = Some (`Filter s) in
-        let snapshot = Document_store_snapshot.make ~last_command:command store in
-        store_snapshot := snapshot;
-        Eio.Stream.add egress (Filtering_done snapshot)
+        match store with
+        | None -> ()
+        | Some store -> (
+            let command = Some (`Filter s) in
+            let snapshot = Document_store_snapshot.make ~last_command:command store in
+            store_snapshot := snapshot;
+            Eio.Stream.add egress (Filtering_done snapshot)
+          )
       )
     | None -> (
         Eio.Stream.add egress Filter_glob_parse_error

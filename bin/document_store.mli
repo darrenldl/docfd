@@ -16,7 +16,7 @@ val update_filter :
   string ->
   Filter_exp.t ->
   t ->
-  t
+  t option
 
 val update_search_exp :
   Task_pool.t ->
@@ -24,7 +24,7 @@ val update_search_exp :
   string ->
   Search_exp.t ->
   t ->
-  t
+  t option
 
 val filter : t -> Filter_exp.t
 

@@ -69,7 +69,7 @@ let min_binding (t : t) =
       Some (path, (doc, search_results))
     )
 
-let refresh_search_results pool stop_signal (t : t) : t =
+let refresh_search_results pool stop_signal (t : t) : t option =
   let cancellation_notifier = Atomic.make false in
   let updates =
     Eio.Fiber.first
@@ -127,16 +127,16 @@ let refresh_search_results pool stop_signal (t : t) : t =
            )
       )
   in
-  let search_results =
-    if Atomic.get cancellation_notifier then (
-      String_map.empty
-    ) else (
+  if Atomic.get cancellation_notifier then (
+    None
+  ) else (
+    let search_results =
       String_map.union (fun _k v1 _v2 -> Some v1)
         updates
         t.search_results
-    )
-  in
-  { t with search_results }
+    in
+    Some { t with search_results }
+  )
 
 let update_filter
     pool
@@ -144,11 +144,13 @@ let update_filter
     filter_string
     filter
     (t : t)
-  : t =
+  : t option =
+  let cancellation_notifier = Atomic.make false in
   let documents_passing_filter =
     Eio.Fiber.first
       (fun () ->
          Stop_signal.await stop_signal;
+         Atomic.set cancellation_notifier true;
          String_set.empty
       )
       (fun () ->
@@ -169,16 +171,20 @@ let update_filter
          |> String_set.of_seq
       )
   in
-  { t with
-    filter_string;
-    filter;
-    documents_passing_filter;
-  }
-  |> refresh_search_results pool stop_signal
+  if Atomic.get cancellation_notifier then (
+    None
+  ) else (
+    { t with
+      filter_string;
+      filter;
+      documents_passing_filter;
+    }
+    |> refresh_search_results pool stop_signal
+  )
 
-let update_search_exp pool stop_signal search_exp_string search_exp (t : t) : t =
+let update_search_exp pool stop_signal search_exp_string search_exp (t : t) : t option =
   if Search_exp.equal search_exp t.search_exp then (
-    t
+    Some t
   ) else (
     { t with
       search_exp;
@@ -472,27 +478,23 @@ let run_command pool (command : Command.t) (t : t) : t option =
       match Search_exp.parse s with
       | None -> None
       | Some search_exp -> (
-          Some (
-            update_search_exp
-              pool
-              (Stop_signal.make ())
-              s
-              search_exp
-              t
-          )
+          update_search_exp
+            pool
+            (Stop_signal.make ())
+            s
+            search_exp
+            t
         )
     )
   | `Filter s -> (
       match Filter_exp.parse s with
       | None -> None
       | Some exp -> (
-          Some (
-            update_filter
-              pool
-              (Stop_signal.make ())
-              s
-              exp
-              t
-          )
+          update_filter
+            pool
+            (Stop_signal.make ())
+            s
+            exp
+            t
         )
     )
