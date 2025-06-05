@@ -55,7 +55,7 @@ let get_cur_document_store_snapshot () =
 let sync_input_fields_from_document_store
     (x : Document_store.t)
   =
-  Document_store.filter_string x
+  Document_store.filter_exp_string x
   |> (fun s ->
       Lwd.set Vars.filter_field (s, String.length s));
   Document_store.search_exp_string x

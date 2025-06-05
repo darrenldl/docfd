@@ -6,8 +6,8 @@ type search_result_group = Document.t * Search_result.t array
 
 type t = {
   all_documents : Document.t String_map.t;
-  filter : Filter_exp.t;
-  filter_string : string;
+  filter_exp : Filter_exp.t;
+  filter_exp_string : string;
   documents_passing_filter : String_set.t;
   documents_marked : String_set.t;
   search_exp : Search_exp.t;
@@ -21,8 +21,8 @@ let size (t : t) =
 let empty : t =
   {
     all_documents = String_map.empty;
-    filter = Filter_exp.empty;
-    filter_string = "";
+    filter_exp = Filter_exp.empty;
+    filter_exp_string = "";
     documents_passing_filter = String_set.empty;
     documents_marked = String_set.empty;
     search_exp = Search_exp.empty;
@@ -30,9 +30,9 @@ let empty : t =
     search_results = String_map.empty;
   }
 
-let filter (t : t) = t.filter
+let filter_exp (t : t) = t.filter_exp
 
-let filter_string (t : t) = t.filter_string
+let filter_exp_string (t : t) = t.filter_exp_string
 
 let search_exp (t : t) = t.search_exp
 
@@ -138,11 +138,11 @@ let refresh_search_results pool stop_signal (t : t) : t option =
     Some { t with search_results }
   )
 
-let update_filter
+let update_filter_exp
     pool
     stop_signal
-    filter_string
-    filter
+    filter_exp_string
+    filter_exp
     (t : t)
   : t option =
   let cancellation_notifier = Atomic.make false in
@@ -158,12 +158,12 @@ let update_filter
          |> String_map.to_seq
          |> Seq.map snd
          |> (fun s ->
-             if Filter_exp.is_empty filter then (
+             if Filter_exp.is_empty filter_exp then (
                s
              ) else (
                Seq.filter (fun s ->
                    Eio.Fiber.yield ();
-                   Document.satisfies_filter pool filter s
+                   Document.satisfies_filter_exp pool filter_exp s
                  ) s
              )
            )
@@ -175,8 +175,8 @@ let update_filter
     None
   ) else (
     { t with
-      filter_string;
-      filter;
+      filter_exp_string;
+      filter_exp;
       documents_passing_filter;
     }
     |> refresh_search_results pool stop_signal
@@ -202,7 +202,7 @@ let add_document pool (doc : Document.t) (t : t) : t =
   in
   let path = Document.path doc in
   let documents_passing_filter =
-    if Document.satisfies_filter pool t.filter doc
+    if Document.satisfies_filter_exp pool t.filter_exp doc
     then
       String_set.add path t.documents_passing_filter
     else
@@ -335,8 +335,8 @@ let drop
         keep path
     in
     { all_documents = String_map.filter keep' t.all_documents;
-      filter = t.filter;
-      filter_string = t.filter_string;
+      filter_exp = t.filter_exp;
+      filter_exp_string = t.filter_exp_string;
       documents_passing_filter = String_set.filter keep t.documents_passing_filter;
       documents_marked = String_set.filter keep t.documents_marked;
       search_exp = t.search_exp;
@@ -347,8 +347,8 @@ let drop
   match choice with
   | `Path path -> (
       { all_documents = String_map.remove path t.all_documents;
-        filter = t.filter;
-        filter_string = t.filter_string;
+        filter_exp = t.filter_exp;
+        filter_exp_string = t.filter_exp_string;
         documents_passing_filter = String_set.remove path t.documents_passing_filter;
         documents_marked = String_set.remove path t.documents_marked;
         search_exp = t.search_exp;
@@ -490,7 +490,7 @@ let run_command pool (command : Command.t) (t : t) : t option =
       match Filter_exp.parse s with
       | None -> None
       | Some exp -> (
-          update_filter
+          update_filter_exp
             pool
             (Stop_signal.make ())
             s

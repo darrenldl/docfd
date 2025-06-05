@@ -865,7 +865,7 @@ let run
           | None -> store
           | Some (filter_exp, filter_exp_string) -> (
               Option.get
-                (Document_store.update_filter
+                (Document_store.update_filter_exp
                    pool
                    (Stop_signal.make ())
                    filter_exp_string

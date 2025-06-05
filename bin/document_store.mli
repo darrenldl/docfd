@@ -10,7 +10,7 @@ val size : t -> int
 
 val empty : t
 
-val update_filter :
+val update_filter_exp :
   Task_pool.t ->
   Stop_signal.t ->
   string ->
@@ -26,9 +26,9 @@ val update_search_exp :
   t ->
   t option
 
-val filter : t -> Filter_exp.t
+val filter_exp : t -> Filter_exp.t
 
-val filter_string : t -> string
+val filter_exp_string : t -> string
 
 val search_exp : t -> Search_exp.t
 
