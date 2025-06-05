@@ -95,6 +95,13 @@
 
     - This addresses the mismatch between the underlying document store and the UI input fields.
 
+    - In practice this is very unlikely to occur with human input, as the modes that update document store
+      are disabled if document store manager is carrying out any ongoing filtering or search.
+
+      However, since the UI is async, there will be gaps in timing between UI input/feedback and actual updates of values,
+      opening up to TOCTOU problems.
+      So there is always a chance that a document store update will be requested before the modes are are disabled.
+
 ## 12.0.0-alpha.2
 
 - Added `path-date` clause to query expression
