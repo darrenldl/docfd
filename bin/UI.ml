@@ -792,16 +792,11 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'd', []) -> (
-          (match
-             Lwd.peek (Document_store_manager.filter_ui_status),
-             Lwd.peek (Document_store_manager.search_ui_status)
-           with
-           | `Idle, `Idle -> (
-               UI_base.set_input_mode Drop;
-             )
-           | _, _ -> (
-               UI_base.Key_binding_info.blink "d";
-             ));
+          if Document_store_manager.is_idle () then (
+            UI_base.set_input_mode Drop;
+          ) else (
+            UI_base.Key_binding_info.blink "d";
+          );
           `Handled
         )
       | (`ASCII 'n', []) -> (
