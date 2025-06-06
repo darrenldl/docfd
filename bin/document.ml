@@ -326,7 +326,7 @@ module Ir2 = struct
     }
 end
 
-let of_ir2 db (ir : Ir2.t) : t =
+let of_ir2 db ~already_in_transaction (ir : Ir2.t) : t =
   let
     {
       Ir2.search_mode;
@@ -339,7 +339,7 @@ let of_ir2 db (ir : Ir2.t) : t =
       raw;
       last_scan;
     } = ir in
-  Index.load_raw_into_db db ~doc_hash raw;
+  Index.load_raw_into_db db ~already_in_transaction ~doc_hash raw;
   {
     search_mode;
     path;
@@ -352,7 +352,14 @@ let of_ir2 db (ir : Ir2.t) : t =
     last_scan;
   }
 
-let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, string) result =
+let of_path
+    ~(env : Eio_unix.Stdenv.base)
+    pool
+    ~already_in_transaction
+    search_mode
+    ?doc_hash
+    path
+  : (t, string) result =
   let open Sqlite3_utils in
   let* doc_hash =
     match doc_hash with
@@ -385,7 +392,7 @@ let of_path ~(env : Eio_unix.Stdenv.base) pool search_mode ?doc_hash path : (t, 
     let* ir1 = Ir1.of_ir0 ~env ir0 in
     let ir2 = Ir2.of_ir1 pool ir1 in
     with_db (fun db ->
-        Ok (of_ir2 db ir2)
+        Ok (of_ir2 db ~already_in_transaction ir2)
       )
   )
 

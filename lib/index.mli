@@ -92,4 +92,9 @@ module Raw : sig
   val of_pages : Task_pool.t -> string list Seq.t -> t
 end
 
-val load_raw_into_db : Sqlite3.db -> doc_hash:string -> Raw.t -> unit
+val load_raw_into_db :
+  Sqlite3.db ->
+  already_in_transaction:bool ->
+  doc_hash:string ->
+  Raw.t ->
+  unit

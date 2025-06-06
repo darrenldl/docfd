@@ -97,7 +97,12 @@ let reload_document (doc : Document.t) =
   let path = Document.path doc in
   let doc =
     match
-      Document.of_path ~env:(UI_base.eio_env ()) pool (Document.search_mode doc) path
+      Document.of_path
+        ~env:(UI_base.eio_env ())
+        pool
+        ~already_in_transaction:false
+        (Document.search_mode doc)
+        path
     with
     | Ok doc -> Some doc
     | Error _ -> (

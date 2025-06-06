@@ -76,7 +76,7 @@ let document_of_ir2_worker (t : t) =
              run := false
            )
          | Some ir -> (
-             let doc = Document.of_ir2 db ir in
+             let doc = Document.of_ir2 db ~already_in_transaction:true ir in
              Dynarray.add_last t.documents doc;
              do_if_debug (fun oc ->
                  Printf.fprintf oc "Document %s loaded successfully\n" (Filename.quote (Document.path doc));

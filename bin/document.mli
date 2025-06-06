@@ -19,6 +19,7 @@ val satisfies_filter_exp : Task_pool.t -> Filter_exp.t -> t -> bool
 val of_path :
   env:Eio_unix.Stdenv.base ->
   Task_pool.t ->
+  already_in_transaction:bool ->
   Search_mode.t ->
   ?doc_hash:string ->
   string ->
@@ -54,4 +55,8 @@ module Ir2 : sig
   val of_ir1 : Task_pool.t -> Ir1.t -> t
 end
 
-val of_ir2 : Sqlite3.db -> Ir2.t -> t
+val of_ir2 :
+  Sqlite3.db ->
+  already_in_transaction:bool ->
+  Ir2.t ->
+  t

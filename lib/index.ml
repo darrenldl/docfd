@@ -348,7 +348,7 @@ let prune_old_documents ~keep_n_latest : unit =
       step_stmt ~db "COMMIT" ignore;
     )
 
-let load_raw_into_db db ~doc_hash (x : Raw.t) : unit =
+let load_raw_into_db db ~already_in_transaction ~doc_hash (x : Raw.t) : unit =
   let open Sqlite3_utils in
   let now = now_int64 () in
   with_db ~db (fun db ->
@@ -396,6 +396,9 @@ let load_raw_into_db db ~doc_hash (x : Raw.t) : unit =
                ]
         ignore;
       let doc_id = doc_id_of_doc_hash ~db doc_hash in
+      if not already_in_transaction then (
+        step_stmt ~db "BEGIN IMMEDIATE" ignore;
+      );
       with_stmt ~db
         {|
   INSERT INTO page_info
@@ -479,6 +482,9 @@ let load_raw_into_db db ~doc_hash (x : Raw.t) : unit =
     |}
         ~names:[ ("@doc_hash", TEXT doc_hash) ]
         ignore;
+      if not already_in_transaction then (
+        step_stmt ~db "COMMIT" ignore;
+      );
     )
 
 let global_line_count =

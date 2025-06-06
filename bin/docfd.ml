@@ -213,7 +213,14 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
   let all_documents : Document.t list list =
     match document_src with
     | Document_src.Stdin path -> (
-        match Document.of_path ~env pool !Params.default_search_mode path with
+        match
+          Document.of_path
+            ~env
+            pool
+            ~already_in_transaction:false
+            !Params.default_search_mode
+            path
+        with
         | Ok x -> [ [ x ] ]
         | Error msg ->  (
             exit_with_error_msg msg
@@ -331,7 +338,15 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
                 )
                 (Filename.quote path)
             );
-          match Document.of_path ~env pool search_mode ~doc_hash path with
+          match
+            Document.of_path
+              ~env
+              pool
+              ~already_in_transaction:false
+              search_mode
+              ~doc_hash
+              path
+          with
           | Ok x -> (
               do_if_debug (fun oc ->
                   Printf.fprintf oc "Document %s loaded successfully\n" (Filename.quote path);
