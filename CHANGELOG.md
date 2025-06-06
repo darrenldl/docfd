@@ -17,7 +17,10 @@
 
     - The replaying of the command history would use the old copy of the file instead of the new edited version of the text file
 
+- Added missing SQL transaction in code path for reloading a single document
 
+    - Previously, reloading a single document was incredibly slow, which was very noticeable if you edited a text file
+      after hitting `Enter` in Docfd, unless the text file was very small
 
 - Updated `--paths-from` argument handling
 
