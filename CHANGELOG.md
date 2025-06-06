@@ -4,6 +4,11 @@
 
 - **Users are advised to recreate the index DB**
 
+- Adjusted SQL indices and swapped to specialized SQL queries
+  for exact and prefix search terms, e.g. `'hello`, `^worl`
+
+    - Handling of these terms is now 10-20% faster depending on the document
+
 - Fixed command history recomputation not using the reloaded version
   of document store
 
@@ -12,10 +17,7 @@
 
     - The replaying of the command history would use the old copy of the file instead of the new edited version of the text file
 
-- Adjusted SQL indices and swapped to specialized SQL queries
-  for exact and prefix search terms, e.g. `'hello`, `^worl`
 
-    - Handling of these terms is now 10-20% faster depending on the document
 
 - Updated `--paths-from` argument handling
 
