@@ -28,6 +28,10 @@
 
     - Adjusted to accept comma separated list of paths, e.g. `--paths-from path-list0.txt,path-list1.txt`
 
+- Removed builtin piping to fzf triggered by providing `?` as a file path, e.g. `docfd ?`
+
+    - The `--paths-from -` handling makes this obsolete and a lot less flexible by comparison
+
 - Fixed interaction between search and filter
 
     - Previously, starting a search would incorrectly cancel an ongoing filtering operation.

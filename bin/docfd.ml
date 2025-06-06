@@ -569,9 +569,6 @@ let run
      )
    | _, _, _, _ -> ()
   );
-  let question_marks, paths =
-    List.partition (fun s -> CCString.trim s = "?") paths
-  in
   let paths_from_file =
     match paths_from with
     | [] -> None
@@ -623,7 +620,6 @@ let run
   in
   let pool = Task_pool.make ~sw (Eio.Stdenv.domain_mgr env) in
   UI_base.Vars.pool := Some pool;
-  let file_collection_to_reuse = ref None in
   String_set.iter (fun path ->
       if not (Sys.file_exists path) then (
         exit_with_error_msg
@@ -635,36 +631,7 @@ let run
     let stdin_tmp_file = ref None in
     (fun () ->
        let file_collection =
-         match !file_collection_to_reuse with
-         | None -> (
-             let file_collection = files_satisfying_constraints ~interactive file_constraints in
-             match question_marks with
-             | [] -> file_collection
-             | _ -> (
-                 let selection =
-                   Document_src.seq_of_file_collection file_collection
-                   |> (fun l ->
-                       match Proc_utils.pipe_to_fzf_for_selection l with
-                       | `Selection l -> l
-                       | `Cancelled n -> exit n)
-                   |> String_set.of_list
-                 in
-                 let default_search_mode_files =
-                   String_set.inter selection file_collection.default_search_mode_files
-                 in
-                 let single_line_search_mode_files =
-                   String_set.inter selection file_collection.single_line_search_mode_files
-                 in
-                 let collection =
-                   { Document_src.default_search_mode_files;
-                     single_line_search_mode_files;
-                   }
-                 in
-                 file_collection_to_reuse := Some collection;
-                 collection
-               )
-           )
-         | Some x -> x
+         files_satisfying_constraints ~interactive file_constraints
        in
        if file_constraints.paths_were_originally_specified_by_user
        || stdin_is_atty ()

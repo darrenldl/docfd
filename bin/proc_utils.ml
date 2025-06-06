@@ -65,6 +65,7 @@ let pipe_to_command (f : out_channel -> unit) command args =
   Out_channel.flush oc;
   Out_channel.close oc
 
+  (*
 let pipe_to_fzf_for_selection (lines : string Seq.t)
   : [ `Selection of string list | `Cancelled of int ] =
   if not (command_exists "fzf") then (
@@ -99,3 +100,4 @@ let pipe_to_fzf_for_selection (lines : string Seq.t)
   | _ -> (
       `Selection selection
     )
+    *)

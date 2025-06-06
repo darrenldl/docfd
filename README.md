@@ -70,7 +70,6 @@ external tools at run time for full functionality:
 
 - `pdftotext` from `poppler-utils` for PDF support
 - `pandoc` for support of `.epub`, `.odt`, `.docx`, `.fb2`, `.ipynb`, `.html`, and `.htm` files
-- `fzf` for some file selection menus
 - `wl-clibpard` for clipboard support on Wayland
 - `xclip` for clipboard support on X11
 

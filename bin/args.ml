@@ -518,9 +518,7 @@ let paths_arg =
     Fmt.str
       "PATH can be either file or directory.
 Directories are scanned for files with matching extensions.
-If any PATH is \"?\", then the list of files is passed onto fzf for user selection.
-Multiple \"?\" are treated the same as one \"?\".
-If no paths are provided or only \"?\" is provided,
+If no paths are provided,
 then Docfd defaults to scanning the current working directory
 unless any of the following is used: %a.
 To use piped stdin as input, the list of paths must be empty."
