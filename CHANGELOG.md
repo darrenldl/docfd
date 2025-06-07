@@ -1,5 +1,9 @@
 # Changelog
 
+## 12.0.0-alpha.4
+
+- Minor fix in command history file template help text
+
 ## 12.0.0-alpha.3
 
 - **Users are advised to recreate the index DB**
