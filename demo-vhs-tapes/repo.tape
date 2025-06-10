@@ -21,11 +21,9 @@ Enter
 Sleep 1s
 
 Type "f"
-Sleep 0.5s
-Type "g"
-Type "read\cme*"
+Type "path-fuzzy:readme"
 Enter
-Sleep 2s
+Sleep 1s
 
 Enter
 Sleep 1s
