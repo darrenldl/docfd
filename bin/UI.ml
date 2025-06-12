@@ -580,6 +580,7 @@ module Bottom_pane = struct
           [
             { label = "Ctrl+C"; msg = "exit" };
             { label = "x"; msg = "clear mode" };
+            { label = "Tab"; msg = "change pane split ratio" };
             { label = "r"; msg = "reload mode" };
             { label = "h"; msg = "view/edit command history" };
           ];
