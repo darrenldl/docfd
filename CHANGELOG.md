@@ -6,10 +6,6 @@
 
 - Added `Tab` key to key binding info grid
 
-- Added `--no-history` for disabling command history
-
-    - Disabling command history reduces memory usage as older versions of the document store are discarded
-
 ## 12.0.0-alpha.3
 
 - **Users are advised to recreate the index DB**
