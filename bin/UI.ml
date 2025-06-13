@@ -18,8 +18,6 @@ module Vars = struct
 
   let require_field_focus_handle = Nottui.Focus.make ()
 
-  let init_document_store : Document_store.t ref = ref Document_store.empty
-
   let document_store_snapshots : Document_store_snapshot.t Dynarray.t =
     Dynarray.create ()
 
@@ -69,17 +67,11 @@ let submit_update_req_and_sync_input_fields snapshot =
   sync_input_fields_from_document_store
     (Document_store_snapshot.store snapshot)
 
-let update_starting_store_and_recompute_snapshots
-    (starting_store : Document_store.t)
+let update_starting_snapshot_and_recompute_rest
+    (starting_snapshot : Document_store_snapshot.t)
   =
   let pool = UI_base.task_pool () in
   let snapshots = Vars.document_store_snapshots in
-  Vars.init_document_store := starting_store;
-  let starting_snapshot =
-    Document_store_snapshot.make
-      ~last_command:None
-      starting_store
-  in
   Dynarray.set snapshots 0 starting_snapshot;
   for i=1 to Dynarray.length snapshots - 1 do
     let prev = Dynarray.get snapshots (i - 1) in
@@ -130,8 +122,13 @@ let reload_document (doc : Document.t) =
           )
       )
   in
+  let snapshot =
+    Document_store_snapshot.make
+      ~last_command:None
+      document_store
+  in
   reset_document_selected ();
-  update_starting_store_and_recompute_snapshots document_store
+  update_starting_snapshot_and_recompute_rest snapshot
 
 let reload_document_selected
     ~(search_result_groups : Document_store.search_result_group array)
@@ -143,15 +140,13 @@ let reload_document_selected
   )
 
 let commit_cur_document_store_snapshot () =
-  if not !Params.no_history then (
-    let cur_ver = Lwd.peek Vars.document_store_cur_ver in
-    let cur_snapshot =
-      Dynarray.get Vars.document_store_snapshots cur_ver
-    in
-    Dynarray.truncate Vars.document_store_snapshots (cur_ver + 1);
-    Dynarray.add_last Vars.document_store_snapshots cur_snapshot;
-    Lwd.set Vars.document_store_cur_ver (cur_ver + 1)
-  )
+  let cur_ver = Lwd.peek Vars.document_store_cur_ver in
+  let cur_snapshot =
+    Dynarray.get Vars.document_store_snapshots cur_ver
+  in
+  Dynarray.truncate Vars.document_store_snapshots (cur_ver + 1);
+  Dynarray.add_last Vars.document_store_snapshots cur_snapshot;
+  Lwd.set Vars.document_store_cur_ver (cur_ver + 1)
 
 let commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff () =
   let cur_ver = Lwd.peek Vars.document_store_cur_ver in

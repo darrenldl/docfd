@@ -2,17 +2,6 @@ open Cmdliner
 open Docfd_lib
 open Misc_utils
 
-let no_history_arg_name = "no-history"
-
-let no_history_arg =
-  let doc =
-    Fmt.str {|Disable command history.
-    Useful for minimizing memory usage
-    as older versions of the document store are discarded.
-    |}
-  in
-  Arg.(value & flag & info [ no_history_arg_name ] ~doc)
-
 let no_pdftotext_arg_name = "no-pdftotext"
 
 let no_pdftotext_arg =
