@@ -18,6 +18,8 @@ module Vars = struct
 
   let require_field_focus_handle = Nottui.Focus.make ()
 
+  let init_document_store : Document_store.t ref = ref Document_store.empty
+
   let document_store_snapshots : Document_store_snapshot.t Dynarray.t =
     Dynarray.create ()
 
@@ -67,11 +69,17 @@ let submit_update_req_and_sync_input_fields snapshot =
   sync_input_fields_from_document_store
     (Document_store_snapshot.store snapshot)
 
-let update_starting_snapshot_and_recompute_rest
-    (starting_snapshot : Document_store_snapshot.t)
+let update_starting_store_and_recompute_snapshots
+    (starting_store : Document_store.t)
   =
   let pool = UI_base.task_pool () in
   let snapshots = Vars.document_store_snapshots in
+  Vars.init_document_store := starting_store;
+  let starting_snapshot =
+    Document_store_snapshot.make
+      ~last_command:None
+      starting_store
+  in
   Dynarray.set snapshots 0 starting_snapshot;
   for i=1 to Dynarray.length snapshots - 1 do
     let prev = Dynarray.get snapshots (i - 1) in
@@ -110,8 +118,7 @@ let reload_document (doc : Document.t) =
       )
   in
   let document_store =
-    Dynarray.get Vars.document_store_snapshots 0
-    |> Document_store_snapshot.store
+    !Vars.init_document_store
     |> (fun store ->
         match doc with
         | Some doc -> (
@@ -122,13 +129,8 @@ let reload_document (doc : Document.t) =
           )
       )
   in
-  let snapshot =
-    Document_store_snapshot.make
-      ~last_command:None
-      document_store
-  in
   reset_document_selected ();
-  update_starting_snapshot_and_recompute_rest snapshot
+  update_starting_store_and_recompute_snapshots document_store
 
 let reload_document_selected
     ~(search_result_groups : Document_store.search_result_group array)

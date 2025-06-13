@@ -713,9 +713,7 @@ let run
      )
   );
   Lwd.set UI_base.Vars.hide_document_list hide_document_list_initially;
-  let init_document_store =
-    document_store_of_document_src ~env pool ~interactive init_document_src
-  in
+  UI.Vars.init_document_store := document_store_of_document_src ~env pool ~interactive init_document_src;
   if index_only then (
     clean_up ();
     exit 0
@@ -751,7 +749,7 @@ let run
          snapshots
          (Document_store_snapshot.make
             ~last_command:None
-            init_document_store);
+            !UI.Vars.init_document_store);
        lines
        |> CCList.foldi (fun store i line ->
            let line_num_in_error_msg = i + 1 in
@@ -783,7 +781,7 @@ let run
                )
            )
          )
-         init_document_store
+         !UI.Vars.init_document_store
        |> ignore;
        let final_store = Dynarray.get_last snapshots
                          |> Document_store_snapshot.store
@@ -841,7 +839,7 @@ let run
         )
     in
     let document_store =
-      init_document_store
+      !UI.Vars.init_document_store
       |> (fun store ->
           match filter_exp_and_original_string with
           | None -> store
@@ -988,13 +986,12 @@ let run
         match action with
         | UI_base.Recompute_document_src -> (
             close_term ();
-            let new_starting_snapshot =
+            let new_starting_store =
               compute_document_src ()
               |> document_store_of_document_src ~env ~interactive pool
-              |> Document_store_snapshot.make ~last_command:None
             in
-            UI.update_starting_snapshot_and_recompute_rest
-              new_starting_snapshot;
+            new_starting_store
+            |> UI.update_starting_store_and_recompute_snapshots;
             loop ()
           )
         | Open_file_and_search_result (doc, search_result) -> (
@@ -1094,9 +1091,14 @@ let run
                 Float.abs
                   (new_stats.st_mtime -. old_stats.st_mtime) >= Params.float_compare_margin
               then (
-                Dynarray.truncate snapshots 1;
+                Dynarray.clear snapshots;
                 Lwd.set UI.Vars.document_store_cur_ver 0;
-                let store = ref (Document_store_snapshot.store (Dynarray.get snapshots 0)) in
+                let store = ref !UI.Vars.init_document_store in
+                Dynarray.add_last
+                  snapshots
+                  (Document_store_snapshot.make
+                     ~last_command:None
+                     !UI.Vars.init_document_store);
                 let rerun = ref false in
                 let lines =
                   CCIO.with_in file (fun ic ->
@@ -1189,7 +1191,7 @@ let run
          if Dynarray.length snapshots = 0 then (
            Document_store_snapshot.make
              ~last_command:None
-             init_document_store
+             !UI.Vars.init_document_store
          ) else (
            let last_index = Dynarray.length snapshots - 1 in
            Lwd.set UI.Vars.document_store_cur_ver last_index;
