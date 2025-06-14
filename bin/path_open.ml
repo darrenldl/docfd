@@ -270,42 +270,38 @@ let pdf_config_and_cmd ~doc_hash ~path ~search_result : Config.t * string =
       | `Darwin -> fallback
     )
 
-let config_and_cmd_to_open_text_file ~path ?line_num () : Config.t * string =
+let config_and_cmd_to_open_text_file ~path ?(line_num = 1) () : Config.t * string =
   let editor = !Params.text_editor in
   let fallback =
     (Config.make ~path ~launch_mode:`Terminal (), Fmt.str "%s {path}" editor)
   in
-  match line_num with
-  | None -> fallback
-  | Some line_num -> (
-      let config =
-        Config.make ~path ~line_num ~launch_mode:`Terminal ()
-      in
-      match Filename.basename editor with
-      | "nano" ->
-        (config,
-         Fmt.str "%s +{line_num} {path}" editor)
-      | "nvim" | "vim" | "vi" ->
-        (config,
-         Fmt.str "%s +{line_num} {path}" editor)
-      | "kak" ->
-        (config,
-         Fmt.str "%s +{line_num} {path}" editor)
-      | "hx" ->
-        (config,
-         Fmt.str "%s {path}:{line_num}" editor)
-      | "emacs" ->
-        (config,
-         Fmt.str "%s +{line_num} {path}" editor)
-      | "micro" ->
-        (config,
-         Fmt.str "%s {path}:{line_num}" editor)
-      | "jed" | "xjed" ->
-        (config,
-         Fmt.str "%s {path} -g {line_num}" editor)
-      | _ ->
-        fallback
-    )
+  let config =
+    Config.make ~path ~line_num ~launch_mode:`Terminal ()
+  in
+  match Filename.basename editor with
+  | "nano" ->
+    (config,
+     Fmt.str "%s +{line_num} {path}" editor)
+  | "nvim" | "vim" | "vi" ->
+    (config,
+     Fmt.str "%s +{line_num} {path}" editor)
+  | "kak" ->
+    (config,
+     Fmt.str "%s +{line_num} {path}" editor)
+  | "hx" ->
+    (config,
+     Fmt.str "%s {path}:{line_num}" editor)
+  | "emacs" ->
+    (config,
+     Fmt.str "%s +{line_num} {path}" editor)
+  | "micro" ->
+    (config,
+     Fmt.str "%s {path}:{line_num}" editor)
+  | "jed" | "xjed" ->
+    (config,
+     Fmt.str "%s {path} -g {line_num}" editor)
+  | _ ->
+    fallback
 
 let text_config_and_cmd ~doc_hash ~path ~search_result : Config.t * string =
   let line_num =
