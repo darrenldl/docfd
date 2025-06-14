@@ -272,36 +272,29 @@ let pdf_config_and_cmd ~doc_hash ~path ~search_result : Config.t * string =
 
 let config_and_cmd_to_open_text_file ~path ?(line_num = 1) () : Config.t * string =
   let editor = !Params.text_editor in
-  let fallback =
-    (Config.make ~path ~launch_mode:`Terminal (), Fmt.str "%s {path}" editor)
-  in
   let config =
     Config.make ~path ~line_num ~launch_mode:`Terminal ()
   in
-  match Filename.basename editor with
-  | "nano" ->
-    (config,
-     Fmt.str "%s +{line_num} {path}" editor)
-  | "nvim" | "vim" | "vi" ->
-    (config,
-     Fmt.str "%s +{line_num} {path}" editor)
-  | "kak" ->
-    (config,
-     Fmt.str "%s +{line_num} {path}" editor)
-  | "hx" ->
-    (config,
-     Fmt.str "%s {path}:{line_num}" editor)
-  | "emacs" ->
-    (config,
-     Fmt.str "%s +{line_num} {path}" editor)
-  | "micro" ->
-    (config,
-     Fmt.str "%s {path}:{line_num}" editor)
-  | "jed" | "xjed" ->
-    (config,
-     Fmt.str "%s {path} -g {line_num}" editor)
-  | _ ->
-    fallback
+  let cmd =
+    match Filename.basename editor with
+    | "nano" ->
+      Fmt.str "%s +{line_num} {path}" editor
+    | "nvim" | "vim" | "vi" ->
+      Fmt.str "%s +{line_num} {path}" editor
+    | "kak" ->
+      Fmt.str "%s +{line_num} {path}" editor
+    | "hx" ->
+      Fmt.str "%s {path}:{line_num}" editor
+    | "emacs" ->
+      Fmt.str "%s +{line_num} {path}" editor
+    | "micro" ->
+      Fmt.str "%s {path}:{line_num}" editor
+    | "jed" | "xjed" ->
+      Fmt.str "%s {path} -g {line_num}" editor
+    | _ ->
+      Fmt.str "%s {path}" editor
+  in
+  (config, cmd)
 
 let text_config_and_cmd ~doc_hash ~path ~search_result : Config.t * string =
   let line_num =
