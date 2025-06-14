@@ -33,7 +33,7 @@ module Parsers = struct
       >>= (fun _ ->
           match search_word with
           | None -> fail "search_word not available"
-          | Some s -> return s);
+          | Some s -> return (Fmt.str "'%s'" s));
     ]
     <|>
     fail "invalid placeholder"
@@ -206,69 +206,72 @@ let compute_most_unique_word_and_residing_page_num ~doc_hash found_phrase =
       (word.found_word, page_num))
 
 let pdf_config_and_cmd ~doc_hash ~path ~search_result : Config.t * string =
-  let fallback : Config.t * string =
-    let config = Config.make ~path ~launch_mode:`Detached () in
-    match Params.os_typ with
-    | `Linux -> (config, xdg_open_cmd)
-    | `Darwin -> (config, "open {path}")
-  in
-  match search_result with
-  | None -> fallback
-  | Some search_result -> (
-      let found_phrase = Search_result.found_phrase search_result in
-      match Params.os_typ with
-      | `Linux -> (
-          match Xdg_utils.default_desktop_file_path `PDF with
-          | None -> fallback
-          | Some viewer_desktop_file_path -> (
-              let (most_unique_word, most_unique_word_page_num) =
-                compute_most_unique_word_and_residing_page_num ~doc_hash found_phrase
-              in
-              let flatpak_package_name =
-                let s = Filename.basename viewer_desktop_file_path in
-                Option.value ~default:s
-                  (CCString.chop_suffix ~suf:".desktop" s)
-              in
-              let viewer_desktop_file_path_lowercase_ascii =
-                String.lowercase_ascii viewer_desktop_file_path
-              in
-              let contains sub =
-                CCString.find ~sub viewer_desktop_file_path_lowercase_ascii >= 0
-              in
-              let page_num = most_unique_word_page_num + 1 in
-              let config =
-                Config.make ~path ~page_num ~search_word:most_unique_word ~launch_mode:`Detached ()
-              in
-              let make_command name args =
-                if contains "flatpak" then
-                  Fmt.str "flatpak run %s %s" flatpak_package_name args
-                else
-                  Fmt.str "%s %s" name args
-              in
-              if contains "okular" then
-                (config,
-                 make_command "okular"
-                   "--page {page_num} --find {search_word} {path}")
-              else if contains "evince" then
-                (config,
-                 make_command "evince"
-                   "--page-index {page_num} --find {search_word} {path}")
-              else if contains "xreader" then
-                (config,
-                 make_command "xreader"
-                   "--page-index {page_num} --find {search_word} {path}")
-              else if contains "atril" then
-                (config,
-                 make_command "atril"
-                   "--page-index {page_num} --find {search_word} {path}")
-              else if contains "mupdf" then
-                (config, make_command "mupdf" "{path} {page_num}")
-              else
-                fallback
-            )
+  let config =
+    let page_num, search_word =
+      match search_result with
+      | None -> (
+          (1, "")
         )
-      | `Darwin -> fallback
-    )
+      | Some search_result -> (
+          let found_phrase = Search_result.found_phrase search_result in
+          let (most_unique_word, most_unique_word_page_num) =
+            compute_most_unique_word_and_residing_page_num ~doc_hash found_phrase
+          in
+          let page_num = most_unique_word_page_num + 1 in
+          (page_num, most_unique_word)
+        )
+    in
+    Config.make ~path ~page_num ~search_word ~launch_mode:`Detached ()
+  in
+  let fallback : string =
+    match Params.os_typ with
+    | `Linux -> xdg_open_cmd
+    | `Darwin -> "open {path}"
+  in
+  let cmd =
+    match Params.os_typ with
+    | `Linux -> (
+        match Xdg_utils.default_desktop_file_path `PDF with
+        | None -> fallback
+        | Some viewer_desktop_file_path -> (
+            let flatpak_package_name =
+              let s = Filename.basename viewer_desktop_file_path in
+              Option.value ~default:s
+                (CCString.chop_suffix ~suf:".desktop" s)
+            in
+            let viewer_desktop_file_path_lowercase_ascii =
+              String.lowercase_ascii viewer_desktop_file_path
+            in
+            let contains sub =
+              CCString.find ~sub viewer_desktop_file_path_lowercase_ascii >= 0
+            in
+            let make_command name args =
+              if contains "flatpak" then
+                Fmt.str "flatpak run %s %s" flatpak_package_name args
+              else
+                Fmt.str "%s %s" name args
+            in
+            if contains "okular" then
+              make_command "okular"
+                "--page {page_num} --find {search_word} {path}"
+            else if contains "evince" then
+              make_command "evince"
+                "--page-index {page_num} --find {search_word} {path}"
+            else if contains "xreader" then
+              make_command "xreader"
+                "--page-index {page_num} --find {search_word} {path}"
+            else if contains "atril" then
+              make_command "atril"
+                "--page-index {page_num} --find {search_word} {path}"
+            else if contains "mupdf" then
+              make_command "mupdf" "{path} {page_num}"
+            else
+              fallback
+          )
+      )
+    | `Darwin -> fallback
+  in
+  (config, cmd)
 
 let config_and_cmd_to_open_text_file ~path ?(line_num = 1) () : Config.t * string =
   let editor = !Params.text_editor in
