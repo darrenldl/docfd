@@ -10,9 +10,19 @@
 
     - This should always be usable for text files but previously
       Docfd crashes when `{line_num}` is specified in `--open-with` 
-      and user opens a text document when no search has been made
+      and user opens a text file when no search has been made
 
     - This is fixed by defaulting `{line_num}` to 1 when
+      there are no search results present
+
+- Minor fix for `{page_num}` and `{search_word}` placeholders handling in `--open-with`
+
+    - This should always be usable for PDF files but previously
+      Docfd crashes when `{page_num}` or `{search_word}` is specified in `--open-with`
+      and user opens a PDF file when no search has been made
+
+    - This is fixed by defaulting `{page_num}` to 1
+      and `{search_word}` to empty string when
       there are no search results present
 
 ## 12.0.0-alpha.3
