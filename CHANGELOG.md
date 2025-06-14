@@ -6,6 +6,15 @@
 
 - Added `Tab` key to key binding info grid
 
+- Minor fix for `{line_num}` placeholder handling in `--open-with`
+
+    - This should always be usable for text files but previously
+      Docfd crashes when `{line_num}` is specified in `--open-with` 
+      and user opens a text document when no search has been made
+
+    - This is fixed by defaulting `{line_num}` to 1 when
+      there are no search results present
+
 ## 12.0.0-alpha.3
 
 - **Users are advised to recreate the index DB**
