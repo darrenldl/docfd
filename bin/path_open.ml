@@ -251,22 +251,26 @@ let pdf_config_and_cmd ~doc_hash ~path ~search_result : Config.t * string =
               else
                 Fmt.str "%s %s" name args
             in
-            if contains "okular" then
-              make_command "okular"
-                "--page {page_num} --find {search_word} {path}"
-            else if contains "evince" then
-              make_command "evince"
-                "--page-index {page_num} --find {search_word} {path}"
-            else if contains "xreader" then
-              make_command "xreader"
-                "--page-index {page_num} --find {search_word} {path}"
-            else if contains "atril" then
-              make_command "atril"
-                "--page-index {page_num} --find {search_word} {path}"
-            else if contains "mupdf" then
-              make_command "mupdf" "{path} {page_num}"
-            else
-              fallback
+            match search_result with
+            | None -> fallback
+            | Some _ -> (
+                if contains "okular" then
+                  make_command "okular"
+                    "--page {page_num} --find {search_word} {path}"
+                else if contains "evince" then
+                  make_command "evince"
+                    "--page-index {page_num} --find {search_word} {path}"
+                else if contains "xreader" then
+                  make_command "xreader"
+                    "--page-index {page_num} --find {search_word} {path}"
+                else if contains "atril" then
+                  make_command "atril"
+                    "--page-index {page_num} --find {search_word} {path}"
+                else if contains "mupdf" then
+                  make_command "mupdf" "{path} {page_num}"
+                else
+                  fallback
+              )
           )
       )
     | `Darwin -> fallback
