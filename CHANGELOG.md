@@ -15,7 +15,7 @@
 
 - Added `Tab` key to key binding info grid
 
-- Added key binding info about scrolling through document and search result list
+- Added key binding info about scrolling through document list and search result list
 
 - Minor fix for `{line_num}` placeholder handling in `--open-with`
 
