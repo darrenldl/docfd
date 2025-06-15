@@ -176,7 +176,7 @@ let toggle_mark ~path =
     if
       String_set.mem
         path
-        (Document_store.marked_documents_paths store)
+        (Document_store.marked_document_paths store)
     then (
       Document_store_snapshot.make
         ~last_command:(Some (`Unmark path))
@@ -1099,7 +1099,7 @@ let keyboard_handler
           )
         | (`ASCII 'm', []) -> (
             let marked =
-              Document_store.marked_documents_paths document_store
+              Document_store.marked_document_paths document_store
             in
             Document_store.search_result_groups document_store
             |> Array.to_seq
@@ -1143,28 +1143,28 @@ let keyboard_handler
           )
         | (`ASCII 'm', []) -> (
             String_set.inter
-              (Document_store.usable_documents_paths document_store)
-              (Document_store.marked_documents_paths document_store)
+              (Document_store.usable_document_paths document_store)
+              (Document_store.marked_document_paths document_store)
             |> String_set.to_seq
             |> copy_paths;
             true
           )
         | (`ASCII 'M', []) -> (
             String_set.diff
-              (Document_store.usable_documents_paths document_store)
-              (Document_store.marked_documents_paths document_store)
+              (Document_store.usable_document_paths document_store)
+              (Document_store.marked_document_paths document_store)
             |> String_set.to_seq
             |> copy_paths;
             true
           )
         | (`ASCII 'l', []) -> (
-            Document_store.usable_documents_paths document_store
+            Document_store.usable_document_paths document_store
             |> String_set.to_seq
             |> copy_paths;
             true
           )
         | (`ASCII 'L', []) -> (
-            Document_store.unusable_documents_paths document_store
+            Document_store.unusable_document_paths document_store
             |> copy_paths;
             true
           )
@@ -1244,7 +1244,7 @@ let main : Nottui.ui Lwd.t =
     Top_pane.main
       ~width:term_width
       ~height:top_pane_height
-      ~documents_marked:(Document_store.marked_documents_paths document_store)
+      ~documents_marked:(Document_store.marked_document_paths document_store)
       ~search_result_groups
   in
   Nottui_widgets.vbox

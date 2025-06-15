@@ -40,13 +40,13 @@ val of_seq : Task_pool.t -> Document.t Seq.t -> t
 
 val search_result_groups : t -> search_result_group array
 
-val usable_documents_paths : t -> String_set.t
+val usable_document_paths : t -> String_set.t
 
-val unusable_documents_paths : t -> string Seq.t
+val unusable_document_paths : t -> string Seq.t
 
-val all_documents_paths : t -> string Seq.t
+val all_document_paths : t -> string Seq.t
 
-val marked_documents_paths : t -> String_set.t
+val marked_document_paths : t -> String_set.t
 
 val min_binding : t -> (key * search_result_group) option
 

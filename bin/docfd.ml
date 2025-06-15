@@ -789,7 +789,7 @@ let run
        let outcome =
          if print_files_with_match then (
            let s =
-             Document_store.usable_documents_paths final_store
+             Document_store.usable_document_paths final_store
            in
            String_set.iter (Printers.path_image ~color:print_with_color print_oc) s;
            `Has_results (not (String_set.is_empty s))
@@ -873,13 +873,13 @@ let run
     let no_results =
       if print_files_with_match then (
         let s =
-          Document_store.usable_documents_paths document_store
+          Document_store.usable_document_paths document_store
         in
         String_set.iter (Printers.path_image ~color:print_with_color oc) s;
         String_set.is_empty s
       ) else if print_files_without_match then (
         let s =
-          Document_store.unusable_documents_paths document_store
+          Document_store.unusable_document_paths document_store
         in
         Seq.iter (Printers.path_image ~color:print_with_color oc) s;
         Seq.is_empty s

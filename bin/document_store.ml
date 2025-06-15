@@ -273,23 +273,23 @@ let search_result_groups (t : t) : (Document.t * Search_result.t array) array =
   );
   arr
 
-let usable_documents_paths (t : t) : String_set.t =
+let usable_document_paths (t : t) : String_set.t =
   search_result_groups t
   |> Array.to_seq
   |> Seq.map (fun (doc, _) -> Document.path doc)
   |> String_set.of_seq
 
-let marked_documents_paths (t : t) =
+let marked_document_paths (t : t) =
   t.documents_marked
 
-let all_documents_paths (t : t) : string Seq.t =
+let all_document_paths (t : t) : string Seq.t =
   t.all_documents
   |> String_map.to_seq
   |> Seq.map fst
 
-let unusable_documents_paths (t : t) =
-  let s = usable_documents_paths t in
-  all_documents_paths t
+let unusable_document_paths (t : t) =
+  let s = usable_document_paths t in
+  all_document_paths t
   |> Seq.filter (fun path ->
       not (String_set.mem path s))
 
@@ -375,11 +375,11 @@ let drop
       aux ~keep
     )
   | `Usable | `Unusable -> (
-      let usable_documents_paths =
-        usable_documents_paths t
+      let usable_document_paths =
+        usable_document_paths t
       in
       let document_is_usable path =
-        String_set.mem path usable_documents_paths
+        String_set.mem path usable_document_paths
       in
       let keep path =
         match choice with
