@@ -54,11 +54,7 @@ val single_out : path:string -> t -> t option
 
 val mark : [ `Path of string | `Usable | `Unusable ] -> t -> t
 
-val unmark : path:string -> t -> t
-
-val toggle_mark : path:string -> t -> t
-
-val unmark_all : t -> t
+val unmark : [ `Path of string | `Usable | `Unusable | `All ] -> t -> t
 
 val drop : [ `Path of string | `All_except of string | `Marked | `Unmarked | `Usable | `Unusable ] -> t -> t
 

@@ -180,7 +180,7 @@ let toggle_mark ~path =
     then (
       Document_store_snapshot.make
         ~last_command:(Some (`Unmark path))
-        (Document_store.unmark ~path store)
+        (Document_store.unmark (`Path path) store)
     ) else (
       Document_store_snapshot.make
         ~last_command:(Some (`Mark path))
@@ -195,7 +195,7 @@ let unmark_all () =
   let new_snapshot =
     Document_store_snapshot.make
       ~last_command:(Some `Unmark_all)
-      (Document_store.unmark_all
+      (Document_store.unmark `All
          (Document_store_snapshot.store cur_snapshot))
   in
   submit_update_req_and_sync_input_fields new_snapshot

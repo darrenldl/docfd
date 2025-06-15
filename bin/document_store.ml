@@ -329,21 +329,41 @@ let mark
       { t with documents_marked }
     )
 
-let unmark ~path t =
-  let documents_marked =
-    String_set.remove path t.documents_marked
-  in
-  { t with documents_marked }
-
-let toggle_mark ~path t =
-  if String_set.mem path t.documents_marked then (
-    unmark ~path t
-  ) else (
-    mark ~path t
-  )
-
-let unmark_all t =
-  {t with documents_marked = String_set.empty }
+let unmark
+    (choice :
+       [ `Path of string
+       | `Usable
+       | `Unusable
+       | `All ])
+    t
+  : t =
+  match choice with
+  | `Path path -> (
+      let documents_marked =
+        String_set.remove path t.documents_marked
+      in
+      { t with documents_marked }
+    )
+  | `Usable -> (
+      let documents_marked =
+        String_set.diff
+          t.documents_marked
+          (usable_document_paths t)
+      in
+      { t with documents_marked }
+    )
+  | `Unusable -> (
+      let documents_marked =
+        Seq.fold_left
+          (fun acc x -> String_set.remove x acc)
+          t.documents_marked
+          (unusable_document_paths t)
+      in
+      { t with documents_marked }
+    )
+  | `All -> (
+      { t with documents_marked = String_set.empty }
+    )
 
 let drop
     (choice :
