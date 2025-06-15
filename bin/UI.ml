@@ -172,60 +172,67 @@ let toggle_mark ~path =
   let cur_snapshot = get_cur_document_store_snapshot () in
   commit_cur_document_store_snapshot ();
   let store = Document_store_snapshot.store cur_snapshot in
-  let new_snapshot =
+  let new_command =
     if
       String_set.mem
         path
         (Document_store.marked_document_paths store)
     then (
-      Document_store_snapshot.make
-        ~last_command:(Some (`Unmark path))
-        (Document_store.unmark (`Path path) store)
+      `Unmark path
     ) else (
-      Document_store_snapshot.make
-        ~last_command:(Some (`Mark path))
-        (Document_store.mark (`Path path) store)
+      `Mark path
     )
+  in
+  let new_snapshot =
+    store
+    |> Document_store.run_command
+      (UI_base.task_pool ())
+      new_command
+    |> Option.get
+    |> Document_store_snapshot.make
+      ~last_command:(Some new_command)
   in
   submit_update_req_and_sync_input_fields new_snapshot
 
 let drop ~document_count (choice : [`Path of string | `All_except of string | `Marked | `Unmarked | `Listed | `Unlisted]) =
-  let choice, new_command =
+  let new_command =
     match choice with
     | `Path path -> (
         let n = Lwd.peek Vars.index_of_document_selected in
         set_document_selected ~choice_count:(document_count - 1) n;
-        (`Path path, `Drop path)
+        `Drop path
       )
     | `All_except path -> (
         set_document_selected ~choice_count:1 0;
-        (`All_except path, `Drop_all_except path)
+        `Drop_all_except path
       )
     | `Marked -> (
         reset_document_selected ();
-        (`Marked, `Drop_marked)
+        `Drop_marked
       )
     | `Unmarked -> (
         reset_document_selected ();
-        (`Unmarked, `Drop_unmarked)
+        `Drop_unmarked
       )
     | `Listed -> (
         reset_document_selected ();
-        (`Usable, `Drop_listed)
+        `Drop_listed
       )
     | `Unlisted -> (
         reset_document_selected ();
-        (`Unusable, `Drop_unlisted)
+        `Drop_unlisted
       )
   in
   let cur_snapshot = get_cur_document_store_snapshot () in
   commit_cur_document_store_snapshot ();
   let new_snapshot =
-    Document_store_snapshot.make
+    Document_store_snapshot.store cur_snapshot
+    |> Document_store.run_command
+      (UI_base.task_pool ())
+      new_command
+    |> Option.get
+    |> Document_store_snapshot.make
       ~last_command:(Some new_command)
-      (Document_store.drop
-         choice
-         (Document_store_snapshot.store cur_snapshot))
   in
   submit_update_req_and_sync_input_fields new_snapshot
 
