@@ -1098,6 +1098,29 @@ let keyboard_handler
       );
       `Handled
     )
+  | Mark -> (
+      let exit =
+        match key with
+        | (`Escape, []) -> true
+        | (`ASCII '?', []) -> (
+            UI_base.Key_binding_info.incr_rotation ();
+            false
+          )
+        | (`ASCII 'l', []) -> (
+            mark `Listed;
+            true
+          )
+        | (`ASCII 'L', []) -> (
+            mark `Unlisted;
+            true
+          )
+        | _ -> false
+      in
+      if exit then (
+        UI_base.set_input_mode Navigate;
+      );
+      `Handled
+    )
   | Narrow -> (
       let exit =
         match key with
