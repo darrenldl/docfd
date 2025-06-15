@@ -63,9 +63,14 @@ module Parsers = struct
   let p : t' Angstrom.t =
     skip_spaces *>
     choice [
-      string "mark" *> skip_spaces *>
-      char ':' *> skip_spaces *>
-      any_string_trimmed >>| (fun s -> (`Mark s));
+      string "mark" *> skip_spaces *> (
+        choice [
+          char ':' *> skip_spaces *>
+          any_string_trimmed >>| (fun s -> (`Mark s));
+          string "listed" *> skip_spaces *> return `Mark_listed;
+          string "unlisted" *> skip_spaces *> return `Mark_unlisted;
+        ]
+      );
       string "unmark" *> skip_spaces *> (
         choice [
           string "all" *> skip_spaces *> return `Unmark_all;
