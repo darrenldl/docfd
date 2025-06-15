@@ -189,17 +189,6 @@ let toggle_mark ~path =
   in
   submit_update_req_and_sync_input_fields new_snapshot
 
-let unmark_all () =
-  let cur_snapshot = get_cur_document_store_snapshot () in
-  commit_cur_document_store_snapshot ();
-  let new_snapshot =
-    Document_store_snapshot.make
-      ~last_command:(Some `Unmark_all)
-      (Document_store.unmark `All
-         (Document_store_snapshot.store cur_snapshot))
-  in
-  submit_update_req_and_sync_input_fields new_snapshot
-
 let drop ~document_count (choice : [`Path of string | `All_except of string | `Marked | `Unmarked | `Listed | `Unlisted]) =
   let choice, new_command =
     match choice with
