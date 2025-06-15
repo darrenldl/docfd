@@ -2,6 +2,15 @@
 
 ## 12.0.0-alpha.4
 
+- Added additional marking functionality
+
+    - `mark listed` (`ml`) marks all currently listed documents
+    - `mark unlisted` (`mL`) marks all currently unlisted documents
+    - `unmark listed` (`Ml`) unmarks all currently listed documents
+    - `unmark unlisted` (`ML`) unmarks all currently unlisted documents
+
+- `unmark all` is moved to key binding `Ma`
+
 - Minor fix in command history file template help text
 
 - Added `Tab` key to key binding info grid
