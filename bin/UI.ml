@@ -606,25 +606,25 @@ module Bottom_pane = struct
             { label = "Enter"; msg = "open document" };
             { label = "/"; msg = "search mode" };
             { label = "↑/↓"; msg = "select document" };
-            { label = "Space"; msg = "toggle mark" };
-            { label = "n"; msg = "narrow mode" };
             { label = "y"; msg = "copy/yank mode" };
+            { label = "n"; msg = "narrow mode" };
+            { label = "Space"; msg = "toggle mark" };
           ];
           [
             { label = "?"; msg = "rotate key binding info" };
             { label = "f"; msg = "filter mode" };
             { label = "Shift+↑/↓"; msg = "select search result" };
-            { label = "m"; msg = "mark mode" };
-            { label = "d"; msg = "drop mode" };
             { label = "Shift+Y"; msg = "copy/yank paths mode" };
+            { label = "d"; msg = "drop mode" };
+            { label = "m"; msg = "mark mode" };
           ];
           [
             { label = "Ctrl+C"; msg = "exit" };
             { label = "x"; msg = "clear mode" };
             { label = "Tab"; msg = "change pane split ratio" };
-            { label = "Shift+M"; msg = "unmark mode" };
             { label = "r"; msg = "reload mode" };
             { label = "h"; msg = "view/edit command history" };
+            { label = "Shift+M"; msg = "unmark mode" };
           ];
         ]
       in
