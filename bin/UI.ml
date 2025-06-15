@@ -850,7 +850,7 @@ let keyboard_handler
           UI_base.Key_binding_info.incr_rotation ();
           `Handled
         )
-      | (`ASCII 'm', []) -> (
+      | (`ASCII ' ', []) -> (
           let index = Lwd.peek Vars.index_of_document_selected in
           if index < Array.length search_result_groups then (
             let doc, _ = search_result_groups.(index) in
