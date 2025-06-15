@@ -491,13 +491,25 @@ let narrow_search_scope_to_level ~level (t : t) : t =
 let run_command pool (command : Command.t) (t : t) : t option =
   match command with
   | `Mark path -> (
-      Some (mark ~path t)
+      Some (mark (`Path path) t)
+    )
+  | `Mark_listed -> (
+      Some (mark `Usable t)
+    )
+  | `Mark_unlisted -> (
+      Some (mark `Unusable t)
     )
   | `Unmark path -> (
-      Some (unmark ~path t)
+      Some (unmark (`Path path) t)
+    )
+  | `Unmark_listed -> (
+      Some (unmark `Usable t)
+    )
+  | `Unmark_unlisted -> (
+      Some (unmark `Unusable t)
     )
   | `Unmark_all -> (
-      Some (unmark_all t)
+      Some (unmark `All t)
     )
   | `Drop s -> (
       Some (drop (`Path s) t)

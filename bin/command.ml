@@ -1,6 +1,10 @@
 type t = [
   | `Mark of string
+  | `Mark_listed
+  | `Mark_unlisted
   | `Unmark of string
+  | `Unmark_listed
+  | `Unmark_unlisted
   | `Unmark_all
   | `Drop of string
   | `Drop_all_except of string
@@ -16,7 +20,11 @@ type t = [
 let pp fmt (t : t) =
   match t with
   | `Mark s -> Fmt.pf fmt "mark: %s" s
+  | `Mark_listed -> Fmt.pf fmt "mark listed"
+  | `Mark_unlisted -> Fmt.pf fmt "mark unlisted"
   | `Unmark s -> Fmt.pf fmt "unmark: %s" s
+  | `Unmark_listed -> Fmt.pf fmt "unmark listed"
+  | `Unmark_unlisted -> Fmt.pf fmt "unmark unlisted"
   | `Unmark_all -> Fmt.pf fmt "unmark all"
   | `Drop s -> Fmt.pf fmt "drop: %s" s
   | `Drop_all_except s -> Fmt.pf fmt "drop all except: %s" s
