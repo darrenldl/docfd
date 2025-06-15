@@ -359,8 +359,14 @@ module Key_binding_info = struct
           let max_label_len, max_msg_len =
             List.fold_left (fun (max_label_len, max_msg_len) row ->
                 List.fold_left (fun (max_label_len, max_msg_len) { label; msg } ->
-                    (max max_label_len (String.length label),
-                     max max_msg_len (String.length msg))
+                    let label_len =
+                      Uuseg_string.fold_utf_8 `Grapheme_cluster (fun x _ -> x + 1) 0 label
+                    in
+                    let msg_len =
+                      Uuseg_string.fold_utf_8 `Grapheme_cluster (fun x _ -> x + 1) 0 msg
+                    in
+                    (max max_label_len label_len,
+                     max max_msg_len msg_len)
                   )
                   (max_label_len, max_msg_len)
                   row
@@ -394,7 +400,9 @@ module Key_binding_info = struct
       let msg_attr = Notty.A.empty in
       let msg = String.capitalize_ascii msg in
       let content = Notty.(I.hcat
-                             [ I.(string label_attr (CCString.pad ~side:`Right ~c:' ' max_label_len label))
+                             [ I.(string label_attr label
+                                  </>
+                                  (string label_attr (String.make max_label_len ' ')))
                              ; I.string A.empty "  "
                              ; I.string msg_attr msg
                              ]

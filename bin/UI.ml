@@ -598,6 +598,7 @@ module Bottom_pane = struct
           [
             { label = "Enter"; msg = "open document" };
             { label = "/"; msg = "search mode" };
+            { label = "↑/↓"; msg = "select document" };
             { label = "m"; msg = "mark/unmark document" };
             { label = "n"; msg = "narrow mode" };
             { label = "y"; msg = "copy/yank mode" };
@@ -605,6 +606,7 @@ module Bottom_pane = struct
           [
             { label = "?"; msg = "rotate key binding info" };
             { label = "f"; msg = "filter mode" };
+            { label = "Shift+↑/↓"; msg = "select search result" };
             { label = "Shift+M"; msg = "unmark all" };
             { label = "d"; msg = "drop mode" };
             { label = "Shift+Y"; msg = "copy/yank paths mode" };
