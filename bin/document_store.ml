@@ -293,12 +293,38 @@ let unusable_document_paths (t : t) =
   |> Seq.filter (fun path ->
       not (String_set.mem path s))
 
-let mark ~path t =
-  match String_map.find_opt path t.all_documents with
-  | None -> t
-  | Some _ -> (
+let mark
+    (choice :
+       [ `Path of string
+       | `Usable
+       | `Unusable ])
+    t
+  : t =
+  match choice with
+  | `Path path -> (
+      match String_map.find_opt path t.all_documents with
+      | None -> t
+      | Some _ -> (
+          let documents_marked =
+            String_set.add path t.documents_marked
+          in
+          { t with documents_marked }
+        )
+    )
+  | `Usable -> (
       let documents_marked =
-        String_set.add path t.documents_marked
+        String_set.union
+          t.documents_marked
+          (usable_document_paths t)
+      in
+      { t with documents_marked }
+    )
+  | `Unusable -> (
+      let documents_marked =
+        Seq.fold_left
+          (fun acc x -> String_set.add x acc)
+          t.documents_marked
+          (unusable_document_paths t)
       in
       { t with documents_marked }
     )

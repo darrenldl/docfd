@@ -52,7 +52,7 @@ val min_binding : t -> (key * search_result_group) option
 
 val single_out : path:string -> t -> t option
 
-val mark : path:string -> t -> t
+val mark : [ `Path of string | `Usable | `Unusable ] -> t -> t
 
 val unmark : path:string -> t -> t
 

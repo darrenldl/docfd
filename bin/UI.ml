@@ -184,7 +184,7 @@ let toggle_mark ~path =
     ) else (
       Document_store_snapshot.make
         ~last_command:(Some (`Mark path))
-        (Document_store.mark ~path store)
+        (Document_store.mark (`Path path) store)
     )
   in
   submit_update_req_and_sync_input_fields new_snapshot
