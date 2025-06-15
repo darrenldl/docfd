@@ -73,6 +73,8 @@ module Parsers = struct
       );
       string "unmark" *> skip_spaces *> (
         choice [
+          string "listed" *> skip_spaces *> return `Unmark_listed;
+          string "unlisted" *> skip_spaces *> return `Unmark_unlisted;
           string "all" *> skip_spaces *> return `Unmark_all;
           char ':' *> skip_spaces *>
           any_string_trimmed >>| (fun s -> (`Unmark s));
