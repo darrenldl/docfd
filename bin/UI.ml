@@ -249,6 +249,27 @@ let mark (choice : [`Path of string | `Listed | `Unlisted]) =
   in
   submit_update_req_and_sync_input_fields new_snapshot
 
+let unmark (choice : [`Path of string | `Listed | `Unlisted | `All]) =
+  let new_command =
+    match choice with
+    | `Path path -> `Unmark path
+    | `Listed -> `Unmark_listed
+    | `Unlisted -> `Unmark_unlisted
+    | `All -> `Unmark_all
+  in
+  let cur_snapshot = get_cur_document_store_snapshot () in
+  commit_cur_document_store_snapshot ();
+  let new_snapshot =
+    Document_store_snapshot.store cur_snapshot
+    |> Document_store.run_command
+      (UI_base.task_pool ())
+      new_command
+    |> Option.get
+    |> Document_store_snapshot.make
+      ~last_command:(Some new_command)
+  in
+  submit_update_req_and_sync_input_fields new_snapshot
+
 let narrow_search_scope_to_level ~level =
   let cur_snapshot = get_cur_document_store_snapshot () in
   commit_cur_document_store_snapshot ();
@@ -842,7 +863,7 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'M', []) -> (
-          unmark_all ();
+          UI_base.set_input_mode Unmark;
           `Handled
         )
       | (`ASCII 'd', []) -> (
