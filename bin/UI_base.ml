@@ -7,6 +7,8 @@ type input_mode =
   | Filter
   | Clear
   | Drop
+  | Mark
+  | Unmark
   | Narrow
   | Copy
   | Copy_paths
@@ -254,6 +256,8 @@ module Status_bar = struct
       ; (Filter, "FILTER")
       ; (Clear, "CLEAR")
       ; (Drop, "DROP")
+      ; (Mark, "MARK")
+      ; (Unmark, "UNMARK")
       ; (Narrow, "NARROW")
       ; (Copy, "COPY")
       ; (Copy_paths, "COPY-PATHS")
