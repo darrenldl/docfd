@@ -637,6 +637,20 @@ module Bottom_pane = struct
           ];
         ]
       in
+      let unmark_grid =
+        [
+          [
+            { label = "l"; msg = "listed" };
+            { label = "a"; msg = "all" };
+          ];
+          [
+            { label = "Shift+L"; msg = "unlisted" };
+          ];
+          [
+            { label = "Esc"; msg = "cancel" };
+          ];
+        ]
+      in
       let copy_grid =
         [
           [
@@ -710,6 +724,9 @@ module Bottom_pane = struct
         );
         ({ input_mode = Mark },
          mark_grid
+        );
+        ({ input_mode = Unmark },
+         unmark_grid
         );
         ({ input_mode = Narrow },
          narrow_grid
