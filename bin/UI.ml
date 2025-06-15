@@ -229,6 +229,26 @@ let drop ~document_count (choice : [`Path of string | `All_except of string | `M
   in
   submit_update_req_and_sync_input_fields new_snapshot
 
+let mark (choice : [`Path of string | `Listed | `Unlisted]) =
+  let new_command =
+    match choice with
+    | `Path path -> `Mark path
+    | `Listed -> `Mark_listed
+    | `Unlisted -> `Mark_unlisted
+  in
+  let cur_snapshot = get_cur_document_store_snapshot () in
+  commit_cur_document_store_snapshot ();
+  let new_snapshot =
+    Document_store_snapshot.store cur_snapshot
+    |> Document_store.run_command
+      (UI_base.task_pool ())
+      new_command
+    |> Option.get
+    |> Document_store_snapshot.make
+      ~last_command:(Some new_command)
+  in
+  submit_update_req_and_sync_input_fields new_snapshot
+
 let narrow_search_scope_to_level ~level =
   let cur_snapshot = get_cur_document_store_snapshot () in
   commit_cur_document_store_snapshot ();
@@ -815,6 +835,10 @@ let keyboard_handler
             let doc, _ = search_result_groups.(index) in
             toggle_mark ~path:(Document.path doc)
           );
+          `Handled
+        )
+      | (`ASCII 'm', []) -> (
+          UI_base.set_input_mode Mark;
           `Handled
         )
       | (`ASCII 'M', []) -> (
