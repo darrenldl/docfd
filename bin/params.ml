@@ -94,12 +94,16 @@ let clipboard_copy_cmd_and_args =
   match os_typ with
   | `Darwin -> Some ("pbcopy", [||])
   | `Linux -> (
-      match Sys.getenv_opt "XDG_SESSION_TYPE" with
-      | None -> None
-      | Some s -> (
-          match String.lowercase_ascii s with
-          | "x11" -> Some ("xclip", [| "-sel"; "clip" |])
-          | "wayland" -> Some ("wl-copy", [|"-n"|])
-          | _ -> None
-        )
+      if Proc_utils.command_exists "clip.exe" then (
+        Some ("clip.exe", [||])
+      ) else (
+        match Sys.getenv_opt "XDG_SESSION_TYPE" with
+        | None -> None
+        | Some s -> (
+            match String.lowercase_ascii s with
+            | "x11" -> Some ("xclip", [| "-sel"; "clip" |])
+            | "wayland" -> Some ("wl-copy", [|"-n"|])
+            | _ -> None
+          )
+      )
     )
