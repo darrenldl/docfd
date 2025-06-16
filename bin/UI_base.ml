@@ -353,33 +353,44 @@ module Key_binding_info = struct
       )
 
   let make_grid_lookup grid_contents : grid_lookup =
-    let max_label_msg_len_lookup =
+    let max_label_msg_len_lookup : (grid_key * (int * int) Int_map.t) list =
       grid_contents
-      |> List.map (fun (mode_comb, grid) ->
-          let max_label_len, max_msg_len =
-            List.fold_left (fun (max_label_len, max_msg_len) row ->
-                List.fold_left (fun (max_label_len, max_msg_len) { label; msg } ->
-                    let label_len =
-                      Uuseg_string.fold_utf_8 `Grapheme_cluster (fun x _ -> x + 1) 0 label
-                    in
-                    let msg_len =
-                      Uuseg_string.fold_utf_8 `Grapheme_cluster (fun x _ -> x + 1) 0 msg
-                    in
-                    (max max_label_len label_len,
-                     max max_msg_len msg_len)
-                  )
-                  (max_label_len, max_msg_len)
-                  row
+      |> List.map (fun (grid_key, grid) ->
+          let lookup =
+            List.fold_left
+              (fun (acc : (int * int) Int_map.t) (line : labelled_msg_line) ->
+                 line
+                 |> List.to_seq
+                 |> Seq.fold_lefti
+                   (fun (acc : (int * int) Int_map.t) col ({ label; msg } : labelled_msg) ->
+                      let label_len =
+                        Uuseg_string.fold_utf_8 `Grapheme_cluster (fun x _ -> x + 1) 0 label
+                      in
+                      let msg_len =
+                        Uuseg_string.fold_utf_8 `Grapheme_cluster (fun x _ -> x + 1) 0 msg
+                      in
+                      let (max_label_len, max_msg_len) =
+                        match Int_map.find_opt col acc with
+                        | None -> (label_len, msg_len)
+                        | Some (max_label_len, max_msg_len) -> (
+                            (max max_label_len label_len,
+                             max max_msg_len msg_len)
+                          )
+                      in
+                      Int_map.add col (max_label_len, max_msg_len) acc
+                   )
+                   acc
               )
-              (0, 0)
+              Int_map.empty
               grid
           in
-          (mode_comb, (max_label_len, max_msg_len))
+          (grid_key, lookup)
         )
     in
-    let label_msg_pair mode_comb { label; msg } : Nottui.ui Lwd.t =
+    let label_msg_pair grid_key col { label; msg } : Nottui.ui Lwd.t =
       let (max_label_len, max_msg_len) =
-        List.assoc mode_comb max_label_msg_len_lookup
+        List.assoc grid_key max_label_msg_len_lookup
+        |> Int_map.find col
       in
       let light_on_var = Lwd.var false in
       Eio.Mutex.use_rw lock ~protect:false (fun () ->
@@ -414,7 +425,7 @@ module Key_binding_info = struct
       Notty.I.(content </> full_background)
       |> Nottui.Ui.atom
     in
-    List.map (fun (mode_comb, grid_contents) ->
+    List.map (fun (grid_key, grid_contents) ->
         let max_row_size =
           List.fold_left (fun n l ->
               max n (List.length l)
@@ -429,7 +440,10 @@ module Key_binding_info = struct
                 List.init (max_row_size - List.length l)
                   (fun _ -> { label = ""; msg = "" })
               in
-              List.map (label_msg_pair mode_comb) (l @ padding)
+              List.mapi (fun col x ->
+                  label_msg_pair grid_key col x
+                )
+                (l @ padding)
             )
         in
         let grid =
@@ -441,7 +455,7 @@ module Key_binding_info = struct
           |> Nottui_widgets.grid
             ~pad:(Nottui.Gravity.make ~h:`Negative ~v:`Negative)
         in
-        (mode_comb, grid)
+        (grid_key, grid)
       )
       grid_contents
 
