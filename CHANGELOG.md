@@ -11,6 +11,10 @@
 
 - `unmark all` is moved to key binding `Ma`
 
+- Reworked key binding info grid to pack columns more tightly
+
+- Added WSL clipboard integration
+
 - Minor fix in command history file template help text
 
 - Added `Tab` key to key binding info grid
