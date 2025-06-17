@@ -2,6 +2,8 @@ open Docfd_lib
 open Lwd_infix
 
 module Vars = struct
+  let content_view_offset = Lwd.var 0
+
   let index_of_document_selected = Lwd.var 0
 
   let index_of_search_result_selected = Lwd.var 0
@@ -36,16 +38,30 @@ module Vars = struct
     Lwd.var `Mid_split
 end
 
+let reset_content_view_offset () =
+  Lwd.set Vars.content_view_offset 0
+
+let decr_content_view_offset () =
+  let x = Lwd.peek Vars.content_view_offset in
+  Lwd.set Vars.content_view_offset (x - 1)
+
+let incr_content_view_offset () =
+  let x = Lwd.peek Vars.content_view_offset in
+  Lwd.set Vars.content_view_offset (x + 1)
+
 let set_document_selected ~choice_count n =
+  reset_content_view_offset ();
   let n = Misc_utils.bound_selection ~choice_count n in
   Lwd.set Vars.index_of_document_selected n;
   Lwd.set Vars.index_of_search_result_selected 0
 
 let reset_document_selected () =
+  reset_content_view_offset ();
   Lwd.set Vars.index_of_document_selected 0;
   Lwd.set Vars.index_of_search_result_selected 0
 
 let set_search_result_selected ~choice_count n =
+  reset_content_view_offset ();
   let n = Misc_utils.bound_selection ~choice_count n in
   Lwd.set Vars.index_of_search_result_selected n
 
@@ -470,8 +486,10 @@ module Top_pane = struct
       ) else (
         let$* search_result_selected = Lwd.get Vars.index_of_search_result_selected in
         let search_result_group = search_result_groups.(document_selected) in
+        let$* view_offset = Lwd.get Vars.content_view_offset in
         UI_base.vpane ~width ~height
           (UI_base.Content_view.main
+             ~view_offset
              ~width
              ~search_result_group
              ~search_result_selected)
@@ -944,6 +962,14 @@ let keyboard_handler
                Lwd.set Vars.document_list_screen_ratio `Right_split
              )
           );
+          `Handled
+        )
+      | (`ASCII '=', []) -> (
+          incr_content_view_offset ();
+          `Handled
+        )
+      | (`ASCII '-', []) -> (
+          decr_content_view_offset ();
           `Handled
         )
       | (`Page `Down, [`Shift])

@@ -144,10 +144,14 @@ let word_grid_of_index
     ~end_inc_global_line_num
   : word_grid =
   let global_line_count = Index.global_line_count ~doc_hash in
+  let bound x =
+    max 0 (min (global_line_count - 1) x)
+  in
+  let start_global_line_num = bound start_global_line_num in
+  let end_inc_global_line_num = bound end_inc_global_line_num in
   if global_line_count = 0 then (
     { start_global_line_num = 0; data = [||] }
   ) else (
-    let end_inc_global_line_num = min (global_line_count - 1) end_inc_global_line_num in
     let data =
       OSeq.(start_global_line_num -- end_inc_global_line_num)
       |> Seq.map (fun global_line_num ->
@@ -272,21 +276,28 @@ let render_grid
 
 let content_snippet
     ~doc_hash
+    ~view_offset
     ?(search_result : Search_result.t option)
     ~(width : int)
     ~(height : int)
     ?underline
     ()
   : Notty.image =
-  let max_line_num = max 0 (Index.global_line_count ~doc_hash - 1) in
   assert (height > 0);
+  let calc_end_inc_global_line_num ~start_global_line_num =
+    start_global_line_num + height - 1
+  in
   match search_result with
   | None -> (
+      let start_global_line_num = max 0 view_offset in
+      let end_inc_global_line_num =
+        calc_end_inc_global_line_num ~start_global_line_num
+      in
       let grid =
         word_grid_of_index
           ~doc_hash
-          ~start_global_line_num:0
-          ~end_inc_global_line_num:(min max_line_num (height - 1))
+          ~start_global_line_num
+          ~end_inc_global_line_num
       in
       render_grid ~doc_hash ~render_mode:`None ~width ~height ?underline grid
     )
@@ -295,8 +306,14 @@ let content_snippet
         start_and_end_inc_global_line_num_of_search_result ~doc_hash search_result
       in
       let avg = (relevant_start_line + relevant_end_inc_line) / 2 in
-      let start_global_line_num = max 0 (avg - (Misc_utils.div_round_to_closest height 2)) in
-      let end_inc_global_line_num = min max_line_num (start_global_line_num + height - 1) in
+      let start_global_line_num =
+        max
+        0
+        (avg - (Misc_utils.div_round_to_closest height 2) + view_offset)
+      in
+      let end_inc_global_line_num =
+        calc_end_inc_global_line_num ~start_global_line_num
+      in
       let grid =
         word_grid_of_index
           ~doc_hash
