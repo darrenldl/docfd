@@ -308,8 +308,8 @@ let content_snippet
       let avg = (relevant_start_line + relevant_end_inc_line) / 2 in
       let start_global_line_num =
         max
-        0
-        (avg - (Misc_utils.div_round_to_closest height 2) + view_offset)
+          0
+          (avg - (Misc_utils.div_round_to_closest height 2) + view_offset)
       in
       let end_inc_global_line_num =
         calc_end_inc_global_line_num ~start_global_line_num
