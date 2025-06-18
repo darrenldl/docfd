@@ -46,6 +46,8 @@ module Vars = struct
   let term : Notty_unix.Term.t option ref = ref None
 
   let term_width_height : (int * int) Lwd.var = Lwd.var (0, 0)
+
+  let content_view_offset = Lwd.var 0
 end
 
 let task_pool () =
@@ -137,6 +139,35 @@ let vpane
     crop b_height y;
   ]
 
+let mouse_handler
+    ~(f : [ `Up | `Down ] -> unit)
+    ~x ~y
+    (button : Notty.Unescape.button)
+  =
+  let _ = x in
+  let _ = y in
+  match button with
+  | `Scroll `Down -> (
+      f `Down;
+      `Handled
+    )
+  | `Scroll `Up -> (
+      f `Up;
+      `Handled
+    )
+  | _ -> `Unhandled
+
+let reset_content_view_offset () =
+  Lwd.set Vars.content_view_offset 0
+
+let decr_content_view_offset () =
+  let x = Lwd.peek Vars.content_view_offset in
+  Lwd.set Vars.content_view_offset (x - 1)
+
+let incr_content_view_offset () =
+  let x = Lwd.peek Vars.content_view_offset in
+  Lwd.set Vars.content_view_offset (x + 1)
+
 module Content_view = struct
   let main
       ~view_offset
@@ -161,26 +192,17 @@ module Content_view = struct
         ~width
         ()
     in
-    Lwd.return (Nottui.Ui.atom content)
+    Nottui.Ui.atom content
+    |> Nottui.Ui.mouse_area
+      (mouse_handler
+         ~f:(fun direction ->
+             match direction with
+             | `Up -> decr_content_view_offset ()
+             | `Down -> incr_content_view_offset ()
+           )
+      )
+    |> Lwd.return
 end
-
-let mouse_handler
-    ~(f : [ `Up | `Down ] -> unit)
-    ~x ~y
-    (button : Notty.Unescape.button)
-  =
-  let _ = x in
-  let _ = y in
-  match button with
-  | `Scroll `Down -> (
-      f `Down;
-      `Handled
-    )
-  | `Scroll `Up -> (
-      f `Up;
-      `Handled
-    )
-  | _ -> `Unhandled
 
 module Search_result_list = struct
   let main
