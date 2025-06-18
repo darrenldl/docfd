@@ -627,6 +627,7 @@ module Bottom_pane = struct
             { label = "y"; msg = "copy/yank mode" };
             { label = "n"; msg = "narrow mode" };
             { label = "Space"; msg = "toggle mark" };
+            { label = "h"; msg = "view/edit command history" };
           ];
           [
             { label = "?"; msg = "rotate key binding info" };
@@ -639,9 +640,9 @@ module Bottom_pane = struct
           [
             { label = "Ctrl+C"; msg = "exit" };
             { label = "x"; msg = "clear mode" };
+            { label = "-/="; msg = "scroll content view" };
             { label = "Tab"; msg = "change pane split ratio" };
             { label = "r"; msg = "reload mode" };
-            { label = "h"; msg = "view/edit command history" };
             { label = "Shift+M"; msg = "unmark mode" };
           ];
         ]
