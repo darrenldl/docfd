@@ -697,9 +697,7 @@ module Bottom_pane = struct
           [
             { label = "l"; msg = "listed" };
           ];
-          [
-            { label = "Shift+L"; msg = "unlisted" };
-          ];
+          empty_row;
           [
             { label = "Esc"; msg = "cancel" };
           ];
@@ -711,9 +709,7 @@ module Bottom_pane = struct
             { label = "l"; msg = "listed" };
             { label = "a"; msg = "all" };
           ];
-          [
-            { label = "Shift+L"; msg = "unlisted" };
-          ];
+          empty_row;
           [
             { label = "Esc"; msg = "cancel" };
           ];
