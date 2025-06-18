@@ -1,5 +1,16 @@
 # Changelog
 
+## 12.0.0-alpha.5
+
+- Added content view pane scrolling
+
+    - Controlled by `-`/`=`
+
+- Removed extraneous marking functionality
+
+    - `mark unlisted` (`mL`) marks all currently unlisted documents
+    - `unmark unlisted` (`ML`) unmarks all currently unlisted documents
+
 ## 12.0.0-alpha.4
 
 - Added additional marking functionality
