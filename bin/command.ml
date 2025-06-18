@@ -1,10 +1,8 @@
 type t = [
   | `Mark of string
   | `Mark_listed
-  | `Mark_unlisted
   | `Unmark of string
   | `Unmark_listed
-  | `Unmark_unlisted
   | `Unmark_all
   | `Drop of string
   | `Drop_all_except of string
@@ -21,10 +19,8 @@ let pp fmt (t : t) =
   match t with
   | `Mark s -> Fmt.pf fmt "mark: %s" s
   | `Mark_listed -> Fmt.pf fmt "mark listed"
-  | `Mark_unlisted -> Fmt.pf fmt "mark unlisted"
   | `Unmark s -> Fmt.pf fmt "unmark: %s" s
   | `Unmark_listed -> Fmt.pf fmt "unmark listed"
-  | `Unmark_unlisted -> Fmt.pf fmt "unmark unlisted"
   | `Unmark_all -> Fmt.pf fmt "unmark all"
   | `Drop s -> Fmt.pf fmt "drop: %s" s
   | `Drop_all_except s -> Fmt.pf fmt "drop all except: %s" s
@@ -68,13 +64,11 @@ module Parsers = struct
           char ':' *> skip_spaces *>
           any_string_trimmed >>| (fun s -> (`Mark s));
           string "listed" *> skip_spaces *> return `Mark_listed;
-          string "unlisted" *> skip_spaces *> return `Mark_unlisted;
         ]
       );
       string "unmark" *> skip_spaces *> (
         choice [
           string "listed" *> skip_spaces *> return `Unmark_listed;
-          string "unlisted" *> skip_spaces *> return `Unmark_unlisted;
           string "all" *> skip_spaces *> return `Unmark_all;
           char ':' *> skip_spaces *>
           any_string_trimmed >>| (fun s -> (`Unmark s));
@@ -120,14 +114,3 @@ let of_string (s : string) : t option =
   match Angstrom.(parse_string ~consume:Consume.All) Parsers.p s with
   | Ok t -> Some t
   | Error _ -> None
-
-let equal (x : t) (y : t) =
-  match x, y with
-  | `Drop x, `Drop y -> String.equal x y
-  | `Drop_all_except x, `Drop_all_except y -> String.equal x y
-  | `Drop_listed, `Drop_listed -> true
-  | `Drop_unlisted, `Drop_unlisted -> true
-  | `Narrow_level x, `Narrow_level y -> Int.equal x y
-  | `Search x, `Search y -> String.equal (String.trim x) (String.trim y)
-  | `Filter x, `Filter y -> String.equal (String.trim x) (String.trim y)
-  | _, _ -> false

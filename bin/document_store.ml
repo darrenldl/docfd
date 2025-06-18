@@ -496,17 +496,11 @@ let run_command pool (command : Command.t) (t : t) : t option =
   | `Mark_listed -> (
       Some (mark `Usable t)
     )
-  | `Mark_unlisted -> (
-      Some (mark `Unusable t)
-    )
   | `Unmark path -> (
       Some (unmark (`Path path) t)
     )
   | `Unmark_listed -> (
       Some (unmark `Usable t)
-    )
-  | `Unmark_unlisted -> (
-      Some (unmark `Unusable t)
     )
   | `Unmark_all -> (
       Some (unmark `All t)

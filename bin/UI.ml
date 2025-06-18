@@ -252,12 +252,11 @@ let drop ~document_count (choice : [`Path of string | `All_except of string | `M
   in
   submit_update_req_and_sync_input_fields new_snapshot
 
-let mark (choice : [`Path of string | `Listed | `Unlisted]) =
+let mark (choice : [`Path of string | `Listed]) =
   let new_command =
     match choice with
     | `Path path -> `Mark path
     | `Listed -> `Mark_listed
-    | `Unlisted -> `Mark_unlisted
   in
   let cur_snapshot = get_cur_document_store_snapshot () in
   commit_cur_document_store_snapshot ();
@@ -272,12 +271,11 @@ let mark (choice : [`Path of string | `Listed | `Unlisted]) =
   in
   submit_update_req_and_sync_input_fields new_snapshot
 
-let unmark (choice : [`Path of string | `Listed | `Unlisted | `All]) =
+let unmark (choice : [`Path of string | `Listed | `All]) =
   let new_command =
     match choice with
     | `Path path -> `Unmark path
     | `Listed -> `Unmark_listed
-    | `Unlisted -> `Unmark_unlisted
     | `All -> `Unmark_all
   in
   let cur_snapshot = get_cur_document_store_snapshot () in
@@ -1147,10 +1145,6 @@ let keyboard_handler
             mark `Listed;
             true
           )
-        | (`ASCII 'L', []) -> (
-            mark `Unlisted;
-            true
-          )
         | _ -> false
       in
       if exit then (
@@ -1168,10 +1162,6 @@ let keyboard_handler
           )
         | (`ASCII 'l', []) -> (
             unmark `Listed;
-            true
-          )
-        | (`ASCII 'L', []) -> (
-            unmark `Unlisted;
             true
           )
         | (`ASCII 'a', []) -> (
