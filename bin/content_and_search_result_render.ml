@@ -271,11 +271,28 @@ let render_grid
       let target_region_start =
         max 0 (focal_point_offset - (Misc_utils.div_round_to_closest height 2))
       in
+      let img_height = I.height img in
+      let target_region_end_exc =
+        min
+          img_height
+          (target_region_start + height)
+      in
+      let view_offset =
+        if view_offset >= 0 then (
+          min
+            view_offset
+            (img_height - target_region_end_exc)
+        ) else (
+          let view_offset = Int.abs view_offset in
+          - (min
+               view_offset
+               (target_region_start - 0))
+        )
+      in
       let target_region_start, target_region_end_exc =
         (target_region_start + view_offset,
-         target_region_start + view_offset + height)
+         target_region_end_exc + view_offset)
       in
-      let img_height = I.height img in
       I.vcrop target_region_start (img_height - target_region_end_exc) img
     )
 
@@ -290,10 +307,10 @@ let content_snippet
   : Notty.image =
   let max_end_inc_global_line_num = Index.global_line_count ~doc_hash - 1 in
   assert (height > 0);
-  let compute_final_view_offset_and_line_num_range
+  let compute_final_line_num_range
       ~view_offset
       ~start_global_line_num
-    : int * (int * int) =
+    : int * int =
     let end_inc_global_line_num =
       min
         max_end_inc_global_line_num
@@ -304,38 +321,34 @@ let content_snippet
        to not interfere with the focal point offset computation
        in render_grid.
 
-       We also avoid growing the area beyond
-       the boundaries.
+       The number of lines to grow is an overapproximation
+       of the actual lines required, as a
+       line may wrap into multiple rendered lines
+       in the rendered view if it is longer than
+       the width of the content pane.
+       But we do not know how many lines exactly until we
+       actually render the view/word grid.
     *)
     if view_offset >= 0 then (
-      let view_offset =
-        min
-          view_offset
-          (max_end_inc_global_line_num - end_inc_global_line_num)
-      in
       let end_inc_global_line_num =
-        end_inc_global_line_num + view_offset
-      in
-      (view_offset,
-       (start_global_line_num, end_inc_global_line_num))
-    ) else (
-      let view_offset = Int.abs view_offset in
-      let view_offset =
         min
-          view_offset
-          (start_global_line_num - 0)
+          max_end_inc_global_line_num
+          (end_inc_global_line_num + view_offset)
       in
+      (start_global_line_num, end_inc_global_line_num)
+    ) else (
       let start_global_line_num =
-        start_global_line_num - view_offset
+        max
+          0
+          (start_global_line_num - Int.abs view_offset)
       in
-      (-view_offset,
-       (start_global_line_num, end_inc_global_line_num))
+      (start_global_line_num, end_inc_global_line_num)
     )
   in
   match search_result with
   | None -> (
-      let view_offset, (start_global_line_num, end_inc_global_line_num) =
-        compute_final_view_offset_and_line_num_range
+      let start_global_line_num, end_inc_global_line_num =
+        compute_final_line_num_range
           ~view_offset
           ~start_global_line_num:0
       in
@@ -359,8 +372,8 @@ let content_snippet
         start_and_end_inc_global_line_num_of_search_result ~doc_hash search_result
       in
       let avg = (relevant_start_line + relevant_end_inc_line) / 2 in
-      let view_offset, (start_global_line_num, end_inc_global_line_num) =
-        compute_final_view_offset_and_line_num_range
+      let start_global_line_num, end_inc_global_line_num =
+        compute_final_line_num_range
           ~view_offset
           ~start_global_line_num:(
             max
