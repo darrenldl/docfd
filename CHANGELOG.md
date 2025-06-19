@@ -8,8 +8,8 @@
 
 - Removed extraneous marking functionality
 
-    - `mark unlisted` (`mL`) marks all currently unlisted documents
-    - `unmark unlisted` (`ML`) unmarks all currently unlisted documents
+    - `mark unlisted`
+    - `unmark unlisted`
 
 - Added `"..."` as a shorthand to `content:"..."` to filter expression
 
