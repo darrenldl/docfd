@@ -11,6 +11,14 @@
     - `mark unlisted` (`mL`) marks all currently unlisted documents
     - `unmark unlisted` (`ML`) unmarks all currently unlisted documents
 
+- Added `"..."` as a shorthand to `content:"..."` to filter expression
+
+    - For example, `content:keyword AND path-date:>2025-01-01` can be written as `"keyword" AND path-date:>2025-01-01`
+
+    - The quotation is necessary to differentiate between typos
+      and actual query, otherwise incorrect input like
+      `pathfuzzy:...` would be parsed as content queries instead
+
 ## 12.0.0-alpha.4
 
 - Added additional marking functionality

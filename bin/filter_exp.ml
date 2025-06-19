@@ -68,7 +68,7 @@ module Parsers = struct
         )
       )
 
-  let maybe_quoted_string =
+  let maybe_quoted_string ?(force_quote = false) () =
     (
       (choice
          [
@@ -78,7 +78,10 @@ module Parsers = struct
        >>= fun c -> return (Some c)
       )
       <|>
-      return None
+      (if force_quote then
+         fail ""
+       else
+         return None)
     )
     >>= fun quote_char ->
     many1 (
@@ -110,15 +113,15 @@ module Parsers = struct
      | None -> return s
      | Some quote_char -> char quote_char *> return s)
 
-  let search_exp =
-    maybe_quoted_string
+  let search_exp ?force_quote () =
+    maybe_quoted_string ?force_quote ()
     >>= fun s ->
     match Search_exp.parse s with
     | None -> fail ""
     | Some x -> return x
 
   let glob =
-    maybe_quoted_string
+    maybe_quoted_string ()
     >>= fun s ->
     let s = Misc_utils.normalize_filter_glob_if_not_empty s in
     match Glob.parse s with
@@ -126,7 +129,7 @@ module Parsers = struct
     | Some x -> return x
 
   let ext =
-    maybe_quoted_string
+    maybe_quoted_string ()
     >>| fun s ->
     s
     |> String.lowercase_ascii
@@ -156,7 +159,7 @@ module Parsers = struct
       date >>| fun date ->
       Path_date (op, date)
     in
-    maybe_quoted_string
+    maybe_quoted_string ()
     >>= fun s ->
     match Angstrom.(parse_string ~consume:Consume.All) p s with
     | Ok x -> return x
@@ -198,15 +201,17 @@ module Parsers = struct
       fix (fun (exp : exp Angstrom.t) ->
           let base =
             choice [
+              (search_exp ~force_quote:true () >>|
+               fun x -> Content x);
+              (string "content:" *>
+               search_exp () >>| fun x -> Content x);
               (string "path-date:" *> path_date);
               (string "path-fuzzy:" *>
-               search_exp >>| fun x -> Path_fuzzy x);
+               search_exp () >>| fun x -> Path_fuzzy x);
               (string "path-glob:" *>
                glob >>| fun x -> Path_glob x);
               (string "ext:" *>
                ext >>| fun x -> Ext x);
-              (string "content:" *>
-               search_exp >>| fun x -> Content x);
               (char '(' *> skip_spaces *> exp <* char ')');
               (not_op >>= fun f ->
                skip_spaces *> exp >>| f);
