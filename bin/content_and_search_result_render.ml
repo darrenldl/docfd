@@ -326,7 +326,8 @@ let content_snippet
        line may wrap into multiple rendered lines
        in the rendered view if it is longer than
        the width of the content pane.
-       But we do not know how many lines exactly until we
+       But we do not know how many lines (or partial segments
+       of lines) exactly until we
        actually render the view/word grid.
     *)
     if view_offset >= 0 then (
