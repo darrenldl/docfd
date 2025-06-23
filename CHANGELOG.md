@@ -1,5 +1,13 @@
 # Changelog
 
+## 12.0.0-alpha.6
+
+- Fixed `not` operator parsing
+
+    - Previously `not ext:txt and not ext:md` would be parsed as `not (ext:txt and not ext:md)`, which is not what is typically expected
+
+    - `not` now binds tightly, so `not ext:txt and not ext:md` is parsed as `(not ext:txt) and (not ext:md)`
+
 ## 12.0.0-alpha.5
 
 - Added content view pane scrolling
