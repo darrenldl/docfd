@@ -213,12 +213,16 @@ module Parsers = struct
               (string "ext:" *>
                ext >>| fun x -> Ext x);
               (char '(' *> skip_spaces *> exp <* char ')');
-              (not_op >>= fun f ->
-               skip_spaces *> exp >>| f);
             ]
             <* skip_spaces
           in
-          let conj = chainl1 base and_op in
+          let maybe_neg =
+            (not_op >>= fun f ->
+             skip_spaces *> base >>| f)
+            <|>
+            base
+          in
+          let conj = chainl1 maybe_neg and_op in
           chainl1 conj or_op
         )
     )
