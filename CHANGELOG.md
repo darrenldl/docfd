@@ -1,5 +1,9 @@
 # Changelog
 
+## 12.0.0-alpha.7
+
+- Fixed interactive use of `--commands-from`
+
 ## 12.0.0-alpha.6
 
 - Fixed `not` operator parsing

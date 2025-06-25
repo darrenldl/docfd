@@ -605,7 +605,9 @@ let run
     &&
     Option.is_none search_exp
     &&
-    Option.is_none commands_from
+    not print_files_with_match
+    &&
+    not print_files_without_match
   in
   let file_constraints =
     make_file_constraints

@@ -1,1 +1,1 @@
-let s = "12.0.0-alpha.6"
+let s = "12.0.0-alpha.7"
