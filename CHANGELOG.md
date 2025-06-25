@@ -4,6 +4,8 @@
 
 - Fixed interactive use of `--commands-from`
 
+- Added `mark listed` and `unmark listed` to template command history file help info
+
 ## 12.0.0-alpha.6
 
 - Fixed `not` operator parsing
