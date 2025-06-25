@@ -794,7 +794,7 @@ let run
            String_set.iter (Printers.path_image ~color:print_with_color print_oc) s;
            `Has_results (not (String_set.is_empty s))
          ) else (
-           `Not_non_interactive
+           `Interactive
          )
        in
        clean_up ();
@@ -805,7 +805,8 @@ let run
        | `Has_results false -> (
            exit 1
          )
-       | `Not_non_interactive -> (
+       | `Interactive -> (
+           assert interactive;
          )
      )
   );
