@@ -1060,7 +1060,9 @@ let run
                       Fmt.str "# - %a" Command.pp (`Filter "");
                       Fmt.str "# - %a" Command.pp (`Narrow_level 1);
                       Fmt.str "# - %a" Command.pp (`Mark "/path/to/document");
+                      Fmt.str "# - %a" Command.pp `Mark_listed;
                       Fmt.str "# - %a" Command.pp (`Unmark "/path/to/document");
+                      Fmt.str "# - %a" Command.pp `Unmark_listed;
                       Fmt.str "# - %a" Command.pp `Unmark_all;
                       Fmt.str "# - %a" Command.pp (`Drop "/path/to/document");
                       Fmt.str "# - %a" Command.pp (`Drop_all_except "/path/to/document");
