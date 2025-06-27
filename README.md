@@ -60,7 +60,9 @@ Docfd is also packaged on the following platforms for Linux:
 
 - [opam](https://ocaml.org/p/docfd/latest)
 - [AUR](https://aur.archlinux.org/packages/docfd-bin) (as `docfd-bin`)
+    - First packaged by [@kseistrup](https://github.com/kseistrup), now maintained by Dominiquini
 - Nix (as `docfd`)
+    - Packaged by [@chewblacka](https://github.com/chewblacka)
 
 The only way to use Docfd on Windows right now is via WSL.
 
