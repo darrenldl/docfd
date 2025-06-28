@@ -14,9 +14,11 @@ module Vars = struct
 
   let search_field_focus_handle = Nottui.Focus.make ()
 
-  let require_field = Lwd.var UI_base.empty_text_field
+  let filter_field_focus_handle = Nottui.Focus.make ()
 
-  let require_field_focus_handle = Nottui.Focus.make ()
+  let save_session_field = Lwd.var UI_base.empty_text_field
+
+  let save_session_field_focus_handle = Nottui.Focus.make ()
 
   let init_document_store : Document_store.t ref = ref Document_store.empty
 
@@ -300,6 +302,27 @@ let update_search () =
   let s = fst @@ Lwd.peek Vars.search_field in
   Document_store_manager.submit_search_req s
 
+let compute_save_session_path () =
+  let base_name, _ = Lwd.peek Vars.save_session_field in
+  Filename.concat
+    (Option.get !Params.data_dir)
+    (Fmt.str "%s.docfd" base_name)
+
+let save_session ~path =
+  let lines =
+    Vars.document_store_snapshots
+    |> Dynarray.to_seq
+    |> Seq.filter_map  (fun (snapshot : Document_store_snapshot.t) ->
+        Option.map
+          Command.to_string
+          (Document_store_snapshot.last_command snapshot)
+      )
+    |> List.of_seq
+  in
+  CCIO.with_out path (fun oc ->
+      CCIO.write_lines_l oc lines;
+    )
+
 module Top_pane = struct
   module Document_list = struct
     let render_document_preview
@@ -520,80 +543,132 @@ module Bottom_pane = struct
       ~(input_mode : UI_base.input_mode)
     : Nottui.Ui.t Lwd.t =
     let open Notty.Infix in
-    let$* index_of_document_selected = Lwd.get Vars.index_of_document_selected in
-    let document_count = Array.length search_result_groups in
     let input_mode_image =
       List.assoc input_mode UI_base.Status_bar.input_mode_images
     in
-    let$* cur_ver = Lwd.get Vars.document_store_cur_ver in
-    let$* snapshot =
-      Lwd.get Document_store_manager.document_store_snapshot
-    in
-    let content =
-      let file_shown_count =
-        Notty.I.strf ~attr:UI_base.Status_bar.attr
-          "%5d/%d documents listed"
-          document_count
-          (Document_store_snapshot.store snapshot
-           |> Document_store.size)
-      in
-      let version =
-        Notty.I.strf ~attr:UI_base.Status_bar.attr
-          "v%d "
-          cur_ver
-      in
-      let desc =
-        Notty.I.strf ~attr:UI_base.Status_bar.attr
-          "Last command: %s"
-          (match Document_store_snapshot.last_command snapshot with
-           | None -> "N/A"
-           | Some command -> Command.to_string command)
-      in
-      let ver_len = Notty.I.width version in
-      let desc_len = Notty.I.width desc in
-      let desc_overlay =
-        Notty.I.void
-          (width - desc_len - UI_base.Status_bar.element_spacing - ver_len) 1
-        <|>
-        desc
-      in
-      let version_overlay =
-        Notty.I.void (width - ver_len) 1 <|> version
-      in
-      let core =
-        if document_count = 0 then (
-          [
-            UI_base.Status_bar.element_spacer;
-            file_shown_count;
-          ]
-        ) else (
-          let index_of_selected =
-            Notty.I.strf ~attr:UI_base.Status_bar.attr
-              "Index of document selected: %d"
-              index_of_document_selected
+    match input_mode with
+    | Save_session -> (
+        let$* content =
+          Nottui_widgets.hbox
+            [
+              Lwd.return
+                (Nottui.Ui.atom
+                   (Notty.I.hcat
+                      [
+                        input_mode_image;
+                        UI_base.Status_bar.element_spacer;
+                        Notty.I.strf ~attr:UI_base.Status_bar.attr "Session name: ";
+                      ]));
+              let edit_field = Vars.save_session_field in
+              Nottui_widgets.edit_field (Lwd.get edit_field)
+                ~focus:Vars.save_session_field_focus_handle
+                ~on_change:(fun (text, x) ->
+                    Lwd.set edit_field (text, x);
+                  )
+                ~on_submit:(fun (text, x) ->
+                    Lwd.set edit_field (text, x);
+                    Nottui.Focus.release Vars.save_session_field_focus_handle;
+                    Lwd.set UI_base.Vars.input_mode Save_session_confirm
+                  );
+            ]
+        in
+        let$ bar = UI_base.Status_bar.background_bar in
+        Nottui.Ui.join_z bar content
+      )
+    | Save_session_confirm -> (
+        let path = compute_save_session_path () in
+        if Sys.file_exists path then (
+          let$* content =
+            Lwd.return
+              (Nottui.Ui.atom
+                 (Notty.I.hcat
+                    [
+                      input_mode_image;
+                      UI_base.Status_bar.element_spacer;
+                      Notty.I.strf ~attr:UI_base.Status_bar.attr "%s already exists, overwrite?" path;
+                    ]))
           in
-          [
-            file_shown_count;
-            UI_base.Status_bar.element_spacer;
-            index_of_selected;
-          ]
+          let$ bar = UI_base.Status_bar.background_bar in
+          Nottui.Ui.join_z bar content
+        ) else (
+          save_session ~path;
+          Lwd.set UI_base.Vars.input_mode Navigate;
+          UI_base.Status_bar.background_bar
         )
-      in
-      Notty.I.zcat
-        [
-          Notty.I.hcat
-            (input_mode_image
-             ::
-             UI_base.Status_bar.element_spacer
-             ::
-             core);
-          desc_overlay;
-          version_overlay;
-        ]
-      |> Nottui.Ui.atom
-    in
-    let$ bar = UI_base.Status_bar.background_bar in
-    Nottui.Ui.join_z bar content
+      )
+    | _ -> (
+        let$* index_of_document_selected = Lwd.get Vars.index_of_document_selected in
+        let document_count = Array.length search_result_groups in
+        let$* cur_ver = Lwd.get Vars.document_store_cur_ver in
+        let$* snapshot =
+          Lwd.get Document_store_manager.document_store_snapshot
+        in
+        let content =
+          let file_shown_count =
+            Notty.I.strf ~attr:UI_base.Status_bar.attr
+              "%5d/%d documents listed"
+              document_count
+              (Document_store_snapshot.store snapshot
+               |> Document_store.size)
+          in
+          let version =
+            Notty.I.strf ~attr:UI_base.Status_bar.attr
+              "v%d "
+              cur_ver
+          in
+          let desc =
+            Notty.I.strf ~attr:UI_base.Status_bar.attr
+              "Last command: %s"
+              (match Document_store_snapshot.last_command snapshot with
+               | None -> "N/A"
+               | Some command -> Command.to_string command)
+          in
+          let ver_len = Notty.I.width version in
+          let desc_len = Notty.I.width desc in
+          let desc_overlay =
+            Notty.I.void
+              (width - desc_len - UI_base.Status_bar.element_spacing - ver_len) 1
+            <|>
+            desc
+          in
+          let version_overlay =
+            Notty.I.void (width - ver_len) 1 <|> version
+          in
+          let core =
+            if document_count = 0 then (
+              [
+                UI_base.Status_bar.element_spacer;
+                file_shown_count;
+              ]
+            ) else (
+              let index_of_selected =
+                Notty.I.strf ~attr:UI_base.Status_bar.attr
+                  "Index of document selected: %d"
+                  index_of_document_selected
+              in
+              [
+                file_shown_count;
+                UI_base.Status_bar.element_spacer;
+                index_of_selected;
+              ]
+            )
+          in
+          Notty.I.zcat
+            [
+              Notty.I.hcat
+                (input_mode_image
+                 ::
+                 UI_base.Status_bar.element_spacer
+                 ::
+                 core);
+              desc_overlay;
+              version_overlay;
+            ]
+          |> Nottui.Ui.atom
+        in
+        let$ bar = UI_base.Status_bar.background_bar in
+        Nottui.Ui.join_z bar content
+      )
 
   module Key_binding_info = struct
     let grid_contents : UI_base.Key_binding_info.grid_contents =
@@ -645,6 +720,25 @@ module Bottom_pane = struct
         [
           [
             { label = "Enter"; msg = "exit filter mode" };
+          ];
+          empty_row;
+          empty_row;
+        ]
+      in
+      let save_session_grid =
+        [
+          [
+            { label = "Enter"; msg = "confirm answer" };
+          ];
+          empty_row;
+          empty_row;
+        ]
+      in
+      let save_session_confirm_grid =
+        [
+          [
+            { label = "y"; msg = "confirm overwrite" };
+            { label = "Esc/n"; msg = "cancel" };
           ];
           empty_row;
           empty_row;
@@ -790,6 +884,12 @@ module Bottom_pane = struct
         );
         ({ input_mode = Reload },
          reload_grid
+        );
+        ({ input_mode = Save_session },
+         save_session_grid
+        );
+        ({ input_mode = Save_session_confirm },
+         save_session_confirm_grid
         );
       ]
 
@@ -1027,6 +1127,11 @@ let keyboard_handler
       | (`ASCII 'h', []) -> (
           Lwd.set UI_base.Vars.quit true;
           UI_base.Vars.action := Some UI_base.Edit_command_history;
+          `Handled
+        )
+      | (`ASCII 'S', [`Ctrl]) -> (
+          UI_base.set_input_mode Save_session;
+          Nottui.Focus.request Vars.save_session_field_focus_handle;
           `Handled
         )
       | (`ASCII 'x', []) -> (
@@ -1318,6 +1423,24 @@ let keyboard_handler
              reset_document_selected ();
              Lwd.set UI_base.Vars.quit true;
              UI_base.Vars.action := Some UI_base.Recompute_document_src;
+             true
+           )
+         | _ -> false
+        );
+      in
+      if exit then (
+        UI_base.set_input_mode Navigate;
+      );
+      `Handled
+    )
+  | Save_session_confirm -> (
+      let exit =
+        (match key with
+         | (`Escape, [])
+         | (`ASCII 'n', []) -> true
+         | (`ASCII 'y', []) -> (
+             let path = compute_save_session_path () in
+             save_session ~path;
              true
            )
          | _ -> false

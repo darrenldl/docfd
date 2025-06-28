@@ -72,6 +72,8 @@ let cache_limit = ref default_cache_limit
 
 let cache_dir : string option ref = ref None
 
+let data_dir : string option ref = ref None
+
 let tz : Timedesc.Time_zone.t =
   Option.value ~default:Timedesc.Time_zone.utc
     (Timedesc.Time_zone.local ())

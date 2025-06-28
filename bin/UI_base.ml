@@ -13,6 +13,8 @@ type input_mode =
   | Copy
   | Copy_paths
   | Reload
+  | Save_session
+  | Save_session_confirm
 
 type top_level_action =
   | Recompute_document_src
@@ -286,6 +288,8 @@ module Status_bar = struct
       ; (Copy, "COPY")
       ; (Copy_paths, "COPY-PATHS")
       ; (Reload, "RELOAD")
+      ; (Save_session, "SAVE-SESSION")
+      ; (Save_session_confirm, "SAVE-SESSION-CONFIRM")
       ]
     in
     let max_input_mode_string_len =
