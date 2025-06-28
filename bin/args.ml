@@ -180,7 +180,7 @@ let index_chunk_size_arg =
 
 let cache_dir_arg =
   let doc =
-    "Index cache directory."
+    "Docfd cache directory, mainly for index DB."
   in
   let cache_home = Xdg_utils.cache_home in
   Arg.(
