@@ -1,5 +1,11 @@
 # Changelog
 
+## 12.0.0-alpha.8
+
+- Changed `--commands-from` to `--script`
+
+- Added "save commands as script" and "load script" functionality to streamline reusing of commands
+
 ## 12.0.0-alpha.7
 
 - Fixed interactive use of `--commands-from`
