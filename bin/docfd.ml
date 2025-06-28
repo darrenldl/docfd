@@ -447,6 +447,7 @@ let run
     (single_line_additional_exts : string list)
     (cache_dir : string)
     (cache_limit : int)
+    (data_dir : string)
     (index_only : bool)
     (start_with_filter : string option)
     (start_with_search : string option)
@@ -524,6 +525,10 @@ let run
   Params.cache_dir := (
     mkdir_recursive cache_dir;
     Some cache_dir
+  );
+  Params.data_dir := (
+    mkdir_recursive data_dir;
+    Some data_dir
   );
   Params.default_search_mode := (
     if single_line_search_mode_by_default then (
@@ -1258,6 +1263,7 @@ let cmd ~env ~sw =
      $ single_line_add_exts_arg
      $ cache_dir_arg
      $ cache_limit_arg
+     $ data_dir_arg
      $ index_only_arg
      $ start_with_filter_arg
      $ start_with_search_arg
