@@ -43,6 +43,25 @@ let default_desktop_file_path (typ : [ `PDF ]) =
     None
   )
 
+let data_home =
+  let home_dir =
+    match Sys.getenv_opt "HOME" with
+    | None -> (
+        Misc_utils.exit_with_error_msg "environment variable HOME is not set";
+      )
+    | Some home -> home
+  in
+  match Params.os_typ with
+  | `Linux -> (
+      match Sys.getenv_opt "XDG_DATA_HOME" with
+      | None -> Filename.concat home_dir ".local/share"
+      | Some x -> x
+    )
+  | `Darwin -> (
+      Filename.concat home_dir
+        (Filename.concat "Library" "Application Support")
+    )
+
 let cache_home =
   let home_dir =
     match Sys.getenv_opt "HOME" with
