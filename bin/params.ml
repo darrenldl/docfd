@@ -14,6 +14,8 @@ let default_tokens_per_search_scope_level = 100
 
 let tokens_per_search_scope_level = ref default_tokens_per_search_scope_level
 
+let docfd_script_ext = ".docfd-script"
+
 let pandoc_supported_exts =
   [ ".epub"
   ; ".odt"

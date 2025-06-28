@@ -16,9 +16,9 @@ module Vars = struct
 
   let filter_field_focus_handle = Nottui.Focus.make ()
 
-  let save_session_field = Lwd.var UI_base.empty_text_field
+  let save_commands_field = Lwd.var UI_base.empty_text_field
 
-  let save_session_field_focus_handle = Nottui.Focus.make ()
+  let save_commands_field_focus_handle = Nottui.Focus.make ()
 
   let init_document_store : Document_store.t ref = ref Document_store.empty
 
@@ -302,13 +302,13 @@ let update_search () =
   let s = fst @@ Lwd.peek Vars.search_field in
   Document_store_manager.submit_search_req s
 
-let compute_save_session_path () =
-  let base_name, _ = Lwd.peek Vars.save_session_field in
+let compute_save_commands_path () =
+  let base_name, _ = Lwd.peek Vars.save_commands_field in
   Filename.concat
     (Option.get !Params.data_dir)
-    (Fmt.str "%s.docfd" base_name)
+    (Fmt.str "%s%s" base_name Params.docfd_script_ext)
 
-let save_session ~path =
+let save_commands ~path =
   let lines =
     Vars.document_store_snapshots
     |> Dynarray.to_seq
@@ -546,8 +546,10 @@ module Bottom_pane = struct
     let input_mode_image =
       List.assoc input_mode UI_base.Status_bar.input_mode_images
     in
+    let attr = UI_base.Status_bar.attr in
+    let edit_field = Vars.save_commands_field in
     match input_mode with
-    | Save_session -> (
+    | Save_commands -> (
         let$* content =
           Nottui_widgets.hbox
             [
@@ -557,26 +559,31 @@ module Bottom_pane = struct
                       [
                         input_mode_image;
                         UI_base.Status_bar.element_spacer;
-                        Notty.I.strf ~attr:UI_base.Status_bar.attr "Session name: ";
+                        Notty.I.strf ~attr "Save as: [ ";
                       ]));
-              let edit_field = Vars.save_session_field in
               Nottui_widgets.edit_field (Lwd.get edit_field)
-                ~focus:Vars.save_session_field_focus_handle
+                ~focus:Vars.save_commands_field_focus_handle
                 ~on_change:(fun (text, x) ->
                     Lwd.set edit_field (text, x);
                   )
                 ~on_submit:(fun (text, x) ->
                     Lwd.set edit_field (text, x);
-                    Nottui.Focus.release Vars.save_session_field_focus_handle;
-                    Lwd.set UI_base.Vars.input_mode Save_session_confirm
+                    Nottui.Focus.release Vars.save_commands_field_focus_handle;
+                    Lwd.set UI_base.Vars.input_mode
+                      (if String.length text = 0 then
+                         Save_commands_no_name
+                       else
+                         Save_commands_overwrite
+                      );
                   );
+              Lwd.return (Nottui.Ui.atom (Notty.I.strf ~attr " ] + %s" Params.docfd_script_ext));
             ]
         in
         let$ bar = UI_base.Status_bar.background_bar in
         Nottui.Ui.join_z bar content
       )
-    | Save_session_confirm -> (
-        let path = compute_save_session_path () in
+    | Save_commands_overwrite -> (
+        let path = compute_save_commands_path () in
         if Sys.file_exists path then (
           let$* content =
             Lwd.return
@@ -585,16 +592,30 @@ module Bottom_pane = struct
                     [
                       input_mode_image;
                       UI_base.Status_bar.element_spacer;
-                      Notty.I.strf ~attr:UI_base.Status_bar.attr "%s already exists, overwrite?" path;
+                      Notty.I.strf ~attr "%s already exists, overwrite?" path;
                     ]))
           in
           let$ bar = UI_base.Status_bar.background_bar in
           Nottui.Ui.join_z bar content
         ) else (
-          save_session ~path;
+          save_commands ~path;
           Lwd.set UI_base.Vars.input_mode Navigate;
           UI_base.Status_bar.background_bar
         )
+      )
+    | Save_commands_no_name -> (
+        let$* content =
+          Lwd.return
+            (Nottui.Ui.atom
+               (Notty.I.hcat
+                  [
+                    input_mode_image;
+                    UI_base.Status_bar.element_spacer;
+                    Notty.I.strf ~attr "No name entered, saving skipped";
+                  ]))
+        in
+        let$ bar = UI_base.Status_bar.background_bar in
+        Nottui.Ui.join_z bar content
       )
     | _ -> (
         let$* index_of_document_selected = Lwd.get Vars.index_of_document_selected in
@@ -605,19 +626,19 @@ module Bottom_pane = struct
         in
         let content =
           let file_shown_count =
-            Notty.I.strf ~attr:UI_base.Status_bar.attr
+            Notty.I.strf ~attr
               "%5d/%d documents listed"
               document_count
               (Document_store_snapshot.store snapshot
                |> Document_store.size)
           in
           let version =
-            Notty.I.strf ~attr:UI_base.Status_bar.attr
+            Notty.I.strf ~attr
               "v%d "
               cur_ver
           in
           let desc =
-            Notty.I.strf ~attr:UI_base.Status_bar.attr
+            Notty.I.strf ~attr
               "Last command: %s"
               (match Document_store_snapshot.last_command snapshot with
                | None -> "N/A"
@@ -642,7 +663,7 @@ module Bottom_pane = struct
               ]
             ) else (
               let index_of_selected =
-                Notty.I.strf ~attr:UI_base.Status_bar.attr
+                Notty.I.strf ~attr
                   "Index of document selected: %d"
                   index_of_document_selected
               in
@@ -725,7 +746,7 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
-      let save_session_grid =
+      let save_commands_grid =
         [
           [
             { label = "Enter"; msg = "confirm answer" };
@@ -734,11 +755,20 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
-      let save_session_confirm_grid =
+      let save_commands_confirm_grid =
         [
           [
             { label = "y"; msg = "confirm overwrite" };
             { label = "Esc/n"; msg = "cancel" };
+          ];
+          empty_row;
+          empty_row;
+        ]
+      in
+      let save_commands_cancel_grid =
+        [
+          [
+            { label = "Enter"; msg = "confirm" };
           ];
           empty_row;
           empty_row;
@@ -885,11 +915,14 @@ module Bottom_pane = struct
         ({ input_mode = Reload },
          reload_grid
         );
-        ({ input_mode = Save_session },
-         save_session_grid
+        ({ input_mode = Save_commands },
+         save_commands_grid
         );
-        ({ input_mode = Save_session_confirm },
-         save_session_confirm_grid
+        ({ input_mode = Save_commands_overwrite },
+         save_commands_confirm_grid
+        );
+        ({ input_mode = Save_commands_no_name },
+         save_commands_cancel_grid
         );
       ]
 
@@ -1130,8 +1163,8 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'S', [`Ctrl]) -> (
-          UI_base.set_input_mode Save_session;
-          Nottui.Focus.request Vars.save_session_field_focus_handle;
+          UI_base.set_input_mode Save_commands;
+          Nottui.Focus.request Vars.save_commands_field_focus_handle;
           `Handled
         )
       | (`ASCII 'x', []) -> (
@@ -1433,16 +1466,28 @@ let keyboard_handler
       );
       `Handled
     )
-  | Save_session_confirm -> (
+  | Save_commands_overwrite -> (
       let exit =
         (match key with
          | (`Escape, [])
          | (`ASCII 'n', []) -> true
          | (`ASCII 'y', []) -> (
-             let path = compute_save_session_path () in
-             save_session ~path;
+             let path = compute_save_commands_path () in
+             save_commands ~path;
              true
            )
+         | _ -> false
+        );
+      in
+      if exit then (
+        UI_base.set_input_mode Navigate;
+      );
+      `Handled
+    )
+  | Save_commands_no_name -> (
+      let exit =
+        (match key with
+         | (`Enter, []) -> true
          | _ -> false
         );
       in

@@ -460,7 +460,7 @@ let run
     (search_result_print_text_width : int)
     (search_result_print_snippet_min_size : int)
     (search_result_print_max_add_lines : int)
-    (commands_from : string option)
+    (script : string option)
     (paths_from : string list)
     (globs : string list)
     (single_line_globs : string list)
@@ -487,7 +487,7 @@ let run
     ~search_result_print_text_width
     ~search_result_print_snippet_min_size
     ~search_result_print_max_add_lines
-    ~commands_from
+    ~script
     ~paths_from
     ~print_files_with_match
     ~print_files_without_match;
@@ -738,17 +738,17 @@ let run
     | `Always -> true
     | `Auto -> not (Out_channel.isatty print_oc)
   in
-  (match commands_from with
+  (match script with
    | None -> ()
-   | Some commands_from -> (
+   | Some script -> (
        let snapshots = UI.Vars.document_store_snapshots in
        let lines =
          try
-           CCIO.with_in commands_from CCIO.read_lines_l
+           CCIO.with_in script CCIO.read_lines_l
          with
          | Sys_error _ -> (
              exit_with_error_msg
-               (Fmt.str "failed to read command file %s" (Filename.quote commands_from))
+               (Fmt.str "failed to read command file %s" (Filename.quote script))
            )
        in
        Dynarray.clear snapshots;
@@ -1027,7 +1027,7 @@ let run
             loop ()
           )
         | Edit_command_history -> (
-            let file = Filename.temp_file "" ".docfd_commands" in
+            let file = Filename.temp_file "" Params.docfd_script_ext in
             let snapshots = UI.Vars.document_store_snapshots in
             let lines =
               Seq.append
@@ -1276,7 +1276,7 @@ let cmd ~env ~sw =
      $ search_result_print_text_width_arg
      $ search_result_print_snippet_min_size_arg
      $ search_result_print_snippet_max_add_lines_arg
-     $ commands_from_arg
+     $ script_arg
      $ paths_from_arg
      $ glob_arg
      $ single_line_glob_arg

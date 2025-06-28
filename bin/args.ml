@@ -377,16 +377,16 @@ Docfd can add in each direction."
     & info [ search_result_print_snippet_max_add_lines_arg_name ] ~doc ~docv:"N"
   )
 
-let commands_from_arg_name = "commands-from"
+let script_arg_name = "script"
 
-let commands_from_arg =
+let script_arg =
   let doc =
-    Fmt.str "Read and run command file FILE."
+    Fmt.str "Read and run Docfd script FILE."
   in
   Arg.(
     value
     & opt (some string) None
-    & info [ commands_from_arg_name ] ~doc ~docv:"FILE"
+    & info [ script_arg_name ] ~doc ~docv:"FILE"
   )
 
 let paths_from_arg_name = "paths-from"
@@ -497,7 +497,7 @@ that would have be listed in the UI
 after running the commands in interactive mode."
       search_arg_name
       sample_arg_name
-      commands_from_arg_name
+      script_arg_name
   in
   Arg.(
     value
@@ -516,7 +516,7 @@ instead of printing the search results.
 Cannot be paired with --%s."
       search_arg_name
       sample_arg_name
-      commands_from_arg_name
+      script_arg_name
   in
   Arg.(
     value
@@ -555,7 +555,7 @@ let check
     ~search_result_print_text_width
     ~search_result_print_snippet_min_size
     ~search_result_print_max_add_lines
-    ~commands_from
+    ~script
     ~paths_from
     ~print_files_with_match
     ~print_files_without_match
@@ -638,7 +638,7 @@ let check
            ||
            Option.is_some search_exp
            ||
-           Option.is_some commands_from
+           Option.is_some script
          )
        then (
          exit_with_error_msg
@@ -647,7 +647,7 @@ let check
               filter_arg_name
               sample_arg_name
               search_arg_name
-              commands_from_arg_name
+              script_arg_name
            )
        )
      )
@@ -707,29 +707,29 @@ let check
        | Some _ -> ()
      )
   );
-  if Option.is_some commands_from then (
+  if Option.is_some script then (
     if Option.is_some filter_exp then (
       exit_with_error_msg
-        (Fmt.str "--%s and --%s cannot be used together" commands_from_arg_name filter_arg_name)
+        (Fmt.str "--%s and --%s cannot be used together" script_arg_name filter_arg_name)
     );
     if Option.is_some sample_search_exp then (
       exit_with_error_msg
-        (Fmt.str "--%s and --%s cannot be used together" commands_from_arg_name sample_arg_name)
+        (Fmt.str "--%s and --%s cannot be used together" script_arg_name sample_arg_name)
     );
     if Option.is_some search_exp then (
       exit_with_error_msg
-        (Fmt.str "--%s and --%s cannot be used together" commands_from_arg_name search_arg_name)
+        (Fmt.str "--%s and --%s cannot be used together" script_arg_name search_arg_name)
     );
     if Option.is_some start_with_filter then (
       exit_with_error_msg
-        (Fmt.str "--%s and --%s cannot be used together" commands_from_arg_name start_with_filter_arg_name)
+        (Fmt.str "--%s and --%s cannot be used together" script_arg_name start_with_filter_arg_name)
     );
     if Option.is_some start_with_search then (
       exit_with_error_msg
-        (Fmt.str "--%s and --%s cannot be used together" commands_from_arg_name start_with_search_arg_name)
+        (Fmt.str "--%s and --%s cannot be used together" script_arg_name start_with_search_arg_name)
     );
     if print_files_without_match then (
       exit_with_error_msg
-        (Fmt.str "--%s and --%s cannot be used together" commands_from_arg_name files_without_match_arg_name)
+        (Fmt.str "--%s and --%s cannot be used together" script_arg_name files_without_match_arg_name)
     );
   )
