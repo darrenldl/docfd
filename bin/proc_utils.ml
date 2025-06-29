@@ -65,7 +65,6 @@ let pipe_to_command (f : out_channel -> unit) command args =
   Out_channel.flush oc;
   Out_channel.close oc
 
-  (*
 let pipe_to_fzf_for_selection (lines : string Seq.t)
   : [ `Selection of string list | `Cancelled of int ] =
   if not (command_exists "fzf") then (
@@ -82,7 +81,7 @@ let pipe_to_fzf_for_selection (lines : string Seq.t)
     ) lines;
   Out_channel.close write_to_fzf_oc;
   let pid =
-    Unix.create_process "fzf" [| "fzf"; "--multi" |]
+    Unix.create_process "fzf" [| "fzf" |]
       stdin_for_fzf stdout_for_fzf Unix.stderr
   in
   let _, process_status = Unix.waitpid [] pid in
@@ -100,4 +99,3 @@ let pipe_to_fzf_for_selection (lines : string Seq.t)
   | _ -> (
       `Selection selection
     )
-    *)
