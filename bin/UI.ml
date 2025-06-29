@@ -306,8 +306,14 @@ let update_search () =
 
 let compute_save_commands_path () =
   let base_name, _ = Lwd.peek Vars.save_commands_field in
+  let dir =
+    (Filename.concat
+       (Option.get !Params.data_dir)
+       "scripts")
+  in
+  File_utils.mkdir_recursive dir;
   Filename.concat
-    (Option.get !Params.data_dir)
+    dir
     (Fmt.str "%s%s" base_name Params.docfd_script_ext)
 
 let save_commands ~path =
