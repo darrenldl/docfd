@@ -107,6 +107,17 @@ let update_starting_store_and_recompute_snapshots
   let cur_snapshot = get_cur_document_store_snapshot () in
   submit_update_req_and_sync_input_fields cur_snapshot
 
+let load_snapshots snapshots =
+  assert (Dynarray.length snapshots > 0);
+  Dynarray.clear Vars.document_store_snapshots;
+  Dynarray.append Vars.document_store_snapshots snapshots;
+  Lwd.set
+    Vars.document_store_cur_ver
+    (Dynarray.length snapshots - 1);
+  let final_snapshot = Dynarray.get_last snapshots in
+  submit_update_req_and_sync_input_fields final_snapshot;
+  reset_document_selected ()
+
 let reload_document (doc : Document.t) =
   let pool = UI_base.task_pool () in
   let path = Document.path doc in
@@ -1514,14 +1525,8 @@ let main : Nottui.ui Lwd.t =
     Lwd.get Document_store_manager.document_store_snapshot
   in
   let cur_ver = Lwd.peek Vars.document_store_cur_ver in
-  if
-    cur_ver = 0
-    && Dynarray.length Vars.document_store_snapshots = 0
-  then (
-    Dynarray.add_last Vars.document_store_snapshots snapshot
-  ) else (
-    Dynarray.set Vars.document_store_snapshots cur_ver snapshot
-  );
+  assert (Dynarray.length Vars.document_store_snapshots > 0);
+  Dynarray.set Vars.document_store_snapshots cur_ver snapshot;
   let document_store =
     Document_store_snapshot.store snapshot
   in

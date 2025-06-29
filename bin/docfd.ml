@@ -738,50 +738,48 @@ let run
     | `Always -> true
     | `Auto -> not (Out_channel.isatty print_oc)
   in
-  (match script with
-   | None -> ()
-   | Some script -> (
-       match
-         Script.run
-           pool
-           ~init_store:!UI.Vars.init_document_store
-           ~path:script
-       with
-       | Error msg -> exit_with_error_msg msg
-       | Ok (snapshots, comments) -> (
-           Dynarray.clear UI.Vars.document_store_snapshots;
-           Dynarray.append
-             UI.Vars.document_store_snapshots
-             snapshots;
-           UI.Vars.script_comments := comments;
-           let final_store = Dynarray.get_last snapshots
-                             |> Document_store_snapshot.store
-           in
-           let outcome =
-             if print_files_with_match then (
-               let s =
-                 Document_store.usable_document_paths final_store
-               in
-               String_set.iter (Printers.path_image ~color:print_with_color print_oc) s;
-               `Has_results (not (String_set.is_empty s))
-             ) else (
-               `Interactive
-             )
-           in
-           clean_up ();
-           match outcome with
-           | `Has_results true -> (
-               exit 0
-             )
-           | `Has_results false -> (
-               exit 1
-             )
-           | `Interactive -> (
-               assert interactive;
-             )
-         )
-     )
-  );
+  let snapshots_from_script =
+    match script with
+    | None -> None
+    | Some script -> (
+        match
+          Script.run
+            pool
+            ~init_store:!UI.Vars.init_document_store
+            ~path:script
+        with
+        | Error msg -> exit_with_error_msg msg
+        | Ok (snapshots, comments) -> (
+            UI.Vars.script_comments := comments;
+            let final_store = Dynarray.get_last snapshots
+                              |> Document_store_snapshot.store
+            in
+            let outcome =
+              if print_files_with_match then (
+                let s =
+                  Document_store.usable_document_paths final_store
+                in
+                String_set.iter (Printers.path_image ~color:print_with_color print_oc) s;
+                `Has_results (not (String_set.is_empty s))
+              ) else (
+                `Interactive
+              )
+            in
+            clean_up ();
+            match outcome with
+            | `Has_results true -> (
+                exit 0
+              )
+            | `Has_results false -> (
+                exit 1
+              )
+            | `Interactive -> (
+                assert interactive;
+                Some snapshots
+              )
+          )
+      )
+  in
   if not interactive then (
     let filter_exp_and_original_string =
       match filter_exp with
@@ -993,11 +991,10 @@ let run
           )
         | Edit_command_history -> (
             let file = Filename.temp_file "" Params.docfd_script_ext in
-            let snapshots = UI.Vars.document_store_snapshots in
-            let lines =
+            let init_lines =
               Seq.append
                 (
-                  snapshots
+                  UI.Vars.document_store_snapshots
                   |> Dynarray.to_seq
                   |> Seq.filter_map  (fun (snapshot : Document_store_snapshot.t) ->
                       Option.map
@@ -1044,7 +1041,7 @@ let run
                 )
               |> List.of_seq
             in
-            let rec aux rerun lines : [ `No_changes | `Changes_made ] =
+            let rec aux rerun snapshots lines : [ `No_changes | `Changes_made of Document_store_snapshot.t Dynarray.t ] =
               CCIO.with_out file (fun oc ->
                   CCIO.write_lines_l oc lines;
                 );
@@ -1066,9 +1063,8 @@ let run
                 Float.abs
                   (new_stats.st_mtime -. old_stats.st_mtime) >= Params.float_compare_margin
               then (
-                Dynarray.clear snapshots;
-                Lwd.set UI.Vars.document_store_cur_ver 0;
                 let store = ref !UI.Vars.init_document_store in
+                let snapshots = Dynarray.create () in
                 Dynarray.add_last
                   snapshots
                   (Document_store_snapshot.make
@@ -1119,16 +1115,18 @@ let run
                     )
                 in
                 if !rerun then (
-                  aux true lines
+                  aux true snapshots lines
                 ) else (
-                  `Changes_made
+                  `Changes_made snapshots
                 )
               ) else (
                 `No_changes
               )
             in
             (try
-               let res = aux false lines in
+               let res =
+                 aux false UI.Vars.document_store_snapshots init_lines
+               in
                (try
                   Sys.remove file;
                 with
@@ -1136,13 +1134,8 @@ let run
                );
                (match res with
                 | `No_changes -> ()
-                | `Changes_made -> (
-                    Lwd.set
-                      UI.Vars.document_store_cur_ver
-                      (Dynarray.length snapshots - 1);
-                    let final_snapshot = Dynarray.get_last snapshots in
-                    UI.submit_update_req_and_sync_input_fields final_snapshot;
-                    UI.reset_document_selected ();
+                | `Changes_made snapshots -> (
+                    UI.load_snapshots snapshots
                   )
                );
              with
@@ -1177,10 +1170,7 @@ let run
                 with
                 | Error msg -> exit_with_error_msg msg
                 | Ok (snapshots, comments) -> (
-                    Dynarray.clear UI.Vars.document_store_snapshots;
-                    Dynarray.append
-                      UI.Vars.document_store_snapshots
-                      snapshots;
+                    UI.load_snapshots snapshots;
                     UI.Vars.script_comments := comments;
                     loop ()
                   )
@@ -1199,20 +1189,19 @@ let run
     Document_store_manager.manager_fiber;
     UI_base.Key_binding_info.grid_light_fiber;
     (fun () ->
-       let snapshots = UI.Vars.document_store_snapshots in
-       let snapshot =
-         if Dynarray.length snapshots = 0 then (
-           Document_store_snapshot.make
-             ~last_command:None
-             !UI.Vars.init_document_store
-         ) else (
-           let last_index = Dynarray.length snapshots - 1 in
-           Lwd.set UI.Vars.document_store_cur_ver last_index;
-           let snapshot = Dynarray.get snapshots last_index in
-           snapshot
-         )
+       let snapshots =
+         match snapshots_from_script with
+         | None -> (
+             let arr = Dynarray.create () in
+             Dynarray.add_last arr
+               (Document_store_snapshot.make
+                  ~last_command:None
+                  !UI.Vars.init_document_store);
+             arr
+           )
+         | Some snapshots -> snapshots
        in
-       UI.submit_update_req_and_sync_input_fields snapshot;
+       UI.load_snapshots snapshots;
        (match start_with_filter with
         | None -> ()
         | Some start_with_filter -> (
