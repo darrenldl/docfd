@@ -22,6 +22,8 @@ module Vars = struct
 
   let init_document_store : Document_store.t ref = ref Document_store.empty
 
+  let script_comments : string list ref = ref []
+
   let document_store_snapshots : Document_store_snapshot.t Dynarray.t =
     Dynarray.create ()
 
@@ -592,7 +594,7 @@ module Bottom_pane = struct
                     [
                       input_mode_image;
                       UI_base.Status_bar.element_spacer;
-                      Notty.I.strf ~attr "%s already exists, overwrite?" path;
+                      Notty.I.strf ~attr "%s already exists, overwrite? Note that all comments will moved to the top." path;
                     ]))
           in
           let$ bar = UI_base.Status_bar.background_bar in

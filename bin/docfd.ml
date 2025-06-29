@@ -741,79 +741,44 @@ let run
   (match script with
    | None -> ()
    | Some script -> (
-       let snapshots = UI.Vars.document_store_snapshots in
-       let lines =
-         try
-           CCIO.with_in script CCIO.read_lines_l
-         with
-         | Sys_error _ -> (
-             exit_with_error_msg
-               (Fmt.str "failed to read command file %s" (Filename.quote script))
-           )
-       in
-       Dynarray.clear snapshots;
-       Dynarray.add_last
-         snapshots
-         (Document_store_snapshot.make
-            ~last_command:None
-            !UI.Vars.init_document_store);
-       lines
-       |> CCList.foldi (fun store i line ->
-           let line_num_in_error_msg = i + 1 in
-           if String_utils.line_is_blank_or_comment line then (
-             store
-           ) else (
-             match Command.of_string line with
-             | None -> (
-                 exit_with_error_msg
-                   (Fmt.str "failed to parse command on line %d: %s"
-                      line_num_in_error_msg line)
-               )
-             | Some command -> (
-                 match Document_store.run_command pool command store with
-                 | None -> (
-                     exit_with_error_msg
-                       (Fmt.str "failed to run command on line %d: %s"
-                          line_num_in_error_msg line)
-                   )
-                 | Some store -> (
-                     let snapshot =
-                       Document_store_snapshot.make
-                         ~last_command:(Some command)
-                         store
-                     in
-                     Dynarray.add_last snapshots snapshot;
-                     store
-                   )
-               )
-           )
-         )
-         !UI.Vars.init_document_store
-       |> ignore;
-       let final_store = Dynarray.get_last snapshots
-                         |> Document_store_snapshot.store
-       in
-       let outcome =
-         if print_files_with_match then (
-           let s =
-             Document_store.usable_document_paths final_store
+       match
+         Script.load
+           pool
+           ~init_store:!UI.Vars.init_document_store
+           ~path:script
+       with
+       | Error msg -> exit_with_error_msg msg
+       | Ok (snapshots, comments) -> (
+           Dynarray.clear UI.Vars.document_store_snapshots;
+           Dynarray.append
+             UI.Vars.document_store_snapshots
+             snapshots;
+           UI.Vars.script_comments := comments;
+           let final_store = Dynarray.get_last snapshots
+                             |> Document_store_snapshot.store
            in
-           String_set.iter (Printers.path_image ~color:print_with_color print_oc) s;
-           `Has_results (not (String_set.is_empty s))
-         ) else (
-           `Interactive
-         )
-       in
-       clean_up ();
-       match outcome with
-       | `Has_results true -> (
-           exit 0
-         )
-       | `Has_results false -> (
-           exit 1
-         )
-       | `Interactive -> (
-           assert interactive;
+           let outcome =
+             if print_files_with_match then (
+               let s =
+                 Document_store.usable_document_paths final_store
+               in
+               String_set.iter (Printers.path_image ~color:print_with_color print_oc) s;
+               `Has_results (not (String_set.is_empty s))
+             ) else (
+               `Interactive
+             )
+           in
+           clean_up ();
+           match outcome with
+           | `Has_results true -> (
+               exit 0
+             )
+           | `Has_results false -> (
+               exit 1
+             )
+           | `Interactive -> (
+               assert interactive;
+             )
          )
      )
   );
