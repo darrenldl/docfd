@@ -721,6 +721,7 @@ module Bottom_pane = struct
             { label = "Shift+Y"; msg = "copy/yank paths mode" };
             { label = "d"; msg = "drop mode" };
             { label = "m"; msg = "mark mode" };
+            { label = "Ctrl+S"; msg = "save commands as script" };
           ];
           [
             { label = "Ctrl+C"; msg = "exit" };
@@ -729,6 +730,7 @@ module Bottom_pane = struct
             { label = "Tab"; msg = "change pane split ratio" };
             { label = "r"; msg = "reload mode" };
             { label = "Shift+M"; msg = "unmark mode" };
+            { label = "Ctrl+O"; msg = "load script" };
           ];
         ]
       in
