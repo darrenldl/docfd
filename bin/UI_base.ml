@@ -21,6 +21,7 @@ type top_level_action =
   | Recompute_document_src
   | Open_file_and_search_result of Document.t * Search_result.t option
   | Edit_command_history
+  | Select_and_load_script
 
 let empty_text_field = ("", 0)
 

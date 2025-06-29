@@ -306,11 +306,7 @@ let update_search () =
 
 let compute_save_commands_path () =
   let base_name, _ = Lwd.peek Vars.save_commands_field in
-  let dir =
-    (Filename.concat
-       (Option.get !Params.data_dir)
-       "scripts")
-  in
+  let dir = Params.script_dir () in
   File_utils.mkdir_recursive dir;
   Filename.concat
     dir
@@ -1173,6 +1169,11 @@ let keyboard_handler
       | (`ASCII 'S', [`Ctrl]) -> (
           UI_base.set_input_mode Save_commands;
           Nottui.Focus.request Vars.save_commands_field_focus_handle;
+          `Handled
+        )
+      | (`ASCII 'O', [`Ctrl]) -> (
+          Lwd.set UI_base.Vars.quit true;
+          UI_base.Vars.action := Some UI_base.Select_and_load_script;
           `Handled
         )
       | (`ASCII 'x', []) -> (

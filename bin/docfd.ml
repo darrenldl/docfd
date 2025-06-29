@@ -742,7 +742,7 @@ let run
    | None -> ()
    | Some script -> (
        match
-         Script.load
+         Script.run
            pool
            ~init_store:!UI.Vars.init_document_store
            ~path:script
@@ -1151,6 +1151,44 @@ let run
                    (Fmt.str "failed to read or write temporary command history file %s" (Filename.quote file))
                ));
             loop ()
+          )
+        | Select_and_load_script -> (
+            close_term ();
+            let dir = Params.script_dir () in
+            let choices =
+              File_utils.list_files_recursive_filter_by_exts
+                ~max_depth:1
+                ~report_progress:(fun () -> ())
+                ~exts:[ Params.docfd_script_ext ]
+                (Seq.return dir)
+            in
+            let selection =
+              choices
+              |> String_set.to_seq
+              |> Proc_utils.pipe_to_fzf_for_selection
+            in
+            match selection with
+            | `Selection [ path ] -> (
+                match
+                  Script.run
+                    pool
+                    ~init_store:!UI.Vars.init_document_store
+                    ~path
+                with
+                | Error msg -> exit_with_error_msg msg
+                | Ok (snapshots, comments) -> (
+                    Dynarray.clear UI.Vars.document_store_snapshots;
+                    Dynarray.append
+                      UI.Vars.document_store_snapshots
+                      snapshots;
+                    UI.Vars.script_comments := comments;
+                    loop ()
+                  )
+              )
+            | `Selection _ -> failwith "unexpected case"
+            | `Cancelled _ -> (
+                loop ()
+              )
           )
       )
   in

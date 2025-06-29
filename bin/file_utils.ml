@@ -78,6 +78,7 @@ let next_choices path : string Seq.t =
   | _ -> Seq.empty
 
 let list_files_recursive
+    ?(max_depth = !Params.max_file_tree_scan_depth)
     ~(report_progress : unit -> unit)
     ~(filter : int -> string -> bool)
     (path : string)
@@ -92,7 +93,7 @@ let list_files_recursive
       String.starts_with ~prefix:"." (Filename.basename path)
     in
     if ((hidden && !Params.scan_hidden) || not hidden)
-    && depth <= !Params.max_file_tree_scan_depth then (
+    && depth <= max_depth then (
       match typ_of_path path with
       | Some (`Dir, _) -> (
           next_choices path
@@ -112,6 +113,7 @@ let list_files_recursive
   !acc
 
 let list_files_recursive_filter_by_globs
+    ?max_depth
     ~(report_progress : unit -> unit)
     (globs : string Seq.t)
   : String_set.t =
@@ -152,6 +154,7 @@ let list_files_recursive_filter_by_globs
             let glob = parse_glob ~case_sensitive glob_string in
             path
             |> list_files_recursive
+              ?max_depth
               ~report_progress
               ~filter:(fun _depth path ->
                   Glob.match_ glob path
@@ -195,6 +198,7 @@ let list_files_recursive_filter_by_globs
   !acc
 
 let list_files_recursive_filter_by_exts
+    ?max_depth
     ~report_progress
     ~(exts : string list)
     (paths : string Seq.t)
@@ -205,7 +209,7 @@ let list_files_recursive_filter_by_exts
   in
   paths
   |> Seq.map normalize_path_to_absolute
-  |> Seq.map (list_files_recursive ~report_progress ~filter)
+  |> Seq.map (list_files_recursive ?max_depth ~report_progress ~filter)
   |> Seq.fold_left String_set.union String_set.empty
 
 let mkdir_recursive (dir : string) : unit =

@@ -1,4 +1,4 @@
-let load pool ~init_store ~path
+let run pool ~init_store ~path
   : (Document_store_snapshot.t Dynarray.t * string list, string) result =
   let exception Error_with_msg of string in
   let snapshots = Dynarray.create () in

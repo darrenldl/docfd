@@ -76,6 +76,11 @@ let cache_dir : string option ref = ref None
 
 let data_dir : string option ref = ref None
 
+let script_dir () =
+  Filename.concat
+    (Option.get !data_dir)
+    "scripts"
+
 let tz : Timedesc.Time_zone.t =
   Option.value ~default:Timedesc.Time_zone.utc
     (Timedesc.Time_zone.local ())
