@@ -65,7 +65,7 @@ let pipe_to_command (f : out_channel -> unit) command args =
   Out_channel.flush oc;
   Out_channel.close oc
 
-let pipe_to_fzf_for_selection (lines : string Seq.t)
+let pipe_to_fzf_for_selection ?preview_cmd (lines : string Seq.t)
   : [ `Selection of string list | `Cancelled of int ] =
   if not (command_exists "fzf") then (
     exit_with_error_msg
@@ -80,8 +80,14 @@ let pipe_to_fzf_for_selection (lines : string Seq.t)
       output_string write_to_fzf_oc "\n";
     ) lines;
   Out_channel.close write_to_fzf_oc;
+  let args = Dynarray.create () in
+  Dynarray.add_last args "fzf";
+  Option.iter (fun preview_cmd ->
+      Dynarray.add_last args "--preview";
+      Dynarray.add_last args preview_cmd;
+    ) preview_cmd;
   let pid =
-    Unix.create_process "fzf" [| "fzf" |]
+    Unix.create_process "fzf" (Dynarray.to_array args)
       stdin_for_fzf stdout_for_fzf Unix.stderr
   in
   let _, process_status = Unix.waitpid [] pid in

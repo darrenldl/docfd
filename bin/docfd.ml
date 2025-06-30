@@ -1158,10 +1158,16 @@ let run
             let selection =
               choices
               |> String_set.to_seq
+              |> Seq.map (fun s ->
+                  Option.value ~default:s
+                    (CCString.chop_prefix ~pre:(Fmt.str "%s/" dir) s)
+                )
               |> Proc_utils.pipe_to_fzf_for_selection
+                ~preview_cmd:(Fmt.str "cat %s/{}" dir)
             in
             match selection with
-            | `Selection [ path ] -> (
+            | `Selection [ file ] -> (
+                let path = Filename.concat dir file in
                 match
                   Script.run
                     pool
