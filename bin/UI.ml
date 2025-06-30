@@ -630,7 +630,7 @@ module Bottom_pane = struct
                       input_mode_image;
                       UI_base.Status_bar.element_spacer;
                       Notty.I.strf ~attr "%s already exists, overwrite? Existing comments will be moved to the top of the file."
-                      (Filename.basename path);
+                        (Filename.basename path);
                     ]))
           in
           let$ bar = UI_base.Status_bar.background_bar in
