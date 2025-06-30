@@ -16,12 +16,14 @@ type input_mode =
   | Save_commands
   | Save_commands_overwrite
   | Save_commands_no_name
+  | Save_commands_edit
 
 type top_level_action =
   | Recompute_document_src
   | Open_file_and_search_result of Document.t * Search_result.t option
   | Edit_command_history
   | Select_and_load_script
+  | Edit_script of string
 
 let empty_text_field = ("", 0)
 
@@ -293,6 +295,7 @@ module Status_bar = struct
       ; (Save_commands, "SAVE-COMMANDS")
       ; (Save_commands_overwrite, "SAVE-COMMANDS")
       ; (Save_commands_no_name, "SAVE-COMMANDS")
+      ; (Save_commands_edit, "SAVE-COMMANDS")
       ]
     in
     let max_input_mode_string_len =

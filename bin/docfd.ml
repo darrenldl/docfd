@@ -1186,6 +1186,18 @@ let run
                 loop ()
               )
           )
+        | Edit_script path -> (
+            close_term ();
+            Path_open.config_and_cmd_to_open_text_file
+              ~path
+              ()
+            |> (fun (config, cmd) ->
+                Result.get_ok (Path_open.resolve_cmd config cmd)
+              )
+            |> Sys.command
+            |> ignore;
+            loop ()
+          )
       )
   in
   Eio.Fiber.any [

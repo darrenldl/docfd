@@ -629,14 +629,15 @@ module Bottom_pane = struct
                     [
                       input_mode_image;
                       UI_base.Status_bar.element_spacer;
-                      Notty.I.strf ~attr "%s already exists, overwrite? Note that all comments will moved to the top." path;
+                      Notty.I.strf ~attr "%s already exists, overwrite? Existing comments will be moved to the top of the file."
+                      (Filename.basename path);
                     ]))
           in
           let$ bar = UI_base.Status_bar.background_bar in
           Nottui.Ui.join_z bar content
         ) else (
           save_commands ~path;
-          Lwd.set UI_base.Vars.input_mode Navigate;
+          Lwd.set UI_base.Vars.input_mode Save_commands_edit;
           UI_base.Status_bar.background_bar
         )
       )
@@ -649,6 +650,21 @@ module Bottom_pane = struct
                     input_mode_image;
                     UI_base.Status_bar.element_spacer;
                     Notty.I.strf ~attr "No name entered, saving skipped";
+                  ]))
+        in
+        let$ bar = UI_base.Status_bar.background_bar in
+        Nottui.Ui.join_z bar content
+      )
+    | Save_commands_edit -> (
+        let path = compute_save_commands_path () in
+        let$* content =
+          Lwd.return
+            (Nottui.Ui.atom
+               (Notty.I.hcat
+                  [
+                    input_mode_image;
+                    UI_base.Status_bar.element_spacer;
+                    Notty.I.strf ~attr "Do you want to edit %s to add comments etc?" (Filename.basename path);
                   ]))
         in
         let$ bar = UI_base.Status_bar.background_bar in
@@ -813,6 +829,16 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
+      let save_commands_edit_grid =
+        [
+          [
+            { label = "y"; msg = "open script in editor" };
+            { label = "Esc/n"; msg = "skip" };
+          ];
+          empty_row;
+          empty_row;
+        ]
+      in
       let clear_grid =
         [
           [
@@ -962,6 +988,9 @@ module Bottom_pane = struct
         );
         ({ input_mode = Save_commands_no_name },
          save_commands_cancel_grid
+        );
+        ({ input_mode = Save_commands_edit },
+         save_commands_edit_grid
         );
       ]
 
@@ -1511,15 +1540,24 @@ let keyboard_handler
       `Handled
     )
   | Save_commands_overwrite -> (
+      (match key with
+       | (`Escape, [])
+       | (`ASCII 'n', []) -> (
+           UI_base.set_input_mode Navigate;
+         )
+       | (`ASCII 'y', []) -> (
+           let path = compute_save_commands_path () in
+           save_commands ~path;
+           UI_base.set_input_mode Save_commands_edit;
+         )
+       | _ -> ()
+      );
+      `Handled
+    )
+  | Save_commands_no_name -> (
       let exit =
         (match key with
-         | (`Escape, [])
-         | (`ASCII 'n', []) -> true
-         | (`ASCII 'y', []) -> (
-             let path = compute_save_commands_path () in
-             save_commands ~path;
-             true
-           )
+         | (`Enter, []) -> true
          | _ -> false
         );
       in
@@ -1528,10 +1566,17 @@ let keyboard_handler
       );
       `Handled
     )
-  | Save_commands_no_name -> (
+  | Save_commands_edit -> (
       let exit =
         (match key with
-         | (`Enter, []) -> true
+         | (`Escape, [])
+         | (`ASCII 'n', []) -> true
+         | (`ASCII 'y', []) -> (
+             let path = compute_save_commands_path () in
+             Lwd.set UI_base.Vars.quit true;
+             UI_base.Vars.action := Some (UI_base.Edit_script path);
+             true
+           )
          | _ -> false
         );
       in
