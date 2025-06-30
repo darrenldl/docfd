@@ -1,8 +1,7 @@
 let run pool ~init_store ~path
-  : (Document_store_snapshot.t Dynarray.t * string list, string) result =
+  : (Document_store_snapshot.t Dynarray.t, string) result =
   let exception Error_with_msg of string in
   let snapshots = Dynarray.create () in
-  let comments = Dynarray.create () in
   try
     let lines =
       try
@@ -20,8 +19,7 @@ let run pool ~init_store ~path
     lines
     |> CCList.foldi (fun store i line ->
         let line_num_in_error_msg = i + 1 in
-        if String_utils.line_is_comment line then (
-          Dynarray.add_last comments line;
+        if String_utils.line_is_blank_or_comment line then (
           store
         ) else (
           match Command.of_string line with
@@ -50,6 +48,6 @@ let run pool ~init_store ~path
         )
       ) init_store
     |> ignore;
-    Ok (snapshots, Dynarray.to_list comments)
+    Ok snapshots
   with
   | Error_with_msg msg -> Error msg

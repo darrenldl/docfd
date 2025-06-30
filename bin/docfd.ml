@@ -749,8 +749,7 @@ let run
             ~path:script
         with
         | Error msg -> exit_with_error_msg msg
-        | Ok (snapshots, comments) -> (
-            UI.Vars.script_comments := comments;
+        | Ok snapshots -> (
             let final_store = Dynarray.get_last snapshots
                               |> Document_store_snapshot.store
             in
@@ -1158,10 +1157,7 @@ let run
             let selection =
               choices
               |> String_set.to_seq
-              |> Seq.map (fun s ->
-                  Option.value ~default:s
-                    (CCString.chop_prefix ~pre:(Fmt.str "%s/" dir) s)
-                )
+              |> Seq.map Filename.basename
               |> Proc_utils.pipe_to_fzf_for_selection
                 ~preview_cmd:(Fmt.str "cat %s/{}" dir)
             in
@@ -1175,9 +1171,8 @@ let run
                     ~path
                 with
                 | Error msg -> exit_with_error_msg msg
-                | Ok (snapshots, comments) -> (
+                | Ok snapshots -> (
                     UI.load_snapshots snapshots;
-                    UI.Vars.script_comments := comments;
                     loop ()
                   )
               )
