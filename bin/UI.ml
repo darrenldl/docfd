@@ -22,8 +22,6 @@ module Vars = struct
 
   let init_document_store : Document_store.t ref = ref Document_store.empty
 
-  let script_comments : string list ref = ref []
-
   let document_store_snapshots : Document_store_snapshot.t Dynarray.t =
     Dynarray.create ()
 
@@ -324,6 +322,23 @@ let compute_save_commands_path () =
     (Fmt.str "%s%s" base_name Params.docfd_script_ext)
 
 let save_commands ~path =
+  let comments =
+    try
+      if Sys.file_exists path then (
+        CCIO.with_in path (fun ic ->
+            CCIO.read_lines_seq ic
+            |> Seq.filter String_utils.line_is_comment
+            |> List.of_seq
+          )
+      ) else (
+        []
+      )
+    with
+    | Sys_error _ -> (
+        Misc_utils.exit_with_error_msg
+          (Fmt.str "failed to read script %s" path)
+      )
+  in
   let lines =
     Vars.document_store_snapshots
     |> Dynarray.to_seq
@@ -334,8 +349,15 @@ let save_commands ~path =
       )
     |> List.of_seq
   in
-  CCIO.with_out path (fun oc ->
-      CCIO.write_lines_l oc lines;
+  try
+    CCIO.with_out path (fun oc ->
+        CCIO.write_lines_l oc comments;
+        CCIO.write_lines_l oc lines;
+      )
+  with
+  | Sys_error _ -> (
+      Misc_utils.exit_with_error_msg
+        (Fmt.str "failed to write script %s" path)
     )
 
 module Top_pane = struct
