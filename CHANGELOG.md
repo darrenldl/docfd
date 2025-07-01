@@ -6,6 +6,10 @@
 
 - Added "save commands as script" and "load script" functionality to streamline reusing of commands
 
+- Improved content view pane scrolling control
+
+    - The internal counter no longer scrolls past the limit
+
 ## 12.0.0-alpha.7
 
 - Fixed interactive use of `--commands-from`
