@@ -189,6 +189,7 @@ module Content_view = struct
       else
         Some search_results.(search_result_selected)
     in
+    let$* _ = Lwd.get Vars.content_view_offset in
     let content =
       Content_and_search_result_render.content_snippet
         ~doc_hash:(Document.doc_hash document)

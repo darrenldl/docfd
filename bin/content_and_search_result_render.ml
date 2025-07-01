@@ -199,7 +199,7 @@ type render_mode = [
 
 let render_grid
     ~doc_hash
-    ~view_offset
+    ~(view_offset : int Lwd.var option)
     ~(render_mode : render_mode)
     ~width
     ?(height : int option)
@@ -277,28 +277,37 @@ let render_grid
           img_height
           (target_region_start + height)
       in
-      let view_offset =
-        if view_offset >= 0 then (
+      let view_offset_old =
+        match view_offset with
+        | None -> 0
+        | Some x -> Lwd.peek x
+      in
+      let view_offset' =
+        if view_offset_old >= 0 then (
           min
-            view_offset
+            view_offset_old
             (img_height - target_region_end_exc)
         ) else (
-          let view_offset = Int.abs view_offset in
+          let view_offset_old = Int.abs view_offset_old in
           - (min
-               view_offset
+               view_offset_old
                (target_region_start - 0))
         )
       in
+      Option.iter (fun x ->
+          if view_offset_old <> view_offset' then (
+            Lwd.set x view_offset'
+          )) view_offset;
       let target_region_start, target_region_end_exc =
-        (target_region_start + view_offset,
-         target_region_end_exc + view_offset)
+        (target_region_start + view_offset',
+         target_region_end_exc + view_offset')
       in
       I.vcrop target_region_start (img_height - target_region_end_exc) img
     )
 
 let content_snippet
     ~doc_hash
-    ~view_offset
+    ~(view_offset : int Lwd.var)
     ?(search_result : Search_result.t option)
     ~(width : int)
     ~(height : int)
@@ -308,7 +317,7 @@ let content_snippet
   let max_end_inc_global_line_num = Index.global_line_count ~doc_hash - 1 in
   assert (height > 0);
   let compute_final_line_num_range
-      ~view_offset
+      ~(view_offset : int Lwd.var)
       ~start_global_line_num
     : int * int =
     let end_inc_global_line_num =
@@ -330,18 +339,19 @@ let content_snippet
        of lines) exactly until we
        actually render the view/word grid.
     *)
-    if view_offset >= 0 then (
+    let view_offset' = Lwd.peek view_offset in
+    if view_offset' >= 0 then (
       let end_inc_global_line_num =
         min
           max_end_inc_global_line_num
-          (end_inc_global_line_num + view_offset)
+          (end_inc_global_line_num + view_offset')
       in
       (start_global_line_num, end_inc_global_line_num)
     ) else (
       let start_global_line_num =
         max
           0
-          (start_global_line_num - Int.abs view_offset)
+          (start_global_line_num - Int.abs view_offset')
       in
       (start_global_line_num, end_inc_global_line_num)
     )
@@ -361,7 +371,7 @@ let content_snippet
       in
       render_grid
         ~doc_hash
-        ~view_offset
+        ~view_offset:(Some view_offset)
         ~render_mode:`None
         ~width
         ~height
@@ -391,7 +401,7 @@ let content_snippet
       mark_search_result_in_word_grid ~doc_hash grid search_result;
       render_grid
         ~doc_hash
-        ~view_offset
+        ~view_offset:(Some view_offset)
         ~render_mode:`None
         ~width
         ~height
@@ -490,7 +500,7 @@ let search_result
   let img =
     render_grid
       ~doc_hash
-      ~view_offset:0
+      ~view_offset:None
       ~render_mode
       ~width
       ?underline

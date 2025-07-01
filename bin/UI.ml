@@ -531,10 +531,9 @@ module Top_pane = struct
       ) else (
         let$* search_result_selected = Lwd.get Vars.index_of_search_result_selected in
         let search_result_group = search_result_groups.(document_selected) in
-        let$* view_offset = Lwd.get UI_base.Vars.content_view_offset in
         UI_base.vpane ~width ~height
           (UI_base.Content_view.main
-             ~view_offset
+             ~view_offset:UI_base.Vars.content_view_offset
              ~width
              ~search_result_group
              ~search_result_selected)
