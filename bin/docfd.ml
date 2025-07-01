@@ -561,6 +561,7 @@ let run
        Params.text_editor := editor;
      )
   );
+  Lwd.unsafe_mutation_logger := (fun () -> ());
   let recognized_exts =
     compute_total_recognized_exts ~exts ~additional_exts
   in
