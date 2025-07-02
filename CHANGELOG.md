@@ -4,6 +4,8 @@
 
 - Disabled `Tab` handling in edit fields to remove friction in UX
 
+- Added nano-style autocompletion to save commands field with listing of existing scripts
+
 ## 12.0.0-alpha.8
 
 - Changed `--commands-from` to `--script`

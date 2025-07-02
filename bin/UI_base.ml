@@ -145,14 +145,21 @@ let vpane
     crop b_height y;
   ]
 
-let restricted_edit_field ~focus ~on_change ~on_submit x =
+let wrapped_edit_field ~focus ~on_change ~on_submit ~on_tab x =
   let$ field =
-    Nottui_widgets.edit_field x
+    Nottui_widgets.edit_field (Lwd.get x)
       ~focus
       ~on_change
       ~on_submit
   in
-  Nottui.Ui.keyboard_area (fun _ -> `Handled) field
+  Nottui.Ui.keyboard_area (fun key ->
+      match key with
+      | (`Tab, []) -> (
+          on_tab (Lwd.peek x);
+          `Handled
+        )
+      | _ -> `Unhandled)
+    field
 
 let mouse_handler
     ~(f : [ `Up | `Down ] -> unit)
@@ -566,7 +573,7 @@ module Filter_bar = struct
         label ~input_mode;
         status;
         Lwd.return (Nottui.Ui.atom (Notty.I.strf ": "));
-        restricted_edit_field (Lwd.get edit_field)
+        wrapped_edit_field edit_field
           ~focus:focus_handle
           ~on_change:(fun (text, x) ->
               Lwd.set edit_field (text, x);
@@ -577,7 +584,8 @@ module Filter_bar = struct
               f ();
               Nottui.Focus.release focus_handle;
               Lwd.set Vars.input_mode Navigate
-            );
+            )
+          ~on_tab:(fun (_, _) -> ());
       ]
 end
 
@@ -624,7 +632,7 @@ module Search_bar = struct
         label ~input_mode;
         status;
         Lwd.return (Nottui.Ui.atom (Notty.I.strf ": "));
-        restricted_edit_field (Lwd.get edit_field)
+        wrapped_edit_field edit_field
           ~focus:focus_handle
           ~on_change:(fun (text, x) ->
               Lwd.set edit_field (text, x);
@@ -635,7 +643,8 @@ module Search_bar = struct
               f ();
               Nottui.Focus.release focus_handle;
               Lwd.set Vars.input_mode Navigate
-            );
+            )
+          ~on_tab:(fun (_, _) -> ());
       ]
 end
 

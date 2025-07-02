@@ -36,6 +36,21 @@ module Vars = struct
         Lwd.var
     =
     Lwd.var `Mid_split
+
+  let script_files : string Dynarray.t Lwd.var = Lwd.var (Dynarray.create ())
+
+  let script_selected = Lwd.var 0
+
+  let usable_script_files : string Dynarray.t Lwd.t =
+    let$* arr = Lwd.get script_files in
+    let$ script_name_specified, _ = Lwd.get save_commands_field in
+    let acc = Dynarray.create () in
+    Dynarray.iter (fun s ->
+        if CCString.starts_with ~prefix:script_name_specified s then (
+          Dynarray.add_last acc s;
+        )
+      ) arr;
+    acc
 end
 
 let set_document_selected ~choice_count n =
@@ -544,32 +559,57 @@ module Top_pane = struct
       )
   end
 
+  let script_list
+      ~width
+      ~height
+    : Nottui.ui Lwd.t =
+    let$ scripts = Vars.usable_script_files in
+    Dynarray.to_seq scripts
+    |> Seq.map (fun s ->
+        let open Notty in
+        let attr =
+          A.(fg lightblue)
+        in
+        let img = I.strf ~attr "%s" s in
+        Nottui.Ui.atom img
+      )
+    |> List.of_seq
+    |> Nottui.Ui.vcat
+    |> Nottui.Ui.resize ~w:width ~h:height
+
   let main
       ~width
       ~height
       ~documents_marked
       ~(search_result_groups : Document_store.search_result_group array)
     : Nottui.ui Lwd.t =
-    let$* document_selected = Lwd.get Vars.index_of_document_selected in
-    let$* l_ratio = Lwd.get Vars.document_list_screen_ratio in
-    let l_ratio =
-      match l_ratio with
-      | `Hide_left -> 0.0
-      | `Left_split -> 1.0 -. 0.618
-      | `Mid_split -> 0.50
-      | `Right_split -> 0.618
-      | `Hide_right -> 1.0
-    in
-    UI_base.hpane ~l_ratio ~width ~height
-      (Document_list.main
-         ~height
-         ~documents_marked
-         ~search_result_groups
-         ~document_selected)
-      (Right_pane.main
-         ~height
-         ~search_result_groups
-         ~document_selected)
+    let$* input_mode = Lwd.get UI_base.Vars.input_mode in
+    match input_mode with
+    | Save_commands -> (
+        script_list ~width ~height
+      )
+    | _ -> (
+        let$* document_selected = Lwd.get Vars.index_of_document_selected in
+        let$* l_ratio = Lwd.get Vars.document_list_screen_ratio in
+        let l_ratio =
+          match l_ratio with
+          | `Hide_left -> 0.0
+          | `Left_split -> 1.0 -. 0.618
+          | `Mid_split -> 0.50
+          | `Right_split -> 0.618
+          | `Hide_right -> 1.0
+        in
+        UI_base.hpane ~l_ratio ~width ~height
+          (Document_list.main
+             ~height
+             ~documents_marked
+             ~search_result_groups
+             ~document_selected)
+          (Right_pane.main
+             ~height
+             ~search_result_groups
+             ~document_selected)
+      )
 end
 
 module Bottom_pane = struct
@@ -584,6 +624,7 @@ module Bottom_pane = struct
     in
     let attr = UI_base.Status_bar.attr in
     let edit_field = Vars.save_commands_field in
+    let$* usable_script_files = Vars.usable_script_files in
     match input_mode with
     | Save_commands -> (
         let$* content =
@@ -597,7 +638,7 @@ module Bottom_pane = struct
                         UI_base.Status_bar.element_spacer;
                         Notty.I.strf ~attr "Save as: [ ";
                       ]));
-              UI_base.restricted_edit_field (Lwd.get edit_field)
+              UI_base.wrapped_edit_field edit_field
                 ~focus:Vars.save_commands_field_focus_handle
                 ~on_change:(fun (text, x) ->
                     Lwd.set edit_field (text, x);
@@ -611,6 +652,12 @@ module Bottom_pane = struct
                        else
                          Save_commands_overwrite
                       );
+                  )
+                ~on_tab:(fun (_, _) ->
+                    if Dynarray.length usable_script_files = 1 then (
+                      let text = Filename.chop_extension (Dynarray.get usable_script_files 0) in
+                      Lwd.set edit_field (text, String.length text)
+                    )
                   );
               Lwd.return (Nottui.Ui.atom (Notty.I.strf ~attr " ] + %s" Params.docfd_script_ext));
             ]
@@ -1231,6 +1278,15 @@ let keyboard_handler
         )
       | (`ASCII 'S', [`Ctrl]) -> (
           UI_base.set_input_mode Save_commands;
+          File_utils.list_files_recursive_filter_by_exts
+            ~max_depth:1
+            ~report_progress:(fun () -> ())
+            ~exts:[ Params.docfd_script_ext ]
+            (Seq.return (Params.script_dir ()))
+          |> String_set.to_seq
+          |> Seq.map Filename.basename
+          |> Dynarray.of_seq
+          |> Lwd.set Vars.script_files;
           Nottui.Focus.request Vars.save_commands_field_focus_handle;
           `Handled
         )
