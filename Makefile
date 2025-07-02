@@ -58,10 +58,10 @@ tests :
 	dune build @misc-behavior-tests
 	dune build @printing-tests
 	dune build @match-type-tests
-	dune build @commands-from-tests
 	dune build @open-with-tests
 	dune build @non-interactive-mode-return-code-tests
 	dune build @search-scope-narrowing-tests
+	dune build @script-tests
 
 .PHONY: demo-vhs
 demo-vhs :
