@@ -1,5 +1,9 @@
 # Changelog
 
+## 12.0.0-alpha.9
+
+- Disabled `Tab` handling in edit fields to remove friction in UX
+
 ## 12.0.0-alpha.8
 
 - Changed `--commands-from` to `--script`
