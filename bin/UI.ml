@@ -597,7 +597,7 @@ module Bottom_pane = struct
                         UI_base.Status_bar.element_spacer;
                         Notty.I.strf ~attr "Save as: [ ";
                       ]));
-              Nottui_widgets.edit_field (Lwd.get edit_field)
+              UI_base.restricted_edit_field (Lwd.get edit_field)
                 ~focus:Vars.save_commands_field_focus_handle
                 ~on_change:(fun (text, x) ->
                     Lwd.set edit_field (text, x);

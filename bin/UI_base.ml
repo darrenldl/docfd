@@ -145,6 +145,15 @@ let vpane
     crop b_height y;
   ]
 
+let restricted_edit_field ~focus ~on_change ~on_submit x =
+  let$ field =
+    Nottui_widgets.edit_field x
+      ~focus
+      ~on_change
+      ~on_submit
+  in
+  Nottui.Ui.keyboard_area (fun _ -> `Handled) field
+
 let mouse_handler
     ~(f : [ `Up | `Down ] -> unit)
     ~x ~y
@@ -557,7 +566,7 @@ module Filter_bar = struct
         label ~input_mode;
         status;
         Lwd.return (Nottui.Ui.atom (Notty.I.strf ": "));
-        Nottui_widgets.edit_field (Lwd.get edit_field)
+        restricted_edit_field (Lwd.get edit_field)
           ~focus:focus_handle
           ~on_change:(fun (text, x) ->
               Lwd.set edit_field (text, x);
@@ -615,7 +624,7 @@ module Search_bar = struct
         label ~input_mode;
         status;
         Lwd.return (Nottui.Ui.atom (Notty.I.strf ": "));
-        Nottui_widgets.edit_field (Lwd.get edit_field)
+        restricted_edit_field (Lwd.get edit_field)
           ~focus:focus_handle
           ~on_change:(fun (text, x) ->
               Lwd.set edit_field (text, x);
