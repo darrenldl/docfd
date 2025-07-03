@@ -13,10 +13,10 @@ type input_mode =
   | Copy
   | Copy_paths
   | Reload
-  | Save_commands
-  | Save_commands_overwrite
-  | Save_commands_no_name
-  | Save_commands_edit
+  | Save_script
+  | Save_script_overwrite
+  | Save_script_no_name
+  | Save_script_edit
 
 type top_level_action =
   | Recompute_document_src
@@ -309,10 +309,10 @@ module Status_bar = struct
       ; (Copy, "COPY")
       ; (Copy_paths, "COPY-PATHS")
       ; (Reload, "RELOAD")
-      ; (Save_commands, "SAVE-COMMANDS")
-      ; (Save_commands_overwrite, "SAVE-COMMANDS")
-      ; (Save_commands_no_name, "SAVE-COMMANDS")
-      ; (Save_commands_edit, "SAVE-COMMANDS")
+      ; (Save_script, "SAVE-SCRIPT")
+      ; (Save_script_overwrite, "SAVE-SCRIPT")
+      ; (Save_script_no_name, "SAVE-SCRIPT")
+      ; (Save_script_edit, "SAVE-SCRIPT")
       ]
     in
     let max_input_mode_string_len =

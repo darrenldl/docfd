@@ -16,9 +16,9 @@ module Vars = struct
 
   let filter_field_focus_handle = Nottui.Focus.make ()
 
-  let save_commands_field = Lwd.var UI_base.empty_text_field
+  let save_script_field = Lwd.var UI_base.empty_text_field
 
-  let save_commands_field_focus_handle = Nottui.Focus.make ()
+  let save_script_field_focus_handle = Nottui.Focus.make ()
 
   let init_document_store : Document_store.t ref = ref Document_store.empty
 
@@ -43,7 +43,7 @@ module Vars = struct
 
   let usable_script_files : string Dynarray.t Lwd.t =
     let$* arr = Lwd.get script_files in
-    let$ script_name_specified, _ = Lwd.get save_commands_field in
+    let$ script_name_specified, _ = Lwd.get save_script_field in
     let acc = Dynarray.create () in
     Dynarray.iter (fun s ->
         if CCString.starts_with ~prefix:script_name_specified s then (
@@ -328,15 +328,15 @@ let update_search () =
   let s = fst @@ Lwd.peek Vars.search_field in
   Document_store_manager.submit_search_req s
 
-let compute_save_commands_path () =
-  let base_name, _ = Lwd.peek Vars.save_commands_field in
+let compute_save_script_path () =
+  let base_name, _ = Lwd.peek Vars.save_script_field in
   let dir = Params.script_dir () in
   File_utils.mkdir_recursive dir;
   Filename.concat
     dir
     (Fmt.str "%s%s" base_name Params.docfd_script_ext)
 
-let save_commands ~path =
+let save_script ~path =
   let comments =
     try
       if Sys.file_exists path then (
@@ -585,7 +585,7 @@ module Top_pane = struct
     : Nottui.ui Lwd.t =
     let$* input_mode = Lwd.get UI_base.Vars.input_mode in
     match input_mode with
-    | Save_commands -> (
+    | Save_script -> (
         script_list ~width ~height
       )
     | _ -> (
@@ -623,10 +623,10 @@ module Bottom_pane = struct
       List.assoc input_mode UI_base.Status_bar.input_mode_images
     in
     let attr = UI_base.Status_bar.attr in
-    let edit_field = Vars.save_commands_field in
+    let edit_field = Vars.save_script_field in
     let$* usable_script_files = Vars.usable_script_files in
     match input_mode with
-    | Save_commands -> (
+    | Save_script -> (
         let$* content =
           Nottui_widgets.hbox
             [
@@ -639,18 +639,18 @@ module Bottom_pane = struct
                         Notty.I.strf ~attr "Save as: [ ";
                       ]));
               UI_base.wrapped_edit_field edit_field
-                ~focus:Vars.save_commands_field_focus_handle
+                ~focus:Vars.save_script_field_focus_handle
                 ~on_change:(fun (text, x) ->
                     Lwd.set edit_field (text, x);
                   )
                 ~on_submit:(fun (text, x) ->
                     Lwd.set edit_field (text, x);
-                    Nottui.Focus.release Vars.save_commands_field_focus_handle;
+                    Nottui.Focus.release Vars.save_script_field_focus_handle;
                     Lwd.set UI_base.Vars.input_mode
                       (if String.length text = 0 then
-                         Save_commands_no_name
+                         Save_script_no_name
                        else
-                         Save_commands_overwrite
+                         Save_script_overwrite
                       );
                   )
                 ~on_tab:(fun (_, _) ->
@@ -665,8 +665,8 @@ module Bottom_pane = struct
         let$ bar = UI_base.Status_bar.background_bar in
         Nottui.Ui.join_z bar content
       )
-    | Save_commands_overwrite -> (
-        let path = compute_save_commands_path () in
+    | Save_script_overwrite -> (
+        let path = compute_save_script_path () in
         if Sys.file_exists path then (
           let$* content =
             Lwd.return
@@ -682,12 +682,12 @@ module Bottom_pane = struct
           let$ bar = UI_base.Status_bar.background_bar in
           Nottui.Ui.join_z bar content
         ) else (
-          save_commands ~path;
-          Lwd.set UI_base.Vars.input_mode Save_commands_edit;
+          save_script ~path;
+          Lwd.set UI_base.Vars.input_mode Save_script_edit;
           UI_base.Status_bar.background_bar
         )
       )
-    | Save_commands_no_name -> (
+    | Save_script_no_name -> (
         let$* content =
           Lwd.return
             (Nottui.Ui.atom
@@ -701,8 +701,8 @@ module Bottom_pane = struct
         let$ bar = UI_base.Status_bar.background_bar in
         Nottui.Ui.join_z bar content
       )
-    | Save_commands_edit -> (
-        let path = compute_save_commands_path () in
+    | Save_script_edit -> (
+        let path = compute_save_script_path () in
         let$* content =
           Lwd.return
             (Nottui.Ui.atom
@@ -847,7 +847,7 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
-      let save_commands_grid =
+      let save_script_grid =
         [
           [
             { label = "Enter"; msg = "confirm answer" };
@@ -856,7 +856,7 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
-      let save_commands_confirm_grid =
+      let save_script_confirm_grid =
         [
           [
             { label = "y"; msg = "confirm overwrite" };
@@ -866,7 +866,7 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
-      let save_commands_cancel_grid =
+      let save_script_cancel_grid =
         [
           [
             { label = "Enter"; msg = "confirm" };
@@ -875,7 +875,7 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
-      let save_commands_edit_grid =
+      let save_script_edit_grid =
         [
           [
             { label = "y"; msg = "open script in editor" };
@@ -1026,17 +1026,17 @@ module Bottom_pane = struct
         ({ input_mode = Reload },
          reload_grid
         );
-        ({ input_mode = Save_commands },
-         save_commands_grid
+        ({ input_mode = Save_script },
+         save_script_grid
         );
-        ({ input_mode = Save_commands_overwrite },
-         save_commands_confirm_grid
+        ({ input_mode = Save_script_overwrite },
+         save_script_confirm_grid
         );
-        ({ input_mode = Save_commands_no_name },
-         save_commands_cancel_grid
+        ({ input_mode = Save_script_no_name },
+         save_script_cancel_grid
         );
-        ({ input_mode = Save_commands_edit },
-         save_commands_edit_grid
+        ({ input_mode = Save_script_edit },
+         save_script_edit_grid
         );
       ]
 
@@ -1277,7 +1277,7 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'S', [`Ctrl]) -> (
-          UI_base.set_input_mode Save_commands;
+          UI_base.set_input_mode Save_script;
           File_utils.list_files_recursive_filter_by_exts
             ~max_depth:1
             ~report_progress:(fun () -> ())
@@ -1287,7 +1287,7 @@ let keyboard_handler
           |> Seq.map Filename.basename
           |> Dynarray.of_seq
           |> Lwd.set Vars.script_files;
-          Nottui.Focus.request Vars.save_commands_field_focus_handle;
+          Nottui.Focus.request Vars.save_script_field_focus_handle;
           `Handled
         )
       | (`ASCII 'O', [`Ctrl]) -> (
@@ -1594,22 +1594,22 @@ let keyboard_handler
       );
       `Handled
     )
-  | Save_commands_overwrite -> (
+  | Save_script_overwrite -> (
       (match key with
        | (`Escape, [])
        | (`ASCII 'n', []) -> (
            UI_base.set_input_mode Navigate;
          )
        | (`ASCII 'y', []) -> (
-           let path = compute_save_commands_path () in
-           save_commands ~path;
-           UI_base.set_input_mode Save_commands_edit;
+           let path = compute_save_script_path () in
+           save_script ~path;
+           UI_base.set_input_mode Save_script_edit;
          )
        | _ -> ()
       );
       `Handled
     )
-  | Save_commands_no_name -> (
+  | Save_script_no_name -> (
       let exit =
         (match key with
          | (`Enter, []) -> true
@@ -1621,13 +1621,13 @@ let keyboard_handler
       );
       `Handled
     )
-  | Save_commands_edit -> (
+  | Save_script_edit -> (
       let exit =
         (match key with
          | (`Escape, [])
          | (`ASCII 'n', []) -> true
          | (`ASCII 'y', []) -> (
-             let path = compute_save_commands_path () in
+             let path = compute_save_script_path () in
              Lwd.set UI_base.Vars.quit true;
              UI_base.Vars.action := Some (UI_base.Edit_script path);
              true
