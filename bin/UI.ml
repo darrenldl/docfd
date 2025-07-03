@@ -807,7 +807,7 @@ module Bottom_pane = struct
             { label = "y"; msg = "copy/yank mode" };
             { label = "n"; msg = "narrow mode" };
             { label = "Space"; msg = "toggle mark" };
-            { label = "h"; msg = "view/edit command history" };
+            { label = "h"; msg = "command history" };
           ];
           [
             { label = "?"; msg = "rotate key binding info" };
@@ -816,7 +816,7 @@ module Bottom_pane = struct
             { label = "Shift+Y"; msg = "copy/yank paths mode" };
             { label = "d"; msg = "drop mode" };
             { label = "m"; msg = "mark mode" };
-            { label = "Ctrl+S"; msg = "save commands as script" };
+            { label = "Ctrl+S"; msg = "save script" };
           ];
           [
             { label = "Ctrl+C"; msg = "exit" };
@@ -878,7 +878,7 @@ module Bottom_pane = struct
       let save_script_edit_grid =
         [
           [
-            { label = "y"; msg = "open script in editor" };
+            { label = "y"; msg = "open in editor" };
             { label = "Esc/n"; msg = "skip" };
           ];
           empty_row;
