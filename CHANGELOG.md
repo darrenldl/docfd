@@ -2,9 +2,9 @@
 
 ## 12.0.0-alpha.9
 
-- Disabled `Tab` handling in edit fields to remove friction in UX
+- Disabled `Tab` handling in edit fields to reduce friction in UX
 
-- Added nano-style autocompletion to save commands field with listing of existing scripts
+- Added `nano`-style autocomplete to save commands field with listing of existing scripts
 
 ## 12.0.0-alpha.8
 
