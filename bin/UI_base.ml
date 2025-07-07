@@ -55,7 +55,7 @@ module Vars = struct
 
   let content_view_offset = Lwd.var 0
 
-  let autocomplete_list = Lwd.var []
+  let autocomplete_choices = Lwd.var []
 end
 
 let task_pool () =
@@ -532,6 +532,44 @@ let max_label_length =
 let pad_label_string s =
   CCString.pad ~side:`Right ~c:' ' max_label_length s
 
+let autocomplete ~choices (text, pos) : string * int =
+  let left = String.sub text 0 pos in
+  let right = String.sub text pos (String.length text - pos) in
+  let grab_input_word (s : string) =
+    let rec aux acc i s =
+      if i < 0 then (
+        CCString.of_list acc
+      ) else (
+        let c = s.[i] in
+        if Parser_components.is_alphanum c
+        || c = '-'
+        || c = ':'
+        then (
+          aux (c :: acc) (i - 1) s
+        ) else (
+          aux acc (-1) s
+        )
+      )
+    in
+    aux [] (String.length s - 1) s
+  in
+  let current_input_word = grab_input_word left in
+  let usable_choices =
+    List.filter
+      (CCString.prefix ~pre:current_input_word)
+      choices
+  in
+  let best_fit = String_utils.longest_common_prefix usable_choices in
+  Lwd.set
+    Vars.autocomplete_choices usable_choices;
+  let left =
+    String.sub
+      left
+      0
+      (String.length left - String.length current_input_word)
+  in
+  (String.concat "" [ left; best_fit; right ], pos + (String.length best_fit - String.length current_input_word))
+
 module Filter_bar = struct
   let label_string = pad_label_string filter_bar_label_string
 
@@ -564,7 +602,7 @@ module Filter_bar = struct
     |> Nottui.Ui.atom
     |> Lwd.return
 
-  let autocomplete_list =
+  let autocomplete_choices =
     [ "path-date:"
     ; "path-fuzzy:"
     ; "path-glob:"
@@ -596,42 +634,10 @@ module Filter_bar = struct
               Lwd.set Vars.input_mode Navigate
             )
           ~on_tab:(fun (text, pos) ->
-              let left = String.sub text 0 pos in
-              let right = String.sub text pos (String.length text - pos) in
-              let grab_input_word (s : string) =
-                let rec aux acc i s =
-                  if i < 0 then (
-                    CCString.of_list acc
-                  ) else (
-                    let c = s.[i] in
-                    if Parser_components.is_alphanum c
-                    || c = '-'
-                    || c = ':'
-                    then (
-                      aux (c :: acc) (i - 1) s
-                    ) else (
-                      aux acc (-1) s
-                    )
-                  )
-                in
-                aux [] (String.length s - 1) s
+              let (text, pos) =
+                autocomplete ~choices:autocomplete_choices (text, pos)
               in
-              let current_input_word = grab_input_word left in
-              let usable_autocomplete_list =
-                List.filter (CCString.prefix ~pre:current_input_word) autocomplete_list
-              in
-              let best_fit = String_utils.longest_common_prefix usable_autocomplete_list in
-              Lwd.set
-                Vars.autocomplete_list usable_autocomplete_list;
-              let left =
-                String.sub
-                  left
-                  0
-                  (String.length left - String.length current_input_word)
-              in
-              Lwd.set
-                edit_field
-                (String.concat "" [ left; best_fit; right ], pos + (String.length best_fit - String.length current_input_word))
+              Lwd.set edit_field (text, pos)
             );
       ]
 end

@@ -1045,7 +1045,7 @@ module Bottom_pane = struct
   let autocomplete_grid ~input_mode ~width =
     match input_mode with
     | UI_base.Filter | Search -> (
-        let$* l = Lwd.get UI_base.Vars.autocomplete_list in
+        let$* l = Lwd.get UI_base.Vars.autocomplete_choices in
         let max_len =
           List.fold_left (fun n x ->
               max n (String.length x)
