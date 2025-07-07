@@ -25,9 +25,9 @@ let line_is_blank_or_comment line =
   ||
   String.length (String.trim line) = 0
 
-let longest_common_prefix (l : string list) : string =
+let longest_common_prefix (seq : string Seq.t) : string =
   let prefix = ref "" in
-  List.iteri (fun i s ->
+  Seq.iteri (fun i s ->
       if i = 0 then (
         prefix := s
       ) else (
@@ -43,5 +43,5 @@ let longest_common_prefix (l : string list) : string =
         prefix :=
           String.sub !prefix 0 (min !match_len prefix_len)
       )
-    ) l;
+    ) seq;
   !prefix
