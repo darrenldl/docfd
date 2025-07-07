@@ -634,6 +634,7 @@ module Filter_bar = struct
           ~on_submit:(fun (text, x) ->
               Lwd.set edit_field (text, x);
               f ();
+              Lwd.set Vars.autocomplete_choices [];
               Nottui.Focus.release focus_handle;
               Lwd.set Vars.input_mode Navigate
             )
@@ -698,6 +699,7 @@ module Search_bar = struct
           ~on_submit:(fun (text, x) ->
               Lwd.set edit_field (text, x);
               f ();
+              Lwd.set Vars.autocomplete_choices [];
               Nottui.Focus.release focus_handle;
               Lwd.set Vars.input_mode Navigate
             )
