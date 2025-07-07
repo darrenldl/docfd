@@ -654,10 +654,16 @@ module Bottom_pane = struct
                       );
                   )
                 ~on_tab:(fun (_, _) ->
-                    if Dynarray.length usable_script_files = 1 then (
-                      let text = Filename.chop_extension (Dynarray.get usable_script_files 0) in
-                      Lwd.set edit_field (text, String.length text)
-                    )
+                    let best_fit =
+                      if Dynarray.length usable_script_files = 1 then (
+                        Filename.chop_extension (Dynarray.get usable_script_files 0)
+                      ) else (
+                        usable_script_files
+                        |> Dynarray.to_seq
+                        |> String_utils.longest_common_prefix
+                      )
+                    in
+                    Lwd.set edit_field (best_fit, String.length best_fit)
                   );
               Lwd.return (Nottui.Ui.atom (Notty.I.strf ~attr " ] + %s" Params.docfd_script_ext));
             ]
