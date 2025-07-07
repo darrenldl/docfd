@@ -24,3 +24,24 @@ let line_is_blank_or_comment line =
   line_is_comment line
   ||
   String.length (String.trim line) = 0
+
+let longest_common_prefix (l : string list) : string =
+  let prefix = ref "" in
+  List.iteri (fun i s ->
+      if i = 0 then (
+        prefix := s
+      ) else (
+        let match_len = ref 0 in
+        let prefix_len = String.length !prefix in
+        String.iteri (fun i c ->
+            if !match_len = i
+            && i < prefix_len
+            && !prefix.[i] = c then (
+              incr match_len
+            )
+          ) s;
+        prefix :=
+          String.sub !prefix 0 (min !match_len prefix_len)
+      )
+    ) l;
+  !prefix

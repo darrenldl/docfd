@@ -834,8 +834,6 @@ module Bottom_pane = struct
           [
             { label = "Enter"; msg = "exit search mode" };
           ];
-          empty_row;
-          empty_row;
         ]
       in
       let filter_grid =
@@ -843,8 +841,6 @@ module Bottom_pane = struct
           [
             { label = "Enter"; msg = "exit filter mode" };
           ];
-          empty_row;
-          empty_row;
         ]
       in
       let save_script_grid =
@@ -1046,6 +1042,44 @@ module Bottom_pane = struct
       UI_base.Key_binding_info.main ~grid_lookup ~input_mode
   end
 
+  let autocomplete_grid ~input_mode ~width =
+    match input_mode with
+    | UI_base.Filter | Search -> (
+        let$* l = Lwd.get UI_base.Vars.autocomplete_list in
+        let max_len =
+          List.fold_left (fun n x ->
+              max n (String.length x)
+            ) 0 l
+        in
+        let cell_len = max_len + 4 in
+        let cells_per_row = width / cell_len in
+        l
+        |> CCList.chunks cells_per_row
+        |> (fun rows ->
+            let row_count = List.length rows in
+            let padding =
+              if row_count < 2 then (
+                CCList.(0 --^ (2 - row_count))
+                |> List.map (fun _ -> [ "" ])
+              ) else (
+                []
+              )
+            in
+            rows @ padding
+          )
+        |> List.map (fun row ->
+            List.map (fun s ->
+                let full_background = Notty.I.void cell_len 1 in
+                Notty.I.(strf "%s" s </> full_background)
+                |> Nottui.Ui.atom
+                |> Lwd.return
+              ) row
+          )
+        |> Nottui_widgets.grid
+          ~pad:(Nottui.Gravity.make ~h:`Negative ~v:`Negative)
+      )
+    | _ -> Lwd.return (Nottui.Ui.atom (Notty.I.void 0 0))
+
   let filter_bar =
     UI_base.Filter_bar.main
       ~edit_field:Vars.filter_field
@@ -1064,6 +1098,7 @@ module Bottom_pane = struct
       [
         status_bar ~width ~search_result_groups ~input_mode;
         Key_binding_info.main ~input_mode;
+        autocomplete_grid ~input_mode ~width;
         filter_bar ~input_mode;
         search_bar ~input_mode;
       ]

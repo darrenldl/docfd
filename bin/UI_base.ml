@@ -54,6 +54,8 @@ module Vars = struct
   let term_width_height : (int * int) Lwd.var = Lwd.var (0, 0)
 
   let content_view_offset = Lwd.var 0
+
+  let autocomplete_list = Lwd.var []
 end
 
 let task_pool () =
@@ -562,6 +564,14 @@ module Filter_bar = struct
     |> Nottui.Ui.atom
     |> Lwd.return
 
+  let autocomplete_list =
+    [ "path-date:"
+    ; "path-fuzzy:"
+    ; "path-glob:"
+    ; "ext:"
+    ; "content:"
+    ]
+
   let main
       ~input_mode
       ~(edit_field : (string * int) Lwd.var)
@@ -585,7 +595,44 @@ module Filter_bar = struct
               Nottui.Focus.release focus_handle;
               Lwd.set Vars.input_mode Navigate
             )
-          ~on_tab:(fun (_, _) -> ());
+          ~on_tab:(fun (text, pos) ->
+              let left = String.sub text 0 pos in
+              let right = String.sub text pos (String.length text - pos) in
+              let grab_input_word (s : string) =
+                let rec aux acc i s =
+                  if i < 0 then (
+                    CCString.of_list acc
+                  ) else (
+                    let c = s.[i] in
+                    if Parser_components.is_alphanum c
+                    || c = '-'
+                    || c = ':'
+                    then (
+                      aux (c :: acc) (i - 1) s
+                    ) else (
+                      aux acc (-1) s
+                    )
+                  )
+                in
+                aux [] (String.length s - 1) s
+              in
+              let current_input_word = grab_input_word left in
+              let usable_autocomplete_list =
+                List.filter (CCString.prefix ~pre:current_input_word) autocomplete_list
+              in
+              let best_fit = String_utils.longest_common_prefix usable_autocomplete_list in
+              Lwd.set
+                Vars.autocomplete_list usable_autocomplete_list;
+              let left =
+                String.sub
+                  left
+                  0
+                  (String.length left - String.length current_input_word)
+              in
+              Lwd.set
+                edit_field
+                (String.concat "" [ left; best_fit; right ], pos + (String.length best_fit - String.length current_input_word))
+            );
       ]
 end
 
