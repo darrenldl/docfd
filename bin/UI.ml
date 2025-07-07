@@ -665,7 +665,7 @@ module Bottom_pane = struct
                     in
                     Lwd.set edit_field (best_fit, String.length best_fit)
                   );
-              Lwd.return (Nottui.Ui.atom (Notty.I.strf ~attr " ] + %s" Params.docfd_script_ext));
+              Lwd.return (Nottui.Ui.atom (Notty.I.strf ~attr " ] + %s. Clear field to cancel saving." Params.docfd_script_ext));
             ]
         in
         let$ bar = UI_base.Status_bar.background_bar in
@@ -846,6 +846,7 @@ module Bottom_pane = struct
         [
           [
             { label = "Enter"; msg = "exit filter mode" };
+            { label = "Tab"; msg = "autocomplete" };
           ];
         ]
       in
@@ -853,6 +854,7 @@ module Bottom_pane = struct
         [
           [
             { label = "Enter"; msg = "confirm answer" };
+            { label = "Tab"; msg = "autocomplete" };
           ];
           empty_row;
           empty_row;
