@@ -568,7 +568,8 @@ let autocomplete ~choices (text, pos) : string * int =
       0
       (String.length left - String.length current_input_word)
   in
-  (String.concat "" [ left; best_fit; right ], pos + (String.length best_fit - String.length current_input_word))
+  (String.concat "" [ left; best_fit; right ],
+  pos + (String.length best_fit - String.length current_input_word))
 
 module Filter_bar = struct
   let label_string = pad_label_string filter_bar_label_string
