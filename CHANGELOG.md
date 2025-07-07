@@ -1,5 +1,11 @@
 # Changelog
 
+## 12.0.0-alpha.10
+
+- Added basic autocomplete to filter field
+
+- Improved script save autocomplete to insert longest common prefix
+
 ## 12.0.0-alpha.9
 
 - Disabled `Tab` handling in edit fields to reduce friction in UX
