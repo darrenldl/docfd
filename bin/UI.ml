@@ -665,7 +665,7 @@ module Bottom_pane = struct
                     in
                     Lwd.set edit_field (best_fit, String.length best_fit)
                   );
-              Lwd.return (Nottui.Ui.atom (Notty.I.strf ~attr " ] + %s. Clear field to cancel saving." Params.docfd_script_ext));
+              Lwd.return (Nottui.Ui.atom (Notty.I.strf ~attr " ] + %s. Confirm with empty field to cancel saving." Params.docfd_script_ext));
             ]
         in
         let$ bar = UI_base.Status_bar.background_bar in
