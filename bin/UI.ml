@@ -653,9 +653,12 @@ module Bottom_pane = struct
                          Save_script_overwrite
                       );
                   )
-                ~on_tab:(fun (_, _) ->
+                ~on_tab:(fun (text, _) ->
                     let best_fit =
-                      if Dynarray.length usable_script_files = 1 then (
+                      let usable_script_count = Dynarray.length usable_script_files in
+                      if usable_script_count = 0 then (
+                        text
+                      ) else if usable_script_count = 1 then (
                         Filename.chop_extension (Dynarray.get usable_script_files 0)
                       ) else (
                         usable_script_files

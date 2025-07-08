@@ -559,20 +559,24 @@ let autocomplete ~choices (text, pos) : string * int =
       (CCString.prefix ~pre:current_input_word)
       choices
   in
-  let best_fit = usable_choices
-                 |> List.to_seq
-                 |> String_utils.longest_common_prefix
-  in
   Lwd.set
     Vars.autocomplete_choices usable_choices;
-  let left =
-    String.sub
-      left
-      0
-      (String.length left - String.length current_input_word)
-  in
-  (String.concat "" [ left; best_fit; right ],
-   pos + (String.length best_fit - String.length current_input_word))
+  match usable_choices with
+  | [] -> (text, pos)
+  | _ -> (
+      let best_fit = usable_choices
+                     |> List.to_seq
+                     |> String_utils.longest_common_prefix
+      in
+      let left =
+        String.sub
+          left
+          0
+          (String.length left - String.length current_input_word)
+      in
+      (String.concat "" [ left; best_fit; right ],
+       pos + (String.length best_fit - String.length current_input_word))
+    )
 
 module Filter_bar = struct
   let label_string = pad_label_string filter_bar_label_string

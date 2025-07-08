@@ -6,6 +6,8 @@
 
 - Improved script save autocomplete to insert longest common prefix
 
+- Fixed script save autocomplete so it no longer erases original text when no recommendations are available
+
 ## 12.0.0-alpha.9
 
 - Disabled `Tab` handling in edit fields to reduce friction in UX
