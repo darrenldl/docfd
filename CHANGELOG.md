@@ -1,5 +1,9 @@
 # Changelog
 
+## 12.0.0
+
+- Removed disabling of drop mode key binding `d` when searching or filtering is ongoing
+
 ## 12.0.0-alpha.10
 
 - Added basic autocomplete to filter field
