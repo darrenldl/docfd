@@ -16,11 +16,6 @@ let search_ui_status : search_status Lwd.var = Lwd.var `Idle
 
 let filter_ui_status : filter_status Lwd.var = Lwd.var `Idle
 
-let is_idle () =
-  match Lwd.peek filter_ui_status, Lwd.peek search_ui_status with
-  | `Idle, `Idle -> true
-  | _, _ -> false
-
 let single_file_view_search_request : string Lock_protected_cell.t =
   Lock_protected_cell.make ()
 

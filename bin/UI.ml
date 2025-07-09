@@ -1170,11 +1170,7 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'd', []) -> (
-          if Document_store_manager.is_idle () then (
-            UI_base.set_input_mode Drop;
-          ) else (
-            UI_base.Key_binding_info.blink "d";
-          );
+          UI_base.set_input_mode Drop;
           `Handled
         )
       | (`ASCII 'n', []) -> (
