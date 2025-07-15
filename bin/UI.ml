@@ -530,6 +530,57 @@ module Top_pane = struct
   end
 
   module Right_pane = struct
+    module Search_result_list = struct
+      let main
+          ~height
+          ~width
+          ~(search_result_group : Document_store.search_result_group)
+          ~(index_of_search_result_selected : int Lwd.var)
+        : Nottui.ui Lwd.t =
+        let (document, search_results) = search_result_group in
+        let search_result_selected = Lwd.peek index_of_search_result_selected in
+        let result_count = Array.length search_results in
+        if result_count = 0 then (
+          Lwd.return Nottui.Ui.empty
+        ) else (
+          let images =
+            Misc_utils.array_sub_seq
+              ~start:search_result_selected
+              ~end_exc:(min result_count (search_result_selected + height))
+              search_results
+            |> Seq.map (Content_and_search_result_render.search_result
+                          ~doc_hash:(Document.doc_hash document)
+                          ~render_mode:(UI_base.render_mode_of_document document)
+                          ~width
+                       )
+            |> List.of_seq
+          in
+          let pane =
+            images
+            |> List.map (fun img ->
+                Nottui.Ui.atom Notty.I.(img <-> strf "")
+              )
+            |> Nottui.Ui.vcat
+          in
+          let$ background = UI_base.full_term_sized_background in
+          Nottui.Ui.join_z background pane
+          |> Nottui.Ui.mouse_area
+            (UI_base.mouse_handler
+               ~f:(fun direction ->
+                   let n = Lwd.peek index_of_search_result_selected in
+                   let offset =
+                     match direction with
+                     | `Up -> -1
+                     | `Down -> 1
+                   in
+                   set_search_result_selected
+                     ~choice_count:result_count
+                     (n + offset)
+                 )
+            )
+        )
+    end
+
     let main
         ~width
         ~height
@@ -552,7 +603,7 @@ module Top_pane = struct
              ~width
              ~search_result_group
              ~search_result_selected)
-          (UI_base.Search_result_list.main
+          (Search_result_list.main
              ~width
              ~search_result_group
              ~index_of_search_result_selected:Vars.index_of_search_result_selected)
