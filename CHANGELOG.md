@@ -4,6 +4,8 @@
 
 - Removed disabling of drop mode key binding `d` when searching or filtering is ongoing
 
+- Fixed content view pane offset not resetting when mouse is used to scroll search result list
+
 ## 12.0.0-alpha.10
 
 - Added basic autocomplete to filter field
