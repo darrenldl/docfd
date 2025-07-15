@@ -217,7 +217,8 @@ module Content_view = struct
         ~width
         ()
     in
-    Nottui.Ui.atom content
+    let$* background = full_term_sized_background in
+    Nottui.Ui.join_z background (Nottui.Ui.atom content)
     |> Nottui.Ui.mouse_area
       (mouse_handler
          ~f:(fun direction ->
