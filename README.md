@@ -35,7 +35,7 @@ Non-interactive use
 
 - Clipboard integration
 
-## Why Docfd?
+## Why Docfd might be for you
 
 - You are interested in ad hoc searches and just want to run a command to get going
 
@@ -45,11 +45,13 @@ Non-interactive use
 
 - You want to script your search
 
-## Why not Docfd?
+## Deciding if Docfd is really for you
 
-- You don't want indexing
+Of course, nothing beats actually using the tool yourself,
+but it could be nice to see a summary of Docfd's design choices
+so you can tell if Docfd is really not for you before even downloading.
 
-- You only care about simple searches, and grep and similar tools already suffice for you
+See [here](https://github.com/darrenldl/docfd/wiki/Deciding-if-Docfd-is-for-you) for said info.
 
 ## Installation
 
