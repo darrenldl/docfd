@@ -2,6 +2,8 @@
 
 ## 12.0.0
 
+#### Changes since 12.0.0-alpha.10
+
 - Removed disabling of drop mode key binding `d` when searching or filtering is ongoing
 
 - Fixed content view pane offset not resetting when mouse is used to scroll search result list
@@ -12,6 +14,37 @@
 
     - They feel like deadlocks due to mixing Eio mutexes
       (which block fiber) and stdlib mutexes (which block an entire domain)
+
+#### Highlights of changes since 11.0.1
+
+- Replaced filter glob with a more powerful filter language, with autocomplete in filter field (12.0.0-alpha.1, 12.0.0-alpha.2)
+
+- `--open-with` placeholder handling fixes
+
+    - Using `{page_num}` and `{line_num}` crashes in 11.0.1
+      when there are no search results
+
+- Added `--paths-from -` to accept list of paths from stdin (12.0.0-alpha.3)
+
+- SQL query optimizations for prefix and exact search terms (12.0.0-alpha.3)
+
+- Key binding info grid improvements (12.0.0-alpha.4)
+
+    - Added more key bindings
+
+    - Packed columns more tightly
+
+- Added WSL clipboard integration (12.0.0-alpha.4)
+
+- Added more marking key bindings (12.0.0-alpha.4)
+
+    - `mark listed` (`ml`) marks all currently listed documents
+    - `unmark listed` (`Ml`) unmarks all currently listed documents
+
+- Added content view pane scrolling (12.0.0-alpha.5)
+
+- Added "save script" and "load script" functionality to make
+  it actually viable to reuse Docfd commands
 
 ## 12.0.0-alpha.10
 
