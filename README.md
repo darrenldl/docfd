@@ -48,7 +48,7 @@ Non-interactive use
 ## Deciding if Docfd is really for you
 
 Of course, nothing beats actually using the tool yourself,
-but it could be nice to see a summary of Docfd's design choices
+but it would be handy to have a summary of Docfd's design choices
 so you can tell if Docfd is really not for you before even downloading.
 
 See [here](https://github.com/darrenldl/docfd/wiki/Deciding-if-Docfd-is-for-you) for said info.
