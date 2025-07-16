@@ -120,12 +120,12 @@ let pp fmt (t : t) =
     t.enriched_tokens
 
 type cache = {
-  mutex : Mutex.t;
+  mutex : Eio.Mutex.t;
   cache : (string, Spelll.automaton) CCCache.t;
 }
 
 let cache = {
-  mutex = Mutex.create ();
+  mutex = Eio.Mutex.create ();
   cache = CCCache.lru ~eq:String.equal Params.search_word_automaton_cache_size;
 }
 
@@ -331,14 +331,14 @@ let enriched_tokens_of_ir0 (ir0_s : ir0 list) : Enriched_token.t list =
       let automaton =
         match data with
         | `String string -> (
-            Mutex.lock cache.mutex;
-            let automaton =
-              CCCache.with_cache cache.cache
-                (Spelll.of_string ~limit:!Params.max_fuzzy_edit_dist)
-                string
-            in
-            Mutex.unlock cache.mutex;
-            automaton
+            Eio.Mutex.use_rw cache.mutex ~protect:false (fun () ->
+                let automaton =
+                  CCCache.with_cache cache.cache
+                    (Spelll.of_string ~limit:!Params.max_fuzzy_edit_dist)
+                    string
+                in
+                automaton
+              )
           )
         | `Explicit_spaces ->
           Spelll.of_string ~limit:0 ""

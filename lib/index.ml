@@ -119,7 +119,7 @@ module Raw = struct
         { pos; loc; word })
 
   type shared_word_db = {
-    lock : Mutex.t;
+    lock : Eio.Mutex.t;
     word_db : Word_db.t;
   }
 
@@ -139,11 +139,11 @@ module Raw = struct
         }
         { pos; loc; word } ->
 
-        Mutex.lock shared_word_db.lock;
         let index_of_word =
-          Word_db.add shared_word_db.word_db word
+          Eio.Mutex.use_rw shared_word_db.lock ~protect:false (fun () ->
+              Word_db.add shared_word_db.word_db word
+            )
         in
-        Mutex.unlock shared_word_db.lock;
 
         let line_loc = loc.Loc.line_loc in
         let global_line_num = line_loc.global_line_num in
@@ -203,7 +203,7 @@ module Raw = struct
 
   let of_seq pool (s : (Line_loc.t * string) Seq.t) : t =
     let shared_word_db : shared_word_db =
-      { lock = Mutex.create ();
+      { lock = Eio.Mutex.create ();
         word_db = Word_db.make ();
       }
     in
