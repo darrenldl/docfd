@@ -299,8 +299,32 @@ let render_grid
             Lwd.set x view_offset'
           )) view_offset;
       let target_region_start, target_region_end_exc =
-        (target_region_start + view_offset',
-         target_region_end_exc + view_offset')
+        if view_offset' >= 0 then (
+          (target_region_start + view_offset',
+           target_region_end_exc + view_offset')
+        ) else (
+          (* If the offset is negative (shifting view upwards),
+             then make the bottom border "sticky".
+
+             In other words, if the height of view window
+             is smaller than the height of pane,
+             and the view is shifting upwards, don't bother
+             moving the bottom border.
+
+             This prevents the rendered content snippet view staying
+             small and cropping the bottom text when scrolling up
+             if the view started out being small (due to the search
+             result being close to the bottom of the file).
+          *)
+          let view_window_height = target_region_end_exc - target_region_start in
+          (target_region_start + view_offset',
+           if view_window_height < height then (
+             target_region_end_exc
+           ) else (
+             target_region_end_exc + view_offset'
+           )
+          )
+        )
       in
       I.vcrop target_region_start (img_height - target_region_end_exc) img
     )

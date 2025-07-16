@@ -6,6 +6,8 @@
 
 - Fixed content view pane offset not resetting when mouse is used to scroll search result list
 
+- Fixed content view pane staying small while scrolling up when the search result is close to the bottom of the file
+
 ## 12.0.0-alpha.10
 
 - Added basic autocomplete to filter field
