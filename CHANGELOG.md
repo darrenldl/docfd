@@ -8,6 +8,11 @@
 
 - Fixed content view pane staying small while scrolling up when the search result is close to the bottom of the file
 
+- Swapped all mutexes to Eio mutexes to hopefully remove the very random freezes that occur quite rarely
+
+    - They feel like deadlocks due to mixing Eio mutexes
+      (which block fiber) and stdlib mutexes (which block an entire domain)
+
 ## 12.0.0-alpha.10
 
 - Added basic autocomplete to filter field
