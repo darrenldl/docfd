@@ -324,7 +324,7 @@ let text_config_and_cmd ~doc_hash ~path ~search_result : Config.t * string =
     ?line_num
     ()
 
-let main ~close_term ~doc_hash ~stdin_is_occupied ~path ~search_result =
+let main ~close_term ~doc_hash ~path ~search_result =
   let ext = File_utils.extension_of_file path in
   let config, cmd =
     (match File_utils.format_of_file path with
@@ -353,10 +353,10 @@ let main ~close_term ~doc_hash ~stdin_is_occupied ~path ~search_result =
   match config.launch_mode with
   | `Terminal -> (
       let cmd =
-        if stdin_is_occupied then (
-          Fmt.str "</dev/tty %s" cmd
-        ) else (
+        if Misc_utils.stdin_is_atty () then (
           cmd
+        ) else (
+          Fmt.str "</dev/tty %s" cmd
         )
       in
       close_term ();

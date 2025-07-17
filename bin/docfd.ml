@@ -575,7 +575,6 @@ let run
      )
    | _, _, _, _ -> ()
   );
-  let some_paths_were_from_stdin = ref false in
   let paths_from_file_or_stdin =
     match paths_from with
     | [] -> None
@@ -587,7 +586,6 @@ let run
         |> Seq.flat_map (fun paths_from ->
             (match paths_from with
              | "-" -> (
-                 some_paths_were_from_stdin := true;
                  CCIO.read_lines_l stdin
                )
              | _ -> (
@@ -606,7 +604,6 @@ let run
         |> Option.some
       )
   in
-  let some_paths_were_from_stdin = !some_paths_were_from_stdin in
   let interactive =
     Option.is_none filter_exp
     &&
@@ -972,18 +969,9 @@ let run
             let doc_hash = Document.doc_hash doc in
             let path = Document.path doc in
             let old_stats = Unix.stat path in
-            let stdin_is_occupied =
-              (match init_document_src with
-               | Document_src.Stdin _ -> true
-               | _ -> false
-              )
-              ||
-              some_paths_were_from_stdin
-            in
             Path_open.main
               ~close_term
               ~doc_hash
-              ~stdin_is_occupied
               ~path
               ~search_result;
             let new_stats = Unix.stat path in
