@@ -33,13 +33,13 @@ let make_file_constraints
     ~(exts : string list)
     ~(single_line_exts : string list)
     ~(paths : string list)
-    ~(paths_from_file : string list option)
+    ~(paths_from_file_or_stdin : string list option)
     ~(globs : string list)
     ~(single_line_globs : string list)
   : file_constraints =
   match
     paths,
-    paths_from_file,
+    paths_from_file_or_stdin,
     globs,
     single_line_globs
   with
@@ -56,8 +56,8 @@ let make_file_constraints
       }
     )
   | _, _, _, _ -> (
-      let paths_from_file = Option.value ~default:[] paths_from_file in
-      let directly_specified_paths = String_set.of_list (paths @ paths_from_file) in
+      let paths_from_file_or_stdin = Option.value ~default:[] paths_from_file_or_stdin in
+      let directly_specified_paths = String_set.of_list (paths @ paths_from_file_or_stdin) in
       let globs = String_set.of_list globs in
       let single_line_globs = String_set.of_list single_line_globs in
       {
@@ -575,7 +575,7 @@ let run
      )
    | _, _, _, _ -> ()
   );
-  let paths_from_file =
+  let paths_from_file_or_stdin =
     match paths_from with
     | [] -> None
     | l -> (
@@ -622,7 +622,7 @@ let run
       ~exts:recognized_exts
       ~single_line_exts:recognized_single_line_exts
       ~paths
-      ~paths_from_file
+      ~paths_from_file_or_stdin
       ~globs
       ~single_line_globs
   in
