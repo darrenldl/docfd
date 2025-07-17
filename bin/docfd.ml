@@ -969,15 +969,16 @@ let run
             let doc_hash = Document.doc_hash doc in
             let path = Document.path doc in
             let old_stats = Unix.stat path in
-            let document_src_is_stdin =
-              match init_document_src with
-              | Document_src.Stdin _ -> true
-              | _ -> false
+            let stdin_is_occupied =
+              (match init_document_src with
+               | Document_src.Stdin _ -> true
+               | _ -> false
+              )
             in
             Path_open.main
               ~close_term
               ~doc_hash
-              ~document_src_is_stdin
+              ~stdin_is_occupied
               ~path
               ~search_result;
             let new_stats = Unix.stat path in
