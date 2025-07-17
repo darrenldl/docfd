@@ -17,22 +17,29 @@
 
 #### Highlights of changes since 11.0.1
 
-- Replaced filter glob with a more powerful filter language, with autocomplete in filter field (12.0.0-alpha.1, 12.0.0-alpha.2)
+- Replaced filter glob with a more powerful filter language, with
+  autocomplete in filter field (12.0.0-alpha.1, 12.0.0-alpha.2,
+  12.0.0-alpha.5, 12.0.0-alpha.6, 12.0.0-alpha.10)
 
-- `--open-with` placeholder handling fixes
+- Added content view pane scrolling (12.0.0-alpha.5, 12.0.0-alpha.8)
 
-    - Using `{page_num}` and `{line_num}` crashes in 11.0.1
-      when there are no search results
+    - Controlled by `-`/`=`
 
-- Added `--paths-from -` to accept list of paths from stdin (12.0.0-alpha.3)
+- Added "save script" and "load script" functionality to make it
+  actually viable to reuse Docfd commands (12.0.0-alpha.8,
+  12.0.0-alpha.9)
 
-- SQL query optimizations for prefix and exact search terms (12.0.0-alpha.3)
+- SQL query optimizations for prefix and exact search terms
+  (12.0.0-alpha.3)
 
 - Key binding info grid improvements (12.0.0-alpha.4)
 
     - Added more key bindings
 
     - Packed columns more tightly
+
+- Added `--paths-from -` to accept list of paths from stdin
+  (12.0.0-alpha.3)
 
 - Added WSL clipboard integration (12.0.0-alpha.4)
 
@@ -41,10 +48,10 @@
     - `mark listed` (`ml`) marks all currently listed documents
     - `unmark listed` (`Ml`) unmarks all currently listed documents
 
-- Added content view pane scrolling (12.0.0-alpha.5)
+- `--open-with` placeholder handling fixes
 
-- Added "save script" and "load script" functionality to make
-  it actually viable to reuse Docfd commands
+    - Using `{page_num}` and `{line_num}` crashes in 11.0.1
+      when there are no search results
 
 ## 12.0.0-alpha.10
 
