@@ -575,6 +575,7 @@ let run
      )
    | _, _, _, _ -> ()
   );
+  let some_paths_were_from_stdin = ref false in
   let paths_from_file_or_stdin =
     match paths_from with
     | [] -> None
@@ -586,6 +587,7 @@ let run
         |> Seq.flat_map (fun paths_from ->
             (match paths_from with
              | "-" -> (
+                 some_paths_were_from_stdin := true;
                  CCIO.read_lines_l stdin
                )
              | _ -> (
@@ -604,6 +606,7 @@ let run
         |> Option.some
       )
   in
+  let some_paths_were_from_stdin = !some_paths_were_from_stdin in
   let interactive =
     Option.is_none filter_exp
     &&
@@ -974,6 +977,8 @@ let run
                | Document_src.Stdin _ -> true
                | _ -> false
               )
+              ||
+              some_paths_were_from_stdin
             in
             Path_open.main
               ~close_term
