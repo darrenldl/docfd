@@ -19,7 +19,7 @@ let compute_paths_from_globs ~report_progress globs =
 type file_constraints = {
   no_pdftotext : bool;
   no_pandoc : bool;
-  paths_were_originally_specified_by_user : bool;
+  paths_were_specified_by_user : bool;
   exts : string list;
   single_line_exts : string list;
   directly_specified_paths : String_set.t;
@@ -47,7 +47,7 @@ let make_file_constraints
       {
         no_pdftotext;
         no_pandoc;
-        paths_were_originally_specified_by_user = false;
+        paths_were_specified_by_user = false;
         exts;
         single_line_exts;
         directly_specified_paths = String_set.of_list [ "." ];
@@ -63,7 +63,7 @@ let make_file_constraints
       {
         no_pdftotext;
         no_pandoc;
-        paths_were_originally_specified_by_user = true;
+        paths_were_specified_by_user = true;
         exts;
         single_line_exts;
         directly_specified_paths;
@@ -641,7 +641,7 @@ let run
        let file_collection =
          files_satisfying_constraints ~interactive file_constraints
        in
-       if file_constraints.paths_were_originally_specified_by_user
+       if file_constraints.paths_were_specified_by_user
        || stdin_is_atty ()
        then (
          let hide_document_list =
