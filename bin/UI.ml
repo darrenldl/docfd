@@ -864,6 +864,7 @@ module Bottom_pane = struct
             { label = "Enter"; msg = "open document" };
             { label = "/"; msg = "search mode" };
             { label = "↑/↓/j/k"; msg = "select document" };
+            { label = "s"; msg = "sort asc mode" };
             { label = "y"; msg = "copy/yank mode" };
             { label = "n"; msg = "narrow mode" };
             { label = "Space"; msg = "toggle mark" };
@@ -873,6 +874,7 @@ module Bottom_pane = struct
             { label = "?"; msg = "rotate key binding info" };
             { label = "f"; msg = "filter mode" };
             { label = "Shift+↑/↓/j/k"; msg = "select search result" };
+            { label = "Shift+S"; msg = "sort desc mode" };
             { label = "Shift+Y"; msg = "copy/yank paths mode" };
             { label = "d"; msg = "drop mode" };
             { label = "m"; msg = "mark mode" };
@@ -883,6 +885,7 @@ module Bottom_pane = struct
             { label = "x"; msg = "clear mode" };
             { label = "-/="; msg = "scroll content view" };
             { label = "Tab"; msg = "change pane split ratio" };
+            { label = ""; msg = "" };
             { label = "r"; msg = "reload mode" };
             { label = "Shift+M"; msg = "unmark mode" };
             { label = "Ctrl+O"; msg = "load script" };
