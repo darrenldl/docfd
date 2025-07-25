@@ -28,6 +28,8 @@ let path_parts (t : t) = t.path_parts
 
 let path_parts_ci (t : t) = t.path_parts_ci
 
+let path_date (t : t) = t.path_date
+
 let title (t : t) = t.title
 
 let doc_hash (t : t) = t.doc_hash

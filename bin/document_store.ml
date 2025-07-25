@@ -239,7 +239,28 @@ let of_seq pool (s : Document.t Seq.t) =
     empty
     s
 
-let search_result_groups (t : t) : (Document.t * Search_result.t array) array =
+module Sort_by = struct
+  type typ = [
+    | `Path_date
+    | `Path
+    | `Score
+  ]
+
+  type order = [
+    | `Asc
+    | `Desc
+  ]
+
+  type t = typ * order
+
+  let default : t = (`Path, `Asc)
+end
+
+
+let search_result_groups
+    ?(sort_by : Sort_by.t = Sort_by.default)
+    (t : t)
+  : (Document.t * Search_result.t array) array =
   let no_search_exp = Search_exp.is_empty t.search_exp in
   let arr =
     t.documents_passing_filter
@@ -265,11 +286,33 @@ let search_result_groups (t : t) : (Document.t * Search_result.t array) array =
       )
     |> Array.of_seq
   in
-  if not no_search_exp then (
-    Array.sort (fun (_d0, s0) (_d1, s1) ->
-        Search_result.compare_relevance s0.(0) s1.(0)
+  let (sort_by_typ, sort_by_order) = sort_by in
+  let f =
+    match sort_by_typ with
+    | `Path_date -> (
+        fun (d0, _s0) (d1, _s1) ->
+          match Document.path_date d0, Document.path_date d1 with
+          | None, None -> 0
+          | None, Some _ -> -1
+          | Some _, None -> 1
+          | Some x0, Some x1 -> Timedesc.Date.compare x0 x1
       )
-      arr
+    | `Path -> (
+        fun (d0, _s0) (d1, _s1) ->
+          String.compare (Document.path d0) (Document.path d1)
+      )
+    | `Score ->
+      if not no_search_exp then (
+        fun (d0, _s0) (d1, _s1) ->
+          String.compare (Document.path d0) (Document.path d1)
+      ) else (
+        fun (_d0, s0) (_d1, s1) ->
+          Search_result.compare_relevance s0.(0) s1.(0)
+      )
+  in
+  (match sort_by_order with
+   | `Asc -> Array.sort f arr
+   | `Desc -> Array.sort (fun x y -> f y x) arr
   );
   arr
 

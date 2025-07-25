@@ -51,6 +51,18 @@ module Vars = struct
         )
       ) arr;
     acc
+
+  let sort_by : Document_store.Sort_by.t Lwd.var = Lwd.var Document_store.Sort_by.default
+
+  let search_result_groups : Document_store.search_result_group array Lwd.t =
+    let$* snapshot =
+      Lwd.get Document_store_manager.document_store_snapshot
+    in
+    let document_store =
+      Document_store_snapshot.store snapshot
+    in
+    let$ sort_by = Lwd.get sort_by in
+    Document_store.search_result_groups ~sort_by document_store
 end
 
 let set_document_selected ~choice_count n =
@@ -1590,7 +1602,7 @@ let keyboard_handler
             let marked =
               Document_store.marked_document_paths document_store
             in
-            Document_store.search_result_groups document_store
+            search_result_groups
             |> Array.to_seq
             |> Seq.filter (fun (doc, _) ->
                 String_set.mem (Document.path doc) marked)
@@ -1598,7 +1610,7 @@ let keyboard_handler
             true
           )
         | (`ASCII 'l', []) -> (
-            Document_store.search_result_groups document_store
+            search_result_groups
             |> Array.to_seq
             |> copy_search_result_groups;
             true
@@ -1748,9 +1760,7 @@ let main : Nottui.ui Lwd.t =
   let document_store =
     Document_store_snapshot.store snapshot
   in
-  let search_result_groups =
-    Document_store.search_result_groups document_store
-  in
+  let$* search_result_groups = Vars.search_result_groups in
   let document_count = Array.length search_result_groups in
   set_document_selected
     ~choice_count:document_count

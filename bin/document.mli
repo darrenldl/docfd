@@ -6,6 +6,8 @@ val search_mode : t -> Search_mode.t
 
 val path : t -> string
 
+val path_date : t -> Timedesc.Date.t option
+
 val title : t -> string option
 
 val doc_hash : t -> string

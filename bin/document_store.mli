@@ -38,7 +38,24 @@ val add_document : Task_pool.t -> Document.t -> t -> t
 
 val of_seq : Task_pool.t -> Document.t Seq.t -> t
 
-val search_result_groups : t -> search_result_group array
+module Sort_by : sig
+  type typ = [
+    | `Path_date
+    | `Path
+    | `Score
+  ]
+
+  type order = [
+    | `Asc
+    | `Desc
+  ]
+
+  type t = typ * order
+
+  val default : t
+end
+
+val search_result_groups : ?sort_by:Sort_by.t -> t -> search_result_group array
 
 val usable_document_paths : t -> String_set.t
 
