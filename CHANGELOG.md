@@ -15,6 +15,14 @@
     - They feel like deadlocks due to mixing Eio mutexes
       (which block fiber) and stdlib mutexes (which block an entire domain)
 
+- Added sorting to document list
+
+    - `s` for sort ascending mode and `Shift+S` for sort descending mode
+    - Under the sort modes, the sort by types are as follows:
+        - `p` sort by path
+        - `d` sort by path date
+        - `s` sort by score
+
 #### Highlights of changes since 11.0.1
 
 - Replaced filter glob with a more powerful filter language, with
@@ -52,6 +60,8 @@
 
     - Using `{page_num}` and `{line_num}` crashes in 11.0.1
       when there are no search results
+
+- Added sorting to document list (12.0.0)
 
 ## 12.0.0-alpha.10
 
