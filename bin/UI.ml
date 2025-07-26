@@ -970,6 +970,19 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
+      let sort_grid =
+        [
+          [
+            { label = "s"; msg = "score" };
+            { label = "p"; msg = "path" };
+            { label = "d"; msg = "path date" };
+          ];
+          [
+            { label = "Esc"; msg = "cancel" };
+          ];
+          empty_row;
+        ]
+      in
       let drop_grid =
         [
           [
@@ -1077,6 +1090,12 @@ module Bottom_pane = struct
         );
         ({ input_mode = Clear },
          clear_grid
+        );
+        ({ input_mode = Sort `Asc },
+         sort_grid
+        );
+        ({ input_mode = Sort `Desc },
+         sort_grid
         );
         ({ input_mode = Drop },
          drop_grid
@@ -1407,6 +1426,14 @@ let keyboard_handler
           UI_base.set_input_mode Clear;
           `Handled
         )
+      | (`ASCII 's', []) -> (
+          UI_base.set_input_mode (Sort `Asc);
+          `Handled
+        )
+      | (`ASCII 'S', []) -> (
+          UI_base.set_input_mode (Sort `Desc);
+          `Handled
+        )
       | (`Enter, []) -> (
           Option.iter (fun (doc, search_results) ->
               let search_result =
@@ -1423,6 +1450,29 @@ let keyboard_handler
           `Handled
         )
       | _ -> `Handled
+    )
+  | Sort order -> (
+      let exit =
+        match key with
+        | (`Escape, []) -> true
+        | (`ASCII 's', []) -> (
+            Lwd.set Vars.sort_by (`Score, order);
+            true
+          )
+        | (`ASCII 'p', []) -> (
+            Lwd.set Vars.sort_by (`Path, order);
+            true
+          )
+        | (`ASCII 'd', []) -> (
+            Lwd.set Vars.sort_by (`Path_date, order);
+            true
+          )
+        | _ -> false
+      in
+      if exit then (
+        UI_base.set_input_mode Navigate;
+      );
+      `Handled
     )
   | Clear -> (
       let exit =

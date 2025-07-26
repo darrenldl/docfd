@@ -253,7 +253,7 @@ module Sort_by = struct
 
   type t = typ * order
 
-  let default : t = (`Path, `Asc)
+  let default : t = (`Score, `Desc)
 end
 
 
@@ -302,12 +302,17 @@ let search_result_groups
           String.compare (Document.path d0) (Document.path d1)
       )
     | `Score ->
-      if not no_search_exp then (
+      if no_search_exp then (
         fun (d0, _s0) (d1, _s1) ->
           String.compare (Document.path d0) (Document.path d1)
       ) else (
+        (* Search_result.compare_relevance puts the more relevant
+           result to the front, so we flip the comparison here to
+           obtain an ordering of "lowest score" first to match the
+           usual definition of "sort by score in ascending order".
+        *)
         fun (_d0, s0) (_d1, s1) ->
-          Search_result.compare_relevance s0.(0) s1.(0)
+          Search_result.compare_relevance s1.(0) s0.(0)
       )
   in
   (match sort_by_order with

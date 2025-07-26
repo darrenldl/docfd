@@ -6,6 +6,7 @@ type input_mode =
   | Search
   | Filter
   | Clear
+  | Sort of [ `Asc | `Desc ]
   | Drop
   | Mark
   | Unmark
@@ -255,6 +256,8 @@ module Status_bar = struct
       ; (Search, "SEARCH")
       ; (Filter, "FILTER")
       ; (Clear, "CLEAR")
+      ; (Sort `Asc, "SORT-ASC")
+      ; (Sort `Desc, "SORT-DESC")
       ; (Drop, "DROP")
       ; (Mark, "MARK")
       ; (Unmark, "UNMARK")
