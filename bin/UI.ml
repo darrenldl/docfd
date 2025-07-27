@@ -451,6 +451,17 @@ module Top_pane = struct
          |> Content_and_search_result_render.Text_block_render.of_words ~width:sub_item_width
         )
       in
+      let path_date_image =
+        I.string A.(fg lightgreen) "Path date: "
+        <|>
+        (match Document.path_date doc with
+         | None -> I.string A.empty ""
+         | Some date -> (
+             I.string A.empty
+               (Timedesc.Date.to_rfc3339 date)
+           )
+        )
+      in
       let last_scan_image =
         I.string A.(fg lightgreen) "Last scan: "
         <|>
@@ -488,6 +499,7 @@ module Top_pane = struct
         I.vcat
           [ search_result_score_image;
             path_image;
+            path_date_image;
             preview_image;
             last_scan_image;
           ]
