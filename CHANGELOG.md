@@ -58,7 +58,7 @@
     - `mark listed` (`ml`) marks all currently listed documents
     - `unmark listed` (`Ml`) unmarks all currently listed documents
 
-- `--open-with` placeholder handling fixes
+- `--open-with` placeholder handling fixes (12.0.0-alpha.4)
 
     - Using `{page_num}` and `{line_num}` crashes in 11.0.1
       when there are no search results
