@@ -23,6 +23,8 @@
         - `d` sort by path date
         - `s` sort by score
 
+- Added `yyyymmdd` path date extraction
+
 #### Highlights of changes since 11.0.1
 
 - Replaced filter glob with a more powerful filter language, with
@@ -62,6 +64,8 @@
       when there are no search results
 
 - Added sorting to document list (12.0.0)
+
+- Added `yyyymmdd` path date extraction (12.0.0)
 
 ## 12.0.0-alpha.10
 

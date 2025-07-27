@@ -194,9 +194,42 @@ module Ir1 = struct
 end
 
 module Date_extract = struct
+  let yyyy = "(\\d{4})"
+
+  let mm = "([01]\\d)"
+
+  let dd = "([0-3]\\d)"
+
   let yyyy_mm_dd =
-    let re = Re.Pcre.re "(?:^|.*[^\\d])(\\d{4})[^\\d]([01]\\d)[^\\d]([0-3]\\d)(?:$|[^\\d])"
-             |> Re.compile
+    let re =
+      Fmt.str
+        "(?:^|.*[^\\d])%s[^\\d]%s[^\\d]%s(?:$|[^\\d])"
+        yyyy
+        mm
+        dd
+      |> Re.Pcre.re
+      |> Re.compile
+    in
+    fun s ->
+      try
+        let g = Re.exec re s in
+        let start = Re.Group.start g 1 in
+        let y = Re.Group.get g 1 |> int_of_string in
+        let m = Re.Group.get g 2 |> int_of_string in
+        let d = Re.Group.get g 3 |> int_of_string in
+        Some (start, (y, m, d))
+      with
+      | _ -> None
+
+  let yyyymmdd =
+    let re =
+      Fmt.str
+        "(?:^|.*[^\\d])%s%s%s"
+        yyyy
+        mm
+        dd
+      |> Re.Pcre.re
+      |> Re.compile
     in
     fun s ->
       try
@@ -242,6 +275,7 @@ module Date_extract = struct
       None
       [
         yyyy_mm_dd;
+        yyyymmdd;
       ]
 end
 
