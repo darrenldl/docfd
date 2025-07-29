@@ -28,6 +28,10 @@
 
 - Added `mod-date` to filter language
 
+- Added additional attributes to document list entry
+
+        - Path date
+
 #### Highlights of changes since 11.0.1
 
 - Replaced filter glob with a more powerful filter language, with
@@ -68,7 +72,9 @@
 
 - Added sorting to document list (12.0.0)
 
-- Added `yyyymmdd` path date extraction (12.0.0)
+- Added additional attributes to document list entry (12.0.0)
+
+        - Path date
 
 ## 12.0.0-alpha.10
 
