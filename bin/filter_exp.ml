@@ -6,6 +6,7 @@ type t =
   | Path_fuzzy of Search_exp.t
   | Path_glob of Glob.t
   | Ext of string
+  | Mod_date of compare_op * Timedesc.Date.t
   | Content of Search_exp.t
   | Binary_op of binary_op * t * t
   | Unary_op of unary_op * t
@@ -153,11 +154,11 @@ module Parsers = struct
     | Ok x -> return x
     | Error _ -> fail ""
 
-  let path_date =
+  let compare_date f =
     let p =
       compare_op >>= fun op ->
       date >>| fun date ->
-      Path_date (op, date)
+      f (op, date)
     in
     maybe_quoted_string ()
     >>= fun s ->
@@ -205,11 +206,14 @@ module Parsers = struct
                fun x -> Content x);
               (string "content:" *>
                search_exp () >>| fun x -> Content x);
-              (string "path-date:" *> path_date);
+              (string "path-date:" *>
+               compare_date (fun (op, date) -> Path_date (op, date)));
               (string "path-fuzzy:" *>
                search_exp () >>| fun x -> Path_fuzzy x);
               (string "path-glob:" *>
                glob >>| fun x -> Path_glob x);
+              (string "mod-date:" *>
+               compare_date (fun (op, date) -> Mod_date (op, date)));
               (string "ext:" *>
                ext >>| fun x -> Ext x);
               (char '(' *> skip_spaces *> exp <* char ')');

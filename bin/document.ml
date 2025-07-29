@@ -448,6 +448,14 @@ module ET = Search_phrase.Enriched_token
 
 let satisfies_filter_exp pool (exp : Filter_exp.t) (t : t) : bool =
   let open Filter_exp in
+  let date_f (op : Filter_exp.compare_op) =
+    match op with
+    | Eq -> Timedesc.Date.equal
+    | Le -> Timedesc.Date.le
+    | Ge -> Timedesc.Date.ge
+    | Lt -> Timedesc.Date.lt
+    | Gt -> Timedesc.Date.gt
+  in
   let rec aux exp =
     match exp with
     | Empty -> true
@@ -455,16 +463,11 @@ let satisfies_filter_exp pool (exp : Filter_exp.t) (t : t) : bool =
         match t.path_date with
         | None -> false
         | Some path_date -> (
-            let f =
-              match op with
-              | Eq -> Timedesc.Date.equal
-              | Le -> Timedesc.Date.le
-              | Ge -> Timedesc.Date.ge
-              | Lt -> Timedesc.Date.lt
-              | Gt -> Timedesc.Date.gt
-            in
-            f path_date date
+            date_f op path_date date
           )
+      )
+    | Mod_date (op, date) -> (
+        date_f op (Timedesc.date t.mod_time) date
       )
     | Path_fuzzy exp -> (
         List.exists (fun phrase ->

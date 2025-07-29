@@ -570,6 +570,7 @@ module Filter_bar = struct
     ; "path-glob:"
     ; "ext:"
     ; "content:"
+    ; "mod-date:"
     ]
 
   let main
