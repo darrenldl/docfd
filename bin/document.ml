@@ -7,6 +7,7 @@ type t = {
   path_parts : string list;
   path_parts_ci : string list;
   path_date : Timedesc.Date.t option;
+  mod_time : Timedesc.t;
   title : string option;
   doc_hash : string;
   search_scope : Diet.Int.t option;
@@ -29,6 +30,8 @@ let path_parts (t : t) = t.path_parts
 let path_parts_ci (t : t) = t.path_parts_ci
 
 let path_date (t : t) = t.path_date
+
+let mod_time (t : t) = t.mod_time
 
 let title (t : t) = t.title
 
@@ -287,6 +290,7 @@ module Ir2 = struct
     path_parts : string list;
     path_parts_ci : string list;
     path_date : Timedesc.Date.t option;
+    mod_time : Timedesc.t;
     title : string option;
     raw : Index.Raw.t;
     last_scan : Timedesc.t;
@@ -340,6 +344,8 @@ module Ir2 = struct
     let { Ir1.search_mode; doc_hash; path; data; last_scan } = ir in
     let path_parts, path_parts_ci = compute_path_parts path in
     let path_date = Date_extract.extract path in
+    let stats = Unix.stat path in
+    let mod_time = Timedesc.of_timestamp_float_s_exn stats.Unix.st_mtime in
     let title, raw =
       match data with
       | `Lines x -> (
@@ -355,6 +361,7 @@ module Ir2 = struct
       path_parts;
       path_parts_ci;
       path_date;
+      mod_time;
       doc_hash;
       title;
       raw;
@@ -370,6 +377,7 @@ let of_ir2 db ~already_in_transaction (ir : Ir2.t) : t =
       path_parts;
       path_parts_ci;
       path_date;
+      mod_time;
       title;
       doc_hash;
       raw;
@@ -382,6 +390,7 @@ let of_ir2 db ~already_in_transaction (ir : Ir2.t) : t =
     path_parts;
     path_parts_ci;
     path_date;
+    mod_time;
     title;
     doc_hash;
     search_scope = None;
@@ -411,6 +420,8 @@ let of_path
     in
     let path_parts, path_parts_ci = compute_path_parts path in
     let path_date = Date_extract.extract path in
+    let stats = Unix.stat path in
+    let mod_time = Timedesc.of_timestamp_float_s_exn stats.Unix.st_mtime in
     Ok
       {
         search_mode;
@@ -418,6 +429,7 @@ let of_path
         path_parts;
         path_parts_ci;
         path_date;
+        mod_time;
         title;
         doc_hash;
         search_scope = None;
