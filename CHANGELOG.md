@@ -22,6 +22,7 @@
         - `p` sort by path
         - `d` sort by path date
         - `s` sort by score
+        - `m` sort by modification time
 
 - Added `yyyymmdd` path date extraction
 

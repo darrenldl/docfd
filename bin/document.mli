@@ -8,6 +8,8 @@ val path : t -> string
 
 val path_date : t -> Timedesc.Date.t option
 
+val mod_time : t -> Timedesc.t
+
 val title : t -> string option
 
 val doc_hash : t -> string

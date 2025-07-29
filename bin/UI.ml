@@ -988,6 +988,7 @@ module Bottom_pane = struct
             { label = "s"; msg = "score" };
             { label = "p"; msg = "path" };
             { label = "d"; msg = "path date" };
+            { label = "m"; msg = "mod time" };
           ];
           [
             { label = "Esc"; msg = "cancel" };
@@ -1477,6 +1478,10 @@ let keyboard_handler
           )
         | (`ASCII 'd', []) -> (
             Lwd.set Vars.sort_by (`Path_date, order);
+            true
+          )
+        | (`ASCII 'm', []) -> (
+            Lwd.set Vars.sort_by (`Mod_time, order);
             true
           )
         | _ -> false

@@ -43,6 +43,7 @@ module Sort_by : sig
     | `Path_date
     | `Path
     | `Score
+    | `Mod_time
   ]
 
   type order = [

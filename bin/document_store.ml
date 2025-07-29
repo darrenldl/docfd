@@ -244,6 +244,7 @@ module Sort_by = struct
     | `Path_date
     | `Path
     | `Score
+    | `Mod_time
   ]
 
   type order = [
@@ -296,6 +297,10 @@ let search_result_groups
           | None, Some _ -> -1
           | Some _, None -> 1
           | Some x0, Some x1 -> Timedesc.Date.compare x0 x1
+      )
+    | `Mod_time -> (
+        fun (d0, _s0) (d1, _s1) ->
+          Timedesc.compare_chrono_min (Document.mod_time d0) (Document.mod_time d1)
       )
     | `Path -> (
         fun (d0, _s0) (d1, _s1) ->
