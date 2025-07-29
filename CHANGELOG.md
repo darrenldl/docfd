@@ -25,11 +25,13 @@
 
 - Added `yyyymmdd` path date extraction
 
+- Added `mod-date` to filter language
+
 #### Highlights of changes since 11.0.1
 
 - Replaced filter glob with a more powerful filter language, with
   autocomplete in filter field (12.0.0-alpha.1, 12.0.0-alpha.2,
-  12.0.0-alpha.5, 12.0.0-alpha.6, 12.0.0-alpha.10)
+  12.0.0-alpha.5, 12.0.0-alpha.6, 12.0.0-alpha.10, 12.0.0)
 
 - Added content view pane scrolling (12.0.0-alpha.5, 12.0.0-alpha.8)
 
