@@ -55,9 +55,10 @@ module Vars = struct
   let sort_by : Document_store.Sort_by.t Lwd.var = Lwd.var Document_store.Sort_by.default
 
   let search_result_groups : Document_store.search_result_group array Lwd.t =
-    let$* snapshot =
-      Lwd.get Document_store_manager.document_store_snapshot
+    let$* history =
+      Lwd.get Document_store_manager.document_store_history
     in
+    let snapshot = Document_store_history.get_last history in
     let document_store =
       Document_store_snapshot.store snapshot
     in

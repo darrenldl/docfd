@@ -64,15 +64,19 @@ let stop_search () =
   let x = Atomic.exchange stop_search_signal (Stop_signal.make ()) in
   Stop_signal.broadcast x
 
-let document_store_snapshot =
-  Lwd.var (Document_store_snapshot.make_empty ())
+let document_store_history =
+  Lwd.var (Document_store_history.make ())
 
 let manager_fiber () =
   (* This fiber handles updates of Lwd.var which are not thread-safe,
      and thus cannot be done by worker_fiber directly
   *)
-  let update_store snapshot =
-    Lwd.set document_store_snapshot snapshot;
+  let add_store snapshot =
+    let history = Lwd.peek document_store_history in
+    Document_store_history.lock history (fun history lock_token ->
+      Document_store_history.add_last history lock_token snapshot
+    );
+    Lwd.set document_store_history history;
   in
   while true do
     let payload = Eio.Stream.take egress in
@@ -87,18 +91,18 @@ let manager_fiber () =
         Lwd.set filter_ui_status `Filtering
       )
     | Search_done snapshot -> (
-        update_store snapshot;
+        add_store snapshot;
         Lwd.set search_ui_status `Idle
       )
     | Filter_glob_parse_error -> (
         Lwd.set filter_ui_status `Parse_error
       )
     | Filtering_done snapshot -> (
-        update_store snapshot;
+        add_store snapshot;
         Lwd.set filter_ui_status `Idle
       )
     | Update snapshot -> (
-        update_store snapshot;
+        add_store snapshot;
         Lwd.set search_ui_status `Idle;
         Lwd.set filter_ui_status `Idle;
         Eio.Stream.add egress_ack ();
