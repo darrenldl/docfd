@@ -132,6 +132,7 @@ let manager_fiber () =
      and thus cannot be done by worker_fiber directly
   *)
   let update_snapshot ver snapshot =
+    UI_base.reset_document_selected ();
     Lwd.set cur_snapshot (ver, snapshot);
   in
   while true do
@@ -175,9 +176,7 @@ let worker_fiber pool =
      frequently.
   *)
   let get_cur_snapshot () =
-    Eio.Mutex.use_rw ~protect:false lock (fun () ->
-        Dynarray.get snapshots !cur_ver
-      )
+    Dynarray.get snapshots !cur_ver
   in
   let add_snapshot
       ?(overwrite_if_last_snapshot_satisfies = fun _ -> false)
@@ -185,12 +184,12 @@ let worker_fiber pool =
     =
     Dynarray.truncate snapshots (!cur_ver + 1);
     let last_snapshot = Dynarray.get_last snapshots in
-    if overwrite_if_last_snapshot_satisfies last_snapshot then (
-      Dynarray.set snapshots (Dynarray.length snapshots - 1) snapshot;
+    if !cur_ver > 0 && overwrite_if_last_snapshot_satisfies last_snapshot then (
+      Dynarray.set snapshots !cur_ver snapshot;
     ) else (
       Dynarray.add_last snapshots snapshot;
+      incr cur_ver;
     );
-    incr cur_ver;
   in
   let process_search_req stop_signal (s : string) =
     match Search_exp.parse s with
