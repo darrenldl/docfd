@@ -26,6 +26,18 @@ type top_level_action =
   | Select_and_load_script
   | Edit_script of string
 
+type search_status = [
+  | `Idle
+  | `Searching
+  | `Parse_error
+]
+
+type filter_status = [
+  | `Idle
+  | `Filtering
+  | `Parse_error
+]
+
 let empty_text_field = ("", 0)
 
 let render_mode_of_document (doc : Document.t)
@@ -38,7 +50,7 @@ let render_mode_of_document (doc : Document.t)
 module Vars = struct
   let quit = Lwd.var false
 
-  let pool : Task_pool.t option ref = ref None
+  let pool : Task_pool.t option Atomic.t = Atomic.make None
 
   let action : top_level_action option ref = ref None
 
@@ -57,10 +69,53 @@ module Vars = struct
   let content_view_offset = Lwd.var 0
 
   let autocomplete_choices = Lwd.var []
+
+  let filter_field = Lwd.var empty_text_field
+
+  let filter_field_focus_handle = Nottui.Focus.make ()
+
+  let search_field = Lwd.var empty_text_field
+
+  let search_field_focus_handle = Nottui.Focus.make ()
+
+  let search_ui_status : search_status Lwd.var = Lwd.var `Idle
+
+  let filter_ui_status : filter_status Lwd.var = Lwd.var `Idle
+
+  let index_of_document_selected = Lwd.var 0
+
+  let index_of_search_result_selected = Lwd.var 0
 end
 
+let reset_content_view_offset () =
+  Lwd.set Vars.content_view_offset 0
+
+let decr_content_view_offset () =
+  let x = Lwd.peek Vars.content_view_offset in
+  Lwd.set Vars.content_view_offset (x - 1)
+
+let incr_content_view_offset () =
+  let x = Lwd.peek Vars.content_view_offset in
+  Lwd.set Vars.content_view_offset (x + 1)
+
+let reset_document_selected () =
+  reset_content_view_offset ();
+  Lwd.set Vars.index_of_document_selected 0;
+  Lwd.set Vars.index_of_search_result_selected 0
+
+let set_document_selected ~choice_count n =
+  reset_content_view_offset ();
+  let n = Misc_utils.bound_selection ~choice_count n in
+  Lwd.set Vars.index_of_document_selected n;
+  Lwd.set Vars.index_of_search_result_selected 0
+
+let set_search_result_selected ~choice_count n =
+  reset_content_view_offset ();
+  let n = Misc_utils.bound_selection ~choice_count n in
+  Lwd.set Vars.index_of_search_result_selected n
+
 let task_pool () =
-  Option.get !Vars.pool
+  Option.get (Atomic.get Vars.pool)
 
 let eio_env () =
   Option.get !Vars.eio_env
@@ -181,17 +236,6 @@ let mouse_handler
       `Handled
     )
   | _ -> `Unhandled
-
-let reset_content_view_offset () =
-  Lwd.set Vars.content_view_offset 0
-
-let decr_content_view_offset () =
-  let x = Lwd.peek Vars.content_view_offset in
-  Lwd.set Vars.content_view_offset (x - 1)
-
-let incr_content_view_offset () =
-  let x = Lwd.peek Vars.content_view_offset in
-  Lwd.set Vars.content_view_offset (x + 1)
 
 module Content_view = struct
   let main
@@ -546,7 +590,7 @@ module Filter_bar = struct
     |> Lwd.return
 
   let status =
-    let$* status = Lwd.get Document_store_manager.filter_ui_status in
+    let$* status = Lwd.get Vars.filter_ui_status in
     (match status with
      | `Idle -> (
          Notty.I.string Notty.A.(fg lightgreen)
@@ -620,7 +664,7 @@ module Search_bar = struct
     |> Lwd.return
 
   let status =
-    let$* status = Lwd.get Document_store_manager.search_ui_status in
+    let$* status = Lwd.get Vars.search_ui_status in
     (match status with
      | `Idle -> (
          Notty.I.string Notty.A.(fg lightgreen)

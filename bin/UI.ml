@@ -2,30 +2,9 @@ open Docfd_lib
 open Lwd_infix
 
 module Vars = struct
-  let index_of_document_selected = Lwd.var 0
-
-  let index_of_search_result_selected = Lwd.var 0
-
-  let filter_field = Lwd.var UI_base.empty_text_field
-
-  let filter_field_focus_handle = Nottui.Focus.make ()
-
-  let search_field = Lwd.var UI_base.empty_text_field
-
-  let search_field_focus_handle = Nottui.Focus.make ()
-
-  let filter_field_focus_handle = Nottui.Focus.make ()
-
   let save_script_field = Lwd.var UI_base.empty_text_field
 
   let save_script_field_focus_handle = Nottui.Focus.make ()
-
-  let init_document_store : Document_store.t ref = ref Document_store.empty
-
-  let document_store_snapshots : Document_store_snapshot.t Dynarray.t =
-    Dynarray.create ()
-
-  let document_store_cur_ver = Lwd.var 0
 
   let document_list_screen_ratio
     : [ `Hide_left
@@ -55,8 +34,8 @@ module Vars = struct
   let sort_by : Document_store.Sort_by.t Lwd.var = Lwd.var Document_store.Sort_by.default
 
   let search_result_groups : Document_store.search_result_group array Lwd.t =
-    let$* snapshot =
-      Lwd.get Document_store_manager.document_store_snapshot
+    let$* _ver, snapshot =
+      Lwd.get Document_store_manager.cur_snapshot
     in
     let document_store =
       Document_store_snapshot.store snapshot
@@ -64,84 +43,6 @@ module Vars = struct
     let$ sort_by = Lwd.get sort_by in
     Document_store.search_result_groups ~sort_by document_store
 end
-
-let set_document_selected ~choice_count n =
-  UI_base.reset_content_view_offset ();
-  let n = Misc_utils.bound_selection ~choice_count n in
-  Lwd.set Vars.index_of_document_selected n;
-  Lwd.set Vars.index_of_search_result_selected 0
-
-let reset_document_selected () =
-  UI_base.reset_content_view_offset ();
-  Lwd.set Vars.index_of_document_selected 0;
-  Lwd.set Vars.index_of_search_result_selected 0
-
-let set_search_result_selected ~choice_count n =
-  UI_base.reset_content_view_offset ();
-  let n = Misc_utils.bound_selection ~choice_count n in
-  Lwd.set Vars.index_of_search_result_selected n
-
-let get_cur_document_store_snapshot () =
-  Dynarray.get
-    Vars.document_store_snapshots
-    (Lwd.peek Vars.document_store_cur_ver)
-
-let sync_input_fields_from_document_store
-    (x : Document_store.t)
-  =
-  Document_store.filter_exp_string x
-  |> (fun s ->
-      Lwd.set Vars.filter_field (s, String.length s));
-  Document_store.search_exp_string x
-  |> (fun s ->
-      Lwd.set Vars.search_field (s, String.length s))
-
-let submit_update_req_and_sync_input_fields snapshot =
-  Document_store_manager.submit_update_req snapshot;
-  sync_input_fields_from_document_store
-    (Document_store_snapshot.store snapshot)
-
-let update_starting_store_and_recompute_snapshots
-    (starting_store : Document_store.t)
-  =
-  let pool = UI_base.task_pool () in
-  let snapshots = Vars.document_store_snapshots in
-  Vars.init_document_store := starting_store;
-  let starting_snapshot =
-    Document_store_snapshot.make
-      ~last_command:None
-      starting_store
-  in
-  Dynarray.set snapshots 0 starting_snapshot;
-  for i=1 to Dynarray.length snapshots - 1 do
-    let prev = Dynarray.get snapshots (i - 1) in
-    let prev_store = Document_store_snapshot.store prev in
-    let cur = Dynarray.get snapshots i in
-    let store =
-      match Document_store_snapshot.last_command cur with
-      | None -> prev_store
-      | Some command ->
-        Option.value ~default:prev_store
-          (Document_store.run_command pool command prev_store)
-    in
-    Dynarray.set
-      snapshots
-      i
-      (Document_store_snapshot.update_store store cur)
-  done;
-  let cur_snapshot = get_cur_document_store_snapshot () in
-  submit_update_req_and_sync_input_fields cur_snapshot
-
-let load_snapshots snapshots =
-  assert (Dynarray.length snapshots > 0);
-  Dynarray.clear Vars.document_store_snapshots;
-  Dynarray.append Vars.document_store_snapshots snapshots;
-  Lwd.set
-    Vars.document_store_cur_ver
-    (Dynarray.length snapshots - 1);
-  let final_snapshot = Dynarray.get_last snapshots in
-  submit_update_req_and_sync_input_fields final_snapshot;
-  reset_document_selected ()
 
 let reload_document (doc : Document.t) =
   let pool = UI_base.task_pool () in
@@ -161,7 +62,9 @@ let reload_document (doc : Document.t) =
       )
   in
   let document_store =
-    !Vars.init_document_store
+    Eio.Mutex.use_ro Document_store_manager.lock (fun () ->
+        !Document_store_manager.init_document_store
+      )
     |> (fun store ->
         match doc with
         | Some doc -> (
@@ -172,112 +75,79 @@ let reload_document (doc : Document.t) =
           )
       )
   in
-  reset_document_selected ();
-  update_starting_store_and_recompute_snapshots document_store
+  Document_store_manager.update_starting_store document_store
 
 let reload_document_selected
     ~(search_result_groups : Document_store.search_result_group array)
   : unit =
   if Array.length search_result_groups > 0 then (
-    let index = Lwd.peek Vars.index_of_document_selected in
+    let index = Lwd.peek UI_base.Vars.index_of_document_selected in
     let doc, _search_results = search_result_groups.(index) in
     reload_document doc;
   )
 
-let commit_cur_document_store_snapshot () =
-  let cur_ver = Lwd.peek Vars.document_store_cur_ver in
-  let cur_snapshot =
-    Dynarray.get Vars.document_store_snapshots cur_ver
-  in
-  Dynarray.truncate Vars.document_store_snapshots (cur_ver + 1);
-  Dynarray.add_last Vars.document_store_snapshots cur_snapshot;
-  Lwd.set Vars.document_store_cur_ver (cur_ver + 1)
-
-let commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff () =
-  let cur_ver = Lwd.peek Vars.document_store_cur_ver in
-  if cur_ver = 0 then (
-    commit_cur_document_store_snapshot ()
-  ) else (
-    let prev_snapshot_id =
-      Dynarray.get Vars.document_store_snapshots (cur_ver - 1)
-      |> Document_store_snapshot.id
-    in
-    let cur_snapshot_id =
-      Dynarray.get Vars.document_store_snapshots cur_ver
-      |> Document_store_snapshot.id
-    in
-    if prev_snapshot_id <> cur_snapshot_id then (
-      commit_cur_document_store_snapshot ()
-    )
-  )
-
 let toggle_mark ~path =
-  let cur_snapshot = get_cur_document_store_snapshot () in
-  commit_cur_document_store_snapshot ();
-  let store = Document_store_snapshot.store cur_snapshot in
-  let new_command =
-    if
-      String_set.mem
-        path
-        (Document_store.marked_document_paths store)
-    then (
-      `Unmark path
-    ) else (
-      `Mark path
+  Document_store_manager.submit_update_req
+    (fun cur_snapshot ->
+       let store = Document_store_snapshot.store cur_snapshot in
+       let new_command =
+         if
+           String_set.mem
+             path
+             (Document_store.marked_document_paths store)
+         then (
+           `Unmark path
+         ) else (
+           `Mark path
+         )
+       in
+       store
+       |> Document_store.run_command
+         (UI_base.task_pool ())
+         new_command
+       |> Option.get
+       |> Document_store_snapshot.make
+         ~last_command:(Some new_command)
     )
-  in
-  let new_snapshot =
-    store
-    |> Document_store.run_command
-      (UI_base.task_pool ())
-      new_command
-    |> Option.get
-    |> Document_store_snapshot.make
-      ~last_command:(Some new_command)
-  in
-  submit_update_req_and_sync_input_fields new_snapshot
 
 let drop ~document_count (choice : [`Path of string | `All_except of string | `Marked | `Unmarked | `Listed | `Unlisted]) =
   let new_command =
     match choice with
     | `Path path -> (
-        let n = Lwd.peek Vars.index_of_document_selected in
-        set_document_selected ~choice_count:(document_count - 1) n;
+        let n = Lwd.peek UI_base.Vars.index_of_document_selected in
+        UI_base.set_document_selected ~choice_count:(document_count - 1) n;
         `Drop path
       )
     | `All_except path -> (
-        set_document_selected ~choice_count:1 0;
+        UI_base.set_document_selected ~choice_count:1 0;
         `Drop_all_except path
       )
     | `Marked -> (
-        reset_document_selected ();
+        UI_base.reset_document_selected ();
         `Drop_marked
       )
     | `Unmarked -> (
-        reset_document_selected ();
+        UI_base.reset_document_selected ();
         `Drop_unmarked
       )
     | `Listed -> (
-        reset_document_selected ();
+        UI_base.reset_document_selected ();
         `Drop_listed
       )
     | `Unlisted -> (
-        reset_document_selected ();
+        UI_base.reset_document_selected ();
         `Drop_unlisted
       )
   in
-  let cur_snapshot = get_cur_document_store_snapshot () in
-  commit_cur_document_store_snapshot ();
-  let new_snapshot =
-    Document_store_snapshot.store cur_snapshot
-    |> Document_store.run_command
-      (UI_base.task_pool ())
-      new_command
-    |> Option.get
-    |> Document_store_snapshot.make
-      ~last_command:(Some new_command)
-  in
-  submit_update_req_and_sync_input_fields new_snapshot
+  Document_store_manager.submit_update_req (fun cur_snapshot ->
+      Document_store_snapshot.store cur_snapshot
+      |> Document_store.run_command
+        (UI_base.task_pool ())
+        new_command
+      |> Option.get
+      |> Document_store_snapshot.make
+        ~last_command:(Some new_command)
+    )
 
 let mark (choice : [`Path of string | `Listed]) =
   let new_command =
@@ -285,18 +155,15 @@ let mark (choice : [`Path of string | `Listed]) =
     | `Path path -> `Mark path
     | `Listed -> `Mark_listed
   in
-  let cur_snapshot = get_cur_document_store_snapshot () in
-  commit_cur_document_store_snapshot ();
-  let new_snapshot =
-    Document_store_snapshot.store cur_snapshot
-    |> Document_store.run_command
-      (UI_base.task_pool ())
-      new_command
-    |> Option.get
-    |> Document_store_snapshot.make
-      ~last_command:(Some new_command)
-  in
-  submit_update_req_and_sync_input_fields new_snapshot
+  Document_store_manager.submit_update_req (fun cur_snapshot ->
+      Document_store_snapshot.store cur_snapshot
+      |> Document_store.run_command
+        (UI_base.task_pool ())
+        new_command
+      |> Option.get
+      |> Document_store_snapshot.make
+        ~last_command:(Some new_command)
+    )
 
 let unmark (choice : [`Path of string | `Listed | `All]) =
   let new_command =
@@ -305,39 +172,31 @@ let unmark (choice : [`Path of string | `Listed | `All]) =
     | `Listed -> `Unmark_listed
     | `All -> `Unmark_all
   in
-  let cur_snapshot = get_cur_document_store_snapshot () in
-  commit_cur_document_store_snapshot ();
-  let new_snapshot =
-    Document_store_snapshot.store cur_snapshot
-    |> Document_store.run_command
-      (UI_base.task_pool ())
-      new_command
-    |> Option.get
-    |> Document_store_snapshot.make
-      ~last_command:(Some new_command)
-  in
-  submit_update_req_and_sync_input_fields new_snapshot
+  Document_store_manager.submit_update_req (fun cur_snapshot ->
+      Document_store_snapshot.store cur_snapshot
+      |> Document_store.run_command
+        (UI_base.task_pool ())
+        new_command
+      |> Option.get
+      |> Document_store_snapshot.make
+        ~last_command:(Some new_command)
+    )
 
 let narrow_search_scope_to_level ~level =
-  let cur_snapshot = get_cur_document_store_snapshot () in
-  commit_cur_document_store_snapshot ();
-  let new_snapshot =
-    Document_store_snapshot.make
-      ~last_command:(Some (`Narrow_level level))
-      (Document_store.narrow_search_scope_to_level
-         ~level
-         (Document_store_snapshot.store cur_snapshot))
-  in
-  submit_update_req_and_sync_input_fields new_snapshot
+  Document_store_manager.submit_update_req (fun cur_snapshot ->
+      Document_store_snapshot.make
+        ~last_command:(Some (`Narrow_level level))
+        (Document_store.narrow_search_scope_to_level
+           ~level
+           (Document_store_snapshot.store cur_snapshot))
+    )
 
 let update_filter () =
-  reset_document_selected ();
-  let s = fst @@ Lwd.peek Vars.filter_field in
+  let s = fst @@ Lwd.peek UI_base.Vars.filter_field in
   Document_store_manager.submit_filter_req s
 
 let update_search () =
-  reset_document_selected ();
-  let s = fst @@ Lwd.peek Vars.search_field in
+  let s = fst @@ Lwd.peek UI_base.Vars.search_field in
   Document_store_manager.submit_search_req s
 
 let compute_save_script_path () =
@@ -367,14 +226,16 @@ let save_script ~path =
       )
   in
   let lines =
-    Vars.document_store_snapshots
-    |> Dynarray.to_seq
-    |> Seq.filter_map  (fun (snapshot : Document_store_snapshot.t) ->
-        Option.map
-          Command.to_string
-          (Document_store_snapshot.last_command snapshot)
+    Eio.Mutex.use_ro Document_store_manager.lock (fun () ->
+        Document_store_manager.snapshots
+        |> Dynarray.to_seq
+        |> Seq.filter_map  (fun (snapshot : Document_store_snapshot.t) ->
+            Option.map
+              Command.to_string
+              (Document_store_snapshot.last_command snapshot)
+          )
+        |> List.of_seq
       )
-    |> List.of_seq
   in
   try
     CCIO.with_out path (fun oc ->
@@ -544,9 +405,9 @@ module Top_pane = struct
                  | `Down -> 1
                in
                let document_current_choice =
-                 Lwd.peek Vars.index_of_document_selected
+                 Lwd.peek UI_base.Vars.index_of_document_selected
                in
-               set_document_selected
+               UI_base.set_document_selected
                  ~choice_count:document_count
                  (document_current_choice + offset);
              )
@@ -597,7 +458,7 @@ module Top_pane = struct
                      | `Up -> -1
                      | `Down -> 1
                    in
-                   set_search_result_selected
+                   UI_base.set_search_result_selected
                      ~choice_count:result_count
                      (n + offset)
                  )
@@ -619,7 +480,7 @@ module Top_pane = struct
         UI_base.vpane ~width ~height
           blank blank
       ) else (
-        let$* search_result_selected = Lwd.get Vars.index_of_search_result_selected in
+        let$* search_result_selected = Lwd.get UI_base.Vars.index_of_search_result_selected in
         let search_result_group = search_result_groups.(document_selected) in
         UI_base.vpane ~width ~height
           (UI_base.Content_view.main
@@ -630,7 +491,7 @@ module Top_pane = struct
           (Search_result_list.main
              ~width
              ~search_result_group
-             ~index_of_search_result_selected:Vars.index_of_search_result_selected)
+             ~index_of_search_result_selected:UI_base.Vars.index_of_search_result_selected)
       )
   end
 
@@ -664,7 +525,7 @@ module Top_pane = struct
         script_list ~width ~height
       )
     | _ -> (
-        let$* document_selected = Lwd.get Vars.index_of_document_selected in
+        let$* document_selected = Lwd.get UI_base.Vars.index_of_document_selected in
         let$* l_ratio = Lwd.get Vars.document_list_screen_ratio in
         let l_ratio =
           match l_ratio with
@@ -801,12 +662,9 @@ module Bottom_pane = struct
         Nottui.Ui.join_z bar content
       )
     | _ -> (
-        let$* index_of_document_selected = Lwd.get Vars.index_of_document_selected in
+        let$* index_of_document_selected = Lwd.get UI_base.Vars.index_of_document_selected in
         let document_count = Array.length search_result_groups in
-        let$* cur_ver = Lwd.get Vars.document_store_cur_ver in
-        let$* snapshot =
-          Lwd.get Document_store_manager.document_store_snapshot
-        in
+        let$* (cur_ver, snapshot) = Lwd.get Document_store_manager.cur_snapshot in
         let content =
           let file_shown_count =
             Notty.I.strf ~attr
@@ -1191,14 +1049,14 @@ module Bottom_pane = struct
 
   let filter_bar =
     UI_base.Filter_bar.main
-      ~edit_field:Vars.filter_field
-      ~focus_handle:Vars.filter_field_focus_handle
+      ~edit_field:UI_base.Vars.filter_field
+      ~focus_handle:UI_base.Vars.filter_field_focus_handle
       ~f:update_filter
 
   let search_bar ~input_mode =
     UI_base.Search_bar.main ~input_mode
-      ~edit_field:Vars.search_field
-      ~focus_handle:Vars.search_field_focus_handle
+      ~edit_field:UI_base.Vars.search_field
+      ~focus_handle:UI_base.Vars.search_field_focus_handle
       ~f:update_search
 
   let main ~width ~search_result_groups =
@@ -1222,7 +1080,7 @@ let keyboard_handler
     Array.length search_result_groups
   in
   let document_current_choice =
-    Lwd.peek Vars.index_of_document_selected
+    Lwd.peek UI_base.Vars.index_of_document_selected
   in
   let search_result_group =
     if document_count = 0 then
@@ -1236,7 +1094,7 @@ let keyboard_handler
     | Some (_doc, search_results) -> Array.length search_results
   in
   let search_result_current_choice =
-    Lwd.peek Vars.index_of_search_result_selected
+    Lwd.peek UI_base.Vars.index_of_search_result_selected
   in
   match Lwd.peek UI_base.Vars.input_mode with
   | Navigate -> (
@@ -1252,7 +1110,7 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII ' ', []) -> (
-          let index = Lwd.peek Vars.index_of_document_selected in
+          let index = Lwd.peek UI_base.Vars.index_of_document_selected in
           if index < Array.length search_result_groups then (
             let doc, _ = search_result_groups.(index) in
             toggle_mark ~path:(Document.path doc)
@@ -1290,27 +1148,13 @@ let keyboard_handler
       | (`Arrow `Left, [])
       | (`ASCII 'u', [])
       | (`ASCII 'Z', [`Ctrl]) -> (
-          let cur_ver = Lwd.peek Vars.document_store_cur_ver in
-          let new_ver = cur_ver - 1 in
-          if new_ver >= 0 then (
-            Lwd.set Vars.document_store_cur_ver new_ver;
-            let new_snapshot = Dynarray.get Vars.document_store_snapshots new_ver in
-            submit_update_req_and_sync_input_fields new_snapshot;
-            reset_document_selected ();
-          );
+          Document_store_manager.shift_ver ~offset:(-1);
           `Handled
         )
       | (`Arrow `Right, [])
       | (`ASCII 'R', [`Ctrl])
       | (`ASCII 'Y', [`Ctrl]) -> (
-          let cur_ver = Lwd.peek Vars.document_store_cur_ver in
-          let new_ver = cur_ver + 1 in
-          if new_ver < Dynarray.length Vars.document_store_snapshots then (
-            Lwd.set Vars.document_store_cur_ver new_ver;
-            let new_snapshot = Dynarray.get Vars.document_store_snapshots new_ver in
-            submit_update_req_and_sync_input_fields new_snapshot;
-            reset_document_selected ();
-          );
+          Document_store_manager.shift_ver ~offset:1;
           `Handled
         )
       | (`Tab, []) -> (
@@ -1344,7 +1188,7 @@ let keyboard_handler
       | (`Page `Down, [`Shift])
       | (`ASCII 'J', [])
       | (`Arrow `Down, [`Shift]) -> (
-          set_search_result_selected
+          UI_base.set_search_result_selected
             ~choice_count:search_result_choice_count
             (search_result_current_choice+1);
           `Handled
@@ -1352,7 +1196,7 @@ let keyboard_handler
       | (`Page `Up, [`Shift])
       | (`ASCII 'K', [])
       | (`Arrow `Up, [`Shift]) -> (
-          set_search_result_selected
+          UI_base.set_search_result_selected
             ~choice_count:search_result_choice_count
             (search_result_current_choice-1);
           `Handled
@@ -1361,12 +1205,12 @@ let keyboard_handler
       | (`ASCII 'j', [])
       | (`Arrow `Down, []) -> (
           if document_count = 1 then (
-            set_search_result_selected
+            UI_base.set_search_result_selected
               ~choice_count:search_result_choice_count
               (search_result_current_choice+1);
             `Handled
           ) else (
-            set_document_selected
+            UI_base.set_document_selected
               ~choice_count:document_count
               (document_current_choice+1);
             `Handled
@@ -1376,38 +1220,36 @@ let keyboard_handler
       | (`ASCII 'k', [])
       | (`Arrow `Up, []) -> (
           if document_count = 1 then (
-            set_search_result_selected
+            UI_base.set_search_result_selected
               ~choice_count:search_result_choice_count
               (search_result_current_choice-1);
             `Handled
           ) else (
-            set_document_selected
+            UI_base.set_document_selected
               ~choice_count:document_count
               (document_current_choice-1);
             `Handled
           )
         )
       | (`ASCII 'g', []) -> (
-          set_document_selected
+          UI_base.set_document_selected
             ~choice_count:document_count
             0;
           `Handled
         )
       | (`ASCII 'G', []) -> (
-          set_document_selected
+          UI_base.set_document_selected
             ~choice_count:document_count
             (document_count - 1);
           `Handled
         )
       | (`ASCII 'f', []) -> (
-          commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff ();
-          Nottui.Focus.request Vars.filter_field_focus_handle;
+          Nottui.Focus.request UI_base.Vars.filter_field_focus_handle;
           UI_base.set_input_mode Filter;
           `Handled
         )
       | (`ASCII '/', []) -> (
-          commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff ();
-          Nottui.Focus.request Vars.search_field_focus_handle;
+          Nottui.Focus.request UI_base.Vars.search_field_focus_handle;
           UI_base.set_input_mode Search;
           `Handled
         )
@@ -1496,14 +1338,12 @@ let keyboard_handler
         match key with
         | (`Escape, []) -> true
         | (`ASCII '/', []) -> (
-            commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff ();
-            Lwd.set Vars.search_field UI_base.empty_text_field;
+            Lwd.set UI_base.Vars.search_field UI_base.empty_text_field;
             update_search ();
             true
           )
         | (`ASCII 'f', []) -> (
-            commit_cur_document_store_snapshot_if_ver_is_first_or_snapshot_id_diff ();
-            Lwd.set Vars.filter_field UI_base.empty_text_field;
+            Lwd.set UI_base.Vars.filter_field UI_base.empty_text_field;
             update_filter ();
             true
           )
@@ -1756,7 +1596,7 @@ let keyboard_handler
              true
            )
          | (`ASCII 'a', []) -> (
-             reset_document_selected ();
+             UI_base.reset_document_selected ();
              Lwd.set UI_base.Vars.quit true;
              UI_base.Vars.action := Some UI_base.Recompute_document_src;
              true
@@ -1818,25 +1658,22 @@ let keyboard_handler
   | _ -> `Unhandled
 
 let main : Nottui.ui Lwd.t =
-  let$* snapshot =
-    Lwd.get Document_store_manager.document_store_snapshot
+  let$* (_, snapshot) =
+    Lwd.get Document_store_manager.cur_snapshot
   in
-  let cur_ver = Lwd.peek Vars.document_store_cur_ver in
-  assert (Dynarray.length Vars.document_store_snapshots > 0);
-  Dynarray.set Vars.document_store_snapshots cur_ver snapshot;
   let document_store =
     Document_store_snapshot.store snapshot
   in
   let$* search_result_groups = Vars.search_result_groups in
   let document_count = Array.length search_result_groups in
-  set_document_selected
+  UI_base.set_document_selected
     ~choice_count:document_count
-    (Lwd.peek Vars.index_of_document_selected);
+    (Lwd.peek UI_base.Vars.index_of_document_selected);
   if document_count > 0 then (
-    set_search_result_selected
+    UI_base.set_search_result_selected
       ~choice_count:(Array.length
-                       (snd search_result_groups.(Lwd.peek Vars.index_of_document_selected)))
-      (Lwd.peek Vars.index_of_search_result_selected)
+                       (snd search_result_groups.(Lwd.peek UI_base.Vars.index_of_document_selected)))
+      (Lwd.peek UI_base.Vars.index_of_search_result_selected)
   );
   let$* (term_width, term_height) = Lwd.get UI_base.Vars.term_width_height in
   let$* bottom_pane =

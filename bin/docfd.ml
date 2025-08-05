@@ -627,7 +627,7 @@ let run
       ~single_line_globs
   in
   let pool = Task_pool.make ~sw (Eio.Stdenv.domain_mgr env) in
-  UI_base.Vars.pool := Some pool;
+  Atomic.set UI_base.Vars.pool (Some pool);
   String_set.iter (fun path ->
       if not (Sys.file_exists path) then (
         exit_with_error_msg
@@ -721,7 +721,9 @@ let run
      )
   );
   Lwd.set UI_base.Vars.hide_document_list hide_document_list_initially;
-  UI.Vars.init_document_store := document_store_of_document_src ~env pool ~interactive init_document_src;
+  Eio.Mutex.use_rw ~protect:false Document_store_manager.lock (fun () ->
+      Document_store_manager.init_document_store := document_store_of_document_src ~env pool ~interactive init_document_src;
+    );
   if index_only then (
     clean_up ();
     exit 0
@@ -743,10 +745,15 @@ let run
     match script with
     | None -> None
     | Some script -> (
+        let init_store =
+          Eio.Mutex.use_ro Document_store_manager.lock (fun () ->
+              !Document_store_manager.init_document_store
+            )
+        in
         match
           Script.run
             pool
-            ~init_store:!UI.Vars.init_document_store
+            ~init_store
             ~path:script
         with
         | Error msg -> exit_with_error_msg msg
@@ -810,7 +817,9 @@ let run
         )
     in
     let document_store =
-      !UI.Vars.init_document_store
+      Eio.Mutex.use_ro Document_store_manager.lock (fun () ->
+          !Document_store_manager.init_document_store
+        )
       |> (fun store ->
           match filter_exp_and_original_string with
           | None -> store
@@ -962,7 +971,7 @@ let run
               |> document_store_of_document_src ~env ~interactive pool
             in
             new_starting_store
-            |> UI.update_starting_store_and_recompute_snapshots;
+            |> Document_store_manager.update_starting_store;
             loop ()
           )
         | Open_file_and_search_result (doc, search_result) -> (
@@ -985,10 +994,15 @@ let run
           )
         | Edit_command_history -> (
             let file = Filename.temp_file "" Params.docfd_script_ext in
+            let init_snapshots =
+              Eio.Mutex.use_ro Document_store_manager.lock (fun () ->
+                  Dynarray.copy Document_store_manager.snapshots
+                )
+            in
             let init_lines =
               Seq.append
                 (
-                  UI.Vars.document_store_snapshots
+                  init_snapshots
                   |> Dynarray.to_seq
                   |> Seq.filter_map  (fun (snapshot : Document_store_snapshot.t) ->
                       Option.map
@@ -1035,6 +1049,11 @@ let run
                 )
               |> List.of_seq
             in
+            let init_store =
+              Eio.Mutex.use_ro Document_store_manager.lock (fun () ->
+                  !Document_store_manager.init_document_store
+                )
+            in
             let rec aux rerun snapshots lines : [ `No_changes | `Changes_made of Document_store_snapshot.t Dynarray.t ] =
               CCIO.with_out file (fun oc ->
                   CCIO.write_lines_l oc lines;
@@ -1057,13 +1076,13 @@ let run
                 Float.abs
                   (new_stats.st_mtime -. old_stats.st_mtime) >= Params.float_compare_margin
               then (
-                let store = ref !UI.Vars.init_document_store in
+                let store = ref init_store in
                 let snapshots = Dynarray.create () in
                 Dynarray.add_last
                   snapshots
                   (Document_store_snapshot.make
                      ~last_command:None
-                     !UI.Vars.init_document_store);
+                     init_store);
                 let rerun = ref false in
                 let lines =
                   CCIO.with_in file (fun ic ->
@@ -1119,7 +1138,7 @@ let run
             in
             (try
                let res =
-                 aux false UI.Vars.document_store_snapshots init_lines
+                 aux false init_snapshots init_lines
                in
                (try
                   Sys.remove file;
@@ -1129,7 +1148,7 @@ let run
                (match res with
                 | `No_changes -> ()
                 | `Changes_made snapshots -> (
-                    UI.load_snapshots snapshots
+                    Document_store_manager.load_snapshots snapshots
                   )
                );
              with
@@ -1159,15 +1178,20 @@ let run
             match selection with
             | `Selection [ file ] -> (
                 let path = Filename.concat dir file in
+                let init_store =
+                  Eio.Mutex.use_ro Document_store_manager.lock (fun () ->
+                      !Document_store_manager.init_document_store
+                    )
+                in
                 match
                   Script.run
                     pool
-                    ~init_store:!UI.Vars.init_document_store
+                    ~init_store
                     ~path
                 with
                 | Error msg -> exit_with_error_msg msg
                 | Ok snapshots -> (
-                    UI.load_snapshots snapshots;
+                    Document_store_manager.load_snapshots snapshots;
                     loop ()
                   )
               )
@@ -1197,6 +1221,11 @@ let run
     Document_store_manager.manager_fiber;
     UI_base.Key_binding_info.grid_light_fiber;
     (fun () ->
+       let init_store =
+         Eio.Mutex.use_ro Document_store_manager.lock (fun () ->
+             !Document_store_manager.init_document_store
+           )
+       in
        let snapshots =
          match snapshots_from_script with
          | None -> (
@@ -1204,24 +1233,24 @@ let run
              Dynarray.add_last arr
                (Document_store_snapshot.make
                   ~last_command:None
-                  !UI.Vars.init_document_store);
+                  init_store);
              arr
            )
          | Some snapshots -> snapshots
        in
-       UI.load_snapshots snapshots;
+       Document_store_manager.load_snapshots snapshots;
        (match start_with_filter with
         | None -> ()
         | Some start_with_filter -> (
             let start_with_filter_len = String.length start_with_filter in
-            Lwd.set UI.Vars.filter_field (start_with_filter, start_with_filter_len);
+            Lwd.set UI_base.Vars.filter_field (start_with_filter, start_with_filter_len);
             UI.update_filter ();
           ));
        (match start_with_search with
         | None -> ()
         | Some start_with_search -> (
             let start_with_search_len = String.length start_with_search in
-            Lwd.set UI.Vars.search_field (start_with_search, start_with_search_len);
+            Lwd.set UI_base.Vars.search_field (start_with_search, start_with_search_len);
             UI.update_search ();
           ));
        loop ();
