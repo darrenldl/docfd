@@ -970,8 +970,7 @@ let run
               compute_document_src ()
               |> document_store_of_document_src ~env ~interactive pool
             in
-            new_starting_store
-            |> Document_store_manager.update_starting_store;
+            Document_store_manager.update_starting_store new_starting_store;
             loop ()
           )
         | Open_file_and_search_result (doc, search_result) -> (
