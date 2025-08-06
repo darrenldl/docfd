@@ -6,7 +6,7 @@ version = ""
 
 with open("CHANGELOG.md") as f:
     for line in f:
-        if line.startswith("## "):
+        if line.startswith("## ") and not ("future release" in line.lower()):
             version = line.split(" ")[1].strip()
             break
 
