@@ -1,42 +1,14 @@
 # Changelog
 
-## 12.0.0
+## 12.0.0 (future release)
 
-#### Changes since 12.0.0-alpha.10
-
-- Removed disabling of drop mode key binding `d` when searching or filtering is ongoing
-
-- Fixed content view pane offset not resetting when mouse is used to scroll search result list
-
-- Fixed content view pane staying small while scrolling up when the search result is close to the bottom of the file
-
-- Swapped all mutexes to Eio mutexes to hopefully remove the very random freezes that occur quite rarely
-
-    - They feel like deadlocks due to mixing Eio mutexes
-      (which block fiber) and stdlib mutexes (which block an entire domain)
-
-- Added sorting to document list
-
-    - `s` for sort ascending mode and `Shift+S` for sort descending mode
-    - Under the sort modes, the sort by types are as follows:
-        - `p` sort by path
-        - `d` sort by path date
-        - `s` sort by score
-        - `m` sort by modification time
-
-- Added `yyyymmdd` path date extraction
-
-- Added `mod-date` to filter language
-
-- Added additional attributes to document list entry
-
-        - Path date
+#### Changes since 12.0.0-alpha.11
 
 #### Highlights of changes since 11.0.1
 
 - Replaced filter glob with a more powerful filter language, with
   autocomplete in filter field (12.0.0-alpha.1, 12.0.0-alpha.2,
-  12.0.0-alpha.5, 12.0.0-alpha.6, 12.0.0-alpha.10, 12.0.0)
+  12.0.0-alpha.5, 12.0.0-alpha.6, 12.0.0-alpha.10, 12.0.0-alpha.11)
 
 - Added content view pane scrolling (12.0.0-alpha.5, 12.0.0-alpha.8)
 
@@ -70,11 +42,54 @@
     - Using `{page_num}` and `{line_num}` crashes in 11.0.1
       when there are no search results
 
-- Added sorting to document list (12.0.0)
+- Added sorting to document list (12.0.0-alpha.11)
 
-- Added additional attributes to document list entry (12.0.0)
+- Added additional attributes to document list entry (12.0.0-alpha.11)
 
-        - Path date
+    - Path date
+
+- Reworked the internal architecture of document store snapshots
+  storage and management, which makes the overall interaction
+  between UI and core code much more robust (12.0.0-alpha.11)
+
+## 12.0.0-alpha.11
+
+- Removed disabling of drop mode key binding `d` when searching or filtering is ongoing
+
+- Fixed content view pane offset not resetting when mouse is used to scroll search result list
+
+- Fixed content view pane staying small while scrolling up when the search result is close to the bottom of the file
+
+- Swapped all mutexes to Eio mutexes to hopefully remove the very random freezes that occur quite rarely
+
+    - They feel like deadlocks due to mixing Eio mutexes
+      (which block fiber) and stdlib mutexes (which block an entire domain)
+
+- Added sorting to document list
+
+    - `s` for sort ascending mode and `Shift+S` for sort descending mode
+    - Under the sort modes, the sort by types are as follows:
+        - `p` sort by path
+        - `d` sort by path date
+        - `s` sort by score
+        - `m` sort by modification time
+
+- Added `yyyymmdd` path date extraction
+
+- Added `mod-date` to filter language
+
+- Added additional attributes to document list entry
+
+    - Path date
+
+- Reworked the internal architecture of document store snapshots storage and management
+
+    - Snapshots are now centrally managed by `Document_store_manager`
+
+    - This makes the overall interaction between UI and core code
+      much more robust, and eliminates random workarounds used to
+      deal with UI and data synchronization, which have
+      been riddled with random minor bugs
 
 ## 12.0.0-alpha.10
 
