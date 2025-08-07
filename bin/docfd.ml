@@ -721,7 +721,7 @@ let run
      )
   );
   Lwd.set UI_base.Vars.hide_document_list hide_document_list_initially;
-  Eio.Mutex.use_rw ~protect:false Document_store_manager.lock (fun () ->
+  Document_store_manager.lock (fun () ->
       Document_store_manager.init_document_store := document_store_of_document_src ~env pool ~interactive init_document_src;
     );
   if index_only then (
@@ -746,7 +746,7 @@ let run
     | None -> None
     | Some script -> (
         let init_store =
-          Eio.Mutex.use_ro Document_store_manager.lock (fun () ->
+          Document_store_manager.lock (fun () ->
               !Document_store_manager.init_document_store
             )
         in
@@ -817,7 +817,7 @@ let run
         )
     in
     let document_store =
-      Eio.Mutex.use_ro Document_store_manager.lock (fun () ->
+      Document_store_manager.lock (fun () ->
           !Document_store_manager.init_document_store
         )
       |> (fun store ->
@@ -994,7 +994,7 @@ let run
         | Edit_command_history -> (
             let file = Filename.temp_file "" Params.docfd_script_ext in
             let init_snapshots =
-              Eio.Mutex.use_ro Document_store_manager.lock (fun () ->
+              Document_store_manager.lock (fun () ->
                   Dynarray.copy Document_store_manager.snapshots
                 )
             in
@@ -1049,7 +1049,7 @@ let run
               |> List.of_seq
             in
             let init_store =
-              Eio.Mutex.use_ro Document_store_manager.lock (fun () ->
+              Document_store_manager.lock (fun () ->
                   !Document_store_manager.init_document_store
                 )
             in
@@ -1178,7 +1178,7 @@ let run
             | `Selection [ file ] -> (
                 let path = Filename.concat dir file in
                 let init_store =
-                  Eio.Mutex.use_ro Document_store_manager.lock (fun () ->
+                  Document_store_manager.lock (fun () ->
                       !Document_store_manager.init_document_store
                     )
                 in
@@ -1221,7 +1221,7 @@ let run
     UI_base.Key_binding_info.grid_light_fiber;
     (fun () ->
        let init_store =
-         Eio.Mutex.use_ro Document_store_manager.lock (fun () ->
+         Document_store_manager.lock (fun () ->
              !Document_store_manager.init_document_store
            )
        in

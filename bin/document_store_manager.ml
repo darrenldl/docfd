@@ -48,7 +48,10 @@ let stop_search () =
   let x = Atomic.exchange stop_search_signal (Stop_signal.make ()) in
   Stop_signal.broadcast x
 
-let lock = Eio.Mutex.create ()
+let mutex = Eio.Mutex.create ()
+
+let lock f =
+  Eio.Mutex.use_rw ~protect:false mutex f
 
 let init_document_store : Document_store.t ref = ref Document_store.empty
 
@@ -66,7 +69,7 @@ let cur_snapshot = Lwd.var (0, Document_store_snapshot.make_empty ())
 
 let update_starting_store (starting_store : Document_store.t) =
   let pool = UI_base.task_pool () in
-  Eio.Mutex.use_rw ~protect:false lock (fun () ->
+  lock (fun () ->
       init_document_store := starting_store;
       let starting_snapshot =
         Document_store_snapshot.make
@@ -96,7 +99,7 @@ let update_starting_store (starting_store : Document_store.t) =
 
 let load_snapshots snapshots' =
   assert (Dynarray.length snapshots' > 0);
-  Eio.Mutex.use_rw ~protect:false lock (fun () ->
+  lock (fun () ->
       Dynarray.clear snapshots;
       Dynarray.append snapshots snapshots';
       cur_ver := (Dynarray.length snapshots - 1);
@@ -116,7 +119,7 @@ let sync_input_fields_from_snapshot
       Lwd.set UI_base.Vars.search_field (s, String.length s))
 
 let shift_ver ~offset =
-  Eio.Mutex.use_rw ~protect:false lock (fun () ->
+  lock (fun () ->
       let new_ver = !cur_ver + offset in
       if 0 <= new_ver && new_ver < Dynarray.length snapshots then (
         cur_ver := new_ver;
@@ -257,7 +260,7 @@ let worker_fiber pool =
   in
   while true do
     Ping.wait worker_ping;
-    Eio.Mutex.use_rw ~protect:false lock (fun () ->
+    lock (fun () ->
         (* Ping.clear requester_ping; *)
         (match Lock_protected_cell.get filter_request with
          | None -> ()

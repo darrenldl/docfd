@@ -62,7 +62,7 @@ let reload_document (doc : Document.t) =
       )
   in
   let document_store =
-    Eio.Mutex.use_ro Document_store_manager.lock (fun () ->
+    Document_store_manager.lock (fun () ->
         !Document_store_manager.init_document_store
       )
     |> (fun store ->
@@ -226,7 +226,7 @@ let save_script ~path =
       )
   in
   let lines =
-    Eio.Mutex.use_ro Document_store_manager.lock (fun () ->
+    Document_store_manager.lock (fun () ->
         Document_store_manager.snapshots
         |> Dynarray.to_seq
         |> Seq.filter_map  (fun (snapshot : Document_store_snapshot.t) ->
