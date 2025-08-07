@@ -116,6 +116,10 @@ let update_starting_store (starting_store : Document_store.t) =
 let load_snapshots snapshots' =
   assert (Dynarray.length snapshots' > 0);
   lock (fun () ->
+      assert
+        (Document_store.equal
+           (Document_store_snapshot.store @@ Dynarray.get snapshots' 0)
+           !init_document_store);
       Dynarray.clear snapshots;
       Dynarray.append snapshots snapshots';
       cur_ver := (Dynarray.length snapshots - 1);
