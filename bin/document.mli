@@ -2,6 +2,8 @@ open Docfd_lib
 
 type t
 
+val equal : t -> t -> bool
+
 val search_mode : t -> Search_mode.t
 
 val path : t -> string

@@ -14,6 +14,15 @@ type t = {
   last_scan : Timedesc.t;
 }
 
+let equal (x : t) (y : t) =
+  x.search_mode = y.search_mode
+  &&
+  String.equal x.path y.path
+  &&
+  String.equal x.doc_hash y.doc_hash
+  &&
+  Option.equal Diet.Int.equal x.search_scope y.search_scope
+
 let compute_path_parts (path : string) =
   let path_parts = Tokenize.tokenize ~drop_spaces:false path
                    |> List.of_seq
