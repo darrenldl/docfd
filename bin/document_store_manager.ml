@@ -67,19 +67,21 @@ let cur_ver = ref 0
 
 let cur_snapshot = Lwd.var (0, Document_store_snapshot.make_empty ())
 
-type shared_state = {
-  init_document_store : Document_store.t ref;
+type view = {
+  init_document_store : Document_store.t;
   snapshots : Document_store_snapshot.t Dynarray.t;
-  cur_ver : int ref;
+  cur_ver : int;
 }
 
-let lock_with_state f =
-  f
-  {
-    init_document_store;
-    snapshots;
-    cur_ver;
-  }
+let lock_with_view f =
+  lock (fun () ->
+      f
+        {
+          init_document_store = !init_document_store;
+          snapshots = Dynarray.copy snapshots;
+          cur_ver = !cur_ver;
+        }
+    )
 
 let update_starting_store (starting_store : Document_store.t) =
   let pool = UI_base.task_pool () in

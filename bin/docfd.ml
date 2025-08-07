@@ -721,9 +721,8 @@ let run
      )
   );
   Lwd.set UI_base.Vars.hide_document_list hide_document_list_initially;
-  Document_store_manager.lock_with_state (fun state ->
-      state.init_document_store := document_store_of_document_src ~env pool ~interactive init_document_src;
-    );
+  Document_store_manager.update_starting_store
+    (document_store_of_document_src ~env pool ~interactive init_document_src);
   if index_only then (
     clean_up ();
     exit 0
@@ -746,8 +745,8 @@ let run
     | None -> None
     | Some script -> (
         let init_store =
-          Document_store_manager.lock_with_state (fun state ->
-              !(state.init_document_store)
+          Document_store_manager.lock_with_view (fun view ->
+              view.init_document_store
             )
         in
         match
@@ -817,8 +816,8 @@ let run
         )
     in
     let document_store =
-      Document_store_manager.lock_with_state (fun state ->
-          !(state.init_document_store)
+      Document_store_manager.lock_with_view (fun view ->
+          view.init_document_store
         )
       |> (fun store ->
           match filter_exp_and_original_string with
@@ -994,8 +993,8 @@ let run
         | Edit_command_history -> (
             let file = Filename.temp_file "" Params.docfd_script_ext in
             let init_snapshots =
-              Document_store_manager.lock_with_state (fun state ->
-                  Dynarray.copy state.snapshots
+              Document_store_manager.lock_with_view (fun view ->
+                  view.snapshots
                 )
             in
             let init_lines =
@@ -1049,8 +1048,8 @@ let run
               |> List.of_seq
             in
             let init_store =
-              Document_store_manager.lock_with_state (fun state ->
-                  !(state.init_document_store)
+              Document_store_manager.lock_with_view (fun view ->
+                  view.init_document_store
                 )
             in
             let rec aux rerun snapshots lines : [ `No_changes | `Changes_made of Document_store_snapshot.t Dynarray.t ] =
@@ -1178,8 +1177,8 @@ let run
             | `Selection [ file ] -> (
                 let path = Filename.concat dir file in
                 let init_store =
-                  Document_store_manager.lock_with_state (fun state ->
-                      !(state.init_document_store)
+                  Document_store_manager.lock_with_view (fun view ->
+                      view.init_document_store
                     )
                 in
                 match
@@ -1221,8 +1220,8 @@ let run
     UI_base.Key_binding_info.grid_light_fiber;
     (fun () ->
        let init_store =
-         Document_store_manager.lock_with_state (fun state ->
-             !(state.init_document_store)
+         Document_store_manager.lock_with_view (fun view ->
+             view.init_document_store
            )
        in
        let snapshots =

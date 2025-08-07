@@ -6,13 +6,13 @@ val worker_fiber : Task_pool.t -> unit
 
 val cur_snapshot : (int * Document_store_snapshot.t) Lwd.var
 
-type shared_state = {
-  init_document_store : Document_store.t ref;
+type view = {
+  init_document_store : Document_store.t;
   snapshots : Document_store_snapshot.t Dynarray.t;
-  cur_ver : int ref;
+  cur_ver : int;
 }
 
-val lock_with_state : (shared_state -> 'a) -> 'a
+val lock_with_view : (view -> 'a) -> 'a
 
 val update_starting_store : Document_store.t -> unit
 

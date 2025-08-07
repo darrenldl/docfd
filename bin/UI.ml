@@ -62,8 +62,8 @@ let reload_document (doc : Document.t) =
       )
   in
   let document_store =
-    Document_store_manager.lock_with_state (fun state ->
-        !(state.init_document_store)
+    Document_store_manager.lock_with_view (fun view ->
+        view.init_document_store
       )
     |> (fun store ->
         match doc with
@@ -226,8 +226,8 @@ let save_script ~path =
       )
   in
   let lines =
-    Document_store_manager.lock_with_state (fun state ->
-        state.snapshots
+    Document_store_manager.lock_with_view (fun view ->
+        view.snapshots
         |> Dynarray.to_seq
         |> Seq.filter_map  (fun (snapshot : Document_store_snapshot.t) ->
             Option.map
