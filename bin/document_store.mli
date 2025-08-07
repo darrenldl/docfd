@@ -2,6 +2,8 @@ open Docfd_lib
 
 type t
 
+val equal : t -> t -> bool
+
 type key = string
 
 type search_result_group = Document.t * Search_result.t array

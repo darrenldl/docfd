@@ -15,6 +15,22 @@ type t = {
   search_results : Search_result.t array String_map.t;
 }
 
+let equal (x : t) (y : t) =
+  String_map.equal Document.equal x.all_documents y.all_documents
+  &&
+  String.equal x.filter_exp_string y.filter_exp_string
+  &&
+  String_set.equal x.documents_passing_filter y.documents_passing_filter
+  &&
+  String_set.equal x.documents_marked y.documents_marked
+  &&
+  String.equal x.search_exp_string y.search_exp_string
+  &&
+  String_map.equal
+    (Array.for_all2 Search_result.equal)
+    x.search_results
+    y.search_results
+
 let size (t : t) =
   String_map.cardinal t.all_documents
 
