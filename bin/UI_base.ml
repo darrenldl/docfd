@@ -621,7 +621,8 @@ module Filter_bar = struct
       ~input_mode
       ~(edit_field : (string * int) Lwd.var)
       ~focus_handle
-      ~f
+      ~on_change
+      ~on_submit
     : Nottui.ui Lwd.t =
     Nottui_widgets.hbox
       [
@@ -632,11 +633,11 @@ module Filter_bar = struct
           ~focus:focus_handle
           ~on_change:(fun (text, x) ->
               Lwd.set edit_field (text, x);
-              f ();
+              on_change ();
             )
           ~on_submit:(fun (text, x) ->
               Lwd.set edit_field (text, x);
-              f ();
+              on_submit ();
               Lwd.set Vars.autocomplete_choices [];
               Nottui.Focus.release focus_handle;
               Lwd.set Vars.input_mode Navigate
@@ -686,7 +687,8 @@ module Search_bar = struct
       ~input_mode
       ~(edit_field : (string * int) Lwd.var)
       ~focus_handle
-      ~f
+      ~on_change
+      ~on_submit
     : Nottui.ui Lwd.t =
     Nottui_widgets.hbox
       [
@@ -697,11 +699,11 @@ module Search_bar = struct
           ~focus:focus_handle
           ~on_change:(fun (text, x) ->
               Lwd.set edit_field (text, x);
-              f ();
+              on_change ();
             )
           ~on_submit:(fun (text, x) ->
               Lwd.set edit_field (text, x);
-              f ();
+              on_submit ();
               Lwd.set Vars.autocomplete_choices [];
               Nottui.Focus.release focus_handle;
               Lwd.set Vars.input_mode Navigate

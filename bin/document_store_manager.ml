@@ -3,10 +3,10 @@ open Docfd_lib
 let single_file_view_search_request : string Lock_protected_cell.t =
   Lock_protected_cell.make ()
 
-let search_request : string Lock_protected_cell.t =
+let search_request : (bool * string) Lock_protected_cell.t =
   Lock_protected_cell.make ()
 
-let filter_request : string Lock_protected_cell.t =
+let filter_request : (bool * string) Lock_protected_cell.t =
   Lock_protected_cell.make ()
 
 let version_shift_request : int Lock_protected_cell.t =
@@ -234,19 +234,26 @@ let worker_fiber pool =
         | None -> ()
         | Some store -> (
             let command = Some (`Search s) in
-            let snapshot = Document_store_snapshot.make ~last_command:command store in
+            let snapshot =
+              Document_store_snapshot.make
+                ~committed:commit
+                ~last_command:command
+                store
+            in
             add_snapshot
               ~overwrite_if_last_snapshot_satisfies:(fun snapshot ->
-                  match Document_store_snapshot.last_command snapshot with
+                not (Document_store_snapshot.committed snapshot)
+                &&
+                  (match Document_store_snapshot.last_command snapshot with
                   | Some (`Search _) -> true
-                  | _ -> false
+                  | _ -> false)
                 )
               snapshot;
             Eio.Stream.add egress (Search_done (!cur_ver, snapshot))
           )
       )
   in
-  let process_filter_req stop_signal (s : string) =
+  let process_filter_req stop_signal ~commit (s : string) =
     match Filter_exp.parse s with
     | Some filter_exp -> (
         Eio.Stream.add egress Filtering;
@@ -263,8 +270,21 @@ let worker_fiber pool =
         | None -> ()
         | Some store -> (
             let command = Some (`Filter s) in
-            let snapshot = Document_store_snapshot.make ~last_command:command store in
-            add_snapshot snapshot;
+            let snapshot =
+              Document_store_snapshot.make
+                ~committed:commit
+                ~last_command:command
+                store
+            in
+            add_snapshot
+              ~overwrite_if_last_snapshot_satisfies:(fun snapshot ->
+                not (Document_store_snapshot.committed snapshot)
+                &&
+                  (match Document_store_snapshot.last_command snapshot with
+                  | Some (`Filter _) -> true
+                  | _ -> false)
+                )
+            snapshot;
             Eio.Stream.add egress (Filtering_done (!cur_ver, snapshot))
           )
       )
@@ -284,14 +304,14 @@ let worker_fiber pool =
         (* Ping.clear requester_ping; *)
         (match Lock_protected_cell.get filter_request with
          | None -> ()
-         | Some s -> (
-             process_filter_req (Atomic.get stop_filter_signal) s
+         | Some (commit, s) -> (
+             process_filter_req (Atomic.get stop_filter_signal) ~commit s
            )
         );
         (match Lock_protected_cell.get search_request with
          | None -> ()
-         | Some s -> (
-             process_search_req (Atomic.get stop_search_signal) s
+         | Some (commit, s) -> (
+             process_search_req (Atomic.get stop_search_signal) ~commit s
            )
         );
         (match Lock_protected_cell.get update_request with
@@ -302,18 +322,18 @@ let worker_fiber pool =
     (* Ping.ping requester_ping *)
   done
 
-let submit_filter_req (s : string) =
+let submit_filter_req ~commit (s : string) =
   Eio.Mutex.use_rw requester_lock ~protect:false (fun () ->
       stop_filter ();
       stop_search ();
-      Lock_protected_cell.set filter_request s;
+      Lock_protected_cell.set filter_request (commit, s);
       Ping.ping worker_ping
     )
 
-let submit_search_req (s : string) =
+let submit_search_req ~commit (s : string) =
   Eio.Mutex.use_rw requester_lock ~protect:false (fun () ->
       stop_search ();
-      Lock_protected_cell.set search_request s;
+      Lock_protected_cell.set search_request (commit, s);
       Ping.ping worker_ping
     )
 

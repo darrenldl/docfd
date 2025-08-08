@@ -20,9 +20,9 @@ val load_snapshots : Document_store_snapshot.t Dynarray.t -> unit
 
 val shift_ver : offset:int -> unit
 
-val submit_filter_req : string -> unit
+val submit_filter_req : commit:bool -> string -> unit
 
-val submit_search_req : string -> unit
+val submit_search_req : commit:bool -> string -> unit
 
 val submit_update_req : (Document_store_snapshot.t -> Document_store_snapshot.t) -> unit
 

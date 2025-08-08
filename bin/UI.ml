@@ -191,13 +191,13 @@ let narrow_search_scope_to_level ~level =
            (Document_store_snapshot.store cur_snapshot))
     )
 
-let update_filter () =
+let update_filter ~commit () =
   let s = fst @@ Lwd.peek UI_base.Vars.filter_field in
-  Document_store_manager.submit_filter_req s
+  Document_store_manager.submit_filter_req ~commit s
 
-let update_search () =
+let update_search ~commit () =
   let s = fst @@ Lwd.peek UI_base.Vars.search_field in
-  Document_store_manager.submit_search_req s
+  Document_store_manager.submit_search_req ~commit s
 
 let compute_save_script_path () =
   let base_name, _ = Lwd.peek Vars.save_script_field in
@@ -1051,13 +1051,15 @@ module Bottom_pane = struct
     UI_base.Filter_bar.main
       ~edit_field:UI_base.Vars.filter_field
       ~focus_handle:UI_base.Vars.filter_field_focus_handle
-      ~f:update_filter
+      ~on_change:(update_filter ~commit:false)
+      ~on_submit:(update_filter ~commit:true)
 
   let search_bar ~input_mode =
     UI_base.Search_bar.main ~input_mode
       ~edit_field:UI_base.Vars.search_field
       ~focus_handle:UI_base.Vars.search_field_focus_handle
-      ~f:update_search
+      ~on_change:(update_search ~commit:false)
+      ~on_submit:(update_search ~commit:true)
 
   let main ~width ~search_result_groups =
     let$* input_mode = Lwd.get UI_base.Vars.input_mode in
@@ -1339,12 +1341,12 @@ let keyboard_handler
         | (`Escape, []) -> true
         | (`ASCII '/', []) -> (
             Lwd.set UI_base.Vars.search_field UI_base.empty_text_field;
-            update_search ();
+            update_search ~commit:true ();
             true
           )
         | (`ASCII 'f', []) -> (
             Lwd.set UI_base.Vars.filter_field UI_base.empty_text_field;
-            update_filter ();
+            update_filter ~commit:true ();
             true
           )
         | _ -> false
