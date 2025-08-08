@@ -84,7 +84,8 @@
 
 - Reworked the internal architecture of document store snapshots storage and management
 
-    - Snapshots are now centrally managed by `Document_store_manager`
+    - Snapshots are now centrally managed by `Document_store_manager`, along with
+      improvements to snapshot handling logic in general
 
     - This makes the overall interaction between UI and core code
       much more robust, and eliminates random workarounds used to
