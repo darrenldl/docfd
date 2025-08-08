@@ -61,7 +61,10 @@ let init_document_store : Document_store.t ref = ref Document_store.empty
    history construction even when worker fiber
    is inactive.
 *)
-let snapshots = Dynarray.create ()
+let snapshots =
+  let arr = Dynarray.create () in
+  Dynarray.add_last arr (Document_store_snapshot.make_empty ());
+  arr
 
 let cur_ver = ref 0
 
