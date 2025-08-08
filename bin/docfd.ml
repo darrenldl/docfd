@@ -1242,14 +1242,14 @@ let run
         | Some start_with_filter -> (
             let start_with_filter_len = String.length start_with_filter in
             Lwd.set UI_base.Vars.filter_field (start_with_filter, start_with_filter_len);
-            UI.update_filter ();
+            UI.update_filter ~commit:true ();
           ));
        (match start_with_search with
         | None -> ()
         | Some start_with_search -> (
             let start_with_search_len = String.length start_with_search in
             Lwd.set UI_base.Vars.search_field (start_with_search, start_with_search_len);
-            UI.update_search ();
+            UI.update_search ~commit:true ();
           ));
        loop ();
     );
