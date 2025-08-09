@@ -97,9 +97,24 @@ let lock_with_view : type a. (view -> a) -> a =
         }
     )
 
+let lock_for_external_editing f =
+  (* This blocks further requests from being made. *)
+  lock_as_requester (fun () ->
+      (* We try to get worker to finish ASAP. *)
+      stop_filter ();
+      stop_search ();
+      lock_worker_state (fun () ->
+          (* There should not be any outstanding requests. *)
+          assert (Option.is_none (Lock_protected_cell.get filter_request));
+          assert (Option.is_none (Lock_protected_cell.get search_request));
+          assert (Option.is_none (Lock_protected_cell.get update_request));
+          f ()
+        )
+    )
+
 let update_starting_store (starting_store : Document_store.t) =
-  let pool = UI_base.task_pool () in
-  lock (fun () ->
+  lock_for_external_editing (fun () ->
+      let pool = UI_base.task_pool () in
       init_document_store := starting_store;
       let starting_snapshot =
         Document_store_snapshot.make
@@ -129,7 +144,7 @@ let update_starting_store (starting_store : Document_store.t) =
 
 let load_snapshots snapshots' =
   assert (Dynarray.length snapshots' > 0);
-  lock (fun () ->
+  lock_for_external_editing (fun () ->
       assert
         (Document_store.equal
            (Document_store_snapshot.store @@ Dynarray.get snapshots' 0)
@@ -153,7 +168,7 @@ let sync_input_fields_from_snapshot
       Lwd.set UI_base.Vars.search_field (s, String.length s))
 
 let shift_ver ~offset =
-  lock (fun () ->
+  lock_for_external_editing (fun () ->
       let new_ver = !cur_ver + offset in
       if 0 <= new_ver && new_ver < Dynarray.length snapshots then (
         cur_ver := new_ver;
