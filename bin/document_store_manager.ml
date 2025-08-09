@@ -55,10 +55,11 @@ let stop_search () =
   let x = Atomic.exchange stop_search_signal (Stop_signal.make ()) in
   Stop_signal.broadcast x
 
-let mutex = Eio.Mutex.create ()
+let _worker_state_lock = Eio.Mutex.create ()
 
-let lock f =
-  Eio.Mutex.use_rw ~protect:false mutex f
+let lock_worker_state : type a. (unit -> a) -> a =
+  fun f ->
+  Eio.Mutex.use_rw ~protect:false _worker_state_lock f
 
 let init_document_store : Document_store.t ref = ref Document_store.empty
 
@@ -85,8 +86,9 @@ type view = {
   cur_ver : int;
 }
 
-let lock_with_view f =
-  lock (fun () ->
+let lock_with_view : type a. (view -> a) -> a =
+  fun f ->
+  lock_worker_state (fun () ->
       f
         {
           init_document_store = !init_document_store;
@@ -325,7 +327,7 @@ let worker_fiber pool =
   in
   while true do
     Ping.wait worker_ping;
-    lock (fun () ->
+    lock_worker_state (fun () ->
         (match Lock_protected_cell.get filter_request with
          | None -> ()
          | Some (commit, s) -> (
