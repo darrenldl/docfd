@@ -35,7 +35,7 @@ module Vars = struct
 
   let search_result_groups : Document_store.search_result_group array Lwd.t =
     let$* _ver, snapshot =
-      Lwd.get Document_store_manager.cur_snapshot
+      Document_store_manager.cur_snapshot
     in
     let document_store =
       Document_store_snapshot.store snapshot
@@ -664,7 +664,7 @@ module Bottom_pane = struct
     | _ -> (
         let$* index_of_document_selected = Lwd.get UI_base.Vars.index_of_document_selected in
         let document_count = Array.length search_result_groups in
-        let$* (cur_ver, snapshot) = Lwd.get Document_store_manager.cur_snapshot in
+        let$* (cur_ver, snapshot) = Document_store_manager.cur_snapshot in
         let content =
           let file_shown_count =
             Notty.I.strf ~attr
@@ -1661,7 +1661,7 @@ let keyboard_handler
 
 let main : Nottui.ui Lwd.t =
   let$* (_, snapshot) =
-    Lwd.get Document_store_manager.cur_snapshot
+    Document_store_manager.cur_snapshot
   in
   let document_store =
     Document_store_snapshot.store snapshot
