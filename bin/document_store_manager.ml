@@ -357,7 +357,10 @@ let worker_fiber pool =
         );
         (match Lock_protected_cell.get update_request with
          | None -> ()
-         | Some snapshot -> process_update_req snapshot
+         | Some snapshot -> (
+             process_update_req snapshot;
+             Eio.Stream.add update_request_completion_ack ();
+           )
         );
       )
   done
