@@ -163,34 +163,40 @@ let manager_fiber () =
   in
   while true do
     let payload = Eio.Stream.take egress in
-    match payload with
-    | Search_exp_parse_error -> (
-        Lwd.set UI_base.Vars.search_ui_status `Parse_error
-      )
-    | Searching -> (
-        Lwd.set UI_base.Vars.search_ui_status `Searching
-      )
-    | Filtering -> (
-        Lwd.set UI_base.Vars.filter_ui_status `Filtering
-      )
-    | Search_done (ver, snapshot) -> (
-        update_snapshot ver snapshot;
-        Lwd.set UI_base.Vars.search_ui_status `Idle
-      )
-    | Filter_glob_parse_error -> (
-        Lwd.set UI_base.Vars.filter_ui_status `Parse_error
-      )
-    | Filtering_done (ver, snapshot) -> (
-        update_snapshot ver snapshot;
-        Lwd.set UI_base.Vars.filter_ui_status `Idle
-      )
-    | Update (ver, snapshot) -> (
-        update_snapshot ver snapshot;
-        Lwd.set UI_base.Vars.search_ui_status `Idle;
-        Lwd.set UI_base.Vars.filter_ui_status `Idle;
-        sync_input_fields_from_snapshot snapshot;
-        Eio.Stream.add egress_ack ();
-      )
+    (match payload with
+     | Search_exp_parse_error -> (
+         Lwd.set UI_base.Vars.search_ui_status `Parse_error
+       )
+     | Searching -> (
+         Lwd.set UI_base.Vars.search_ui_status `Searching
+       )
+     | Filtering -> (
+         Lwd.set UI_base.Vars.filter_ui_status `Filtering
+       )
+     | Search_cancelled -> (
+         Lwd.set UI_base.Vars.search_ui_status `Idle
+       )
+     | Search_done (ver, snapshot) -> (
+         update_snapshot ver snapshot;
+         Lwd.set UI_base.Vars.search_ui_status `Idle
+       )
+     | Filter_glob_parse_error -> (
+         Lwd.set UI_base.Vars.filter_ui_status `Parse_error
+       )
+     | Filtering_cancelled -> (
+         Lwd.set UI_base.Vars.filter_ui_status `Idle
+       )
+     | Filtering_done (ver, snapshot) -> (
+         update_snapshot ver snapshot;
+         Lwd.set UI_base.Vars.filter_ui_status `Idle
+       )
+     | Update (ver, snapshot) -> (
+         update_snapshot ver snapshot;
+         Lwd.set UI_base.Vars.search_ui_status `Idle;
+         Lwd.set UI_base.Vars.filter_ui_status `Idle;
+         sync_input_fields_from_snapshot snapshot;
+       ));
+    Eio.Stream.add egress_ack ();
   done
 
 let worker_fiber pool =
@@ -217,13 +223,17 @@ let worker_fiber pool =
       incr cur_ver;
     );
   in
-  let process_search_req stop_signal (s : string) =
+  let send_to_manager x =
+    Eio.Stream.add egress x;
+    Eio.Stream.take egress_ack;
+  in
+  let process_search_req stop_signal ~commit (s : string) =
     match Search_exp.parse s with
     | None -> (
-        Eio.Stream.add egress Search_exp_parse_error
+        send_to_manager Search_exp_parse_error
       )
     | Some search_exp -> (
-        Eio.Stream.add egress Searching;
+        send_to_manager Searching;
         let store =
           get_cur_snapshot ()
           |> Document_store_snapshot.store
@@ -234,7 +244,9 @@ let worker_fiber pool =
             search_exp
         in
         match store with
-        | None -> ()
+        | None -> (
+            send_to_manager Search_cancelled
+          )
         | Some store -> (
             let command = Some (`Search s) in
             let snapshot =
@@ -245,21 +257,21 @@ let worker_fiber pool =
             in
             add_snapshot
               ~overwrite_if_last_snapshot_satisfies:(fun snapshot ->
-                not (Document_store_snapshot.committed snapshot)
-                &&
+                  not (Document_store_snapshot.committed snapshot)
+                  &&
                   (match Document_store_snapshot.last_command snapshot with
-                  | Some (`Search _) -> true
-                  | _ -> false)
+                   | Some (`Search _) -> true
+                   | _ -> false)
                 )
               snapshot;
-            Eio.Stream.add egress (Search_done (!cur_ver, snapshot))
+            send_to_manager (Search_done (!cur_ver, snapshot))
           )
       )
   in
   let process_filter_req stop_signal ~commit (s : string) =
     match Filter_exp.parse s with
     | Some filter_exp -> (
-        Eio.Stream.add egress Filtering;
+        send_to_manager Filtering;
         let store =
           get_cur_snapshot ()
           |> Document_store_snapshot.store
@@ -270,7 +282,9 @@ let worker_fiber pool =
             filter_exp
         in
         match store with
-        | None -> ()
+        | None -> (
+            send_to_manager Filtering_cancelled
+          )
         | Some store -> (
             let command = Some (`Filter s) in
             let snapshot =
@@ -281,25 +295,24 @@ let worker_fiber pool =
             in
             add_snapshot
               ~overwrite_if_last_snapshot_satisfies:(fun snapshot ->
-                not (Document_store_snapshot.committed snapshot)
-                &&
+                  not (Document_store_snapshot.committed snapshot)
+                  &&
                   (match Document_store_snapshot.last_command snapshot with
-                  | Some (`Filter _) -> true
-                  | _ -> false)
+                   | Some (`Filter _) -> true
+                   | _ -> false)
                 )
-            snapshot;
-            Eio.Stream.add egress (Filtering_done (!cur_ver, snapshot))
+              snapshot;
+            send_to_manager (Filtering_done (!cur_ver, snapshot))
           )
       )
     | None -> (
-        Eio.Stream.add egress Filter_glob_parse_error
+        send_to_manager Filter_glob_parse_error
       )
   in
   let process_update_req f =
     let next_snapshot = f (Dynarray.get_last snapshots) in
     add_snapshot next_snapshot;
-    Eio.Stream.add egress (Update (!cur_ver, next_snapshot));
-    Eio.Stream.take egress_ack;
+    send_to_manager (Update (!cur_ver, next_snapshot))
   in
   while true do
     Ping.wait worker_ping;
