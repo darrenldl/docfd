@@ -68,7 +68,9 @@ let snapshots =
 
 let cur_ver = ref 0
 
-let cur_snapshot = Lwd.var (0, Document_store_snapshot.make_empty ())
+let cur_snapshot_var = Lwd.var (0, Document_store_snapshot.make_empty ())
+
+let cur_snapshot = Lwd.get cur_snapshot_var
 
 type view = {
   init_document_store : Document_store.t;
@@ -112,7 +114,7 @@ let update_starting_store (starting_store : Document_store.t) =
           i
           (Document_store_snapshot.update_store store cur)
       done;
-      Lwd.set cur_snapshot (!cur_ver, Dynarray.get_last snapshots);
+      Lwd.set cur_snapshot_var (!cur_ver, Dynarray.get_last snapshots);
       UI_base.reset_document_selected ()
     )
 
@@ -126,7 +128,7 @@ let load_snapshots snapshots' =
       Dynarray.clear snapshots;
       Dynarray.append snapshots snapshots';
       cur_ver := (Dynarray.length snapshots - 1);
-      Lwd.set cur_snapshot (!cur_ver, Dynarray.get_last snapshots);
+      Lwd.set cur_snapshot_var (!cur_ver, Dynarray.get_last snapshots);
       UI_base.reset_document_selected ()
     )
 
@@ -147,7 +149,7 @@ let shift_ver ~offset =
       if 0 <= new_ver && new_ver < Dynarray.length snapshots then (
         cur_ver := new_ver;
         let snapshot = Dynarray.get snapshots new_ver in
-        Lwd.set cur_snapshot (new_ver, snapshot);
+        Lwd.set cur_snapshot_var (new_ver, snapshot);
         UI_base.reset_document_selected ();
         sync_input_fields_from_snapshot snapshot;
       )
@@ -159,7 +161,7 @@ let manager_fiber () =
   *)
   let update_snapshot ver snapshot =
     UI_base.reset_document_selected ();
-    Lwd.set cur_snapshot (ver, snapshot);
+    Lwd.set cur_snapshot_var (ver, snapshot);
   in
   while true do
     let payload = Eio.Stream.take egress in

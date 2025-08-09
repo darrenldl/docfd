@@ -4,7 +4,7 @@ val manager_fiber : unit -> unit
 
 val worker_fiber : Task_pool.t -> unit
 
-val cur_snapshot : (int * Document_store_snapshot.t) Lwd.var
+val cur_snapshot : (int * Document_store_snapshot.t) Lwd.t
 
 type view = {
   init_document_store : Document_store.t;
