@@ -20,7 +20,11 @@ let update_request_completion_ack : unit Eio.Stream.t =
 
 let worker_ping : Ping.t = Ping.make ()
 
-let requester_lock = Eio.Mutex.create ()
+let _requester_lock = Eio.Mutex.create ()
+
+let lock_as_requester : type a. (unit -> a) -> a =
+  fun f ->
+  Eio.Mutex.use_rw ~protect:false _requester_lock f
 
 (* let requester_ping : Ping.t = Ping.make () *)
 
@@ -342,7 +346,7 @@ let worker_fiber pool =
   done
 
 let submit_filter_req ~commit (s : string) =
-  Eio.Mutex.use_rw requester_lock ~protect:false (fun () ->
+  lock_as_requester (fun () ->
       stop_filter ();
       stop_search ();
       Lock_protected_cell.set filter_request (commit, s);
@@ -350,14 +354,14 @@ let submit_filter_req ~commit (s : string) =
     )
 
 let submit_search_req ~commit (s : string) =
-  Eio.Mutex.use_rw requester_lock ~protect:false (fun () ->
+  lock_as_requester (fun () ->
       stop_search ();
       Lock_protected_cell.set search_request (commit, s);
       Ping.ping worker_ping
     )
 
 let submit_update_req f =
-  Eio.Mutex.use_rw requester_lock ~protect:false (fun () ->
+  lock_as_requester (fun () ->
       stop_filter ();
       stop_search ();
       Lock_protected_cell.unset search_request;
