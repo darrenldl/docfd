@@ -88,17 +88,6 @@ type view = {
   cur_ver : int;
 }
 
-let lock_with_view : type a. (view -> a) -> a =
-  fun f ->
-  lock_worker_state (fun () ->
-      f
-        {
-          init_document_store = !init_document_store;
-          snapshots = Dynarray.copy snapshots;
-          cur_ver = !cur_ver;
-        }
-    )
-
 let lock_for_external_editing f =
   (* This blocks further requests from being made. *)
   lock_as_requester (fun () ->
@@ -112,6 +101,17 @@ let lock_for_external_editing f =
           assert (Option.is_none (Lock_protected_cell.get update_request));
           f ()
         )
+    )
+
+let lock_with_view : type a. (view -> a) -> a =
+  fun f ->
+  lock_for_external_editing (fun () ->
+      f
+        {
+          init_document_store = !init_document_store;
+          snapshots = Dynarray.copy snapshots;
+          cur_ver = !cur_ver;
+        }
     )
 
 let update_starting_store (starting_store : Document_store.t) =
