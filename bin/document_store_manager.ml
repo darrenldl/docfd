@@ -15,6 +15,9 @@ let version_shift_request : int Lock_protected_cell.t =
 let update_request : (Document_store_snapshot.t -> Document_store_snapshot.t) Lock_protected_cell.t =
   Lock_protected_cell.make ()
 
+let update_request_completion_ack : unit Eio.Stream.t =
+  Eio.Stream.create 0
+
 let worker_ping : Ping.t = Ping.make ()
 
 let requester_lock = Eio.Mutex.create ()
@@ -319,7 +322,6 @@ let worker_fiber pool =
   while true do
     Ping.wait worker_ping;
     lock (fun () ->
-        (* Ping.clear requester_ping; *)
         (match Lock_protected_cell.get filter_request with
          | None -> ()
          | Some (commit, s) -> (
@@ -337,7 +339,6 @@ let worker_fiber pool =
          | Some snapshot -> process_update_req snapshot
         );
       )
-    (* Ping.ping requester_ping *)
   done
 
 let submit_filter_req ~commit (s : string) =
@@ -362,7 +363,6 @@ let submit_update_req f =
       Lock_protected_cell.unset search_request;
       Lock_protected_cell.unset filter_request;
       Lock_protected_cell.set update_request f;
-      (* Ping.clear requester_ping; *)
       Ping.ping worker_ping;
-      (* Ping.wait requester_ping *)
+      Eio.Stream.take update_request_completion_ack;
     )
