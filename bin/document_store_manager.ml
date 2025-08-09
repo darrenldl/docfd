@@ -31,9 +31,11 @@ let lock_as_requester : type a. (unit -> a) -> a =
 type egress_payload =
   | Search_exp_parse_error
   | Searching
+  | Search_cancelled
   | Search_done of int * Document_store_snapshot.t
   | Filter_glob_parse_error
   | Filtering
+  | Filtering_cancelled
   | Filtering_done of int * Document_store_snapshot.t
   | Update of int * Document_store_snapshot.t
 
@@ -200,7 +202,6 @@ let manager_fiber () =
          Lwd.set UI_base.Vars.filter_ui_status `Filtering
        )
      | Search_cancelled -> (
-         Lwd.set UI_base.Vars.search_ui_status `Idle
        )
      | Search_done (ver, snapshot) -> (
          update_snapshot ver snapshot;
@@ -210,7 +211,6 @@ let manager_fiber () =
          Lwd.set UI_base.Vars.filter_ui_status `Parse_error
        )
      | Filtering_cancelled -> (
-         Lwd.set UI_base.Vars.filter_ui_status `Idle
        )
      | Filtering_done (ver, snapshot) -> (
          update_snapshot ver snapshot;
