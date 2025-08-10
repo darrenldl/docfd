@@ -105,6 +105,9 @@ let lock_for_external_editing f =
       (* We try to get worker to finish ASAP. *)
       stop_filter ();
       stop_search ();
+      (* Locking worker also locks the manager, as egress_ack forces
+         lock-step progression of the system.
+      *)
       lock_worker_state (fun () ->
           (* There should not be any outstanding requests. *)
           assert (Option.is_none (Lock_protected_cell.get filter_request));
