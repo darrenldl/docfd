@@ -113,7 +113,12 @@ let lock_for_external_editing f =
           assert (Option.is_none (Lock_protected_cell.get filter_request));
           assert (Option.is_none (Lock_protected_cell.get search_request));
           assert (Option.is_none (Lock_protected_cell.get update_request));
-          f ()
+          let result = f () in
+          let snapshot = Dynarray.get snapshots !cur_ver in
+          Lwd.set cur_snapshot_var (!cur_ver, snapshot);
+          sync_input_fields_from_snapshot snapshot;
+          UI_base.reset_document_selected ();
+          result
         )
     )
 
@@ -154,8 +159,7 @@ let update_starting_store (starting_store : Document_store.t) =
           i
           (Document_store_snapshot.update_store store cur)
       done;
-      Lwd.set cur_snapshot_var (!cur_ver, Dynarray.get_last snapshots);
-      UI_base.reset_document_selected ()
+      cur_ver := (Dynarray.length snapshots - 1);
     )
 
 let load_snapshots snapshots' =
@@ -168,13 +172,11 @@ let load_snapshots snapshots' =
       Dynarray.clear snapshots;
       Dynarray.append snapshots snapshots';
       cur_ver := (Dynarray.length snapshots - 1);
-      Lwd.set cur_snapshot_var (!cur_ver, Dynarray.get_last snapshots);
-      UI_base.reset_document_selected ()
     )
 
 let stop_filter_and_search_and_restore_input_fields () =
   lock_for_external_editing (fun () ->
-      sync_input_fields_from_snapshot (Dynarray.get_last snapshots);
+      ()
     )
 
 let shift_ver ~offset =
@@ -182,10 +184,6 @@ let shift_ver ~offset =
       let new_ver = !cur_ver + offset in
       if 0 <= new_ver && new_ver < Dynarray.length snapshots then (
         cur_ver := new_ver;
-        let snapshot = Dynarray.get snapshots new_ver in
-        Lwd.set cur_snapshot_var (new_ver, snapshot);
-        UI_base.reset_document_selected ();
-        sync_input_fields_from_snapshot snapshot;
       )
     )
 
