@@ -485,7 +485,6 @@ module Top_pane = struct
         let search_result_group = search_result_groups.(document_selected) in
         UI_base.vpane ~width ~height
           (UI_base.Content_view.main
-             ~view_offset:UI_base.Vars.content_view_offset
              ~width
              ~search_result_group
              ~search_result_selected)

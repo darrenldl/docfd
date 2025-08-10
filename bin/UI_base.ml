@@ -239,7 +239,6 @@ let mouse_handler
 
 module Content_view = struct
   let main
-      ~view_offset
       ~height
       ~width
       ~(search_result_group : Document.t * Search_result.t array)
@@ -256,7 +255,7 @@ module Content_view = struct
     let content =
       Content_and_search_result_render.content_snippet
         ~doc_hash:(Document.doc_hash document)
-        ~view_offset
+        ~view_offset:Vars.content_view_offset
         ?search_result
         ~height
         ~width
