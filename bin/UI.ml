@@ -225,6 +225,7 @@ let save_script ~path =
           (Fmt.str "failed to read script %s" path)
       )
   in
+  Document_store_manager.stop_filter_and_search_and_restore_input_fields ();
   let lines =
     Document_store_manager.lock_with_view (fun view ->
         view.snapshots

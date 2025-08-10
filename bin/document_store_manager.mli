@@ -26,3 +26,4 @@ val submit_search_req : commit:bool -> string -> unit
 
 val submit_update_req : (Document_store_snapshot.t -> Document_store_snapshot.t) -> unit
 
+val stop_filter_and_search_and_restore_input_fields : unit -> unit

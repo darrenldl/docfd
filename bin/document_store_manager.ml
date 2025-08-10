@@ -169,6 +169,11 @@ let sync_input_fields_from_snapshot
   |> (fun s ->
       Lwd.set UI_base.Vars.search_field (s, String.length s))
 
+let stop_filter_and_search_and_restore_input_fields () =
+  lock_for_external_editing (fun () ->
+      sync_input_fields_from_snapshot (Dynarray.get_last snapshots);
+    )
+
 let shift_ver ~offset =
   lock_for_external_editing (fun () ->
       let new_ver = !cur_ver + offset in

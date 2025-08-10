@@ -962,6 +962,7 @@ let run
     match !UI_base.Vars.action with
     | None -> ()
     | Some action -> (
+        Document_store_manager.stop_filter_and_search_and_restore_input_fields ();
         match action with
         | UI_base.Recompute_document_src -> (
             close_term ();
