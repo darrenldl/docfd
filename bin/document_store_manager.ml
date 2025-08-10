@@ -287,11 +287,13 @@ let worker_fiber pool =
             in
             add_snapshot
               ~overwrite_if_last_snapshot_satisfies:(fun snapshot ->
-                  not (Document_store_snapshot.committed snapshot)
-                  &&
-                  (match Document_store_snapshot.last_command snapshot with
-                   | Some (`Search _) -> true
-                   | _ -> false)
+                  match Document_store_snapshot.last_command snapshot with
+                  | Some (`Search s') -> (
+                      not (Document_store_snapshot.committed snapshot)
+                      ||
+                      s' = s
+                    )
+                  | _ -> false
                 )
               snapshot;
             send_to_manager (Search_done (!cur_ver, snapshot))
@@ -325,11 +327,13 @@ let worker_fiber pool =
             in
             add_snapshot
               ~overwrite_if_last_snapshot_satisfies:(fun snapshot ->
-                  not (Document_store_snapshot.committed snapshot)
-                  &&
-                  (match Document_store_snapshot.last_command snapshot with
-                   | Some (`Filter _) -> true
-                   | _ -> false)
+                  match Document_store_snapshot.last_command snapshot with
+                  | Some (`Filter s') -> (
+                      not (Document_store_snapshot.committed snapshot)
+                      ||
+                      s' = s
+                    )
+                  | _ -> false
                 )
               snapshot;
             send_to_manager (Filtering_done (!cur_ver, snapshot))
