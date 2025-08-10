@@ -88,6 +88,17 @@ type view = {
   cur_ver : int;
 }
 
+let sync_input_fields_from_snapshot
+    (x : Document_store_snapshot.t)
+  =
+  let store = Document_store_snapshot.store x in
+  Document_store.filter_exp_string store
+  |> (fun s ->
+      Lwd.set UI_base.Vars.filter_field (s, String.length s));
+  Document_store.search_exp_string store
+  |> (fun s ->
+      Lwd.set UI_base.Vars.search_field (s, String.length s))
+
 let lock_for_external_editing f =
   (* This blocks further requests from being made. *)
   lock_as_requester (fun () ->
@@ -157,17 +168,6 @@ let load_snapshots snapshots' =
       Lwd.set cur_snapshot_var (!cur_ver, Dynarray.get_last snapshots);
       UI_base.reset_document_selected ()
     )
-
-let sync_input_fields_from_snapshot
-    (x : Document_store_snapshot.t)
-  =
-  let store = Document_store_snapshot.store x in
-  Document_store.filter_exp_string store
-  |> (fun s ->
-      Lwd.set UI_base.Vars.filter_field (s, String.length s));
-  Document_store.search_exp_string store
-  |> (fun s ->
-      Lwd.set UI_base.Vars.search_field (s, String.length s))
 
 let stop_filter_and_search_and_restore_input_fields () =
   lock_for_external_editing (fun () ->
