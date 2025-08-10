@@ -99,7 +99,7 @@ let sync_input_fields_from_snapshot
   |> (fun s ->
       Lwd.set UI_base.Vars.search_field (s, String.length s))
 
-let lock_for_external_editing f =
+let lock_for_external_editing ~clean_up f =
   (* This blocks further requests from being made. *)
   lock_as_requester (fun () ->
       (* We try to get worker to finish ASAP. *)
@@ -114,17 +114,19 @@ let lock_for_external_editing f =
           assert (Option.is_none (Lock_protected_cell.get search_request));
           assert (Option.is_none (Lock_protected_cell.get update_request));
           let result = f () in
-          let snapshot = Dynarray.get snapshots !cur_ver in
-          Lwd.set cur_snapshot_var (!cur_ver, snapshot);
-          sync_input_fields_from_snapshot snapshot;
-          UI_base.reset_document_selected ();
+          if clean_up then (
+            let snapshot = Dynarray.get snapshots !cur_ver in
+            Lwd.set cur_snapshot_var (!cur_ver, snapshot);
+            sync_input_fields_from_snapshot snapshot;
+            UI_base.reset_document_selected ();
+          );
           result
         )
     )
 
 let lock_with_view : type a. (view -> a) -> a =
   fun f ->
-  lock_for_external_editing (fun () ->
+  lock_for_external_editing ~clean_up:false (fun () ->
       f
         {
           init_document_store = !init_document_store;
@@ -134,7 +136,7 @@ let lock_with_view : type a. (view -> a) -> a =
     )
 
 let update_starting_store (starting_store : Document_store.t) =
-  lock_for_external_editing (fun () ->
+  lock_for_external_editing ~clean_up:true (fun () ->
       let pool = UI_base.task_pool () in
       init_document_store := starting_store;
       let starting_snapshot =
@@ -164,7 +166,7 @@ let update_starting_store (starting_store : Document_store.t) =
 
 let load_snapshots snapshots' =
   assert (Dynarray.length snapshots' > 0);
-  lock_for_external_editing (fun () ->
+  lock_for_external_editing ~clean_up:true (fun () ->
       assert
         (Document_store.equal
            (Document_store_snapshot.store @@ Dynarray.get snapshots' 0)
@@ -175,12 +177,12 @@ let load_snapshots snapshots' =
     )
 
 let stop_filter_and_search_and_restore_input_fields () =
-  lock_for_external_editing (fun () ->
+  lock_for_external_editing ~clean_up:true (fun () ->
       ()
     )
 
 let shift_ver ~offset =
-  lock_for_external_editing (fun () ->
+  lock_for_external_editing ~clean_up:true (fun () ->
       let new_ver = !cur_ver + offset in
       if 0 <= new_ver && new_ver < Dynarray.length snapshots then (
         cur_ver := new_ver;
