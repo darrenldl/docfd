@@ -12,12 +12,6 @@ let filter_request : (bool * string) Lock_protected_cell.t =
 let version_shift_request : int Lock_protected_cell.t =
   Lock_protected_cell.make ()
 
-let update_request : (Document_store_snapshot.t -> Document_store_snapshot.t) Lock_protected_cell.t =
-  Lock_protected_cell.make ()
-
-let update_request_completion_ack : unit Eio.Stream.t =
-  Eio.Stream.create 0
-
 let worker_ping : Ping.t = Ping.make ()
 
 let _requester_lock = Eio.Mutex.create ()
@@ -37,7 +31,6 @@ type egress_payload =
   | Filtering
   | Filtering_cancelled
   | Filtering_done of int * Document_store_snapshot.t
-  | Update of int * Document_store_snapshot.t
 
 let egress : egress_payload Eio.Stream.t =
   Eio.Stream.create 0
@@ -112,13 +105,13 @@ let lock_for_external_editing ~clean_up f =
           (* There should not be any outstanding requests. *)
           assert (Option.is_none (Lock_protected_cell.get filter_request));
           assert (Option.is_none (Lock_protected_cell.get search_request));
-          assert (Option.is_none (Lock_protected_cell.get update_request));
           let result = f () in
           if clean_up then (
+            Lwd.set UI_base.Vars.search_ui_status `Idle;
+            Lwd.set UI_base.Vars.filter_ui_status `Idle;
             let snapshot = Dynarray.get snapshots !cur_ver in
             Lwd.set cur_snapshot_var (!cur_ver, snapshot);
             sync_input_fields_from_snapshot snapshot;
-            UI_base.reset_document_selected ();
           );
           result
         )
@@ -189,6 +182,14 @@ let shift_ver ~offset =
       )
     )
 
+let update_from_cur_snapshot f =
+  lock_for_external_editing ~clean_up:true (fun () ->
+      Dynarray.truncate snapshots (!cur_ver + 1);
+      let next_snapshot = f (Dynarray.get_last snapshots) in
+      Dynarray.add_last snapshots next_snapshot;
+      cur_ver := Dynarray.length snapshots - 1;
+    )
+
 let manager_fiber () =
   (* This fiber handles updates of Lwd.var which are not thread-safe,
      and thus cannot be done by worker_fiber directly
@@ -224,12 +225,7 @@ let manager_fiber () =
          update_snapshot ver snapshot;
          Lwd.set UI_base.Vars.filter_ui_status `Idle
        )
-     | Update (ver, snapshot) -> (
-         update_snapshot ver snapshot;
-         Lwd.set UI_base.Vars.search_ui_status `Idle;
-         Lwd.set UI_base.Vars.filter_ui_status `Idle;
-         sync_input_fields_from_snapshot snapshot;
-       ));
+    );
     Eio.Stream.add egress_ack ();
   done
 
@@ -343,11 +339,6 @@ let worker_fiber pool =
         send_to_manager Filter_glob_parse_error
       )
   in
-  let process_update_req f =
-    let next_snapshot = f (Dynarray.get_last snapshots) in
-    add_snapshot next_snapshot;
-    send_to_manager (Update (!cur_ver, next_snapshot))
-  in
   while true do
     Ping.wait worker_ping;
     lock_worker_state (fun () ->
@@ -361,13 +352,6 @@ let worker_fiber pool =
          | None -> ()
          | Some (commit, s) -> (
              process_search_req (Atomic.get stop_search_signal) ~commit s
-           )
-        );
-        (match Lock_protected_cell.get update_request with
-         | None -> ()
-         | Some snapshot -> (
-             process_update_req snapshot;
-             Eio.Stream.add update_request_completion_ack ();
            )
         );
       )
@@ -386,15 +370,4 @@ let submit_search_req ~commit (s : string) =
       stop_search ();
       Lock_protected_cell.set search_request (commit, s);
       Ping.ping worker_ping
-    )
-
-let submit_update_req f =
-  lock_as_requester (fun () ->
-      stop_filter ();
-      stop_search ();
-      Lock_protected_cell.unset search_request;
-      Lock_protected_cell.unset filter_request;
-      Lock_protected_cell.set update_request f;
-      Ping.ping worker_ping;
-      Eio.Stream.take update_request_completion_ack;
     )

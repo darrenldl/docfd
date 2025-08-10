@@ -20,10 +20,10 @@ val load_snapshots : Document_store_snapshot.t Dynarray.t -> unit
 
 val shift_ver : offset:int -> unit
 
+val update_from_cur_snapshot : (Document_store_snapshot.t -> Document_store_snapshot.t) -> unit
+
 val submit_filter_req : commit:bool -> string -> unit
 
 val submit_search_req : commit:bool -> string -> unit
-
-val submit_update_req : (Document_store_snapshot.t -> Document_store_snapshot.t) -> unit
 
 val stop_filter_and_search_and_restore_input_fields : unit -> unit

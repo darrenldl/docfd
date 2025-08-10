@@ -87,7 +87,7 @@ let reload_document_selected
   )
 
 let toggle_mark ~path =
-  Document_store_manager.submit_update_req
+  Document_store_manager.update_from_cur_snapshot
     (fun cur_snapshot ->
        let store = Document_store_snapshot.store cur_snapshot in
        let new_command =
@@ -139,7 +139,7 @@ let drop ~document_count (choice : [`Path of string | `All_except of string | `M
         `Drop_unlisted
       )
   in
-  Document_store_manager.submit_update_req (fun cur_snapshot ->
+  Document_store_manager.update_from_cur_snapshot (fun cur_snapshot ->
       Document_store_snapshot.store cur_snapshot
       |> Document_store.run_command
         (UI_base.task_pool ())
@@ -155,7 +155,7 @@ let mark (choice : [`Path of string | `Listed]) =
     | `Path path -> `Mark path
     | `Listed -> `Mark_listed
   in
-  Document_store_manager.submit_update_req (fun cur_snapshot ->
+  Document_store_manager.update_from_cur_snapshot (fun cur_snapshot ->
       Document_store_snapshot.store cur_snapshot
       |> Document_store.run_command
         (UI_base.task_pool ())
@@ -172,7 +172,7 @@ let unmark (choice : [`Path of string | `Listed | `All]) =
     | `Listed -> `Unmark_listed
     | `All -> `Unmark_all
   in
-  Document_store_manager.submit_update_req (fun cur_snapshot ->
+  Document_store_manager.update_from_cur_snapshot (fun cur_snapshot ->
       Document_store_snapshot.store cur_snapshot
       |> Document_store.run_command
         (UI_base.task_pool ())
@@ -183,7 +183,7 @@ let unmark (choice : [`Path of string | `Listed | `All]) =
     )
 
 let narrow_search_scope_to_level ~level =
-  Document_store_manager.submit_update_req (fun cur_snapshot ->
+  Document_store_manager.update_from_cur_snapshot (fun cur_snapshot ->
       Document_store_snapshot.make
         ~last_command:(Some (`Narrow_level level))
         (Document_store.narrow_search_scope_to_level
