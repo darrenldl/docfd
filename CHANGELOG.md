@@ -78,9 +78,10 @@
 
 - Added `mod-date` to filter language
 
-- Added additional attributes to document list entry
+- Adjusted attributes listed in document list entry
 
-    - Path date
+    - Added path date
+    - Replaced last scan time with last modified time
 
 - Reworked the internal architecture of document store snapshots storage and management
 
