@@ -251,7 +251,7 @@ let save_script ~path =
 
 module Top_pane = struct
   module Document_list = struct
-    let render_document_preview
+    let render_document_entry
         ~width
         ~documents_marked
         ~(search_result_group : Document_store.search_result_group)
@@ -381,7 +381,7 @@ module Top_pane = struct
           && height_filled < height
           then (
             let selected = Int.equal document_selected index in
-            let img = render_document_preview ~width ~documents_marked ~search_result_group:search_result_groups.(index) ~selected in
+            let img = render_document_entry ~width ~documents_marked ~search_result_group:search_result_groups.(index) ~selected in
             aux (index + 1) (height_filled + Notty.I.height img) (img :: acc)
           ) else (
             List.rev acc
