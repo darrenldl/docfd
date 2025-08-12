@@ -44,9 +44,10 @@
 
 - Added sorting to document list (12.0.0-alpha.11)
 
-- Added additional attributes to document list entry (12.0.0-alpha.11)
+- Adjusted attributes listed in document list entry (12.0.0-alpha.11)
 
-    - Path date
+    - Added path date
+    - Replaced last scan time with last modified time
 
 - Reworked the internal architecture of document store snapshots
   storage and management, which makes the overall interaction
