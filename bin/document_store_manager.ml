@@ -102,9 +102,9 @@ let lock_for_external_editing ~clean_up f =
          lock-step progression of the system.
       *)
       lock_worker_state (fun () ->
-          (* There should not be any outstanding requests. *)
-          assert (Option.is_none (Lock_protected_cell.get filter_request));
-          assert (Option.is_none (Lock_protected_cell.get search_request));
+          (* Clear any outstanding requests. *)
+          Lock_protected_cell.unset filter_request;
+          Lock_protected_cell.unset search_request;
           let result = f () in
           if clean_up then (
             Lwd.set UI_base.Vars.search_ui_status `Idle;
