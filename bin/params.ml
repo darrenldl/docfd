@@ -92,7 +92,7 @@ let last_scan_format_string =
    | None -> "Z"
    | Some _ -> "")
 
-let last_modified_format_string =
+let modified_format_string =
   "{year}-{mon:0X}-{day:0X} {hour:0X}:{min:0X}"
   ^
   (match Timedesc.Time_zone.local () with
