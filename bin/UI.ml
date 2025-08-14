@@ -324,11 +324,11 @@ module Top_pane = struct
            )
         )
       in
-      let modified_image =
-        I.string A.(fg lightgreen) "Modified: "
+      let last_modified_image =
+        I.string A.(fg lightgreen) "Last modified: "
         <|>
         I.string A.empty
-          (Timedesc.to_string ~format:Params.modified_format_string (Document.mod_time doc))
+          (Timedesc.to_string ~format:Params.last_modified_format_string (Document.mod_time doc))
       in
       let marked = String_set.mem (Document.path doc) documents_marked in
       let title =
@@ -363,7 +363,7 @@ module Top_pane = struct
             path_image;
             path_date_image;
             preview_image;
-            modified_image;
+            last_modified_image;
           ]
       )
 
