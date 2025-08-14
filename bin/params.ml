@@ -92,6 +92,13 @@ let last_scan_format_string =
    | None -> "Z"
    | Some _ -> "")
 
+let last_modified_format_string =
+  "{year}-{mon:0X}-{day:0X} {hour:0X}:{min:0X}"
+  ^
+  (match Timedesc.Time_zone.local () with
+   | None -> "Z"
+   | Some _ -> "")
+
 let blink_on_duration : Mtime.span = Mtime.Span.(140 * ms)
 
 let os_typ : [ `Darwin | `Linux ] =

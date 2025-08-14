@@ -328,7 +328,7 @@ module Top_pane = struct
         I.string A.(fg lightgreen) "Last modified: "
         <|>
         I.string A.empty
-          (Timedesc.to_string ~format:Params.last_scan_format_string (Document.mod_time doc))
+          (Timedesc.to_string ~format:Params.last_modified_format_string (Document.mod_time doc))
       in
       let marked = String_set.mem (Document.path doc) documents_marked in
       let title =
