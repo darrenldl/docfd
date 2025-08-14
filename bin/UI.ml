@@ -314,11 +314,11 @@ module Top_pane = struct
         )
       in
       let path_date_image =
-        I.string A.(fg lightgreen) "Path date: "
-        <|>
         (match Document.path_date doc with
-         | None -> I.string A.empty ""
+         | None -> I.void 0 0
          | Some date -> (
+             I.string A.(fg lightgreen) "  ⤷ "
+             <|>
              I.string A.empty
                (Timedesc.Date.to_rfc3339 date)
            )
