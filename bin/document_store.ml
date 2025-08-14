@@ -305,19 +305,19 @@ let search_result_groups
   in
   let (sort_by_typ, sort_by_order) = sort_by in
   let f =
+    let f_mod_time (d0, _s0) (d1, _s1) =
+      Timedesc.compare_chrono_min (Document.mod_time d0) (Document.mod_time d1)
+    in
     match sort_by_typ with
     | `Path_date -> (
-        fun (d0, _s0) (d1, _s1) ->
+        fun (d0, s0) (d1, s1) ->
           match Document.path_date d0, Document.path_date d1 with
-          | None, None -> 0
+          | None, None -> f_mod_time (d0, s0) (d1, s1)
           | None, Some _ -> -1
           | Some _, None -> 1
           | Some x0, Some x1 -> Timedesc.Date.compare x0 x1
       )
-    | `Mod_time -> (
-        fun (d0, _s0) (d1, _s1) ->
-          Timedesc.compare_chrono_min (Document.mod_time d0) (Document.mod_time d1)
-      )
+    | `Mod_time -> f_mod_time
     | `Path -> (
         fun (d0, _s0) (d1, _s1) ->
           String.compare (Document.path d0) (Document.path d1)
