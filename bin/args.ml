@@ -312,6 +312,19 @@ let filter_arg =
     & info [ filter_arg_name ] ~doc ~docv:"EXP"
   )
 
+let sort_arg_name = "sort"
+
+let sort_arg =
+  let doc =
+    Fmt.str
+      "Sort document by: TYPE,ORDER. TYPE is one of: path, path-date, score, mod-time. ORDER is one of: asc, desc."
+  in
+  Arg.(
+    value
+    & opt string Params.default_sort_by_arg
+    & info [ sort_arg_name ] ~doc ~docv:"TYPE,ORDER"
+  )
+
 let style_mode_options = [ ("never", `Never); ("always", `Always); ("auto", `Auto) ]
 
 let color_arg =

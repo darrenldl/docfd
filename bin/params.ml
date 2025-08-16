@@ -41,6 +41,8 @@ let default_recognized_single_line_exts =
 
 let default_search_mode : Search_mode.t ref = ref `Multiline
 
+let default_sort_by_arg = "score,desc"
+
 let index_file_ext = ".index"
 
 let db_file_name = "index.db"
