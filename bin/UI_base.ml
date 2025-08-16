@@ -157,7 +157,10 @@ let hpane
           x - 1
         ))
   in
-  let r_width = width - l_width in
+  let r_width =
+    (* Minus 1 here too just to be conservative. *)
+    width - l_width - 1
+  in
   let crop w x = Nottui.Ui.resize ~w ~h:height x in
   let x () =
     let$ x = x ~width:l_width in
