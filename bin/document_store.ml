@@ -161,41 +161,45 @@ let update_filter_exp
     filter_exp
     (t : t)
   : t option =
-  let cancellation_notifier = Atomic.make false in
-  let documents_passing_filter =
-    Eio.Fiber.first
-      (fun () ->
-         Stop_signal.await stop_signal;
-         Atomic.set cancellation_notifier true;
-         String_set.empty
-      )
-      (fun () ->
-         t.all_documents
-         |> String_map.to_seq
-         |> Seq.map snd
-         |> (fun s ->
-             if Filter_exp.is_empty filter_exp then (
-               s
-             ) else (
-               Seq.filter (fun s ->
-                   Eio.Fiber.yield ();
-                   Document.satisfies_filter_exp pool filter_exp s
-                 ) s
-             )
-           )
-         |> Seq.map Document.path
-         |> String_set.of_seq
-      )
-  in
-  if Atomic.get cancellation_notifier then (
-    None
+  if Filter_exp.equal filter_exp t.filter_exp then (
+    Some t
   ) else (
-    { t with
-      filter_exp_string;
-      filter_exp;
-      documents_passing_filter;
-    }
-    |> refresh_search_results pool stop_signal
+    let cancellation_notifier = Atomic.make false in
+    let documents_passing_filter =
+      Eio.Fiber.first
+        (fun () ->
+           Stop_signal.await stop_signal;
+           Atomic.set cancellation_notifier true;
+           String_set.empty
+        )
+        (fun () ->
+           t.all_documents
+           |> String_map.to_seq
+           |> Seq.map snd
+           |> (fun s ->
+               if Filter_exp.is_empty filter_exp then (
+                 s
+               ) else (
+                 Seq.filter (fun s ->
+                     Eio.Fiber.yield ();
+                     Document.satisfies_filter_exp pool filter_exp s
+                   ) s
+               )
+             )
+           |> Seq.map Document.path
+           |> String_set.of_seq
+        )
+    in
+    if Atomic.get cancellation_notifier then (
+      None
+    ) else (
+      { t with
+        filter_exp_string;
+        filter_exp;
+        documents_passing_filter;
+      }
+      |> refresh_search_results pool stop_signal
+    )
   )
 
 let update_search_exp pool stop_signal search_exp_string search_exp (t : t) : t option =
