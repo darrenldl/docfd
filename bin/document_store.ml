@@ -277,6 +277,43 @@ module Sort_by = struct
   let default : t = (`Score, `Desc)
 end
 
+module Compare_document = struct
+  let mod_time d0 d1 =
+    Timedesc.compare_chrono_min (Document.mod_time d0) (Document.mod_time d1)
+
+  let path_date d0 d1 =
+    match Document.path_date d0, Document.path_date d1 with
+    | None, None -> mod_time d0 d1
+    | None, Some _ -> -1
+    | Some _, None -> 1
+    | Some x0, Some x1 -> Timedesc.Date.compare x0 x1
+
+  let path d0 d1 =
+    String.compare (Document.path d0) (Document.path d1)
+end
+
+module Compare_search_result_group = struct
+  let mod_time (d0, _s0) (d1, _s1) =
+    Compare_document.mod_time d0 d1
+
+  let path_date (d0, _s0) (d1, _s1) =
+    Compare_document.path_date d0 d1
+
+  let path (d0, _s0) (d1, _s1) =
+    Compare_document.path d0 d1
+
+  let score ~no_search_exp (d0, s0) (d1, s1) =
+    if no_search_exp then (
+      String.compare (Document.path d0) (Document.path d1)
+    ) else (
+      (* Search_result.compare_relevance puts the more relevant
+         result to the front, so we flip the comparison here to
+         obtain an ordering of "lowest score" first to match the
+         usual definition of "sort by score in ascending order".
+      *)
+      Search_result.compare_relevance s1.(0) s0.(0)
+    )
+end
 
 let search_result_groups
     ?(sort_by : Sort_by.t = Sort_by.default)
@@ -309,36 +346,11 @@ let search_result_groups
   in
   let (sort_by_typ, sort_by_order) = sort_by in
   let f =
-    let f_mod_time (d0, _s0) (d1, _s1) =
-      Timedesc.compare_chrono_min (Document.mod_time d0) (Document.mod_time d1)
-    in
     match sort_by_typ with
-    | `Path_date -> (
-        fun (d0, s0) (d1, s1) ->
-          match Document.path_date d0, Document.path_date d1 with
-          | None, None -> f_mod_time (d0, s0) (d1, s1)
-          | None, Some _ -> -1
-          | Some _, None -> 1
-          | Some x0, Some x1 -> Timedesc.Date.compare x0 x1
-      )
-    | `Mod_time -> f_mod_time
-    | `Path -> (
-        fun (d0, _s0) (d1, _s1) ->
-          String.compare (Document.path d0) (Document.path d1)
-      )
-    | `Score ->
-      if no_search_exp then (
-        fun (d0, _s0) (d1, _s1) ->
-          String.compare (Document.path d0) (Document.path d1)
-      ) else (
-        (* Search_result.compare_relevance puts the more relevant
-           result to the front, so we flip the comparison here to
-           obtain an ordering of "lowest score" first to match the
-           usual definition of "sort by score in ascending order".
-        *)
-        fun (_d0, s0) (_d1, s1) ->
-          Search_result.compare_relevance s1.(0) s0.(0)
-      )
+    | `Path_date -> Compare_search_result_group.path_date
+    | `Mod_time -> Compare_search_result_group.mod_time
+    | `Path -> Compare_search_result_group.path
+    | `Score -> Compare_search_result_group.score ~no_search_exp
   in
   (match sort_by_order with
    | `Asc -> Array.sort f arr
