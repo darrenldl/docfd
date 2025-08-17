@@ -895,7 +895,9 @@ let run
         Seq.is_empty s
       ) else (
         let s =
-          Document_store.search_result_groups document_store
+          Document_store.search_result_groups
+            ~sort_by:(Lwd.peek UI.Vars.sort_by)
+            document_store
           |> Array.to_seq
           |> Seq.map (fun (doc, arr) ->
               let arr =
