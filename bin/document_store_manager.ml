@@ -257,7 +257,9 @@ let worker_fiber pool =
     Eio.Stream.add egress x;
     Eio.Stream.take egress_ack;
   in
+  let cancelled_search_request : (bool * string) option ref = ref None in
   let process_search_req stop_signal ~commit (s : string) =
+    cancelled_search_request := None;
     match Search_exp.parse s with
     | None -> (
         send_to_manager Search_exp_parse_error
@@ -275,7 +277,8 @@ let worker_fiber pool =
         in
         match store with
         | None -> (
-            send_to_manager Search_cancelled
+            send_to_manager Search_cancelled;
+            cancelled_search_request := Some (commit, s);
           )
         | Some store -> (
             let command = Some (`Search s) in
@@ -353,11 +356,12 @@ let worker_fiber pool =
            )
         );
         (match Lock_protected_cell.get search_request with
-         | None -> ()
-         | Some (commit, s) -> (
-             process_search_req (Atomic.get stop_search_signal) ~commit s
-           )
-        );
+         | None -> !cancelled_search_request
+         | Some (commit, s) -> Some (commit, s)
+        )
+        |> Option.iter (fun (commit, s) ->
+            process_search_req (Atomic.get stop_search_signal) ~commit s
+          );
       )
   done
 
