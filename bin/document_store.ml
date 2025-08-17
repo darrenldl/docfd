@@ -162,7 +162,7 @@ let update_filter_exp
     (t : t)
   : t option =
   if Filter_exp.equal filter_exp t.filter_exp then (
-    Some t
+    Some { t with filter_exp_string }
   ) else (
     let cancellation_notifier = Atomic.make false in
     let documents_passing_filter =
@@ -204,7 +204,7 @@ let update_filter_exp
 
 let update_search_exp pool stop_signal search_exp_string search_exp (t : t) : t option =
   if Search_exp.equal search_exp t.search_exp then (
-    Some t
+    Some { t with search_exp_string }
   ) else (
     { t with
       search_exp;
