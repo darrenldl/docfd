@@ -289,7 +289,7 @@ module Compare_search_result_group = struct
 
   let score ~no_search_exp (d0, s0) (d1, s1) =
     if no_search_exp then (
-      String.compare (Document.path d0) (Document.path d1)
+      Document.Compare.path d0 d1
     ) else (
       (* Search_result.compare_relevance puts the more relevant
          result to the front, so we flip the comparison here to
