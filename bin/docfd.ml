@@ -793,21 +793,32 @@ let run
             in
             let outcome =
               if print_files_with_match then (
-                let s =
-                  Document_store.usable_document_paths final_store
+                let arr =
+                  Document_store.search_result_groups
+                    ~sort_by:(Lwd.peek UI.Vars.sort_by)
+                    final_store
                 in
-                String_set.iter (Printers.path_image ~color:print_with_color print_oc) s;
-                `Has_results (not (String_set.is_empty s))
+                Array.iter (fun (doc, _search_result) ->
+                    Printers.path_image
+                      ~color:print_with_color
+                      print_oc
+                      (Document.path doc)
+                  ) arr;
+                if Array.length arr = 0 then (
+                  `No_results
+                ) else (
+                  `Has_results
+                )
               ) else (
                 `Interactive
               )
             in
             clean_up ();
             match outcome with
-            | `Has_results true -> (
+            | `Has_results -> (
                 exit 0
               )
-            | `Has_results false -> (
+            | `No_results -> (
                 exit 1
               )
             | `Interactive -> (
@@ -882,17 +893,35 @@ let run
     let oc = stdout in
     let no_results =
       if print_files_with_match then (
-        let s =
-          Document_store.usable_document_paths document_store
+        let arr =
+          Document_store.search_result_groups
+            ~sort_by:(Lwd.peek UI.Vars.sort_by)
+            document_store
         in
-        String_set.iter (Printers.path_image ~color:print_with_color oc) s;
-        String_set.is_empty s
+        Array.iter (fun (doc, _search_result) ->
+            Printers.path_image ~color:print_with_color oc (Document.path doc)
+          ) arr;
+        Array.length arr = 0
       ) else if print_files_without_match then (
-        let s =
-          Document_store.unusable_document_paths document_store
+        let arr =
+          Document_store.unusable_documents document_store
+          |> Array.of_seq
         in
-        Seq.iter (Printers.path_image ~color:print_with_color oc) s;
-        Seq.is_empty s
+        let (sort_by_typ, sort_by_order) = Lwd.peek UI.Vars.sort_by in
+        let f =
+          match sort_by_typ with
+          | `Path_date -> Document.Compare.path_date
+          | `Mod_time -> Document.Compare.mod_time
+          | `Path | `Score -> Document.Compare.path
+        in
+        (match sort_by_order with
+         | `Asc -> Array.sort f arr
+         | `Desc -> Array.sort (fun x y -> f y x) arr
+        );
+        Array.iter (fun doc ->
+            Printers.path_image ~color:print_with_color oc (Document.path doc)
+          ) arr;
+        Array.length arr = 0
       ) else (
         let s =
           Document_store.search_result_groups
