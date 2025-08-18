@@ -810,6 +810,7 @@ let run
                   `Has_results
                 )
               ) else (
+                assert (not (print_files_without_match));
                 `Interactive
               )
             in
