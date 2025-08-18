@@ -62,6 +62,8 @@ val search_result_groups : ?sort_by:Sort_by.t -> t -> search_result_group array
 
 val usable_document_paths : t -> String_set.t
 
+val unusable_documents : t -> Document.t Seq.t
+
 val unusable_document_paths : t -> string Seq.t
 
 val all_document_paths : t -> string Seq.t

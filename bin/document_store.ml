@@ -357,11 +357,17 @@ let all_document_paths (t : t) : string Seq.t =
   |> String_map.to_seq
   |> Seq.map fst
 
-let unusable_document_paths (t : t) =
+let unusable_documents (t : t) =
   let s = usable_document_paths t in
-  all_document_paths t
-  |> Seq.filter (fun path ->
+  t.all_documents
+  |> String_map.to_seq
+  |> Seq.filter (fun (path, _doc) ->
       not (String_set.mem path s))
+  |> Seq.map snd
+
+let unusable_document_paths (t : t) =
+  unusable_documents t
+  |> Seq.map Document.path
 
 let mark
     (choice :
