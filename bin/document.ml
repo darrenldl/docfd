@@ -65,6 +65,21 @@ let inter_search_scope (x : Diet.Int.t) (t : t) : t =
   in
   { t with search_scope = Some search_scope }
 
+module Compare = struct
+  let mod_time d0 d1 =
+    Timedesc.compare_chrono_min (mod_time d0) (mod_time d1)
+
+  let path_date d0 d1 =
+    match path_date d0, path_date d1 with
+    | None, None -> mod_time d0 d1
+    | None, Some _ -> -1
+    | Some _, None -> 1
+    | Some x0, Some x1 -> Timedesc.Date.compare x0 x1
+
+  let path d0 d1 =
+    String.compare (path d0) (path d1)
+end
+
 module Ir0 = struct
   type t = {
     search_mode : Search_mode.t;

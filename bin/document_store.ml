@@ -277,30 +277,15 @@ module Sort_by = struct
   let default : t = (`Score, `Desc)
 end
 
-module Compare_document = struct
-  let mod_time d0 d1 =
-    Timedesc.compare_chrono_min (Document.mod_time d0) (Document.mod_time d1)
-
-  let path_date d0 d1 =
-    match Document.path_date d0, Document.path_date d1 with
-    | None, None -> mod_time d0 d1
-    | None, Some _ -> -1
-    | Some _, None -> 1
-    | Some x0, Some x1 -> Timedesc.Date.compare x0 x1
-
-  let path d0 d1 =
-    String.compare (Document.path d0) (Document.path d1)
-end
-
 module Compare_search_result_group = struct
   let mod_time (d0, _s0) (d1, _s1) =
-    Compare_document.mod_time d0 d1
+    Document.Compare.mod_time d0 d1
 
   let path_date (d0, _s0) (d1, _s1) =
-    Compare_document.path_date d0 d1
+    Document.Compare.path_date d0 d1
 
   let path (d0, _s0) (d1, _s1) =
-    Compare_document.path d0 d1
+    Document.Compare.path d0 d1
 
   let score ~no_search_exp (d0, s0) (d1, s1) =
     if no_search_exp then (
