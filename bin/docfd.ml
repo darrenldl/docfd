@@ -840,35 +840,44 @@ let run
         )
     in
     let document_store =
-      Document_store_manager.lock_with_view (fun view ->
-          view.init_document_store
-        )
-      |> (fun store ->
-          match filter_exp_and_original_string with
-          | None -> store
-          | Some (filter_exp, filter_exp_string) -> (
-              Option.get
-                (Document_store.update_filter_exp
-                   pool
-                   (Stop_signal.make ())
-                   filter_exp_string
-                   filter_exp
-                   store
+      match snapshots_from_script with
+      | None -> (
+          Document_store_manager.lock_with_view (fun view ->
+              view.init_document_store
+            )
+          |> (fun store ->
+              match filter_exp_and_original_string with
+              | None -> store
+              | Some (filter_exp, filter_exp_string) -> (
+                  Option.get
+                    (Document_store.update_filter_exp
+                       pool
+                       (Stop_signal.make ())
+                       filter_exp_string
+                       filter_exp
+                       store
+                    )
+                )
+            )
+          |> (fun store ->
+              match search_exp_and_original_string with
+              | None -> store
+              | Some (search_exp, search_exp_string) -> (
+                  Option.get
+                    (Document_store.update_search_exp
+                       pool
+                       (Stop_signal.make ())
+                       search_exp_string
+                       search_exp
+                       store
+                    )
                 )
             )
         )
-      |> (fun store ->
-          match search_exp_and_original_string with
-          | None -> store
-          | Some (search_exp, search_exp_string) -> (
-              Option.get
-                (Document_store.update_search_exp
-                   pool
-                   (Stop_signal.make ())
-                   search_exp_string
-                   search_exp
-                   store
-                )
+      | Some _ -> (
+          Document_store_manager.lock_with_view (fun view ->
+              Dynarray.get_last view.snapshots
+              |> Document_store_snapshot.store
             )
         )
     in
