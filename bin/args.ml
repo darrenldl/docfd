@@ -666,10 +666,14 @@ let check
         )
     )
   );
+  let cannot_be_used_together x y =
+    exit_with_error_msg
+      (Fmt.str "--%s and --%s cannot be used together" x y)
+  in
   (match print_files_with_match, print_files_without_match with
    | true, true -> (
-       exit_with_error_msg
-         (Fmt.str "cannot specify both --%s and --%s" files_with_match_arg_name files_without_match_arg_name)
+       cannot_be_used_together
+         files_with_match_arg_name files_without_match_arg_name
      )
    | true, false -> (
        if not (
