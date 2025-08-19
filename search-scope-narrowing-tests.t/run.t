@@ -77,8 +77,8 @@ File path filter + restrictions:
   $ echo "search: 'efgh" >> test.docfd-script
   $ echo "clear filter" >> test.docfd-script
   $ docfd --tokens-per-search-scope-level 1 --script test.docfd-script -l .
-  $TESTCASE_ROOT/test0.txt
   $TESTCASE_ROOT/test1.txt
+  $TESTCASE_ROOT/test0.txt
   $ # Baseline case quoted string using single quote
   $ echo "" > test.docfd-script
   $ echo "search: 'abcd" >> test.docfd-script
@@ -86,8 +86,8 @@ File path filter + restrictions:
   $ echo "search: 'efgh" >> test.docfd-script
   $ echo "clear filter" >> test.docfd-script
   $ docfd --tokens-per-search-scope-level 1 --script test.docfd-script -l .
-  $TESTCASE_ROOT/test0.txt
   $TESTCASE_ROOT/test1.txt
+  $TESTCASE_ROOT/test0.txt
   $ # Baseline case quoted string using double quote
   $ echo "" > test.docfd-script
   $ echo "search: 'abcd" >> test.docfd-script
@@ -95,8 +95,8 @@ File path filter + restrictions:
   $ echo "search: 'efgh" >> test.docfd-script
   $ echo "clear filter" >> test.docfd-script
   $ docfd --tokens-per-search-scope-level 1 --script test.docfd-script -l .
-  $TESTCASE_ROOT/test0.txt
   $TESTCASE_ROOT/test1.txt
+  $TESTCASE_ROOT/test0.txt
   $ # Since there is no "search" after "narrow", both documents should still appear
   $ echo "" > test.docfd-script
   $ echo "search: 'abcd" >> test.docfd-script
@@ -104,8 +104,8 @@ File path filter + restrictions:
   $ echo "narrow level: 1" >> test.docfd-script
   $ echo "clear filter" >> test.docfd-script
   $ docfd --tokens-per-search-scope-level 1 --script test.docfd-script -l .
-  $TESTCASE_ROOT/test0.txt
   $TESTCASE_ROOT/test1.txt
+  $TESTCASE_ROOT/test0.txt
   $ # "narrow" + "search" after filtering should prevent test1.txt from appearing, even after we clear the filter
   $ echo "" > test.docfd-script
   $ echo "search: 'abcd" >> test.docfd-script
@@ -146,8 +146,8 @@ File path filter + restrictions:
   $ echo "narrow level: 0" >> test.docfd-script
   $ echo "search: 'efgh" >> test.docfd-script
   $ docfd --tokens-per-search-scope-level 1 --script test.docfd-script -l .
-  $TESTCASE_ROOT/test0.txt
   $TESTCASE_ROOT/test1.txt
+  $TESTCASE_ROOT/test0.txt
   $ # Simplified version of the above case where we skip the search before "narrow level: 0"
   $ echo "" > test.docfd-script
   $ echo "search: 'abcd" >> test.docfd-script
@@ -157,8 +157,8 @@ File path filter + restrictions:
   $ echo "narrow level: 0" >> test.docfd-script
   $ echo "search: 'efgh" >> test.docfd-script
   $ docfd --tokens-per-search-scope-level 1 --script test.docfd-script -l .
-  $TESTCASE_ROOT/test0.txt
   $TESTCASE_ROOT/test1.txt
+  $TESTCASE_ROOT/test0.txt
   $ # Similar to the above case, but the order of "clear filter" and "narrow level: 0" is swapped
   $ # Both documents should still appear
   $ echo "" > test.docfd-script
@@ -169,8 +169,8 @@ File path filter + restrictions:
   $ echo "clear filter" >> test.docfd-script
   $ echo "search: 'efgh" >> test.docfd-script
   $ docfd --tokens-per-search-scope-level 1 --script test.docfd-script -l .
-  $TESTCASE_ROOT/test0.txt
   $TESTCASE_ROOT/test1.txt
+  $TESTCASE_ROOT/test0.txt
   $ # Similar to the above case, but the order of "clear filter" and "search" is swapped
   $ # Both documents should still appear
   $ echo "" > test.docfd-script
@@ -181,5 +181,5 @@ File path filter + restrictions:
   $ echo "search: 'efgh" >> test.docfd-script
   $ echo "clear filter" >> test.docfd-script
   $ docfd --tokens-per-search-scope-level 1 --script test.docfd-script -l .
-  $TESTCASE_ROOT/test0.txt
   $TESTCASE_ROOT/test1.txt
+  $TESTCASE_ROOT/test0.txt
