@@ -52,11 +52,11 @@
 
 -l/--files-with-match:
   $ docfd --cache-dir .cache --sample abcd . -l
-  $TESTCASE_ROOT/test2.txt
   $TESTCASE_ROOT/test3.txt
+  $TESTCASE_ROOT/test2.txt
   $ docfd --cache-dir .cache --sample abcd . --files-with-match
-  $TESTCASE_ROOT/test2.txt
   $TESTCASE_ROOT/test3.txt
+  $TESTCASE_ROOT/test2.txt
 
 --files-without-match:
   $ docfd --cache-dir .cache --sample abcd . --files-without-match
