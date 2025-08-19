@@ -752,29 +752,52 @@ let check
        | Some _ -> ()
      )
   );
-  if Option.is_some script then (
+  let start_with_arg_check ~arg_name =
     if Option.is_some filter_exp then (
-      exit_with_error_msg
-        (Fmt.str "--%s and --%s cannot be used together" script_arg_name filter_arg_name)
+      cannot_be_used_together arg_name filter_arg_name
     );
     if Option.is_some sample_search_exp then (
-      exit_with_error_msg
-        (Fmt.str "--%s and --%s cannot be used together" script_arg_name sample_arg_name)
+      cannot_be_used_together arg_name sample_arg_name
     );
     if Option.is_some search_exp then (
-      exit_with_error_msg
-        (Fmt.str "--%s and --%s cannot be used together" script_arg_name search_arg_name)
+      cannot_be_used_together arg_name search_arg_name
+    );
+  in
+  if Option.is_some start_with_filter then (
+    start_with_arg_check ~arg_name:start_with_filter_arg_name
+  );
+  if Option.is_some start_with_search then (
+    start_with_arg_check ~arg_name:start_with_search_arg_name
+  );
+  if Option.is_some start_with_script then (
+    start_with_arg_check ~arg_name:start_with_script_arg_name
+  );
+  let script_common_check ~arg_name =
+    if Option.is_some filter_exp then (
+      cannot_be_used_together arg_name filter_arg_name
+    );
+    if Option.is_some sample_search_exp then (
+      cannot_be_used_together arg_name sample_arg_name
+    );
+    if Option.is_some search_exp then (
+      cannot_be_used_together arg_name search_arg_name
     );
     if Option.is_some start_with_filter then (
-      exit_with_error_msg
-        (Fmt.str "--%s and --%s cannot be used together" script_arg_name start_with_filter_arg_name)
+      cannot_be_used_together arg_name start_with_filter_arg_name
     );
     if Option.is_some start_with_search then (
-      exit_with_error_msg
-        (Fmt.str "--%s and --%s cannot be used together" script_arg_name start_with_search_arg_name)
+      cannot_be_used_together arg_name start_with_search_arg_name
     );
     if print_files_without_match then (
-      exit_with_error_msg
-        (Fmt.str "--%s and --%s cannot be used together" script_arg_name files_without_match_arg_name)
+      cannot_be_used_together arg_name files_without_match_arg_name
     );
+  in
+  if Option.is_some script then (
+    script_common_check ~arg_name:script_arg_name;
+    if Option.is_some start_with_script then (
+      cannot_be_used_together script_arg_name start_with_script_arg_name
+    );
+  );
+  if Option.is_some start_with_script then (
+    script_common_check ~arg_name:start_with_script_arg_name;
   )
