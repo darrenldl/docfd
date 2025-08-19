@@ -656,6 +656,8 @@ let run
     not print_files_with_match
     &&
     not print_files_without_match
+    &&
+    Option.is_none script
   in
   let file_constraints =
     make_file_constraints
