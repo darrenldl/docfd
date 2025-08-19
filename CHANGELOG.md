@@ -75,6 +75,10 @@
         - `s` sort by score
         - `m` sort by modification time
 
+- Added `--sort` and `--sort-no-score`
+
+    - Latter is mainly useful for when `--files-without-match` is used
+
 - Added `yyyymmdd` path date extraction
 
 - Added `mod-date` to filter language
