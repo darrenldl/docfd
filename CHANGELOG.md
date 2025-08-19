@@ -88,6 +88,12 @@
     - Added path date
     - Replaced last scan time with last modified time
 
+- Reworked `--script` into `--script` and `--start-with-script`
+
+    - `--script` is now only for non-interactive use
+    - `--start-with-script` is only for interactive use
+    - This mirrors the duals `--filter` vs `--start-with-filter` and `--search` vs `--start-with-search`
+
 - Reworked the internal architecture of document store snapshots storage and management
 
     - Snapshots are now centrally managed by `Document_store_manager`, along with
