@@ -498,6 +498,7 @@ let run
     (search_result_print_text_width : int)
     (search_result_print_snippet_min_size : int)
     (search_result_print_max_add_lines : int)
+    (start_with_script : string option)
     (script : string option)
     (paths_from : string list)
     (globs : string list)
@@ -525,6 +526,7 @@ let run
     ~search_result_print_text_width
     ~search_result_print_snippet_min_size
     ~search_result_print_max_add_lines
+    ~start_with_script
     ~script
     ~paths_from
     ~print_files_with_match
@@ -1379,6 +1381,7 @@ let cmd ~env ~sw =
      $ search_result_print_text_width_arg
      $ search_result_print_snippet_min_size_arg
      $ search_result_print_snippet_max_add_lines_arg
+     $ start_with_script_arg
      $ script_arg
      $ paths_from_arg
      $ glob_arg

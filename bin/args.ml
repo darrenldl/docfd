@@ -402,6 +402,18 @@ let script_arg =
     & info [ script_arg_name ] ~doc ~docv:"FILE"
   )
 
+let start_with_script_arg_name = "start-with-script"
+
+let start_with_script_arg =
+  let doc =
+    Fmt.str "Read and run Docfd script FILE, then continue in interactive mode."
+  in
+  Arg.(
+    value
+    & opt (some string) None
+    & info [ start_with_script_arg_name ] ~doc ~docv:"FILE"
+  )
+
 let paths_from_arg_name = "paths-from"
 
 let paths_from_arg =
@@ -583,6 +595,7 @@ let check
     ~search_result_print_text_width
     ~search_result_print_snippet_min_size
     ~search_result_print_max_add_lines
+    ~start_with_script
     ~script
     ~paths_from
     ~print_files_with_match
