@@ -492,6 +492,7 @@ let run
     (samples_per_doc : int)
     (search_exp : string option)
     (sort_by : string)
+    (sort_by_no_score : string)
     (print_color_mode : Params.style_mode)
     (print_underline_mode : Params.style_mode)
     (search_result_print_text_width : int)
@@ -560,6 +561,7 @@ let run
     search_result_print_max_add_lines;
   Params.samples_per_document := samples_per_doc;
   Lwd.set UI.Vars.sort_by (parse_sort_by_arg ~no_score:false sort_by);
+  let sort_by_no_score = parse_sort_by_arg ~no_score:true sort_by_no_score in
   Params.cache_dir := (
     mkdir_recursive cache_dir;
     Some cache_dir
@@ -915,12 +917,13 @@ let run
           Document_store.unusable_documents document_store
           |> Array.of_seq
         in
-        let (sort_by_typ, sort_by_order) = Lwd.peek UI.Vars.sort_by in
+        let (sort_by_typ, sort_by_order) = sort_by_no_score in
         let f =
           match sort_by_typ with
           | `Path_date -> Document.Compare.path_date
           | `Mod_time -> Document.Compare.mod_time
-          | `Path | `Score -> Document.Compare.path
+          | `Path -> Document.Compare.path
+          | `Score -> failwith "unexpected case"
         in
         (match sort_by_order with
          | `Asc -> Array.sort f arr
@@ -1370,6 +1373,7 @@ let cmd ~env ~sw =
      $ samples_per_doc_arg
      $ search_arg
      $ sort_arg
+     $ sort_no_score_arg
      $ color_arg
      $ underline_arg
      $ search_result_print_text_width_arg

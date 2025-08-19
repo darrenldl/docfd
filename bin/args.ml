@@ -537,6 +537,21 @@ Cannot be paired with --%s."
     & info [ files_without_match_arg_name ] ~doc
   )
 
+let sort_no_score_arg_name = "sort-no-score"
+
+let sort_no_score_arg =
+  let doc =
+    Fmt.str
+      "Same as --%s but sorting TYPE cannot be score. Used for scenarios when no scores are available, e.g. --%s is used."
+      sort_no_score_arg_name
+      files_without_match_arg_name
+  in
+  Arg.(
+    value
+    & opt string Params.default_sort_by_no_score_arg
+    & info [ sort_no_score_arg_name ] ~doc ~docv:"TYPE,ORDER"
+  )
+
 let paths_arg =
   let doc =
     Fmt.str

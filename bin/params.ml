@@ -43,6 +43,8 @@ let default_search_mode : Search_mode.t ref = ref `Multiline
 
 let default_sort_by_arg = "score,desc"
 
+let default_sort_by_no_score_arg = "path,asc"
+
 let index_file_ext = ".index"
 
 let db_file_name = "index.db"
