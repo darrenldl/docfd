@@ -12,8 +12,8 @@ Setup:
   1: 0123 abcd
      ^^^^
   $ docfd --sample "'0123" . -l
-  $TESTCASE_ROOT/test0.txt
   $TESTCASE_ROOT/test1.txt
+  $TESTCASE_ROOT/test0.txt
   $ docfd --sample "'0123" . --files-without-match
   [1]
 
@@ -46,8 +46,8 @@ Setup:
   1: 0123 abcd
      ^^^^
   $ docfd --search "'0123" . -l
-  $TESTCASE_ROOT/test0.txt
   $TESTCASE_ROOT/test1.txt
+  $TESTCASE_ROOT/test0.txt
   $ docfd --search "'0123" . --files-without-match
   [1]
 
