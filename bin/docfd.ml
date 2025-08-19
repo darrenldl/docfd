@@ -802,48 +802,14 @@ let run
             ~path:script
         with
         | Error msg -> exit_with_error_msg msg
-        | Ok snapshots -> (
-            let final_store = Dynarray.get_last snapshots
-                              |> Document_store_snapshot.store
-            in
-            let outcome =
-              if print_files_with_match then (
-                let arr =
-                  Document_store.search_result_groups
-                    ~sort_by:(Lwd.peek UI.Vars.sort_by)
-                    final_store
-                in
-                Array.iter (fun (doc, _search_result) ->
-                    Printers.path_image
-                      ~color:print_with_color
-                      print_oc
-                      (Document.path doc)
-                  ) arr;
-                if Array.length arr = 0 then (
-                  `No_results
-                ) else (
-                  `Has_results
-                )
-              ) else (
-                assert (not (print_files_without_match));
-                `Interactive
-              )
-            in
-            clean_up ();
-            match outcome with
-            | `Has_results -> (
-                exit 0
-              )
-            | `No_results -> (
-                exit 1
-              )
-            | `Interactive -> (
-                assert interactive;
-                Some snapshots
-              )
-          )
+        | Ok snapshots -> Some snapshots
       )
   in
+  (match snapshots_from_script with
+   | None -> ()
+   | Some snapshots -> (
+       Document_store_manager.load_snapshots snapshots;
+     ));
   if not interactive then (
     let filter_exp_and_original_string =
       match filter_exp with
@@ -1299,24 +1265,6 @@ let run
     Document_store_manager.manager_fiber;
     UI_base.Key_binding_info.grid_light_fiber;
     (fun () ->
-       let init_store =
-         Document_store_manager.lock_with_view (fun view ->
-             view.init_document_store
-           )
-       in
-       let snapshots =
-         match snapshots_from_script with
-         | None -> (
-             let arr = Dynarray.create () in
-             Dynarray.add_last arr
-               (Document_store_snapshot.make
-                  ~last_command:None
-                  init_store);
-             arr
-           )
-         | Some snapshots -> snapshots
-       in
-       Document_store_manager.load_snapshots snapshots;
        (match start_with_filter with
         | None -> ()
         | Some start_with_filter -> (
