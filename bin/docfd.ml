@@ -785,9 +785,11 @@ let run
     | `Auto -> not (Out_channel.isatty print_oc)
   in
   let snapshots_from_script =
-    match script with
-    | None -> None
-    | Some script -> (
+    match script, start_with_script with
+    | None, None -> None
+    | Some _, Some _ -> failwith "unexpected case"
+    | Some script, None
+    | None, Some script -> (
         let init_store =
           Document_store_manager.lock_with_view (fun view ->
               view.init_document_store
