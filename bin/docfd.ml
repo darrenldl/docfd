@@ -428,6 +428,42 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
   Gc.compact ();
   store
 
+let parse_sort_by_arg ~no_score (s : string) : Document_store.Sort_by.t =
+  match String.split_on_char ',' s with
+  | [ typ; order ] -> (
+      let typ : Document_store.Sort_by.typ =
+        match String.lowercase_ascii (String.trim typ) with
+        | "path" -> `Path
+        | "path-date" -> `Path_date
+        | "score" when not no_score -> `Score
+        | "mod-time" -> `Mod_time
+        | s -> (
+            exit_with_error_msg
+              (Fmt.str "unrecognized sort by type: %s" s)
+          )
+      in
+      let order : Document_store.Sort_by.order =
+        match String.lowercase_ascii (String.trim order) with
+        | "asc" -> `Asc
+        | "desc" -> `Desc
+        | s -> (
+            exit_with_error_msg
+              (Fmt.str "unrecognized sort by order: %s" s)
+          )
+      in
+      (typ, order)
+    )
+  | _ -> (
+      exit_with_error_msg
+        (Fmt.str "failed to parse --%s argument: %s"
+           (if no_score then (
+               Args.sort_no_score_arg_name
+             ) else (
+              Args.sort_arg_name
+            ))
+           s)
+    )
+
 let run
     ~(env : Eio_unix.Stdenv.base)
     ~sw
@@ -523,36 +559,7 @@ let run
   Params.search_result_print_snippet_max_additional_lines_each_direction :=
     search_result_print_max_add_lines;
   Params.samples_per_document := samples_per_doc;
-  Lwd.set UI.Vars.sort_by
-    (match String.split_on_char ',' sort_by with
-     | [ typ; order ] -> (
-         let typ : Document_store.Sort_by.typ =
-           match String.lowercase_ascii (String.trim typ) with
-           | "path" -> `Path
-           | "path-date" -> `Path_date
-           | "score" -> `Score
-           | "mod-time" -> `Mod_time
-           | s -> (
-               exit_with_error_msg
-                 (Fmt.str "unrecognized sort by type: %s" s)
-             )
-         in
-         let order : Document_store.Sort_by.order =
-           match String.lowercase_ascii (String.trim order) with
-           | "asc" -> `Asc
-           | "desc" -> `Desc
-           | s -> (
-               exit_with_error_msg
-                 (Fmt.str "unrecognized sort by order: %s" s)
-             )
-         in
-         (typ, order)
-       )
-     | _ -> (
-         exit_with_error_msg
-           (Fmt.str "failed to parse --%s argument: %s" Args.sort_arg_name sort_by)
-       )
-    );
+  Lwd.set UI.Vars.sort_by (parse_sort_by_arg ~no_score:false sort_by);
   Params.cache_dir := (
     mkdir_recursive cache_dir;
     Some cache_dir
