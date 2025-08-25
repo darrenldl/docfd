@@ -104,15 +104,21 @@ let reset_document_selected () =
   Lwd.set Vars.index_of_search_result_selected 0
 
 let set_document_selected ~choice_count n =
-  reset_content_view_offset ();
   let n = Misc_utils.bound_selection ~choice_count n in
-  Lwd.set Vars.index_of_document_selected n;
-  Lwd.set Vars.index_of_search_result_selected 0
+  let old = Lwd.peek Vars.index_of_document_selected in
+  if old <> n then (
+    reset_content_view_offset ();
+    Lwd.set Vars.index_of_document_selected n;
+    Lwd.set Vars.index_of_search_result_selected 0
+  )
 
 let set_search_result_selected ~choice_count n =
-  reset_content_view_offset ();
-  let n = Misc_utils.bound_selection ~choice_count n in
-  Lwd.set Vars.index_of_search_result_selected n
+  let old = Lwd.peek Vars.index_of_search_result_selected in
+  if old <> n then (
+    reset_content_view_offset ();
+    let n = Misc_utils.bound_selection ~choice_count n in
+    Lwd.set Vars.index_of_search_result_selected n
+  )
 
 let task_pool () =
   Option.get (Atomic.get Vars.pool)
