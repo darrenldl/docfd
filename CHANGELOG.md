@@ -53,6 +53,12 @@
   storage and management, which makes the overall interaction
   between UI and core code much more robust (12.0.0-alpha.11)
 
+## 12.0.0-alpha.12
+
+- Made resetting of search result selection and content view offset less aggressive
+
+    - Some changes in 12.0.0-alpha.11 caused some UI counters to reset more frequently than desired
+
 ## 12.0.0-alpha.11
 
 - Removed disabling of drop mode key binding `d` when searching or filtering is ongoing
