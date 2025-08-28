@@ -1,13 +1,11 @@
 type t
 
-val make : unit -> t
+val add : string -> int
 
-val equal : t -> t -> bool
+val word_of_index : int -> string
 
-val add : t -> string -> int
+val index_of_word : string -> int
 
-val word_of_index : t -> int -> string
+val read_from_db : db:Sqlite3.db -> unit
 
-val index_of_word : t -> string -> int
-
-val load_into_db : db:Sqlite3.db -> doc_id:int64 -> t -> unit
+val write_to_db : db:Sqlite3.db -> unit

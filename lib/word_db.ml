@@ -1,54 +1,82 @@
 type t = {
-  word_of_index : string CCVector.vector;
-  mutable index_of_word : int String_map.t;
+  lock : Eio.Mutex.t;
+  word_of_index : string Dynarray.t;
+  index_of_word : (string, int) Hashtbl.t;
 }
 
-let equal (x : t) (y : t) =
-  CCVector.equal String.equal x.word_of_index y.word_of_index
-  &&
-  String_map.equal Int.equal x.index_of_word y.index_of_word
+let t : t =
+  {
+    lock = Eio.Mutex.create ();
+    word_of_index = Dynarray.create ();
+    index_of_word = Hashtbl.create 10_000;
+  }
 
-let make () : t = {
-  word_of_index = CCVector.create ();
-  index_of_word = String_map.empty;
-}
+let lock : type a. (unit -> a) -> a =
+  fun f ->
+  Eio.Mutex.use_rw ~protect:false t.lock f
 
-let add (t : t) (word : string) : int =
-  match String_map.find_opt word t.index_of_word with
-  | Some index -> index
-  | None -> (
-      let index = CCVector.length t.word_of_index in
-      CCVector.push t.word_of_index word;
-      t.index_of_word <- String_map.add word index t.index_of_word;
-      index
+let add (word : string) : int =
+  lock (fun () ->
+      match Hashtbl.find_opt t.index_of_word word with
+      | Some index -> index
+      | None -> (
+          let index = Dynarray.length t.word_of_index in
+          Dynarray.add_last t.word_of_index word;
+          Hashtbl.replace t.index_of_word word index;
+          index
+        )
     )
 
-let word_of_index t i : string =
-  CCVector.get t.word_of_index i
+let word_of_index i : string =
+  lock (fun () ->
+      Dynarray.get t.word_of_index i
+    )
 
-let index_of_word t s : int =
-  String_map.find s t.index_of_word
+let index_of_word s : int =
+  lock (fun () ->
+      Hashtbl.find t.index_of_word s
+    )
 
-let load_into_db ~db ~doc_id (t : t) : unit =
+let read_from_db ~db : unit =
   let open Sqlite3_utils in
-  with_stmt ~db
-    {|
-  INSERT INTO word
-  (id, doc_id, word)
-  VALUES
-  (@id, @doc_id, @word)
-  ON CONFLICT(doc_id, id) DO NOTHING
+  lock (fun () ->
+      Dynarray.clear t.word_of_index;
+      Hashtbl.clear t.index_of_word;
+      iter_stmt ~db
+        {|
+  SELECT id, word
+  FROM word
   |}
-    (fun stmt ->
-       CCVector.iteri (fun id word ->
-           bind_names
-             stmt
-             [ ("@doc_id", INT doc_id)
-             ; ("@id", INT (Int64.of_int id))
-             ; ("@word", TEXT word)
-             ];
-           step stmt;
-           reset stmt;
-         )
-         t.word_of_index
+        ~names:[]
+        (fun data ->
+           let id = Data.to_int_exn data.(0) in
+           let word = Data.to_string_exn data.(1) in
+           Dynarray.add_last t.word_of_index word;
+           Hashtbl.replace t.index_of_word word id;
+        )
+    )
+
+let write_to_db ~db : unit =
+  let open Sqlite3_utils in
+  lock (fun () ->
+      with_stmt ~db
+        {|
+  INSERT INTO word
+  (id, word)
+  VALUES
+  (@id, @word)
+  ON CONFLICT(id) DO NOTHING
+  |}
+        (fun stmt ->
+           Dynarray.iteri (fun id word ->
+               bind_names
+                 stmt
+                 [ ("@id", INT (Int64.of_int id))
+                 ; ("@word", TEXT word)
+                 ];
+               step stmt;
+               reset stmt;
+             )
+             t.word_of_index
+        )
     )
