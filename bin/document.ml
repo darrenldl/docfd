@@ -407,7 +407,7 @@ let of_ir2 db ~already_in_transaction (ir : Ir2.t) : t =
       raw;
       last_scan;
     } = ir in
-  Index.load_raw_into_db db ~already_in_transaction ~doc_hash raw;
+  Index.write_raw_to_db db ~already_in_transaction ~doc_hash raw;
   {
     search_mode;
     path;
