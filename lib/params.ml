@@ -81,7 +81,6 @@ CREATE INDEX IF NOT EXISTS doc_info_index_2 ON doc_info (last_used);
 
 CREATE TABLE IF NOT EXISTS word (
   id INTEGER,
-  doc_id INTEGER,
   word TEXT,
   PRIMARY KEY (doc_id, id)
 ) WITHOUT ROWID;
