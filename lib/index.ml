@@ -348,7 +348,7 @@ let prune_old_documents ~keep_n_latest : unit =
       step_stmt ~db "COMMIT" ignore;
     )
 
-let load_raw_into_db db ~already_in_transaction ~doc_hash (x : Raw.t) : unit =
+let write_raw_to_db db ~already_in_transaction ~doc_hash (x : Raw.t) : unit =
   let open Sqlite3_utils in
   let now = now_int64 () in
   with_db ~db (fun db ->
