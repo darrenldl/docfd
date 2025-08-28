@@ -30,7 +30,6 @@ end
 
 module Raw = struct
   type t = {
-    word_db : Word_db.t;
     pos_s_of_word : Int_set.t Int_map.t;
     loc_of_pos : Loc.t Int_map.t;
     line_loc_of_global_line_num : Line_loc.t Int_map.t;
@@ -51,7 +50,6 @@ module Raw = struct
   type chunk = multi_indexed_word array
 
   let make () : t = {
-    word_db = Word_db.make ();
     pos_s_of_word = Int_map.empty;
     loc_of_pos = Int_map.empty;
     line_loc_of_global_line_num = Int_map.empty;
@@ -65,7 +63,6 @@ module Raw = struct
 
   let union (x : t) (y : t) =
     {
-      word_db = Word_db.make ();
       pos_s_of_word =
         Int_map.union (fun _k s0 s1 -> Some (Int_set.union s0 s1))
           x.pos_s_of_word
@@ -118,16 +115,10 @@ module Raw = struct
     |> Seq.mapi (fun pos (loc, word) ->
         { pos; loc; word })
 
-  type shared_word_db = {
-    lock : Eio.Mutex.t;
-    word_db : Word_db.t;
-  }
-
-  let of_chunk (shared_word_db : shared_word_db) (arr : chunk) : t =
+  let of_chunk (arr : chunk) : t =
     Array.fold_left
       (fun
-        { word_db = dummy_word_db;
-          pos_s_of_word;
+        { pos_s_of_word;
           loc_of_pos;
           line_loc_of_global_line_num;
           start_end_inc_pos_of_global_line_num;
@@ -140,9 +131,7 @@ module Raw = struct
         { pos; loc; word } ->
 
         let index_of_word =
-          Eio.Mutex.use_rw shared_word_db.lock ~protect:false (fun () ->
-              Word_db.add shared_word_db.word_db word
-            )
+          Word_db.add word
         in
 
         let line_loc = loc.Loc.line_loc in
@@ -157,8 +146,7 @@ module Raw = struct
           Option.value ~default:0
             (Int_map.find_opt page_num line_count_of_page_num)
         in
-        { word_db = dummy_word_db;
-          pos_s_of_word = Int_map.add index_of_word pos_s pos_s_of_word;
+        { pos_s_of_word = Int_map.add index_of_word pos_s pos_s_of_word;
           loc_of_pos = Int_map.add pos loc loc_of_pos;
           line_loc_of_global_line_num =
             Int_map.add global_line_num line_loc line_loc_of_global_line_num;
@@ -202,19 +190,13 @@ module Raw = struct
     |> OSeq.chunks !Params.index_chunk_size
 
   let of_seq pool (s : (Line_loc.t * string) Seq.t) : t =
-    let shared_word_db : shared_word_db =
-      { lock = Eio.Mutex.create ();
-        word_db = Word_db.make ();
-      }
-    in
     let indices =
       s
       |> Seq.map (fun (line_loc, s) -> (line_loc, Misc_utils.sanitize_string s))
       |> words_of_lines
       |> chunks_of_words
       |> List.of_seq
-      |> Task_pool.map_list pool (fun chunk ->
-          of_chunk shared_word_db chunk)
+      |> Task_pool.map_list pool of_chunk
     in
     let res =
       List.fold_left (fun acc index ->
@@ -223,7 +205,7 @@ module Raw = struct
         (make ())
         indices
     in
-    { res with word_db = shared_word_db.word_db }
+    res
 
   let of_lines pool (s : string Seq.t) : t =
     s
@@ -473,7 +455,6 @@ let write_raw_to_db db ~already_in_transaction ~doc_hash (x : Raw.t) : unit =
              )
              x.pos_s_of_word
         );
-      Word_db.load_into_db ~db ~doc_id x.word_db;
       step_stmt ~db
         {|
       UPDATE doc_info
