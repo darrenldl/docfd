@@ -465,7 +465,8 @@ let of_path
     let ir2 = Ir2.of_ir1 pool ir1 in
     with_db (fun db ->
         Ok (of_ir2 db ~already_in_transaction ir2)
-      )
+      );
+    Word_db.write_to_db ();
   )
 
 module ET = Search_phrase.Enriched_token

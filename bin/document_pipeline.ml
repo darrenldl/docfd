@@ -118,7 +118,6 @@ let feed (t : t) search_mode ~doc_hash path =
     )
 
 let run (t : t) =
-  Word_db.read_from_db ();
   Eio.Fiber.all
     (List.concat
        [ CCList.(0 --^ Task_pool.size)

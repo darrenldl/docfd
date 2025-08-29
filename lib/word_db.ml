@@ -47,6 +47,7 @@ let read_from_db () : unit =
             {|
   SELECT id, word
   FROM word
+  ORDER by id
   |}
             ~names:[]
             (fun data ->
