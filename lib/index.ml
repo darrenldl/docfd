@@ -325,7 +325,7 @@ let prune_old_documents ~keep_n_latest : unit =
       drop_based_on_doc_id "line_info";
       drop_based_on_doc_id "page_info";
       drop_based_on_doc_id "position";
-      drop_based_on_doc_id "word";
+      drop_based_on_doc_id "word_id_doc_id_link";
       step_stmt ~db "DROP TABLE temp.docs_to_drop" ignore;
       step_stmt ~db "COMMIT" ignore;
     )
@@ -455,6 +455,25 @@ let write_raw_to_db db ~already_in_transaction ~doc_hash (x : Raw.t) : unit =
              )
              x.pos_s_of_word
         );
+      with_stmt ~db
+        {|
+  INSERT INTO word_id_doc_id_link
+  (word_id, doc_id)
+  VALUES
+  (@word_id, @doc_id)
+  ON CONFLICT(word_id, doc_id) DO NOTHING
+    |}
+        (fun stmt ->
+           Int_map.iter (fun word_id _pos_s ->
+               bind_names stmt
+                 [ ("@word_id", INT (Int64.of_int word_id))
+                 ; ("@doc_id", INT doc_id)
+                 ];
+               step stmt;
+               reset stmt;
+             )
+             x.pos_s_of_word
+        );
       step_stmt ~db
         {|
       UPDATE doc_info
@@ -527,8 +546,7 @@ let word_of_pos ~doc_hash pos : string =
     SELECT word.word
     FROM position p
     JOIN word
-        ON word.doc_id = p.doc_id
-        AND word.id = p.word_id
+        ON word.id = p.word_id
     WHERE p.doc_id = @doc_id
     AND p.pos = @pos
     |}
@@ -561,8 +579,7 @@ let words_between_start_and_end_inc : doc_hash:string -> int * int -> string Dyn
     SELECT word.word
     FROM position p
     JOIN word
-      ON word.doc_id = p.doc_id
-      AND word.id = p.word_id
+      ON word.id = p.word_id
     WHERE p.doc_id = @doc_id
     AND p.pos BETWEEN @start AND @end_inc
     ORDER BY p.pos
@@ -883,16 +900,17 @@ module Search = struct
             iter_stmt
               (Fmt.str
                  {|
-              SELECT
+              SELECT DISTINCT
                 word.id AS word_id,
                 word.word AS word
               FROM word
-              WHERE doc_id = @doc_id
+              JOIN word_id_doc_id_link
+                ON word_id_doc_id_link.word_id = word.id
+              WHERE word_id_doc_id_link.doc_id = @doc_id
               %s
               |}
                  extra_sql)
-              ~names:[ ("@doc_id", INT doc_id)
-                     ]
+              ~names:[ ("@doc_id", INT doc_id) ]
               f
           )
         | Some (start, end_inc) -> (
@@ -904,8 +922,7 @@ module Search = struct
                 word.word AS word
               FROM position p
               JOIN word
-                  ON p.doc_id = word.doc_id
-                  AND p.word_id = word.id
+                  ON p.word_id = word.id
               WHERE p.doc_id = @doc_id
               AND p.pos BETWEEN @start AND @end_inc
               %s

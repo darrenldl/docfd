@@ -82,12 +82,20 @@ CREATE INDEX IF NOT EXISTS doc_info_index_2 ON doc_info (last_used);
 CREATE TABLE IF NOT EXISTS word (
   id INTEGER,
   word TEXT,
-  PRIMARY KEY (doc_id, id)
+  PRIMARY KEY (id)
 ) WITHOUT ROWID;
 
 CREATE INDEX IF NOT EXISTS word_index_1 ON word (word);
 
 CREATE INDEX IF NOT EXISTS word_index_2 ON word (word COLLATE NOCASE);
+
+CREATE TABLE IF NOT EXISTS word_id_doc_id_link (
+  word_id INTEGER,
+  doc_id INTEGER,
+  PRIMARY KEY (word_id, doc_id)
+) WITHOUT ROWID;
+
+CREATE INDEX IF NOT EXISTS word_id_doc_id_link_index_1 ON word_id_doc_id_link (doc_id);
   |}
 
 let db_path : string option ref = ref None
