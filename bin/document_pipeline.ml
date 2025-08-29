@@ -118,6 +118,7 @@ let feed (t : t) search_mode ~doc_hash path =
     )
 
 let run (t : t) =
+  Word_db.read_from_db ();
   Eio.Fiber.all
     (List.concat
        [ CCList.(0 --^ Task_pool.size)
@@ -143,4 +144,6 @@ let finalize (t : t) =
     Eio.Semaphore.acquire t.ir2_of_ir1_workers_batch_release;
   done;
   Eio.Stream.add t.ir2_queue None;
-  Dynarray.to_list (Eio.Stream.take t.result)
+  let res = Dynarray.to_list (Eio.Stream.take t.result) in
+  Word_db.write_to_db ();
+  res
