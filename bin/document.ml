@@ -463,10 +463,13 @@ let of_path
     let* ir0 = Ir0.of_path ~env search_mode ~doc_hash path in
     let* ir1 = Ir1.of_ir0 ~env ir0 in
     let ir2 = Ir2.of_ir1 pool ir1 in
-    with_db (fun db ->
-        Ok (of_ir2 db ~already_in_transaction ir2)
-      );
+    let res =
+      with_db (fun db ->
+          Ok (of_ir2 db ~already_in_transaction ir2)
+        )
+    in
     Word_db.write_to_db ();
+    res
   )
 
 module ET = Search_phrase.Enriched_token
