@@ -85,5 +85,45 @@ let write_to_db () : unit =
                  t.word_of_index
             );
           step_stmt ~db "COMMIT" ignore;
+        );
+      with_db (fun db ->
+          step_stmt ~db "BEGIN IMMEDIATE" ignore;
+          Dynarray.iteri (fun id word ->
+              let reductions_already_recorded =
+                step_stmt ~db
+                  {|
+    SELECT 1
+    FROM word_delete_reduction
+    WHERE word_id = @word_id
+    LIMIT 1
+    |}
+                  ~names:[ ("@word_id", INT (Int64.of_int id)) ]
+                  (fun stmt ->
+                     data_count stmt > 0
+                  )
+              in
+              if not reductions_already_recorded then (
+                let reductions =
+                  Misc_utils.delete_reductions ~edit_dist:!Params.max_fuzzy_edit_dist word
+                in
+                String_set.iter (fun s ->
+                    step_stmt ~db
+                      {|
+    INSERT INTO word_delete_reduction
+    (word_id, reduced)
+    VALUES
+    (@word_id, @reduced)
+  ON CONFLICT(word_id, reduced) DO NOTHING
+    |}
+                      ~names:[ ("@word_id", INT (Int64.of_int id))
+                             ; ("@reduced", TEXT s)
+                             ]
+                      ignore;
+                  )
+                  reductions
+              )
+            )
+            t.word_of_index;
+          step_stmt ~db "COMMIT" ignore;
         )
     )

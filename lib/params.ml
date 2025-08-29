@@ -96,6 +96,14 @@ CREATE TABLE IF NOT EXISTS word_id_doc_id_link (
 ) WITHOUT ROWID;
 
 CREATE INDEX IF NOT EXISTS word_id_doc_id_link_index_1 ON word_id_doc_id_link (doc_id);
+
+CREATE TABLE IF NOT EXISTS word_delete_reduction (
+  word_id INTEGER,
+  reduced TEXT,
+  PRIMARY KEY (word_id, reduced)
+) WITHOUT ROWID;
+
+CREATE INDEX IF NOT EXISTS word_delete_reduction_index_1 ON word_delete_reduction (reduced);
   |}
 
 let db_path : string option ref = ref None

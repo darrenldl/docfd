@@ -13,6 +13,40 @@ let first_n_chars_of_string_contains ~n s c =
   in
   String.contains s c
 
+let delete_reductions ~edit_dist s =
+  let single_reductions s =
+    let arr = Dynarray.create () in
+    let len = String.length s in
+    let buf = Dynarray.create () in
+    if len > 1 then (
+      for index_to_skip = 0 to len-1 do
+        Dynarray.clear buf;
+        for i = 0 to len-1 do
+          if i <> index_to_skip then (
+            Dynarray.add_last buf s.[i]
+          )
+        done;
+        Dynarray.to_seq buf
+        |> String.of_seq
+        |> Dynarray.add_last arr
+      done;
+    );
+    Dynarray.to_list arr
+  in
+  let rec aux acc n l =
+    let acc = l :: acc in
+    if n > 0 then (
+      let l' = CCList.flat_map single_reductions l in
+      aux acc (n - 1) l'
+    ) else (
+      acc
+    )
+  in
+  aux [] edit_dist [s]
+  |> List.to_seq
+  |> Seq.flat_map List.to_seq
+  |> String_set.of_seq
+
 let char_is_usable c =
   let code = Char.code c in
   (0x20 <= code && code <= 0x7E)
