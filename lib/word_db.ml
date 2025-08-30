@@ -78,27 +78,11 @@ let write_to_db () : unit =
   lock (fun () ->
       with_db (fun db ->
           step_stmt ~db "BEGIN IMMEDIATE" ignore;
-          with_stmt ~db
-            {|
-  INSERT INTO word
-  (id, word)
-  VALUES
-  (@id, @word)
-  ON CONFLICT(id) DO NOTHING
-  |}
-            (fun stmt ->
-               Dynarray.iteri (fun id word ->
-                   bind_names
-                     stmt
-                     [ ("@id", INT (Int64.of_int id))
-                     ; ("@word", TEXT word)
-                     ];
-                   step stmt;
-                   reset stmt;
-                 )
-                 t.word_of_index
-            );
           Hashtbl.iter (fun id reductions ->
+              if id mod 100 = 0 then (
+                step_stmt ~db "COMMIT" ignore;
+                step_stmt ~db "BEGIN IMMEDIATE" ignore;
+              );
               String_set.iter (fun s ->
                   step_stmt ~db
                     {|
@@ -117,5 +101,31 @@ let write_to_db () : unit =
             t.new_reductions;
           step_stmt ~db "COMMIT" ignore;
           Hashtbl.clear t.new_reductions;
+          step_stmt ~db "BEGIN IMMEDIATE" ignore;
+          with_stmt ~db
+            {|
+  INSERT INTO word
+  (id, word)
+  VALUES
+  (@id, @word)
+  ON CONFLICT(id) DO NOTHING
+  |}
+            (fun stmt ->
+               Dynarray.iteri (fun id word ->
+                   if id mod 5000 = 0 then (
+                     step_stmt ~db "COMMIT" ignore;
+                     step_stmt ~db "BEGIN IMMEDIATE" ignore;
+                   );
+                   bind_names
+                     stmt
+                     [ ("@id", INT (Int64.of_int id))
+                     ; ("@word", TEXT word)
+                     ];
+                   step stmt;
+                   reset stmt;
+                 )
+                 t.word_of_index
+            );
+          step_stmt ~db "COMMIT" ignore;
         )
     )
