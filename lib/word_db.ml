@@ -98,10 +98,6 @@ let write_to_db () : unit =
                  )
                  t.word_of_index
             );
-          step_stmt ~db "COMMIT" ignore;
-        );
-      with_db (fun db ->
-          step_stmt ~db "BEGIN IMMEDIATE" ignore;
           Hashtbl.iter (fun id reductions ->
               String_set.iter (fun s ->
                   step_stmt ~db
