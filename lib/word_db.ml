@@ -79,30 +79,44 @@ let write_to_db () : unit =
   let open Sqlite3_utils in
   lock (fun () ->
       with_db (fun db ->
-          step_stmt ~db "BEGIN IMMEDIATE" ignore;
-          Hashtbl.iter (fun id reductions ->
-              if id mod 100 = 0 then (
-                step_stmt ~db "COMMIT" ignore;
-                step_stmt ~db "BEGIN IMMEDIATE" ignore;
-              );
-              String_set.iter (fun s ->
-                  step_stmt ~db
-                    {|
+          let counter = ref 0 in
+          let outstanding_transaction = ref false in
+          with_stmt ~db
+            {|
     INSERT INTO word_delete_reduction
     (word_id, reduced)
     VALUES
     (@word_id, @reduced)
   ON CONFLICT(word_id, reduced) DO NOTHING
     |}
-                    ~names:[ ("@word_id", INT (Int64.of_int id))
-                           ; ("@reduced", TEXT s)
-                           ]
-                    ignore;
-                ) reductions
-            )
-            t.new_reductions;
-          step_stmt ~db "COMMIT" ignore;
-          Hashtbl.clear t.new_reductions;
+            (fun stmt ->
+               Hashtbl.iter (fun id reductions ->
+                   String_set.iter (fun s ->
+                       if !counter = 0 then (
+                         step_stmt ~db "BEGIN IMMEDIATE" ignore;
+                         outstanding_transaction := true;
+                       );
+                       bind_names stmt
+                         [ ("@word_id", INT (Int64.of_int id))
+                         ; ("@reduced", TEXT s)
+                         ];
+                         step stmt;
+                         reset stmt;
+                       if !counter >= 10_000 then (
+                         step_stmt ~db "COMMIT" ignore;
+                         outstanding_transaction := false;
+                         counter := 0;
+                       ) else (
+                         incr counter;
+                       );
+                     ) reductions
+                 )
+                 t.new_reductions;
+               if !outstanding_transaction then (
+                 step_stmt ~db "COMMIT" ignore;
+               );
+               Hashtbl.clear t.new_reductions;
+            );
           step_stmt ~db "BEGIN IMMEDIATE" ignore;
           with_stmt ~db
             {|
