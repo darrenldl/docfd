@@ -413,11 +413,16 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
                            )
                       )
                   ));
+               if interactive then (
+                 Printf.printf "Finalizing index\n";
+                 flush stdout;
+               );
                Document_pipeline.finalize pipeline
             )
         in
         if interactive then (
           Printf.printf "Writing back word tables\n";
+          flush stdout;
         );
         Word_db.write_to_db ();
         [ indexed_files; unindexed_files ]
