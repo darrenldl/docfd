@@ -104,6 +104,8 @@ CREATE TABLE IF NOT EXISTS word_delete_reduction (
 ) WITHOUT ROWID;
 
 CREATE INDEX IF NOT EXISTS word_delete_reduction_index_1 ON word_delete_reduction (reduced);
+
+CREATE INDEX IF NOT EXISTS word_delete_reduction_index_2 ON word_delete_reduction (reduced COLLATE NOCASE);
   |}
 
 let db_path : string option ref = ref None
