@@ -25,12 +25,14 @@ let add (word : string) : int =
           let index = Dynarray.length t.word_of_index in
           Dynarray.add_last t.word_of_index word;
           Hashtbl.replace t.index_of_word word index;
-          Hashtbl.replace
-            t.new_reductions
-            index
-            (Misc_utils.delete_reductions
-               ~edit_dist:!Params.max_fuzzy_edit_dist
-               word);
+          if String.for_all Parser_components.is_letter word then (
+            Hashtbl.replace
+              t.new_reductions
+              index
+              (Misc_utils.delete_reductions
+                 ~edit_dist:!Params.max_fuzzy_edit_dist
+                 word);
+          );
           index
         )
     )
