@@ -416,6 +416,10 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
                Document_pipeline.finalize pipeline
             )
         in
+        if interactive then (
+          Printf.printf "Writing back word tables\n";
+        );
+        Word_db.write_to_db ();
         [ indexed_files; unindexed_files ]
       )
   in

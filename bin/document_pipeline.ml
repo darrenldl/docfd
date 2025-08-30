@@ -143,6 +143,4 @@ let finalize (t : t) =
     Eio.Semaphore.acquire t.ir2_of_ir1_workers_batch_release;
   done;
   Eio.Stream.add t.ir2_queue None;
-  let res = Dynarray.to_list (Eio.Stream.take t.result) in
-  Word_db.write_to_db ();
-  res
+  Dynarray.to_list (Eio.Stream.take t.result)
