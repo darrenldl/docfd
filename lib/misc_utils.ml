@@ -13,9 +13,8 @@ let first_n_chars_of_string_contains ~n s c =
   in
   String.contains s c
 
-let delete_reductions ~edit_dist s =
-  let single_reductions s =
-    let arr = Dynarray.create () in
+let delete_reductions ~edit_dist s : String_set.t =
+  let single_reductions ~acc s =
     let len = String.length s in
     let buf = Dynarray.create () in
     if len > 1 then (
@@ -28,24 +27,29 @@ let delete_reductions ~edit_dist s =
         done;
         Dynarray.to_seq buf
         |> String.of_seq
-        |> Dynarray.add_last arr
+        |> Dynarray.add_last acc
       done;
-    );
-    Dynarray.to_list arr
+    )
   in
-  let rec aux acc n l =
-    let acc = l :: acc in
+  let rec aux acc n cur_batch =
+    let acc =
+      Dynarray.fold_left (fun acc s ->
+          String_set.add s acc
+        ) acc cur_batch
+    in
     if n > 0 then (
-      let l' = CCList.flat_map single_reductions l in
-      aux acc (n - 1) l'
+      let next_batch = Dynarray.create () in
+      Dynarray.iter (fun s ->
+          single_reductions ~acc:next_batch s
+        ) cur_batch;
+      aux acc (n - 1) next_batch
     ) else (
       acc
     )
   in
-  aux [] edit_dist [s]
-  |> List.to_seq
-  |> Seq.flat_map List.to_seq
-  |> String_set.of_seq
+  let arr = Dynarray.create () in
+  Dynarray.add_last arr s;
+  aux String_set.empty edit_dist arr
 
 let char_is_usable c =
   let code = Char.code c in
