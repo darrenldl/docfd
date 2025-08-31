@@ -100,8 +100,8 @@ let write_to_db () : unit =
                          [ ("@word_id", INT (Int64.of_int id))
                          ; ("@reduced", TEXT s)
                          ];
-                         step stmt;
-                         reset stmt;
+                       step stmt;
+                       reset stmt;
                        if !counter >= 10_000 then (
                          step_stmt ~db "COMMIT" ignore;
                          outstanding_transaction := false;
