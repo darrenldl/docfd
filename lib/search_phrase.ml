@@ -334,7 +334,7 @@ let enriched_tokens_of_ir0 (ir0_s : ir0 list) : Enriched_token.t list =
             Eio.Mutex.use_rw cache.mutex ~protect:false (fun () ->
                 let automaton =
                   CCCache.with_cache cache.cache
-                    (Spelll.of_string ~limit:!Params.max_fuzzy_edit_dist)
+                    (Spelll.of_string ~limit:Params.max_fuzzy_edit_dist)
                     string
                 in
                 automaton

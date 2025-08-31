@@ -109,18 +109,6 @@ let single_line_add_exts_arg =
     & info [ single_line_add_exts_arg_name ] ~doc ~docv:"EXTS"
   )
 
-let max_fuzzy_edit_dist_arg_name = "max-fuzzy-edit-dist"
-
-let max_fuzzy_edit_dist_arg =
-  let doc =
-    "Maximum edit distance for fuzzy matches."
-  in
-  Arg.(
-    value
-    & opt int Params.default_max_fuzzy_edit_dist
-    & info [ max_fuzzy_edit_dist_arg_name ] ~doc ~docv:"N"
-  )
-
 let max_token_search_dist_arg_name = "max-token-search-dist"
 
 let max_token_search_dist_arg =
@@ -580,7 +568,6 @@ To use piped stdin as input, the list of paths must be empty."
 
 let check
     ~max_depth
-    ~max_fuzzy_edit_dist
     ~max_token_search_dist
     ~max_linked_token_search_dist
     ~tokens_per_search_scope_level
@@ -604,10 +591,6 @@ let check
   if max_depth < 0 then (
     exit_with_error_msg
       (Fmt.str "invalid %s: cannot be < 0" max_depth_arg_name)
-  );
-  if max_fuzzy_edit_dist < 0 then (
-    exit_with_error_msg
-      (Fmt.str "invalid %s: cannot be < 0" max_fuzzy_edit_dist_arg_name)
   );
   if max_token_search_dist < 1 then (
     exit_with_error_msg

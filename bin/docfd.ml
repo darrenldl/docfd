@@ -481,7 +481,6 @@ let run
     (no_pandoc : bool)
     (scan_hidden : bool)
     (max_depth : int)
-    (max_fuzzy_edit_dist : int)
     (max_token_search_dist : int)
     (max_linked_token_search_dist : int)
     (tokens_per_search_scope_level : int)
@@ -520,7 +519,6 @@ let run
   =
   Args.check
     ~max_depth
-    ~max_fuzzy_edit_dist
     ~max_token_search_dist
     ~max_linked_token_search_dist
     ~tokens_per_search_scope_level
@@ -560,7 +558,6 @@ let run
     );
   Params.scan_hidden := scan_hidden;
   Params.max_file_tree_scan_depth := max_depth;
-  Params.max_fuzzy_edit_dist := max_fuzzy_edit_dist;
   Params.max_token_search_dist := max_token_search_dist;
   Params.max_linked_token_search_dist := max_linked_token_search_dist;
   Params.tokens_per_search_scope_level := tokens_per_search_scope_level;
@@ -1326,7 +1323,6 @@ let cmd ~env ~sw =
      $ no_pandoc_arg
      $ hidden_arg
      $ max_depth_arg
-     $ max_fuzzy_edit_dist_arg
      $ max_token_search_dist_arg
      $ max_linked_token_search_dist_arg
      $ tokens_per_search_scope_level_arg

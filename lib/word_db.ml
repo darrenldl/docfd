@@ -30,7 +30,7 @@ let add (word : string) : int =
               t.new_reductions
               index
               (Misc_utils.delete_reductions
-                 ~edit_dist:!Params.max_fuzzy_edit_dist
+                 ~edit_dist:Params.max_fuzzy_edit_dist
                  word);
           );
           index
