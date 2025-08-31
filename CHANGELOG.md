@@ -53,6 +53,18 @@
   storage and management, which makes the overall interaction
   between UI and core code much more robust (12.0.0-alpha.11)
 
+## 12.0.0-alpha.13
+
+- Implemented the core idea of SymSpell for fuzzy matching
+
+    - References
+        - https://blog.cf8.gg/fuzzy-searching-5x-faster-with-symspell/
+        - https://seekstorm.com/blog/1000x-spelling-correction/
+    - Fixing the fuzzy edit distance to constant 2 to simplify the indexing process
+        - Removed `--max-fuzzy-edit-dist` argument
+
+- Changed the default search distance for linked tokens from 5 to 2
+
 ## 12.0.0-alpha.12
 
 - Made resetting of search result selection and content view offset less aggressive
