@@ -8,7 +8,7 @@ let default_max_token_search_dist = 50
 
 let max_token_search_dist = ref default_max_token_search_dist
 
-let default_max_linked_token_search_dist = 5
+let default_max_linked_token_search_dist = 2
 
 let max_linked_token_search_dist = ref default_max_linked_token_search_dist
 
