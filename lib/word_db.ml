@@ -2,7 +2,8 @@ type t = {
   lock : Eio.Mutex.t;
   word_of_index : string Dynarray.t;
   index_of_word : (string, int) Hashtbl.t;
-  new_reductions : (int, String_set.t) Hashtbl.t;
+  reductions : (int, String_set.t) Hashtbl.t;
+  mutable index_of_first_word_new_to_db : int;
 }
 
 let t : t =
@@ -10,7 +11,8 @@ let t : t =
     lock = Eio.Mutex.create ();
     word_of_index = Dynarray.create ();
     index_of_word = Hashtbl.create 10_000;
-    new_reductions = Hashtbl.create 10_000;
+    reductions = Hashtbl.create 10_000;
+    index_of_first_word_new_to_db = 0;
   }
 
 let lock : type a. (unit -> a) -> a =
@@ -27,7 +29,7 @@ let add (word : string) : int =
           Hashtbl.replace t.index_of_word word index;
           if String.for_all Parser_components.is_letter word then (
             Hashtbl.replace
-              t.new_reductions
+              t.reductions
               index
               (Misc_utils.delete_reductions
                  ~edit_dist:Params.max_fuzzy_edit_dist
@@ -49,16 +51,11 @@ let index_of_word s : int =
 
 let read_from_db () : unit =
   let open Sqlite3_utils in
-  (* We don't load reductions from DB as
-     we don't make use of reductions within Word_db.
-
-     Index will make use of reductions only at
-     DB level.
-  *)
   lock (fun () ->
       with_db (fun db ->
           Dynarray.clear t.word_of_index;
           Hashtbl.clear t.index_of_word;
+          Hashtbl.clear t.reductions;
           iter_stmt ~db
             {|
   SELECT id, word
@@ -71,7 +68,8 @@ let read_from_db () : unit =
                let word = Data.to_string_exn data.(1) in
                Dynarray.add_last t.word_of_index word;
                Hashtbl.replace t.index_of_word word id;
-            )
+            );
+          t.index_of_first_word_new_to_db := Dynarray.length t.word_of_index;
         )
     )
 
@@ -79,6 +77,7 @@ let write_to_db () : unit =
   let open Sqlite3_utils in
   lock (fun () ->
       with_db (fun db ->
+          let total_word_count = Dynarray.length t.word_of_index in
           let counter = ref 0 in
           let outstanding_transaction = ref false in
           with_stmt ~db
@@ -90,32 +89,34 @@ let write_to_db () : unit =
   ON CONFLICT(word_id, reduced) DO NOTHING
     |}
             (fun stmt ->
-               Hashtbl.iter (fun id reductions ->
-                   String_set.iter (fun s ->
-                       if !counter = 0 then (
-                         step_stmt ~db "BEGIN IMMEDIATE" ignore;
-                         outstanding_transaction := true;
-                       );
-                       bind_names stmt
-                         [ ("@word_id", INT (Int64.of_int id))
-                         ; ("@reduced", TEXT s)
-                         ];
-                       step stmt;
-                       reset stmt;
-                       if !counter >= 10_000 then (
-                         step_stmt ~db "COMMIT" ignore;
-                         outstanding_transaction := false;
-                         counter := 0;
-                       ) else (
-                         incr counter;
-                       );
-                     ) reductions
-                 )
-                 t.new_reductions;
+               for id = t.index_of_first_word_new_to_db to total_word_count-1 do
+                 match Hashtbl.find_opt t.reductions id with
+                 | None -> ()
+                 | Some reductions -> (
+                     String_set.iter (fun s ->
+                         if !counter = 0 then (
+                           step_stmt ~db "BEGIN IMMEDIATE" ignore;
+                           outstanding_transaction := true;
+                         );
+                         bind_names stmt
+                           [ ("@word_id", INT (Int64.of_int id))
+                           ; ("@reduced", TEXT s)
+                           ];
+                         step stmt;
+                         reset stmt;
+                         if !counter >= 10_000 then (
+                           step_stmt ~db "COMMIT" ignore;
+                           outstanding_transaction := false;
+                           counter := 0;
+                         ) else (
+                           incr counter;
+                         );
+                       ) reductions
+                   )
+               done;
                if !outstanding_transaction then (
                  step_stmt ~db "COMMIT" ignore;
                );
-               Hashtbl.clear t.new_reductions;
             );
           step_stmt ~db "BEGIN IMMEDIATE" ignore;
           with_stmt ~db
@@ -143,5 +144,6 @@ let write_to_db () : unit =
                  t.word_of_index
             );
           step_stmt ~db "COMMIT" ignore;
+          t.index_of_first_word_new_to_db <- Dynarray.length t.word_of_index;
         )
     )
