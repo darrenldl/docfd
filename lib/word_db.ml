@@ -15,6 +15,26 @@ let lock : type a. (unit -> a) -> a =
   fun f ->
   Eio.Mutex.use_rw ~protect:false t.lock f
 
+let filter pool (f : string -> bool) : Int_set.t =
+  lock (fun () ->
+      Dynarray.to_seq t.word_of_index
+      |> Seq.mapi (fun i word -> (i, word))
+      |> OSeq.chunks !Params.index_chunk_size
+      |> List.of_seq
+    )
+  |> Task_pool.map_list pool (fun chunk ->
+      Array.fold_left (fun acc (i, word) ->
+          if f word then (
+            Int_set.add i acc
+          ) else (
+            acc
+          )
+        )
+        Int_set.empty
+        chunk
+    )
+  |> List.fold_left Int_set.union Int_set.empty
+
 let add (word : string) : int =
   lock (fun () ->
       match Hashtbl.find_opt t.index_of_word word with
