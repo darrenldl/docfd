@@ -758,7 +758,6 @@ module Search = struct
 
   let indexed_word_is_usable
       (match_typ : [ `Fuzzy | `Exact | `Prefix | `Suffix ])
-      ~consider_edit_dist
       (token : Search_phrase.Enriched_token.t)
       ~indexed_word
     =
@@ -783,8 +782,7 @@ module Search = struct
                || CCString.find ~sub:search_word_ci indexed_word_ci >= 0
                || (indexed_word_len >= 2
                    && CCString.find ~sub:indexed_word_ci search_word_ci >= 0)
-               || (consider_edit_dist
-                   && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word_ci search_word_ci.[0]
+               || (Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word_ci search_word_ci.[0]
                    && Spelll.match_with (ET.automaton token) indexed_word_ci)
              )
            | `Exact -> (
@@ -816,7 +814,6 @@ module Search = struct
       ~doc_hash
       ?within
       ?around_pos
-      ~(consider_edit_dist : bool)
       (token : Search_phrase.Enriched_token.t)
     : int Seq.t =
     let open Sqlite3_utils in
@@ -856,7 +853,6 @@ module Search = struct
         let indexed_word = Data.to_string_exn data.(1) in
         if indexed_word_is_usable
             match_typ
-            ~consider_edit_dist
             token
             ~indexed_word
         then (
@@ -984,7 +980,6 @@ module Search = struct
 
   let search_around_pos
       ~doc_hash
-      ~consider_edit_dist
       ~(within : (int * int) option)
       (around_pos : int)
       (l : Search_phrase.Enriched_token.t list)
@@ -998,7 +993,6 @@ module Search = struct
             ~doc_hash
             ?within
             ~around_pos
-            ~consider_edit_dist
             token
           |> Seq.flat_map (fun pos ->
               aux pos rest
@@ -1068,7 +1062,6 @@ module Search = struct
             (fun () ->
                search_around_pos
                  ~doc_hash
-                 ~consider_edit_dist:true
                  ~within
                  t.start_pos
                  rest
@@ -1222,7 +1215,7 @@ module Search = struct
                      Atomic.set cancellation_notifier true;
                      Seq.empty)
                   (fun () ->
-                     usable_positions ~doc_hash ~consider_edit_dist:true first_word)
+                     usable_positions ~doc_hash first_word)
                 |> (fun s ->
                     match search_scope with
                     | None -> s
