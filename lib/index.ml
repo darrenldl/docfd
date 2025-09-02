@@ -251,19 +251,19 @@ let doc_id_of_doc_hash : ?db:Sqlite3.db -> string -> int64 =
   fun ?db ->
     let open Sqlite3_utils in
     Eio.Mutex.use_rw ~protect:false lock (fun () ->
-    CCCache.with_cache cache (fun doc_hash ->
-        step_stmt ?db
-          {|
+        CCCache.with_cache cache (fun doc_hash ->
+            step_stmt ?db
+              {|
     SELECT id
     FROM doc_info
     WHERE hash = @doc_hash
     |}
-          ~names:[ ("@doc_hash", TEXT doc_hash) ]
-          (fun stmt ->
-             column_int64 stmt 0
+              ~names:[ ("@doc_hash", TEXT doc_hash) ]
+              (fun stmt ->
+                 column_int64 stmt 0
+              )
           )
       )
-    )
 
 let now_int64 () =
   Timedesc.Timestamp.now ()
@@ -503,19 +503,19 @@ let global_line_count =
   let open Sqlite3_utils in
   fun ~doc_hash ->
     Eio.Mutex.use_rw ~protect:false lock (fun () ->
-    CCCache.with_cache cache (fun doc_hash ->
-        step_stmt
-          {|
+        CCCache.with_cache cache (fun doc_hash ->
+            step_stmt
+              {|
     SELECT global_line_count FROM doc_info
     WHERE hash = @doc_hash
     |}
-          ~names:[ ("@doc_hash", TEXT doc_hash) ]
-          (fun stmt ->
-             column_int stmt 0
+              ~names:[ ("@doc_hash", TEXT doc_hash) ]
+              (fun stmt ->
+                 column_int stmt 0
+              )
           )
+          doc_hash
       )
-      doc_hash
-    )
 
 let page_count ~doc_hash =
   let open Sqlite3_utils in
@@ -585,12 +585,12 @@ let words_between_start_and_end_inc : doc_hash:string -> int * int -> string Dyn
   in
   fun ~doc_hash (start, end_inc) ->
     Eio.Mutex.use_rw ~protect:false lock (fun () ->
-    CCCache.with_cache cache (fun (doc_hash, start, end_inc) ->
-        let open Sqlite3_utils in
-        let doc_id = doc_id_of_doc_hash doc_hash in
-        let acc = Dynarray.create () in
-        iter_stmt
-          {|
+        CCCache.with_cache cache (fun (doc_hash, start, end_inc) ->
+            let open Sqlite3_utils in
+            let doc_id = doc_id_of_doc_hash doc_hash in
+            let acc = Dynarray.create () in
+            iter_stmt
+              {|
     SELECT word.word
     FROM position p
     JOIN word
@@ -599,17 +599,17 @@ let words_between_start_and_end_inc : doc_hash:string -> int * int -> string Dyn
     AND p.pos BETWEEN @start AND @end_inc
     ORDER BY p.pos
     |}
-          ~names:[ ("@doc_id", INT doc_id)
-                 ; ("@start", INT (Int64.of_int start))
-                 ; ("@end_inc", INT (Int64.of_int end_inc))
-                 ]
-          (fun data ->
-             Dynarray.add_last acc (Data.to_string_exn data.(0))
-          );
-        acc
+              ~names:[ ("@doc_id", INT doc_id)
+                     ; ("@start", INT (Int64.of_int start))
+                     ; ("@end_inc", INT (Int64.of_int end_inc))
+                     ]
+              (fun data ->
+                 Dynarray.add_last acc (Data.to_string_exn data.(0))
+              );
+            acc
+          )
+          (doc_hash, start, end_inc)
       )
-      (doc_hash, start, end_inc)
-    )
 
 let words_of_global_line_num : doc_hash:string -> int -> string Dynarray.t =
   let lock = Eio.Mutex.create () in
@@ -620,32 +620,32 @@ let words_of_global_line_num : doc_hash:string -> int -> string Dynarray.t =
   in
   fun ~doc_hash x ->
     Eio.Mutex.use_rw ~protect:false lock (fun () ->
-    CCCache.with_cache cache (fun (doc_hash, x) ->
-        let open Sqlite3_utils in
-        let doc_id = doc_id_of_doc_hash doc_hash in
-        if x >= global_line_count ~doc_hash then (
-          invalid_arg "Index.words_of_global_line_num: global_line_num out of range"
-        ) else (
-          let start, end_inc =
-            step_stmt
-              {|
+        CCCache.with_cache cache (fun (doc_hash, x) ->
+            let open Sqlite3_utils in
+            let doc_id = doc_id_of_doc_hash doc_hash in
+            if x >= global_line_count ~doc_hash then (
+              invalid_arg "Index.words_of_global_line_num: global_line_num out of range"
+            ) else (
+              let start, end_inc =
+                step_stmt
+                  {|
         SELECT start_pos, end_inc_pos
         FROM line_info
         WHERE doc_id = @doc_id
         AND global_line_num = @x
         |}
-              ~names:[ ("@doc_id", INT doc_id)
-                     ; ("@x", INT (Int64.of_int x))
-                     ]
-              (fun stmt ->
-                 (column_int stmt 0, column_int stmt 1)
-              )
-          in
-          words_between_start_and_end_inc ~doc_hash (start, end_inc)
-        )
+                  ~names:[ ("@doc_id", INT doc_id)
+                         ; ("@x", INT (Int64.of_int x))
+                         ]
+                  (fun stmt ->
+                     (column_int stmt 0, column_int stmt 1)
+                  )
+              in
+              words_between_start_and_end_inc ~doc_hash (start, end_inc)
+            )
+          )
+          (doc_hash, x)
       )
-      (doc_hash, x)
-    )
 
 let words_of_page_num ~doc_hash x : string Dynarray.t =
   let open Sqlite3_utils in
