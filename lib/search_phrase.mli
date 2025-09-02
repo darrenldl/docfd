@@ -46,6 +46,8 @@ module Enriched_token : sig
   val is_linked_to_next : t -> bool
 
   val automaton : t -> Spelll.automaton
+
+  val compatible_with_word : t -> string -> bool
 end
 
 type t

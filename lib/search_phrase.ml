@@ -104,6 +104,55 @@ module Enriched_token = struct
 
   let equal (x : t) (y : t) =
     compare x y = 0
+
+  let compatible_with_word (token : t) indexed_word =
+    String.length indexed_word > 0
+    &&
+    (match data token with
+     | `Explicit_spaces -> (
+         Parser_components.is_space indexed_word.[0]
+       )
+     | `String search_word -> (
+         let search_word_ci = String.lowercase_ascii search_word in
+         let indexed_word_ci = String.lowercase_ascii indexed_word in
+         let use_ci_match = String.equal search_word search_word_ci in
+         let indexed_word_len = String.length indexed_word in
+         if Parser_components.is_possibly_utf_8 indexed_word.[0] then (
+           String.equal search_word indexed_word
+         ) else (
+           match match_typ token with
+           | `Fuzzy -> (
+               String.equal search_word_ci indexed_word_ci
+               || CCString.find ~sub:search_word_ci indexed_word_ci >= 0
+               || (indexed_word_len >= 2
+                   && CCString.find ~sub:indexed_word_ci search_word_ci >= 0)
+               || (Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word_ci search_word_ci.[0]
+                   && Spelll.match_with (automaton token) indexed_word_ci)
+             )
+           | `Exact -> (
+               if use_ci_match then (
+                 String.equal search_word_ci indexed_word_ci
+               ) else (
+                 String.equal search_word indexed_word
+               )
+             )
+           | `Prefix -> (
+               if use_ci_match then (
+                 CCString.prefix ~pre:search_word_ci indexed_word_ci
+               ) else (
+                 CCString.prefix ~pre:search_word indexed_word
+               )
+             )
+           | `Suffix -> (
+               if use_ci_match then (
+                 CCString.suffix ~suf:search_word_ci indexed_word_ci
+               ) else (
+                 CCString.suffix ~suf:search_word indexed_word
+               )
+             )
+         )
+       )
+    )
 end
 
 type t = {
