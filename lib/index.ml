@@ -1204,68 +1204,64 @@ module Search = struct
       ~doc_hash
       ~within_same_line
       ~(search_scope : Diet.Int.t option)
-      (exp : Search_exp.t)
+      (phrase : Search_phrase.t)
     : Search_job_group.t Seq.t =
-    Search_exp.flattened exp
-    |> List.to_seq
-    |> Seq.flat_map (fun phrase ->
-        if Search_phrase.is_empty phrase then (
-          Seq.empty
-        ) else (
-          match Search_phrase.enriched_tokens phrase with
-          | [] -> failwith "unexpected case"
-          | first_word :: _rest -> (
-              let possible_start_count, possible_starts =
-                Eio.Fiber.first
-                  (fun () ->
-                     Stop_signal.await stop_signal;
-                     Atomic.set cancellation_notifier true;
-                     Seq.empty)
-                  (fun () ->
-                     usable_positions ~doc_hash first_word)
-                |> (fun s ->
-                    match search_scope with
-                    | None -> s
-                    | Some search_scope -> (
-                        Seq.filter (fun x ->
-                            Diet.Int.mem x search_scope
-                          ) s
-                      )
-                  )
-                |> Misc_utils.length_and_list_of_seq
-              in
-              if possible_start_count = 0 then (
-                Seq.empty
-              ) else (
-                let search_limit_per_start =
-                  max
-                    Params.search_result_min_per_start
-                    (
-                      (Params.default_search_result_total_per_document + possible_start_count - 1) / possible_start_count
-                    )
-                in
-                let search_chunk_size =
-                  max 10 (possible_start_count / Task_pool.size)
-                in
-                possible_starts
-                |> CCList.chunks search_chunk_size
-                |> List.to_seq
-                |> Seq.map (fun possible_start_pos_list ->
-                    {
-                      Search_job_group.stop_signal;
-                      terminate_on_result_found;
-                      cancellation_notifier;
-                      doc_hash;
-                      within_same_line;
-                      phrase;
-                      possible_start_pos_list;
-                      search_limit_per_start;
-                    }
+    if Search_phrase.is_empty phrase then (
+      Seq.empty
+    ) else (
+      match Search_phrase.enriched_tokens phrase with
+      | [] -> failwith "unexpected case"
+      | first_word :: _rest -> (
+          let possible_start_count, possible_starts =
+            Eio.Fiber.first
+              (fun () ->
+                 Stop_signal.await stop_signal;
+                 Atomic.set cancellation_notifier true;
+                 Seq.empty)
+              (fun () ->
+                 usable_positions ~doc_hash first_word)
+            |> (fun s ->
+                match search_scope with
+                | None -> s
+                | Some search_scope -> (
+                    Seq.filter (fun x ->
+                        Diet.Int.mem x search_scope
+                      ) s
                   )
               )
-            )
+            |> Misc_utils.length_and_list_of_seq
+          in
+          if possible_start_count = 0 then (
+            Seq.empty
+          ) else (
+            let search_limit_per_start =
+              max
+                Params.search_result_min_per_start
+                (
+                  (Params.default_search_result_total_per_document + possible_start_count - 1) / possible_start_count
+                )
+            in
+            let search_chunk_size =
+              max 10 (possible_start_count / Task_pool.size)
+            in
+            possible_starts
+            |> CCList.chunks search_chunk_size
+            |> List.to_seq
+            |> Seq.map (fun possible_start_pos_list ->
+                {
+                  Search_job_group.stop_signal;
+                  terminate_on_result_found;
+                  cancellation_notifier;
+                  doc_hash;
+                  within_same_line;
+                  phrase;
+                  possible_start_pos_list;
+                  search_limit_per_start;
+                }
+              )
+          )
         )
-      )
+    )
 
   let search
       pool
@@ -1277,14 +1273,18 @@ module Search = struct
       ~search_scope
       (exp : Search_exp.t)
     : Search_result_heap.t =
-    make_search_job_groups
-      stop_signal
-      ?terminate_on_result_found
-      ~cancellation_notifier
-      ~doc_hash
-      ~within_same_line
-      ~search_scope
-      exp
+    Search_exp.flattened exp
+    |> List.to_seq
+    |> Seq.flat_map (fun phrase ->
+        make_search_job_groups
+          stop_signal
+          ?terminate_on_result_found
+          ~cancellation_notifier
+          ~doc_hash
+          ~within_same_line
+          ~search_scope
+          phrase
+      )
     |> List.of_seq
     |> Task_pool.map_list pool Search_job_group.run
     |> List.fold_left search_result_heap_merge_with_yield Search_result_heap.empty

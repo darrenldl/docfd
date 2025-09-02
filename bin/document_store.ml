@@ -94,28 +94,35 @@ let refresh_search_results pool stop_signal (t : t) : t option =
          Atomic.set cancellation_notifier true;
          String_map.empty)
       (fun () ->
-         t.documents_passing_filter
-         |> String_set.to_seq
-         |> Seq.filter (fun path ->
-             Option.is_none (String_map.find_opt path t.search_results)
-           )
-         |> List.of_seq
-         |> Task_pool.map_list pool (fun path ->
-             let doc = String_map.find path t.all_documents in
-             let within_same_line =
-               match Document.search_mode doc with
-               | `Single_line -> true
-               | `Multiline -> false
-             in
-             Index.make_search_job_groups
-               stop_signal
-               ~cancellation_notifier
-               ~doc_hash:(Document.doc_hash doc)
-               ~within_same_line
-               ~search_scope:(Document.search_scope doc)
-               t.search_exp
-             |> Seq.map (fun x -> (path, x))
-             |> List.of_seq
+         let documents_to_search_through =
+           t.documents_passing_filter
+           |> String_set.to_seq
+           |> Seq.filter (fun path ->
+               Option.is_none (String_map.find_opt path t.search_results)
+             )
+           |> List.of_seq
+         in
+         Search_exp.flattened t.search_exp
+         |> List.map (fun phrase ->
+             documents_to_search_through
+             |> Task_pool.map_list pool (fun path ->
+                 let doc = String_map.find path t.all_documents in
+                 let within_same_line =
+                   match Document.search_mode doc with
+                   | `Single_line -> true
+                   | `Multiline -> false
+                 in
+                 Index.make_search_job_groups
+                   stop_signal
+                   ~cancellation_notifier
+                   ~doc_hash:(Document.doc_hash doc)
+                   ~within_same_line
+                   ~search_scope:(Document.search_scope doc)
+                   phrase
+                 |> Seq.map (fun x -> (path, x))
+                 |> List.of_seq
+               )
+             |> List.concat
            )
          |> List.concat
          |> Task_pool.map_list pool (fun (path, search_job_group) ->

@@ -69,7 +69,7 @@ val make_search_job_groups :
   doc_hash:string ->
   within_same_line:bool ->
   search_scope:Diet.Int.t option ->
-  Search_exp.t ->
+  Search_phrase.t ->
   Search_job_group.t Seq.t
 
 val global_line_count : doc_hash:string -> int
