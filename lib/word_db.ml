@@ -18,38 +18,38 @@ let lock : type a. (unit -> a) -> a =
 let filter pool (f : string -> bool) : Int_set.t =
   let word_of_index =
     lock (fun () ->
-      t.word_of_index
-    )
+        t.word_of_index
+      )
   in
-      let total_count = Int_map.cardinal word_of_index in
-      let max_end_exc_seen = ref 0 in
-      let chunk_size = !Params.index_chunk_size * 10 in
-      let chunk_start_end_exc_ranges =
-        OSeq.(0 -- (total_count - 1) / chunk_size)
-        |> Seq.map (fun chunk_index ->
-            let start = chunk_index * chunk_size in
-            let end_exc =
-              min
-                ((chunk_index + 1) * chunk_size)
-                total_count
-            in
-            max_end_exc_seen := max !max_end_exc_seen end_exc;
-            (start, end_exc)
-          )
-        |> List.of_seq
-      in
-      assert (!max_end_exc_seen = total_count);
-      chunk_start_end_exc_ranges
-      |> Task_pool.map_list pool (fun (start, end_exc) ->
-          let acc = ref Int_set.empty in
-          for i=start to end_exc-1 do
-            if f (Int_map.find i word_of_index) then (
-              acc := Int_set.add i !acc
-            )
-          done;
-          !acc
+  let total_count = Int_map.cardinal word_of_index in
+  let max_end_exc_seen = ref 0 in
+  let chunk_size = !Params.index_chunk_size * 10 in
+  let chunk_start_end_exc_ranges =
+    OSeq.(0 -- (total_count - 1) / chunk_size)
+    |> Seq.map (fun chunk_index ->
+        let start = chunk_index * chunk_size in
+        let end_exc =
+          min
+            ((chunk_index + 1) * chunk_size)
+            total_count
+        in
+        max_end_exc_seen := max !max_end_exc_seen end_exc;
+        (start, end_exc)
+      )
+    |> List.of_seq
+  in
+  assert (!max_end_exc_seen = total_count);
+  chunk_start_end_exc_ranges
+  |> Task_pool.map_list pool (fun (start, end_exc) ->
+      let acc = ref Int_set.empty in
+      for i=start to end_exc-1 do
+        if f (Int_map.find i word_of_index) then (
+          acc := Int_set.add i !acc
         )
-      |> List.fold_left Int_set.union Int_set.empty
+      done;
+      !acc
+    )
+  |> List.fold_left Int_set.union Int_set.empty
 
 let add (word : string) : int =
   lock (fun () ->
@@ -77,7 +77,7 @@ let read_from_db () : unit =
   let open Sqlite3_utils in
   lock (fun () ->
       with_db (fun db ->
-        t.word_of_index <- Int_map.empty;
+          t.word_of_index <- Int_map.empty;
           Hashtbl.clear t.index_of_word;
           iter_stmt ~db
             {|
