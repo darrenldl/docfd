@@ -10,6 +10,7 @@ type t = {
   mod_time : Timedesc.t;
   title : string option;
   doc_hash : string;
+  word_ids : Int_set.t;
   search_scope : Diet.Int.t option;
   last_scan : Timedesc.t;
 }
@@ -43,6 +44,8 @@ let path_date (t : t) = t.path_date
 let mod_time (t : t) = t.mod_time
 
 let title (t : t) = t.title
+
+let word_ids (t : t) = t.word_ids
 
 let doc_hash (t : t) = t.doc_hash
 
@@ -417,6 +420,7 @@ let of_ir2 db ~already_in_transaction (ir : Ir2.t) : t =
     mod_time;
     title;
     doc_hash;
+    word_ids = Index.Raw.word_ids raw;
     search_scope = None;
     last_scan;
   }
@@ -456,6 +460,7 @@ let of_path
         mod_time;
         title;
         doc_hash;
+        word_ids = Index.word_ids ~doc_hash;
         search_scope = None;
         last_scan = Timedesc.now ~tz_of_date_time:Params.tz ()
       }
