@@ -87,10 +87,14 @@ val prune_old_documents : keep_n_latest:int -> unit
 module Raw : sig
   type t
 
+  val word_ids : t -> Int_set.t
+
   val of_lines : Task_pool.t -> string Seq.t -> t
 
   val of_pages : Task_pool.t -> string list Seq.t -> t
 end
+
+val word_ids : doc_hash:string -> Int_set.t
 
 val write_raw_to_db :
   Sqlite3.db ->

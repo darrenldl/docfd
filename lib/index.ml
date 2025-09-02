@@ -61,6 +61,13 @@ module Raw = struct
     global_line_count = 0;
   }
 
+  let word_ids (t : t) : Int_set.t =
+    Int_map.fold (fun word_id _pos_s acc ->
+        Int_set.add word_id acc
+      )
+      t.pos_s_of_word
+      Int_set.empty
+
   let union (x : t) (y : t) =
     {
       pos_s_of_word =
@@ -1318,3 +1325,22 @@ module Search_job = Search.Search_job
 module Search_job_group = Search.Search_job_group
 
 let make_search_job_groups = Search.make_search_job_groups
+
+let word_ids ~doc_hash =
+  let open Sqlite3_utils in
+  let doc_id = doc_id_of_doc_hash doc_hash in
+  with_db (fun db ->
+      fold_stmt ~db
+        {|
+    SELECT word.id
+    FROM word
+    JOIN word_id_doc_id_link
+      ON word.id = word_id_doc_id_link.word_id
+    WHERE word_id_doc_id_link.doc_id = @doc_id
+    |}
+        ~names:[ ("@doc_id", INT doc_id) ]
+        (fun acc data ->
+           Int_set.add (Data.to_int_exn data.(0)) acc
+        )
+        Int_set.empty
+    )
