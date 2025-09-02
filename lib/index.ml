@@ -246,9 +246,11 @@ module Raw = struct
 end
 
 let doc_id_of_doc_hash : ?db:Sqlite3.db -> string -> int64 =
+  let lock = Eio.Mutex.create () in
   let cache = CCCache.lru ~eq:String.equal 10240 in
   fun ?db ->
     let open Sqlite3_utils in
+    Eio.Mutex.use_rw ~protect:false lock (fun () ->
     CCCache.with_cache cache (fun doc_hash ->
         step_stmt ?db
           {|
@@ -261,6 +263,7 @@ let doc_id_of_doc_hash : ?db:Sqlite3.db -> string -> int64 =
              column_int64 stmt 0
           )
       )
+    )
 
 let now_int64 () =
   Timedesc.Timestamp.now ()
@@ -495,9 +498,11 @@ let write_raw_to_db db ~already_in_transaction ~doc_hash (x : Raw.t) : unit =
     )
 
 let global_line_count =
+  let lock = Eio.Mutex.create () in
   let cache = CCCache.lru ~eq:String.equal 10240 in
   let open Sqlite3_utils in
   fun ~doc_hash ->
+    Eio.Mutex.use_rw ~protect:false lock (fun () ->
     CCCache.with_cache cache (fun doc_hash ->
         step_stmt
           {|
@@ -510,6 +515,7 @@ let global_line_count =
           )
       )
       doc_hash
+    )
 
 let page_count ~doc_hash =
   let open Sqlite3_utils in
@@ -568,6 +574,7 @@ let word_ci_of_pos ~doc_hash pos : string =
   |> String.lowercase_ascii
 
 let words_between_start_and_end_inc : doc_hash:string -> int * int -> string Dynarray.t =
+  let lock = Eio.Mutex.create () in
   let cache =
     CCCache.lru ~eq:(fun (x0, y0, z0) (x1, y1, z1) ->
         String.equal x0 x1
@@ -577,6 +584,7 @@ let words_between_start_and_end_inc : doc_hash:string -> int * int -> string Dyn
       10240
   in
   fun ~doc_hash (start, end_inc) ->
+    Eio.Mutex.use_rw ~protect:false lock (fun () ->
     CCCache.with_cache cache (fun (doc_hash, start, end_inc) ->
         let open Sqlite3_utils in
         let doc_id = doc_id_of_doc_hash doc_hash in
@@ -601,14 +609,17 @@ let words_between_start_and_end_inc : doc_hash:string -> int * int -> string Dyn
         acc
       )
       (doc_hash, start, end_inc)
+    )
 
 let words_of_global_line_num : doc_hash:string -> int -> string Dynarray.t =
+  let lock = Eio.Mutex.create () in
   let cache =
     CCCache.lru ~eq:(fun (x0, y0) (x1, y1) ->
         String.equal x0 x1 && Int.equal y0 y1)
       10240
   in
   fun ~doc_hash x ->
+    Eio.Mutex.use_rw ~protect:false lock (fun () ->
     CCCache.with_cache cache (fun (doc_hash, x) ->
         let open Sqlite3_utils in
         let doc_id = doc_id_of_doc_hash doc_hash in
@@ -634,6 +645,7 @@ let words_of_global_line_num : doc_hash:string -> int -> string Dynarray.t =
         )
       )
       (doc_hash, x)
+    )
 
 let words_of_page_num ~doc_hash x : string Dynarray.t =
   let open Sqlite3_utils in
