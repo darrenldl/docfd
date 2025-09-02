@@ -1183,51 +1183,51 @@ module Search = struct
     if Search_phrase.is_empty phrase then (
       Seq.empty
     ) else (
-          let possible_start_count, possible_starts =
-            first_word_candidates
-            |> Int_set.to_seq
-            |> positions_of_words ~doc_hash
-            |> (fun s ->
-                match search_scope with
-                | None -> s
-                | Some search_scope -> (
-                    Seq.filter (fun x ->
-                        Diet.Int.mem x search_scope
-                      ) s
-                  )
-              )
-            |> Misc_utils.length_and_list_of_seq
-          in
-          if possible_start_count = 0 then (
-            Seq.empty
-          ) else (
-            let search_limit_per_start =
-              max
-                Params.search_result_min_per_start
-                (
-                  (Params.default_search_result_total_per_document + possible_start_count - 1) / possible_start_count
-                )
-            in
-            let search_chunk_size =
-              max 10 (possible_start_count / Task_pool.size)
-            in
-            possible_starts
-            |> CCList.chunks search_chunk_size
-            |> List.to_seq
-            |> Seq.map (fun possible_start_pos_list ->
-                {
-                  Search_job_group.stop_signal;
-                  terminate_on_result_found;
-                  cancellation_notifier;
-                  doc_hash;
-                  within_same_line;
-                  phrase;
-                  possible_start_pos_list;
-                  search_limit_per_start;
-                }
+      let possible_start_count, possible_starts =
+        first_word_candidates
+        |> Int_set.to_seq
+        |> positions_of_words ~doc_hash
+        |> (fun s ->
+            match search_scope with
+            | None -> s
+            | Some search_scope -> (
+                Seq.filter (fun x ->
+                    Diet.Int.mem x search_scope
+                  ) s
               )
           )
-        )
+        |> Misc_utils.length_and_list_of_seq
+      in
+      if possible_start_count = 0 then (
+        Seq.empty
+      ) else (
+        let search_limit_per_start =
+          max
+            Params.search_result_min_per_start
+            (
+              (Params.default_search_result_total_per_document + possible_start_count - 1) / possible_start_count
+            )
+        in
+        let search_chunk_size =
+          max 10 (possible_start_count / Task_pool.size)
+        in
+        possible_starts
+        |> CCList.chunks search_chunk_size
+        |> List.to_seq
+        |> Seq.map (fun possible_start_pos_list ->
+            {
+              Search_job_group.stop_signal;
+              terminate_on_result_found;
+              cancellation_notifier;
+              doc_hash;
+              within_same_line;
+              phrase;
+              possible_start_pos_list;
+              search_limit_per_start;
+            }
+          )
+      )
+    )
 
   let search
       pool
