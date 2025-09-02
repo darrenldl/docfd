@@ -13,27 +13,39 @@ let t : t =
 
 let lock : type a. (unit -> a) -> a =
   fun f ->
-  Eio.Mutex.use_rw ~protect:false t.lock f
+  Eio.Mutex.use_rw ~protect:true t.lock f
 
 let filter pool (f : string -> bool) : Int_set.t =
   lock (fun () ->
-      Dynarray.to_seq t.word_of_index
-      |> Seq.mapi (fun i word -> (i, word))
-      |> OSeq.chunks !Params.index_chunk_size
-      |> List.of_seq
-    )
-  |> Task_pool.map_list pool (fun chunk ->
-      Array.fold_left (fun acc (i, word) ->
-          if f word then (
-            Int_set.add i acc
-          ) else (
-            acc
+      let max_end_exc = ref 0 in
+      let chunk_size = !Params.index_chunk_size * 10 in
+      let chunk_start_end_exc_ranges =
+        OSeq.(0 -- (Dynarray.length t.word_of_index - 1) / chunk_size)
+        |> Seq.map (fun chunk_index ->
+            let start = chunk_index * chunk_size in
+            let end_exc =
+              min
+                ((chunk_index + 1) * chunk_size)
+                (Dynarray.length t.word_of_index)
+            in
+            max_end_exc := max !max_end_exc end_exc;
+            (start, end_exc)
           )
+        |> List.of_seq
+      in
+      assert (!max_end_exc = Dynarray.length t.word_of_index);
+      chunk_start_end_exc_ranges
+      |> Task_pool.map_list pool (fun (start, end_exc) ->
+          let acc = ref Int_set.empty in
+          for i=start to end_exc-1 do
+            if f (Dynarray.get t.word_of_index i) then (
+              acc := Int_set.add i !acc
+            )
+          done;
+          !acc
         )
-        Int_set.empty
-        chunk
+      |> List.fold_left Int_set.union Int_set.empty
     )
-  |> List.fold_left Int_set.union Int_set.empty
 
 let add (word : string) : int =
   lock (fun () ->
