@@ -566,6 +566,7 @@ let satisfies_filter_exp pool (exp : Filter_exp.t) (t : t) : bool =
             (Stop_signal.make ())
             ~terminate_on_result_found:true
             ~doc_hash:t.doc_hash
+            ~first_word_candidates:(word_ids t)
             ~within_same_line:false
             ~search_scope:None
             exp

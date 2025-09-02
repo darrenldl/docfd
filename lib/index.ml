@@ -763,6 +763,37 @@ let start_end_inc_pos_of_global_line_num ~doc_hash global_line_num =
 module Search = struct
   module ET = Search_phrase.Enriched_token
 
+  let positions_of_words
+      ~doc_hash
+      (words : int Seq.t)
+    : int Seq.t =
+    let open Sqlite3_utils in
+    let doc_id = doc_id_of_doc_hash doc_hash in
+    let acc = Dynarray.create () in
+    let f data =
+      Dynarray.add_last acc (Data.to_int_exn data.(0))
+    in
+    with_stmt
+      {|
+    SELECT
+      p.pos
+    FROM position p
+    WHERE doc_id = @doc_id
+    AND word_id = @word_id
+    ORDER BY p.pos
+    |}
+      (fun stmt ->
+         Seq.iter (fun word_id ->
+             bind_names stmt [ ("@doc_id", INT doc_id)
+                             ; ("@word_id", INT (Int64.of_int word_id))
+                             ];
+             Rc.check (iter stmt ~f);
+             reset stmt;
+           )
+           words
+      );
+    Dynarray.to_seq acc
+
   let usable_positions
       ~doc_hash
       ?within
@@ -1144,6 +1175,7 @@ module Search = struct
       ?(terminate_on_result_found = false)
       ~(cancellation_notifier : bool Atomic.t)
       ~doc_hash
+      ~first_word_candidates
       ~within_same_line
       ~(search_scope : Diet.Int.t option)
       (phrase : Search_phrase.t)
@@ -1151,17 +1183,10 @@ module Search = struct
     if Search_phrase.is_empty phrase then (
       Seq.empty
     ) else (
-      match Search_phrase.enriched_tokens phrase with
-      | [] -> failwith "unexpected case"
-      | first_word :: _rest -> (
           let possible_start_count, possible_starts =
-            Eio.Fiber.first
-              (fun () ->
-                 Stop_signal.await stop_signal;
-                 Atomic.set cancellation_notifier true;
-                 Seq.empty)
-              (fun () ->
-                 usable_positions ~doc_hash first_word)
+            first_word_candidates
+            |> Int_set.to_seq
+            |> positions_of_words ~doc_hash
             |> (fun s ->
                 match search_scope with
                 | None -> s
@@ -1203,7 +1228,6 @@ module Search = struct
               )
           )
         )
-    )
 
   let search
       pool
@@ -1211,6 +1235,7 @@ module Search = struct
       ?terminate_on_result_found
       ~cancellation_notifier
       ~doc_hash
+      ~first_word_candidates
       ~within_same_line
       ~search_scope
       (exp : Search_exp.t)
@@ -1223,6 +1248,7 @@ module Search = struct
           ?terminate_on_result_found
           ~cancellation_notifier
           ~doc_hash
+          ~first_word_candidates
           ~within_same_line
           ~search_scope
           phrase
@@ -1237,6 +1263,7 @@ let search
     stop_signal
     ?terminate_on_result_found
     ~doc_hash
+    ~first_word_candidates
     ~within_same_line
     ~search_scope
     (exp : Search_exp.t)
@@ -1249,6 +1276,7 @@ let search
       ?terminate_on_result_found
       ~cancellation_notifier
       ~doc_hash
+      ~first_word_candidates
       ~within_same_line
       ~search_scope
       exp

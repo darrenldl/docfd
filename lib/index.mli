@@ -41,6 +41,7 @@ val search :
   Stop_signal.t ->
   ?terminate_on_result_found : bool ->
   doc_hash:string ->
+  first_word_candidates : Int_set.t ->
   within_same_line:bool ->
   search_scope:Diet.Int.t option ->
   Search_exp.t ->
@@ -67,6 +68,7 @@ val make_search_job_groups :
   ?terminate_on_result_found : bool ->
   cancellation_notifier:bool Atomic.t ->
   doc_hash:string ->
+  first_word_candidates:Int_set.t ->
   within_same_line:bool ->
   search_scope:Diet.Int.t option ->
   Search_phrase.t ->

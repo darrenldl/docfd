@@ -104,6 +104,15 @@ let refresh_search_results pool stop_signal (t : t) : t option =
          in
          Search_exp.flattened t.search_exp
          |> List.map (fun phrase ->
+             let global_first_word_candidates =
+               match Search_phrase.enriched_tokens phrase with
+               | [] -> failwith "unexpected case"
+               | first_word :: _rest -> (
+                   Word_db.filter
+                     pool
+                     (Search_phrase.Enriched_token.compatible_with_word first_word)
+                 )
+             in
              documents_to_search_through
              |> Task_pool.map_list pool (fun path ->
                  let doc = String_map.find path t.all_documents in
@@ -112,10 +121,16 @@ let refresh_search_results pool stop_signal (t : t) : t option =
                    | `Single_line -> true
                    | `Multiline -> false
                  in
+                 let first_word_candidates =
+                   Int_set.inter
+                     global_first_word_candidates
+                     (Document.word_ids doc)
+                 in
                  Index.make_search_job_groups
                    stop_signal
                    ~cancellation_notifier
                    ~doc_hash:(Document.doc_hash doc)
+                   ~first_word_candidates
                    ~within_same_line
                    ~search_scope:(Document.search_scope doc)
                    phrase
@@ -235,6 +250,7 @@ let add_document pool (doc : Document.t) (t : t) : t =
     else
       t.documents_passing_filter
   in
+  let first_word_candidates = Document.word_ids doc in
   let search_results =
     String_map.add
       path
@@ -242,6 +258,7 @@ let add_document pool (doc : Document.t) (t : t) : t =
          pool
          (Stop_signal.make ())
          ~doc_hash:(Document.doc_hash doc)
+         ~first_word_candidates
          ~within_same_line
          ~search_scope:(Document.search_scope doc)
          t.search_exp
