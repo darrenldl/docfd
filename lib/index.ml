@@ -764,7 +764,6 @@ module Search = struct
   module ET = Search_phrase.Enriched_token
 
   let indexed_word_is_usable
-      (match_typ : [ `Fuzzy | `Exact | `Prefix | `Suffix ])
       (token : Search_phrase.Enriched_token.t)
       ~indexed_word
     =
@@ -783,7 +782,7 @@ module Search = struct
          if Parser_components.is_possibly_utf_8 indexed_word.[0] then (
            String.equal search_word indexed_word
          ) else (
-           match match_typ with
+           match ET.match_typ token with
            | `Fuzzy -> (
                String.equal search_word_ci indexed_word_ci
                || CCString.find ~sub:search_word_ci indexed_word_ci >= 0
@@ -859,7 +858,6 @@ module Search = struct
         Eio.Fiber.yield ();
         let indexed_word = Data.to_string_exn data.(1) in
         if indexed_word_is_usable
-            match_typ
             token
             ~indexed_word
         then (
