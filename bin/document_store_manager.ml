@@ -58,12 +58,6 @@ let lock_worker_state : type a. (unit -> a) -> a =
 
 let init_document_store : Document_store.t ref = ref Document_store.empty
 
-(* Primary copy of snapshots.
-
-   We leave this accessible to other modules to allow
-   history construction even when worker fiber
-   is inactive.
-*)
 let snapshots =
   let arr = Dynarray.create () in
   Dynarray.add_last arr (Document_store_snapshot.make_empty ());
