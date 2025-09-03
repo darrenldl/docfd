@@ -1,5 +1,6 @@
 type t = {
   lock : Eio.Mutex.t;
+  mutable size : int;
   mutable word_of_index : string Int_map.t;
   index_of_word : (string, int) Hashtbl.t;
 }
@@ -7,6 +8,7 @@ type t = {
 let t : t =
   {
     lock = Eio.Mutex.create ();
+    size = 0;
     word_of_index = Int_map.empty;
     index_of_word = Hashtbl.create 10_000;
   }
@@ -21,24 +23,23 @@ let filter pool (f : string -> bool) : Int_set.t =
         t.word_of_index
       )
   in
-  let total_count = Int_map.cardinal word_of_index in
   let max_end_exc_seen = ref 0 in
   let chunk_size = !Params.index_chunk_size * 10 in
   let chunk_start_end_exc_ranges =
-    OSeq.(0 -- (total_count - 1) / chunk_size)
+    OSeq.(0 -- (t.size - 1) / chunk_size)
     |> Seq.map (fun chunk_index ->
         let start = chunk_index * chunk_size in
         let end_exc =
           min
             ((chunk_index + 1) * chunk_size)
-            total_count
+            t.size
         in
         max_end_exc_seen := max !max_end_exc_seen end_exc;
         (start, end_exc)
       )
     |> List.of_seq
   in
-  assert (!max_end_exc_seen = total_count);
+  assert (!max_end_exc_seen = t.size);
   chunk_start_end_exc_ranges
   |> Task_pool.map_list pool (fun (start, end_exc) ->
       let acc = ref Int_set.empty in
@@ -56,7 +57,8 @@ let add (word : string) : int =
       match Hashtbl.find_opt t.index_of_word word with
       | Some index -> index
       | None -> (
-          let index = Int_map.cardinal t.word_of_index in
+          let index = t.size in
+          t.size <- t.size + 1;
           t.word_of_index <- Int_map.add index word t.word_of_index;
           Hashtbl.replace t.index_of_word word index;
           index
