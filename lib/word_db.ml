@@ -69,7 +69,7 @@ let read_from_db () : unit =
                Dynarray.add_last t.word_of_index word;
                Hashtbl.replace t.index_of_word word id;
             );
-          t.index_of_first_word_new_to_db := Dynarray.length t.word_of_index;
+          t.index_of_first_word_new_to_db <- Dynarray.length t.word_of_index;
         )
     )
 
