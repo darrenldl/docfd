@@ -242,6 +242,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
         in
         if interactive then (
           Printf.printf "Collecting file stats\n";
+          flush stdout;
         );
         let documents_total_byte_count, document_sizes =
           progress_with_reporter
@@ -267,7 +268,8 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             ~total_byte_count:documents_total_byte_count
         );
         if interactive then (
-          Printf.printf "Hashing\n"
+          Printf.printf "Hashing\n";
+          flush stdout;
         );
         let file_and_hash_list =
           match files with
@@ -361,7 +363,8 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             )
         in
         if interactive then (
-          Printf.printf "Processing files with index\n"
+          Printf.printf "Processing files with index\n";
+          flush stdout;
         );
         let indexed_files =
           indexed_files
@@ -370,7 +373,8 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             )
         in
         if interactive then (
-          Printf.printf "Indexing remaining files\n"
+          Printf.printf "Indexing remaining files\n";
+          flush stdout;
         );
         let unindexed_file_count, unindexed_files_byte_count =
           List.fold_left (fun (file_count, byte_count) (_, path, _) ->
@@ -413,6 +417,10 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
                            )
                       )
                   ));
+               if interactive then (
+                 Printf.printf "Finalizing index\n";
+                 flush stdout;
+               );
                Document_pipeline.finalize pipeline
             )
         in
