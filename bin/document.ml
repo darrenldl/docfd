@@ -410,6 +410,7 @@ let of_ir2 db ~already_in_transaction (ir : Ir2.t) : t =
       raw;
       last_scan;
     } = ir in
+  Word_db.write_to_db db ~already_in_transaction;
   Index.write_raw_to_db db ~already_in_transaction ~doc_hash raw;
   {
     search_mode;
@@ -473,7 +474,6 @@ let of_path
           Ok (of_ir2 db ~already_in_transaction ir2)
         )
     in
-    Word_db.write_to_db ();
     res
   )
 
