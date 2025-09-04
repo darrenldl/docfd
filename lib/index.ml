@@ -248,7 +248,7 @@ end
 let doc_id_of_doc_hash : ?db:Sqlite3.db -> string -> int64 =
   let lock = Eio.Mutex.create () in
   let cache = CCCache.lru ~eq:String.equal 10240 in
-  fun ?db ->
+  fun ?db doc_hash ->
     let open Sqlite3_utils in
     Eio.Mutex.use_rw ~protect:false lock (fun () ->
         CCCache.with_cache cache (fun doc_hash ->
@@ -263,6 +263,7 @@ let doc_id_of_doc_hash : ?db:Sqlite3.db -> string -> int64 =
                  column_int64 stmt 0
               )
           )
+        doc_hash
       )
 
 let now_int64 () =
