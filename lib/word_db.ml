@@ -1,6 +1,7 @@
 type t = {
   lock : Eio.Mutex.t;
   mutable size : int;
+  mutable size_written_to_db : int;
   mutable word_of_index : string Int_map.t;
   index_of_word : (string, int) Hashtbl.t;
 }
@@ -9,6 +10,7 @@ let t : t =
   {
     lock = Eio.Mutex.create ();
     size = 0;
+    size_written_to_db = 0;
     word_of_index = Int_map.empty;
     index_of_word = Hashtbl.create 10_000;
   }
@@ -94,34 +96,39 @@ let read_from_db () : unit =
                t.word_of_index <- Int_map.add id word t.word_of_index;
                Hashtbl.replace t.index_of_word word id;
             )
-        )
+        );
+      t.size <- Int_map.cardinal t.word_of_index;
+      t.size_written_to_db <- t.size;
     )
 
-let write_to_db () : unit =
+let write_to_db db ~already_in_transaction : unit =
   let open Sqlite3_utils in
   lock (fun () ->
-      with_db (fun db ->
-          step_stmt ~db "BEGIN IMMEDIATE" ignore;
-          with_stmt ~db
-            {|
+      if not already_in_transaction then (
+        step_stmt ~db "BEGIN IMMEDIATE" ignore;
+      );
+      with_stmt ~db
+        {|
   INSERT INTO word
   (id, word)
   VALUES
   (@id, @word)
   ON CONFLICT(id) DO NOTHING
   |}
-            (fun stmt ->
-               Int_map.iter (fun id word ->
-                   bind_names
-                     stmt
-                     [ ("@id", INT (Int64.of_int id))
-                     ; ("@word", TEXT word)
-                     ];
-                   step stmt;
-                   reset stmt;
-                 )
-                 t.word_of_index
-            );
-          step_stmt ~db "COMMIT" ignore;
-        )
+        (fun stmt ->
+           for id = t.size_written_to_db to t.size-1 do
+             let word = Int_map.find id t.word_of_index in
+             bind_names
+               stmt
+               [ ("@id", INT (Int64.of_int id))
+               ; ("@word", TEXT word)
+               ];
+             step stmt;
+             reset stmt;
+           done
+        );
+      if not already_in_transaction then (
+        step_stmt ~db "COMMIT" ignore;
+      );
+      t.size_written_to_db <- t.size;
     )
