@@ -247,23 +247,53 @@ end
 
 let doc_id_of_doc_hash : ?db:Sqlite3.db -> string -> int64 =
   let lock = Eio.Mutex.create () in
-  let cache = CCCache.lru ~eq:String.equal 10240 in
   fun ?db doc_hash ->
     let open Sqlite3_utils in
     Eio.Mutex.use_rw ~protect:false lock (fun () ->
-        CCCache.with_cache cache (fun doc_hash ->
-            step_stmt ?db
-              {|
+        step_stmt ?db
+          {|
+  INSERT INTO doc_info
+  (id, hash, status)
+  VALUES
+  (
+    (SELECT
+      IFNULL(
+        (
+          SELECT a.id - 1 AS id
+          FROM doc_info a
+          LEFT JOIN doc_info b ON a.id - 1 = b.id
+          WHERE b.id IS NULL AND a.id - 1 >= 0
+
+          UNION
+
+          SELECT a.id + 1 AS id
+          FROM doc_info a
+          LEFT JOIN doc_info b ON a.id + 1 = b.id
+          WHERE b.id IS NULL
+
+          ORDER BY id
+          LIMIT 1
+        ),
+        0
+      )
+    ),
+    @doc_hash,
+    'ONGOING'
+  )
+  ON CONFLICT(hash) DO NOTHING
+  |}
+          ~names:[ ("@doc_hash", TEXT doc_hash) ]
+          ignore;
+        step_stmt ?db
+          {|
     SELECT id
     FROM doc_info
     WHERE hash = @doc_hash
     |}
-              ~names:[ ("@doc_hash", TEXT doc_hash) ]
-              (fun stmt ->
-                 column_int64 stmt 0
-              )
+          ~names:[ ("@doc_hash", TEXT doc_hash) ]
+          (fun stmt ->
+             column_int64 stmt 0
           )
-        doc_hash
       )
 
 let now_int64 () =
