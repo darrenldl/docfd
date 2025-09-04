@@ -371,54 +371,28 @@ let prune_old_documents ~keep_n_latest : unit =
       step_stmt ~db "COMMIT" ignore;
     )
 
-let write_raw_to_db db ~already_in_transaction ~doc_hash (x : Raw.t) : unit =
+let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
   let open Sqlite3_utils in
   let now = now_int64 () in
   with_db ~db (fun db ->
       step_stmt ~db
         {|
-  INSERT INTO doc_info
-  (id, hash, page_count, global_line_count, max_pos, last_used, status)
-  VALUES
-  (
-    (SELECT
-      IFNULL(
-        (
-          SELECT a.id - 1 AS id
-          FROM doc_info a
-          LEFT JOIN doc_info b ON a.id - 1 = b.id
-          WHERE b.id IS NULL AND a.id - 1 >= 0
-
-          UNION
-
-          SELECT a.id + 1 AS id
-          FROM doc_info a
-          LEFT JOIN doc_info b ON a.id + 1 = b.id
-          WHERE b.id IS NULL
-
-          ORDER BY id
-          LIMIT 1
-        ),
-        0
-      )
-    ),
-    @doc_hash,
-    @page_count,
-    @global_line_count,
-    @max_pos,
-    @now,
-    'ONGOING'
-  )
-  ON CONFLICT(hash) DO NOTHING
+  UPDATE doc_info
+  SET page_count = @page_count,
+      global_line_count = @global_line_count,
+      max_pos = @max_pos,
+      last_used = @now,
+      status = 'ONGOING
+  WHERE
+      id = @doc_id
   |}
-        ~names:[ ("@doc_hash", TEXT doc_hash)
+        ~names:[ ("@doc_id", INT doc_id)
                ; ("@page_count", INT (Int64.of_int x.page_count))
                ; ("@global_line_count", INT (Int64.of_int x.global_line_count))
                ; ("@max_pos", INT (Int64.of_int (Int_map.max_binding x.word_of_pos |> fst)))
                ; ("@now", INT now)
                ]
         ignore;
-      let doc_id = doc_id_of_doc_hash ~db doc_hash in
       if not already_in_transaction then (
         step_stmt ~db "BEGIN IMMEDIATE" ignore;
       );
@@ -518,10 +492,10 @@ let write_raw_to_db db ~already_in_transaction ~doc_hash (x : Raw.t) : unit =
       step_stmt ~db
         {|
       UPDATE doc_info
-      SET status='COMPLETED'
-      WHERE hash=@doc_hash
+      SET status = 'COMPLETED'
+      WHERE id = @doc_id
     |}
-        ~names:[ ("@doc_hash", TEXT doc_hash) ]
+        ~names:[ ("@doc_id", INT doc_id) ]
         ignore;
       if not already_in_transaction then (
         step_stmt ~db "COMMIT" ignore;
