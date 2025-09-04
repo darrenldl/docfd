@@ -18,29 +18,31 @@ module Loc : sig
   val pos_in_line : t -> int
 end
 
-val word_ci_of_pos : doc_hash:string -> int -> string
+val doc_id_of_doc_hash : ?db:Sqlite3.db -> string -> int64
 
-val word_of_pos : doc_hash:string -> int -> string
+val word_ci_of_pos : doc_id:int64 -> int -> string
 
-val words_of_global_line_num : doc_hash:string -> int -> string Dynarray.t
+val word_of_pos : doc_id:int64 -> int -> string
 
-val line_of_global_line_num : doc_hash:string -> int -> string
+val words_of_global_line_num : doc_id:int64 -> int -> string Dynarray.t
 
-val line_loc_of_global_line_num : doc_hash:string -> int -> Line_loc.t
+val line_of_global_line_num : doc_id:int64 -> int -> string
 
-val loc_of_pos : doc_hash:string -> int -> Loc.t
+val line_loc_of_global_line_num : doc_id:int64 -> int -> Line_loc.t
 
-val max_pos : doc_hash:string -> int
+val loc_of_pos : doc_id:int64 -> int -> Loc.t
 
-val words_of_page_num : doc_hash:string -> int -> string Dynarray.t
+val max_pos : doc_id:int64 -> int
 
-val line_count_of_page_num : doc_hash:string -> int -> int
+val words_of_page_num : doc_id:int64 -> int -> string Dynarray.t
+
+val line_count_of_page_num : doc_id:int64 -> int -> int
 
 val search :
   Task_pool.t ->
   Stop_signal.t ->
   ?terminate_on_result_found : bool ->
-  doc_hash:string ->
+  doc_id:int64 ->
   first_word_candidates : Int_set.t ->
   within_same_line:bool ->
   search_scope:Diet.Int.t option ->
@@ -67,20 +69,20 @@ val make_search_job_groups :
   Stop_signal.t ->
   ?terminate_on_result_found : bool ->
   cancellation_notifier:bool Atomic.t ->
-  doc_hash:string ->
+  doc_id:int64 ->
   first_word_candidates:Int_set.t ->
   within_same_line:bool ->
   search_scope:Diet.Int.t option ->
   Search_phrase.t ->
   Search_job_group.t Seq.t
 
-val global_line_count : doc_hash:string -> int
+val global_line_count : doc_id:int64 -> int
 
-val page_count : doc_hash:string -> int
+val page_count : doc_id:int64 -> int
 
 val is_indexed : doc_hash:string -> bool
 
-val refresh_last_used_batch : string Seq.t -> unit
+val refresh_last_used_batch : int64 Seq.t -> unit
 
 val document_count : unit -> int
 
@@ -101,6 +103,6 @@ val word_ids : doc_hash:string -> Int_set.t
 val write_raw_to_db :
   Sqlite3.db ->
   already_in_transaction:bool ->
-  doc_hash:string ->
+  doc_id:int64 ->
   Raw.t ->
   unit

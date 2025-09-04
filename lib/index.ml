@@ -300,24 +300,24 @@ let now_int64 () =
   Timedesc.Timestamp.now ()
   |> Timedesc.Timestamp.get_s
 
-let refresh_last_used_batch doc_hashes : unit =
+let refresh_last_used_batch doc_ids : unit =
   let open Sqlite3_utils in
   let now = now_int64 () in
   with_db (fun db ->
       step_stmt ~db "BEGIN IMMEDIATE" ignore;
-      Seq.iter (fun doc_hash ->
+      Seq.iter (fun doc_id ->
           step_stmt ~db
             {|
   UPDATE doc_info
   SET last_used = @now
-  WHERE hash = @doc_hash
+  WHERE id = @doc_id
   |}
-            ~names:[ ("@doc_hash", TEXT doc_hash)
+            ~names:[ ("@doc_id", INT doc_id)
                    ; ("@now", INT now)
                    ]
             ignore;
         )
-        doc_hashes;
+        doc_ids;
       step_stmt ~db "COMMIT" ignore;
     )
 
@@ -504,32 +504,32 @@ let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
 
 let global_line_count =
   let lock = Eio.Mutex.create () in
-  let cache = CCCache.lru ~eq:String.equal 10240 in
+  let cache = CCCache.lru ~eq:Int64.equal 10240 in
   let open Sqlite3_utils in
-  fun ~doc_hash ->
+  fun ~doc_id ->
     Eio.Mutex.use_rw ~protect:false lock (fun () ->
-        CCCache.with_cache cache (fun doc_hash ->
+        CCCache.with_cache cache (fun doc_id ->
             step_stmt
               {|
     SELECT global_line_count FROM doc_info
-    WHERE hash = @doc_hash
+    WHERE id = @doc_id
     |}
-              ~names:[ ("@doc_hash", TEXT doc_hash) ]
+              ~names:[ ("@doc_id", INT doc_id) ]
               (fun stmt ->
                  column_int stmt 0
               )
           )
-          doc_hash
+          doc_id
       )
 
-let page_count ~doc_hash =
+let page_count ~doc_id =
   let open Sqlite3_utils in
   step_stmt
     {|
     SELECT page_count FROM doc_info
-    WHERE hash = @doc_hash
+    WHERE id = @doc_id
     |}
-    ~names:[("@doc_hash", TEXT doc_hash)]
+    ~names:[("@doc_id", INT doc_id)]
     (fun stmt ->
        column_int stmt 0
     )
@@ -556,9 +556,8 @@ let is_indexed ~doc_hash =
        data_count stmt > 0
     )
 
-let word_of_pos ~doc_hash pos : string =
+let word_of_pos ~doc_id pos : string =
   let open Sqlite3_utils in
-  let doc_id = doc_id_of_doc_hash doc_hash in
   step_stmt
     {|
     SELECT word.word
@@ -574,25 +573,24 @@ let word_of_pos ~doc_hash pos : string =
        column_text stmt 0
     )
 
-let word_ci_of_pos ~doc_hash pos : string =
-  word_of_pos ~doc_hash pos
+let word_ci_of_pos ~doc_id pos : string =
+  word_of_pos ~doc_id pos
   |> String.lowercase_ascii
 
-let words_between_start_and_end_inc : doc_hash:string -> int * int -> string Dynarray.t =
+let words_between_start_and_end_inc : doc_id:int64 -> int * int -> string Dynarray.t =
   let lock = Eio.Mutex.create () in
   let cache =
     CCCache.lru ~eq:(fun (x0, y0, z0) (x1, y1, z1) ->
-        String.equal x0 x1
+        Int64.equal x0 x1
         && Int.equal y0 y1
         && Int.equal z0 z1
       )
       10240
   in
-  fun ~doc_hash (start, end_inc) ->
+  fun ~doc_id (start, end_inc) ->
     Eio.Mutex.use_rw ~protect:false lock (fun () ->
-        CCCache.with_cache cache (fun (doc_hash, start, end_inc) ->
+        CCCache.with_cache cache (fun (doc_id, start, end_inc) ->
             let open Sqlite3_utils in
-            let doc_id = doc_id_of_doc_hash doc_hash in
             let acc = Dynarray.create () in
             iter_stmt
               {|
@@ -613,22 +611,21 @@ let words_between_start_and_end_inc : doc_hash:string -> int * int -> string Dyn
               );
             acc
           )
-          (doc_hash, start, end_inc)
+          (doc_id, start, end_inc)
       )
 
-let words_of_global_line_num : doc_hash:string -> int -> string Dynarray.t =
+let words_of_global_line_num : doc_id:int64 -> int -> string Dynarray.t =
   let lock = Eio.Mutex.create () in
   let cache =
     CCCache.lru ~eq:(fun (x0, y0) (x1, y1) ->
-        String.equal x0 x1 && Int.equal y0 y1)
+        Int64.equal x0 x1 && Int.equal y0 y1)
       10240
   in
-  fun ~doc_hash x ->
+  fun ~doc_id x ->
     Eio.Mutex.use_rw ~protect:false lock (fun () ->
-        CCCache.with_cache cache (fun (doc_hash, x) ->
+        CCCache.with_cache cache (fun (doc_id, x) ->
             let open Sqlite3_utils in
-            let doc_id = doc_id_of_doc_hash doc_hash in
-            if x >= global_line_count ~doc_hash then (
+            if x >= global_line_count ~doc_id then (
               invalid_arg "Index.words_of_global_line_num: global_line_num out of range"
             ) else (
               let start, end_inc =
@@ -646,18 +643,17 @@ let words_of_global_line_num : doc_hash:string -> int -> string Dynarray.t =
                      (column_int stmt 0, column_int stmt 1)
                   )
               in
-              words_between_start_and_end_inc ~doc_hash (start, end_inc)
+              words_between_start_and_end_inc ~doc_id (start, end_inc)
             )
           )
-          (doc_hash, x)
+          (doc_id, x)
       )
 
-let words_of_page_num ~doc_hash x : string Dynarray.t =
+let words_of_page_num ~doc_id x : string Dynarray.t =
   let open Sqlite3_utils in
-  if x >= page_count ~doc_hash then (
+  if x >= page_count ~doc_id then (
     invalid_arg "Index.words_of_page_num: page_num out of range"
   ) else (
-    let doc_id = doc_id_of_doc_hash doc_hash in
     let start, end_inc =
       step_stmt
         {|
@@ -673,22 +669,21 @@ let words_of_page_num ~doc_hash x : string Dynarray.t =
            (column_int stmt 0, column_int stmt 1)
         )
     in
-    words_between_start_and_end_inc ~doc_hash (start, end_inc)
+    words_between_start_and_end_inc ~doc_id (start, end_inc)
   )
 
-let line_of_global_line_num ~doc_hash x =
-  if x >= global_line_count ~doc_hash then (
+let line_of_global_line_num ~doc_id x =
+  if x >= global_line_count ~doc_id then (
     invalid_arg "Index.line_of_global_line_num: global_line_num out of range"
   ) else (
-    words_of_global_line_num ~doc_hash x
+    words_of_global_line_num ~doc_id x
     |> Dynarray.to_list
     |> String.concat ""
   )
 
-let line_loc_of_global_line_num ~doc_hash global_line_num : Line_loc.t =
+let line_loc_of_global_line_num ~doc_id global_line_num : Line_loc.t =
   let open Sqlite3_utils in
-  let doc_id = doc_id_of_doc_hash doc_hash in
-  if global_line_num >= global_line_count ~doc_hash then (
+  if global_line_num >= global_line_count ~doc_id then (
     invalid_arg "Index.line_loc_of_global_line_num: global_line_num out of range"
   ) else (
     let page_num, line_num_in_page =
@@ -708,9 +703,8 @@ let line_loc_of_global_line_num ~doc_hash global_line_num : Line_loc.t =
     { Line_loc.page_num; line_num_in_page; global_line_num }
   )
 
-let loc_of_pos ~doc_hash pos : Loc.t =
+let loc_of_pos ~doc_id pos : Loc.t =
   let open Sqlite3_utils in
-  let doc_id = doc_id_of_doc_hash doc_hash in
   let pos_in_line, global_line_num =
     step_stmt
       {|
@@ -725,25 +719,24 @@ let loc_of_pos ~doc_hash pos : Loc.t =
          (column_int stmt 0, column_int stmt 1)
       )
   in
-  let line_loc = line_loc_of_global_line_num ~doc_hash global_line_num in
+  let line_loc = line_loc_of_global_line_num ~doc_id global_line_num in
   { line_loc; pos_in_line }
 
-let max_pos ~doc_hash =
+let max_pos ~doc_id =
   let open Sqlite3_utils in
   step_stmt
     {|
     SELECT max_pos
     FROM doc_info
-    WHERE hash = @doc_hash
+    WHERE id = @doc_id
     |}
-    ~names:[ ("@doc_hash", TEXT doc_hash) ]
+    ~names:[ ("@doc_id", INT doc_id) ]
     (fun stmt ->
        column_int stmt 0
     )
 
-let line_count_of_page_num ~doc_hash page : int =
+let line_count_of_page_num ~doc_id page : int =
   let open Sqlite3_utils in
-  let doc_id = doc_id_of_doc_hash doc_hash in
   step_stmt
     {|
     SELECT line_count
@@ -757,10 +750,9 @@ let line_count_of_page_num ~doc_hash page : int =
        column_int stmt 0
     )
 
-let start_end_inc_pos_of_global_line_num ~doc_hash global_line_num =
+let start_end_inc_pos_of_global_line_num ~doc_id global_line_num =
   let open Sqlite3_utils in
-  let doc_id = doc_id_of_doc_hash doc_hash in
-  if global_line_num >= global_line_count ~doc_hash then (
+  if global_line_num >= global_line_count ~doc_id then (
     invalid_arg "Index.start_end_inc_pos_of_global_line_num: global_line_num out of range"
   ) else (
     step_stmt
@@ -781,11 +773,10 @@ module Search = struct
   module ET = Search_phrase.Enriched_token
 
   let positions_of_words
-      ~doc_hash
+      ~doc_id
       (words : int Seq.t)
     : int Seq.t =
     let open Sqlite3_utils in
-    let doc_id = doc_id_of_doc_hash doc_hash in
     let acc = Dynarray.create () in
     let f data =
       Dynarray.add_last acc (Data.to_int_exn data.(0))
@@ -812,14 +803,13 @@ module Search = struct
     Dynarray.to_seq acc
 
   let usable_positions
-      ~doc_hash
+      ~doc_id
       ?within
       ?around_pos
       (token : Search_phrase.Enriched_token.t)
     : int Seq.t =
     let open Sqlite3_utils in
     Eio.Fiber.yield ();
-    let doc_id = doc_id_of_doc_hash doc_hash in
     let match_typ = ET.match_typ token in
     let start_end_inc =
       Option.map (fun around_pos ->
@@ -976,7 +966,7 @@ module Search = struct
     Dynarray.to_seq positions
 
   let search_around_pos
-      ~doc_hash
+      ~doc_id
       ~(within : (int * int) option)
       (around_pos : int)
       (l : Search_phrase.Enriched_token.t list)
@@ -987,7 +977,7 @@ module Search = struct
       | [] -> Seq.return []
       | token :: rest -> (
           usable_positions
-            ~doc_hash
+            ~doc_id
             ?within
             ~around_pos
             token
@@ -1010,7 +1000,7 @@ module Search = struct
       stop_signal : Stop_signal.t;
       terminate_on_result_found : bool;
       cancellation_notifier : bool Atomic.t;
-      doc_hash : string;
+      doc_id : int64;
       within_same_line : bool;
       phrase : Search_phrase.t;
       start_pos : int;
@@ -1021,7 +1011,7 @@ module Search = struct
         stop_signal
         ~terminate_on_result_found
         ~cancellation_notifier
-        ~doc_hash
+        ~doc_id
         ~within_same_line
         ~phrase
         ~start_pos
@@ -1031,7 +1021,7 @@ module Search = struct
         stop_signal;
         terminate_on_result_found;
         cancellation_notifier;
-        doc_hash;
+        doc_id;
         within_same_line;
         phrase;
         start_pos;
@@ -1042,11 +1032,11 @@ module Search = struct
       match Search_phrase.enriched_tokens t.phrase with
       | [] -> Search_result_heap.empty
       | _ :: rest -> (
-          let doc_hash = t.doc_hash in
+          let doc_id = t.doc_id in
           let within =
             if t.within_same_line then (
-              let loc = loc_of_pos ~doc_hash t.start_pos in
-              Some (start_end_inc_pos_of_global_line_num ~doc_hash loc.line_loc.global_line_num)
+              let loc = loc_of_pos ~doc_id t.start_pos in
+              Some (start_end_inc_pos_of_global_line_num ~doc_id loc.line_loc.global_line_num)
             ) else (
               None
             )
@@ -1058,7 +1048,7 @@ module Search = struct
                Search_result_heap.empty)
             (fun () ->
                search_around_pos
-                 ~doc_hash
+                 ~doc_id
                  ~within
                  t.start_pos
                  rest
@@ -1069,7 +1059,7 @@ module Search = struct
                    );
                    Eio.Fiber.yield ();
                    let opening_closing_symbol_pairs =
-                     List.map (fun pos -> word_of_pos ~doc_hash pos) l
+                     List.map (fun pos -> word_of_pos ~doc_id pos) l
                      |>  Misc_utils.opening_closing_symbol_pairs
                    in
                    let found_phrase_opening_closing_symbol_match_count =
@@ -1077,8 +1067,8 @@ module Search = struct
                      List.fold_left (fun total (x, y) ->
                          let pos_x = pos_arr.(x) in
                          let pos_y = pos_arr.(y) in
-                         let c_x = String.get (word_of_pos ~doc_hash pos_x) 0 in
-                         let c_y = String.get (word_of_pos ~doc_hash pos_y) 0 in
+                         let c_x = String.get (word_of_pos ~doc_id pos_x) 0 in
+                         let c_y = String.get (word_of_pos ~doc_id pos_y) 0 in
                          assert (List.exists (fun (x, y) -> c_x = x && c_y = y)
                                    Params.opening_closing_symbols);
                          if pos_x < pos_y then (
@@ -1087,7 +1077,7 @@ module Search = struct
                              |> Seq.fold_left (fun count pos ->
                                  match count with
                                  | Some count -> (
-                                     let word = word_of_pos ~doc_hash pos in
+                                     let word = word_of_pos ~doc_id pos in
                                      if String.length word = 1 then (
                                        if String.get word 0 = c_x then (
                                          Some (count + 1)
@@ -1124,8 +1114,8 @@ module Search = struct
                                       (fun pos ->
                                          Search_result.{
                                            found_word_pos = pos;
-                                           found_word_ci = word_ci_of_pos ~doc_hash pos;
-                                           found_word = word_of_pos ~doc_hash pos;
+                                           found_word_ci = word_ci_of_pos ~doc_id pos;
+                                           found_word = word_of_pos ~doc_id pos;
                                          }) l)
                      ~found_phrase_opening_closing_symbol_match_count
                  )
@@ -1149,7 +1139,7 @@ module Search = struct
       terminate_on_result_found : bool;
       stop_signal : Stop_signal.t;
       cancellation_notifier : bool Atomic.t;
-      doc_hash : string;
+      doc_id : int64;
       within_same_line : bool;
       phrase : Search_phrase.t;
       possible_start_pos_list : int list;
@@ -1162,7 +1152,7 @@ module Search = struct
           stop_signal;
           terminate_on_result_found;
           cancellation_notifier;
-          doc_hash;
+          doc_id;
           within_same_line;
           phrase;
           possible_start_pos_list;
@@ -1174,7 +1164,7 @@ module Search = struct
             stop_signal
             ~terminate_on_result_found
             ~cancellation_notifier
-            ~doc_hash
+            ~doc_id
             ~within_same_line
             ~phrase
             ~start_pos
@@ -1191,7 +1181,7 @@ module Search = struct
       stop_signal
       ?(terminate_on_result_found = false)
       ~(cancellation_notifier : bool Atomic.t)
-      ~doc_hash
+      ~doc_id
       ~first_word_candidates
       ~within_same_line
       ~(search_scope : Diet.Int.t option)
@@ -1203,7 +1193,7 @@ module Search = struct
       let possible_start_count, possible_starts =
         first_word_candidates
         |> Int_set.to_seq
-        |> positions_of_words ~doc_hash
+        |> positions_of_words ~doc_id
         |> (fun s ->
             match search_scope with
             | None -> s
@@ -1236,7 +1226,7 @@ module Search = struct
               Search_job_group.stop_signal;
               terminate_on_result_found;
               cancellation_notifier;
-              doc_hash;
+              doc_id;
               within_same_line;
               phrase;
               possible_start_pos_list;
@@ -1251,7 +1241,7 @@ module Search = struct
       stop_signal
       ?terminate_on_result_found
       ~cancellation_notifier
-      ~doc_hash
+      ~doc_id
       ~first_word_candidates
       ~within_same_line
       ~search_scope
@@ -1264,7 +1254,7 @@ module Search = struct
           stop_signal
           ?terminate_on_result_found
           ~cancellation_notifier
-          ~doc_hash
+          ~doc_id
           ~first_word_candidates
           ~within_same_line
           ~search_scope
@@ -1279,7 +1269,7 @@ let search
     pool
     stop_signal
     ?terminate_on_result_found
-    ~doc_hash
+    ~doc_id
     ~first_word_candidates
     ~within_same_line
     ~search_scope
@@ -1292,7 +1282,7 @@ let search
       stop_signal
       ?terminate_on_result_found
       ~cancellation_notifier
-      ~doc_hash
+      ~doc_id
       ~first_word_candidates
       ~within_same_line
       ~search_scope
