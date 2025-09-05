@@ -308,7 +308,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
         let indexed_files, unindexed_files =
           let open Sqlite3_utils in
           with_stmt
-          Index.is_indexed_sql
+            Index.is_indexed_sql
             (fun stmt ->
                List.partition (fun (_, _, doc_hash) ->
                    bind_names stmt [ ("@doc_hash", TEXT doc_hash) ];
@@ -386,40 +386,38 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             ~file_count:unindexed_file_count
             ~total_byte_count:unindexed_files_byte_count;
         );
-        let pipeline = Document_pipeline.make ~env pool in
-        let _, unindexed_files =
-          Eio.Fiber.pair
-            (fun () ->
-               Document_pipeline.run pipeline
+        let pipeline =
+          unindexed_files
+          |> List.to_seq
+          |> Seq.filter_map (fun (search_mode, path, doc_hash) ->
+              match Document.Ir0.of_path ~env search_mode ~doc_hash path with
+              | Error msg -> (
+                  do_if_debug (fun oc ->
+                      Printf.fprintf oc "Error: %s\n" msg
+                    );
+                  None
+                )
+              | Ok ir0 -> (
+                  Some ir0
+                )
             )
-            (fun () ->
-               (match unindexed_files with
-                | [] -> ()
-                | _ -> (
-                    progress_with_reporter
-                      ~interactive
-                      (byte_bar ~total_byte_count:unindexed_files_byte_count)
-                      (fun report_progress ->
-                         unindexed_files
-                         |> List.iter (fun (search_mode, path, doc_hash) ->
-                             Document_pipeline.feed
-                               pipeline
-                               search_mode
-                               ~doc_hash
-                               path;
-                             (match String_map.find_opt path document_sizes with
-                              | None -> ()
-                              | Some x -> report_progress x
-                             )
-                           )
-                      )
-                  ));
-               if interactive then (
-                 Printf.printf "Finalizing index\n";
-                 flush stdout;
-               );
-               Document_pipeline.finalize pipeline
-            )
+          |> Document_pipeline.make ~env pool
+        in
+        let unindexed_files =
+          progress_with_reporter
+            ~interactive
+            (byte_bar ~total_byte_count:unindexed_files_byte_count)
+            (fun report_progress ->
+               Document_pipeline.run
+                 ~document_sizes
+                 ~report_progress
+                 pipeline
+            );
+          if interactive then (
+            Printf.printf "Finalizing index\n";
+            flush stdout;
+          );
+          Document_pipeline.finalize pipeline
         in
         [ indexed_files; unindexed_files ]
       )
