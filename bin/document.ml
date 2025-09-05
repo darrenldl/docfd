@@ -89,6 +89,7 @@ end
 module Ir0 = struct
   type t = {
     search_mode : Search_mode.t;
+    doc_id : int64;
     doc_hash : string;
     path : string;
     last_scan : Timedesc.t;
@@ -100,8 +101,10 @@ module Ir0 = struct
       | Some x -> Ok x
       | None -> BLAKE2B.hash_of_file ~env ~path
     in
+    let doc_id = Index.doc_id_of_doc_hash doc_hash in
     Ok {
       search_mode;
+      doc_id;
       doc_hash;
       path;
       last_scan = Timedesc.now ~tz_of_date_time:Params.tz ();
@@ -111,13 +114,14 @@ end
 module Ir1 = struct
   type t = {
     search_mode : Search_mode.t;
+    doc_id : int64;
     doc_hash : string;
     path : string;
     data : [ `Lines of string Dynarray.t | `Pages of string list Dynarray.t ];
     last_scan : Timedesc.t;
   }
 
-  let of_path_to_text ~env ~doc_hash search_mode last_scan path : (t, string) result =
+  let of_path_to_text ~env ~doc_id ~doc_hash search_mode last_scan path : (t, string) result =
     let fs = Eio.Stdenv.fs env in
     try
       let data =
@@ -128,6 +132,7 @@ module Ir1 = struct
       in
       Ok {
         search_mode;
+        doc_id;
         doc_hash;
         path;
         data;
@@ -140,7 +145,7 @@ module Ir1 = struct
         Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
       )
 
-  let of_path_to_pdf ~env ~doc_hash search_mode last_scan path : (t, string) result =
+  let of_path_to_pdf ~env ~doc_id ~doc_hash search_mode last_scan path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
     let fs = Eio.Stdenv.fs env in
     try
@@ -156,6 +161,7 @@ module Ir1 = struct
       let data = `Pages (Dynarray.of_seq pages) in
       Ok {
         search_mode;
+        doc_id;
         doc_hash;
         path;
         data;
@@ -168,7 +174,7 @@ module Ir1 = struct
         Error (Printf.sprintf "failed to read file: %s" (Filename.quote path))
       )
 
-  let of_path_to_pandoc_supported_format ~env ~doc_hash search_mode last_scan path : (t, string) result =
+  let of_path_to_pandoc_supported_format ~env ~doc_id ~doc_hash search_mode last_scan path : (t, string) result =
     let proc_mgr = Eio.Stdenv.process_mgr env in
     let fs = Eio.Stdenv.fs env in
     let ext = File_utils.extension_of_file path in
@@ -205,6 +211,7 @@ module Ir1 = struct
         let data = `Lines (Dynarray.of_list lines) in
         Ok {
           search_mode;
+          doc_id;
           doc_hash;
           path;
           data;
@@ -213,16 +220,16 @@ module Ir1 = struct
       )
 
   let of_ir0 ~(env : Eio_unix.Stdenv.base) (ir0 : Ir0.t) : (t, string) result =
-    let { Ir0.search_mode; doc_hash; path; last_scan } = ir0 in
+    let { Ir0.search_mode; doc_id; doc_hash; path; last_scan } = ir0 in
     match File_utils.format_of_file path with
     | `PDF -> (
-        of_path_to_pdf ~env ~doc_hash search_mode last_scan path
+        of_path_to_pdf ~env ~doc_id ~doc_hash search_mode last_scan path
       )
     | `Pandoc_supported_format -> (
-        of_path_to_pandoc_supported_format ~env ~doc_hash search_mode last_scan path
+        of_path_to_pandoc_supported_format ~env ~doc_id ~doc_hash search_mode last_scan path
       )
     | `Text -> (
-        of_path_to_text ~env ~doc_hash search_mode last_scan path
+        of_path_to_text ~env ~doc_id ~doc_hash search_mode last_scan path
       )
 end
 
@@ -372,8 +379,7 @@ module Ir2 = struct
     aux Title None s
 
   let of_ir1 pool (ir : Ir1.t) : t =
-    let { Ir1.search_mode; doc_hash; path; data; last_scan } = ir in
-    let doc_id = Index.doc_id_of_doc_hash doc_hash in
+    let { Ir1.search_mode; doc_id; doc_hash; path; data; last_scan } = ir in
     let path_parts, path_parts_ci = compute_path_parts path in
     let path_date = Date_extract.extract path in
     let stats = Unix.stat path in
