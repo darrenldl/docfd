@@ -247,9 +247,9 @@ end
 
 let doc_id_of_doc_hash : ?db:Sqlite3.db -> string -> int64 =
   fun ?db doc_hash ->
-    let open Sqlite3_utils in
-        step_stmt ?db
-          {|
+  let open Sqlite3_utils in
+  step_stmt ?db
+    {|
   INSERT INTO doc_info
   (id, hash, status)
   VALUES
@@ -280,18 +280,18 @@ let doc_id_of_doc_hash : ?db:Sqlite3.db -> string -> int64 =
   )
   ON CONFLICT(hash) DO NOTHING
   |}
-          ~names:[ ("@doc_hash", TEXT doc_hash) ]
-          ignore;
-        step_stmt ?db
-          {|
+    ~names:[ ("@doc_hash", TEXT doc_hash) ]
+    ignore;
+  step_stmt ?db
+    {|
     SELECT id
     FROM doc_info
     WHERE hash = @doc_hash
     |}
-          ~names:[ ("@doc_hash", TEXT doc_hash) ]
-          (fun stmt ->
-             column_int64 stmt 0
-          )
+    ~names:[ ("@doc_hash", TEXT doc_hash) ]
+    (fun stmt ->
+       column_int64 stmt 0
+    )
 
 let now_int64 () =
   Timedesc.Timestamp.now ()
@@ -502,15 +502,15 @@ let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
 let global_line_count =
   let open Sqlite3_utils in
   fun ~doc_id ->
-            step_stmt
-              {|
+    step_stmt
+      {|
     SELECT global_line_count FROM doc_info
     WHERE id = @doc_id
     |}
-              ~names:[ ("@doc_id", INT doc_id) ]
-              (fun stmt ->
-                 column_int stmt 0
-              )
+      ~names:[ ("@doc_id", INT doc_id) ]
+      (fun stmt ->
+         column_int stmt 0
+      )
 
 let page_count ~doc_id =
   let open Sqlite3_utils in
@@ -533,7 +533,7 @@ let ccvector_of_int_map
   |> CCVector.freeze
 
 let is_indexed_sql =
-    {|
+  {|
     SELECT 1
     FROM doc_info
     WHERE hash = @doc_hash
@@ -543,7 +543,7 @@ let is_indexed_sql =
 let is_indexed ~doc_hash =
   let open Sqlite3_utils in
   step_stmt
-  is_indexed_sql
+    is_indexed_sql
     ~names:[ ("@doc_hash", TEXT doc_hash) ]
     (fun stmt ->
        data_count stmt > 0
