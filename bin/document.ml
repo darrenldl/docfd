@@ -101,7 +101,7 @@ module Ir0 = struct
       | Some x -> Ok x
       | None -> BLAKE2B.hash_of_file ~env ~path
     in
-    let doc_id = Index.doc_id_of_doc_hash doc_hash in
+    let doc_id = Doc_id_db.doc_id_of_doc_hash doc_hash in
     Ok {
       search_mode;
       doc_id;
@@ -455,7 +455,7 @@ let of_path
     | None -> BLAKE2B.hash_of_file ~env ~path
   in
   if Index.is_indexed ~doc_hash then (
-    let doc_id = Index.doc_id_of_doc_hash doc_hash in
+    let doc_id = Doc_id_db.doc_id_of_doc_hash doc_hash in
     let title =
       if Index.global_line_count ~doc_id = 0 then
         None

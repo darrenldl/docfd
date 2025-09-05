@@ -18,8 +18,6 @@ module Loc : sig
   val pos_in_line : t -> int
 end
 
-val doc_id_of_doc_hash : ?db:Sqlite3.db -> string -> int64
-
 val word_ci_of_pos : doc_id:int64 -> int -> string
 
 val word_of_pos : doc_id:int64 -> int -> string

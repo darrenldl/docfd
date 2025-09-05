@@ -305,10 +305,18 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
                 )
             )
         in
+        if interactive then (
+          Printf.printf "Allocating document IDs\n";
+          flush stdout;
+        );
+        file_and_hash_list
+        |> List.to_seq
+        |> Seq.map (fun (_, _, doc_hash) -> doc_hash)
+        |> Doc_id_db.allocate_bulk;
         let indexed_files, unindexed_files =
           let open Sqlite3_utils in
           with_stmt
-          Index.is_indexed_sql
+            Index.is_indexed_sql
             (fun stmt ->
                List.partition (fun (_, _, doc_hash) ->
                    bind_names stmt [ ("@doc_hash", TEXT doc_hash) ];
@@ -322,7 +330,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
         in
         indexed_files
         |> List.map (fun (_, _, doc_hash) ->
-            Index.doc_id_of_doc_hash doc_hash
+            Doc_id_db.doc_id_of_doc_hash doc_hash
           )
         |> Index.refresh_last_used_batch;
         let load_document ~env pool search_mode ~doc_hash path =

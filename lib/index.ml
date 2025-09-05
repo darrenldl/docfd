@@ -245,54 +245,6 @@ module Raw = struct
     |> of_seq pool
 end
 
-let doc_id_of_doc_hash : ?db:Sqlite3.db -> string -> int64 =
-  fun ?db doc_hash ->
-  let open Sqlite3_utils in
-  step_stmt ?db
-    {|
-  INSERT INTO doc_info
-  (id, hash, status)
-  VALUES
-  (
-    (SELECT
-      IFNULL(
-        (
-          SELECT a.id - 1 AS id
-          FROM doc_info a
-          LEFT JOIN doc_info b ON a.id - 1 = b.id
-          WHERE b.id IS NULL AND a.id - 1 >= 0
-
-          UNION
-
-          SELECT a.id + 1 AS id
-          FROM doc_info a
-          LEFT JOIN doc_info b ON a.id + 1 = b.id
-          WHERE b.id IS NULL
-
-          ORDER BY id
-          LIMIT 1
-        ),
-        0
-      )
-    ),
-    @doc_hash,
-    'ONGOING'
-  )
-  ON CONFLICT(hash) DO NOTHING
-  |}
-    ~names:[ ("@doc_hash", TEXT doc_hash) ]
-    ignore;
-  step_stmt ?db
-    {|
-    SELECT id
-    FROM doc_info
-    WHERE hash = @doc_hash
-    |}
-    ~names:[ ("@doc_hash", TEXT doc_hash) ]
-    (fun stmt ->
-       column_int64 stmt 0
-    )
-
 let now_int64 () =
   Timedesc.Timestamp.now ()
   |> Timedesc.Timestamp.get_s

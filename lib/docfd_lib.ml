@@ -1,5 +1,7 @@
 module Index = Index
 
+module Doc_id_db = Doc_id_db
+
 module Search_result = Search_result
 
 module Search_phrase = Search_phrase
