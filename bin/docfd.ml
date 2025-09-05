@@ -309,10 +309,17 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
           Printf.printf "Allocating document IDs\n";
           flush stdout;
         );
-        file_and_hash_list
-        |> List.to_seq
-        |> Seq.map (fun (_, _, doc_hash) -> doc_hash)
-        |> Doc_id_db.allocate_bulk;
+        progress_with_reporter
+          ~interactive
+          (file_bar ~total_file_count)
+          (fun report_progress ->
+             file_and_hash_list
+             |> List.to_seq
+             |> Seq.map (fun (_, _, doc_hash) ->
+                 report_progress 1;
+                 doc_hash)
+             |> Doc_id_db.allocate_bulk
+          );
         let indexed_files, unindexed_files =
           let open Sqlite3_utils in
           with_stmt
