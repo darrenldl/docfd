@@ -246,10 +246,8 @@ module Raw = struct
 end
 
 let doc_id_of_doc_hash : ?db:Sqlite3.db -> string -> int64 =
-  let lock = Eio.Mutex.create () in
   fun ?db doc_hash ->
     let open Sqlite3_utils in
-    Eio.Mutex.use_rw ~protect:false lock (fun () ->
         step_stmt ?db
           {|
   INSERT INTO doc_info
@@ -294,18 +292,17 @@ let doc_id_of_doc_hash : ?db:Sqlite3.db -> string -> int64 =
           (fun stmt ->
              column_int64 stmt 0
           )
-      )
 
 let now_int64 () =
   Timedesc.Timestamp.now ()
   |> Timedesc.Timestamp.get_s
 
-let refresh_last_used_batch doc_ids : unit =
+let refresh_last_used_batch (doc_ids : int64 list) : unit =
   let open Sqlite3_utils in
   let now = now_int64 () in
   with_db (fun db ->
       step_stmt ~db "BEGIN IMMEDIATE" ignore;
-      Seq.iter (fun doc_id ->
+      List.iter (fun doc_id ->
           step_stmt ~db
             {|
   UPDATE doc_info
@@ -382,7 +379,7 @@ let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
       global_line_count = @global_line_count,
       max_pos = @max_pos,
       last_used = @now,
-      status = 'ONGOING
+      status = 'ONGOING'
   WHERE
       id = @doc_id
   |}
@@ -503,12 +500,8 @@ let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
     )
 
 let global_line_count =
-  let lock = Eio.Mutex.create () in
-  let cache = CCCache.lru ~eq:Int64.equal 10240 in
   let open Sqlite3_utils in
   fun ~doc_id ->
-    Eio.Mutex.use_rw ~protect:false lock (fun () ->
-        CCCache.with_cache cache (fun doc_id ->
             step_stmt
               {|
     SELECT global_line_count FROM doc_info
@@ -518,9 +511,6 @@ let global_line_count =
               (fun stmt ->
                  column_int stmt 0
               )
-          )
-          doc_id
-      )
 
 let page_count ~doc_id =
   let open Sqlite3_utils in
@@ -1303,9 +1293,8 @@ module Search_job_group = Search.Search_job_group
 
 let make_search_job_groups = Search.make_search_job_groups
 
-let word_ids ~doc_hash =
+let word_ids ~doc_id =
   let open Sqlite3_utils in
-  let doc_id = doc_id_of_doc_hash doc_hash in
   with_db (fun db ->
       fold_stmt ~db
         {|

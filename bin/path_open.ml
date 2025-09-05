@@ -145,11 +145,11 @@ let pandoc_supported_format_config_and_cmd ~path =
   (Config.make ~path ~launch_mode:`Detached (),
    xdg_open_cmd)
 
-let compute_most_unique_word_and_residing_page_num ~doc_hash found_phrase =
+let compute_most_unique_word_and_residing_page_num ~doc_id found_phrase =
   let page_nums = found_phrase
                   |> List.map (fun word ->
                       word.Search_result.found_word_pos
-                      |> (fun pos -> Index.loc_of_pos ~doc_hash pos)
+                      |> (fun pos -> Index.loc_of_pos ~doc_id pos)
                       |> Index.Loc.line_loc
                       |> Index.Line_loc.page_num
                     )
@@ -158,7 +158,7 @@ let compute_most_unique_word_and_residing_page_num ~doc_hash found_phrase =
   let frequency_of_word_of_page_ci : int String_map.t Int_map.t =
     List.fold_left (fun acc page_num ->
         let m = Misc_utils.frequencies_of_words_ci
-            (Index.words_of_page_num ~doc_hash page_num
+            (Index.words_of_page_num ~doc_id page_num
              |> Dynarray.to_seq)
         in
         Int_map.add page_num m acc
@@ -169,7 +169,7 @@ let compute_most_unique_word_and_residing_page_num ~doc_hash found_phrase =
   found_phrase
   |> List.map (fun word ->
       let page_num =
-        Index.loc_of_pos ~doc_hash word.Search_result.found_word_pos
+        Index.loc_of_pos ~doc_id word.Search_result.found_word_pos
         |> Index.Loc.line_loc
         |> Index.Line_loc.page_num
       in
@@ -205,7 +205,7 @@ let compute_most_unique_word_and_residing_page_num ~doc_hash found_phrase =
   |> (fun (word, page_num, _freq) ->
       (word.found_word, page_num))
 
-let pdf_config_and_cmd ~doc_hash ~path ~search_result : Config.t * string =
+let pdf_config_and_cmd ~doc_id ~path ~search_result : Config.t * string =
   let config =
     let page_num, search_word =
       match search_result with
@@ -215,7 +215,7 @@ let pdf_config_and_cmd ~doc_hash ~path ~search_result : Config.t * string =
       | Some search_result -> (
           let found_phrase = Search_result.found_phrase search_result in
           let (most_unique_word, most_unique_word_page_num) =
-            compute_most_unique_word_and_residing_page_num ~doc_hash found_phrase
+            compute_most_unique_word_and_residing_page_num ~doc_id found_phrase
           in
           let page_num = most_unique_word_page_num + 1 in
           (page_num, most_unique_word)
@@ -303,14 +303,14 @@ let config_and_cmd_to_open_text_file ~path ?(line_num = 1) () : Config.t * strin
   in
   (config, cmd)
 
-let text_config_and_cmd ~doc_hash ~path ~search_result : Config.t * string =
+let text_config_and_cmd ~doc_id ~path ~search_result : Config.t * string =
   let line_num =
     match search_result with
     | None -> None
     | Some search_result -> (
         let first_word = List.hd @@ Search_result.found_phrase search_result in
         let first_word_loc =
-          Index.loc_of_pos ~doc_hash first_word.Search_result.found_word_pos
+          Index.loc_of_pos ~doc_id first_word.Search_result.found_word_pos
         in
         first_word_loc
         |> Index.Loc.line_loc
@@ -324,18 +324,18 @@ let text_config_and_cmd ~doc_hash ~path ~search_result : Config.t * string =
     ?line_num
     ()
 
-let main ~close_term ~doc_hash ~path ~search_result =
+let main ~close_term ~doc_id ~path ~search_result =
   let ext = File_utils.extension_of_file path in
   let config, cmd =
     (match File_utils.format_of_file path with
      | `PDF -> (
-         pdf_config_and_cmd ~doc_hash ~path ~search_result
+         pdf_config_and_cmd ~doc_id ~path ~search_result
        )
      | `Pandoc_supported_format -> (
          pandoc_supported_format_config_and_cmd ~path
        )
      | `Text -> (
-         text_config_and_cmd ~doc_hash ~path ~search_result
+         text_config_and_cmd ~doc_id ~path ~search_result
        )
     )
     |> (fun (config, cmd) ->

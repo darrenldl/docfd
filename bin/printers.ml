@@ -28,7 +28,7 @@ let search_result_group ~color ~underline (oc : out_channel) ((document, results
       );
       let img =
         Content_and_search_result_render.search_result
-          ~doc_hash:(Document.doc_hash document)
+          ~doc_id:(Document.doc_id document)
           ~render_mode:(UI_base.render_mode_of_document document)
           ~width:!Params.search_result_print_text_width
           ~underline

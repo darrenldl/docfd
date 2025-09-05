@@ -281,11 +281,11 @@ module Top_pane = struct
       in
       let preview_line_images =
         let line_count =
-          min Params.preview_line_count (Index.global_line_count ~doc_hash:(Document.doc_hash doc))
+          min Params.preview_line_count (Index.global_line_count ~doc_id:(Document.doc_id doc))
         in
         OSeq.(0 --^ line_count)
         |> Seq.map (fun global_line_num ->
-            Index.words_of_global_line_num ~doc_hash:(Document.doc_hash doc) global_line_num
+            Index.words_of_global_line_num ~doc_id:(Document.doc_id doc) global_line_num
             |> Dynarray.to_list
             |> Content_and_search_result_render.Text_block_render.of_words ~width:sub_item_width
           )
@@ -435,7 +435,7 @@ module Top_pane = struct
               ~end_exc:(min result_count (search_result_selected + height))
               search_results
             |> Seq.map (Content_and_search_result_render.search_result
-                          ~doc_hash:(Document.doc_hash document)
+                          ~doc_id:(Document.doc_id document)
                           ~render_mode:(UI_base.render_mode_of_document document)
                           ~width
                        )

@@ -9,6 +9,7 @@ type t = {
   path_date : Timedesc.Date.t option;
   mod_time : Timedesc.t;
   title : string option;
+  doc_id : int64;
   doc_hash : string;
   word_ids : Int_set.t;
   search_scope : Diet.Int.t option;
@@ -48,6 +49,8 @@ let title (t : t) = t.title
 let word_ids (t : t) = t.word_ids
 
 let doc_hash (t : t) = t.doc_hash
+
+let doc_id (t : t) = t.doc_id
 
 let search_scope (t : t) = t.search_scope
 
@@ -312,6 +315,7 @@ end
 module Ir2 = struct
   type t = {
     search_mode : Search_mode.t;
+    doc_id : int64;
     doc_hash : string;
     path : string;
     path_parts : string list;
@@ -369,6 +373,7 @@ module Ir2 = struct
 
   let of_ir1 pool (ir : Ir1.t) : t =
     let { Ir1.search_mode; doc_hash; path; data; last_scan } = ir in
+    let doc_id = Index.doc_id_of_doc_hash doc_hash in
     let path_parts, path_parts_ci = compute_path_parts path in
     let path_date = Date_extract.extract path in
     let stats = Unix.stat path in
@@ -389,6 +394,7 @@ module Ir2 = struct
       path_parts_ci;
       path_date;
       mod_time;
+      doc_id;
       doc_hash;
       title;
       raw;
@@ -406,12 +412,13 @@ let of_ir2 db ~already_in_transaction (ir : Ir2.t) : t =
       path_date;
       mod_time;
       title;
+      doc_id;
       doc_hash;
       raw;
       last_scan;
     } = ir in
   Word_db.write_to_db db ~already_in_transaction;
-  Index.write_raw_to_db db ~already_in_transaction ~doc_hash raw;
+  Index.write_raw_to_db db ~already_in_transaction ~doc_id raw;
   {
     search_mode;
     path;
@@ -420,6 +427,7 @@ let of_ir2 db ~already_in_transaction (ir : Ir2.t) : t =
     path_date;
     mod_time;
     title;
+    doc_id;
     doc_hash;
     word_ids = Index.Raw.word_ids raw;
     search_scope = None;
@@ -441,11 +449,12 @@ let of_path
     | None -> BLAKE2B.hash_of_file ~env ~path
   in
   if Index.is_indexed ~doc_hash then (
+    let doc_id = Index.doc_id_of_doc_hash doc_hash in
     let title =
-      if Index.global_line_count ~doc_hash = 0 then
+      if Index.global_line_count ~doc_id = 0 then
         None
       else
-        Some (Index.line_of_global_line_num ~doc_hash 0)
+        Some (Index.line_of_global_line_num ~doc_id 0)
     in
     let path_parts, path_parts_ci = compute_path_parts path in
     let path_date = Date_extract.extract path in
@@ -460,8 +469,9 @@ let of_path
         path_date;
         mod_time;
         title;
+        doc_id;
         doc_hash;
-        word_ids = Index.word_ids ~doc_hash;
+        word_ids = Index.word_ids ~doc_id;
         search_scope = None;
         last_scan = Timedesc.now ~tz_of_date_time:Params.tz ()
       }
@@ -565,7 +575,7 @@ let satisfies_filter_exp pool (exp : Filter_exp.t) (t : t) : bool =
             pool
             (Stop_signal.make ())
             ~terminate_on_result_found:true
-            ~doc_hash:t.doc_hash
+            ~doc_id:t.doc_id
             ~first_word_candidates:(word_ids t)
             ~within_same_line:false
             ~search_scope:None

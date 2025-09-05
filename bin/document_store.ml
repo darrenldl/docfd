@@ -129,7 +129,7 @@ let refresh_search_results pool stop_signal (t : t) : t option =
                  Index.make_search_job_groups
                    stop_signal
                    ~cancellation_notifier
-                   ~doc_hash:(Document.doc_hash doc)
+                   ~doc_id:(Document.doc_id doc)
                    ~first_word_candidates
                    ~within_same_line
                    ~search_scope:(Document.search_scope doc)
@@ -257,7 +257,7 @@ let add_document pool (doc : Document.t) (t : t) : t =
       (Index.search
          pool
          (Stop_signal.make ())
-         ~doc_hash:(Document.doc_hash doc)
+         ~doc_id:(Document.doc_id doc)
          ~first_word_candidates
          ~within_same_line
          ~search_scope:(Document.search_scope doc)
@@ -545,7 +545,7 @@ let narrow_search_scope_to_level ~level (t : t) : t =
         t.all_documents
     ) else (
       String_map.mapi (fun path doc ->
-          let doc_hash = Document.doc_hash doc in
+          let doc_id = Document.doc_id doc in
           let search_scope =
             match String_map.find_opt path t.search_results with
             | None -> Diet.Int.empty
@@ -566,7 +566,7 @@ let narrow_search_scope_to_level ~level (t : t) : t =
                       in
                       let offset = level * !Params.tokens_per_search_scope_level in
                       let s, e =
-                        (max 0 (s - offset), min (Index.max_pos ~doc_hash) (e + offset))
+                        (max 0 (s - offset), min (Index.max_pos ~doc_id) (e + offset))
                       in
                       Diet.Int.add
                         (Diet.Int.Interval.make s e)

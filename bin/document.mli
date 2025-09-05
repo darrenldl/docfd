@@ -26,6 +26,8 @@ val word_ids : t -> Int_set.t
 
 val doc_hash : t -> string
 
+val doc_id : t -> int64
+
 val search_scope : t -> Diet.Int.t option
 
 val last_scan : t -> Timedesc.t

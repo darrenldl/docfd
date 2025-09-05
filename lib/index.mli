@@ -82,7 +82,7 @@ val page_count : doc_id:int64 -> int
 
 val is_indexed : doc_hash:string -> bool
 
-val refresh_last_used_batch : int64 Seq.t -> unit
+val refresh_last_used_batch : int64 list -> unit
 
 val document_count : unit -> int
 
@@ -98,7 +98,7 @@ module Raw : sig
   val of_pages : Task_pool.t -> string list Seq.t -> t
 end
 
-val word_ids : doc_hash:string -> Int_set.t
+val word_ids : doc_id:int64 -> Int_set.t
 
 val write_raw_to_db :
   Sqlite3.db ->

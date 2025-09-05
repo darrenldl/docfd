@@ -323,9 +323,8 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             )
         in
         indexed_files
-        |> List.to_seq
-        |> Seq.map (fun (_, _, doc_hash) ->
-            doc_hash
+        |> List.map (fun (_, _, doc_hash) ->
+            Index.doc_id_of_doc_hash doc_hash
           )
         |> Index.refresh_last_used_batch;
         let load_document ~env pool search_mode ~doc_hash path =
@@ -1037,12 +1036,12 @@ let run
             loop ()
           )
         | Open_file_and_search_result (doc, search_result) -> (
-            let doc_hash = Document.doc_hash doc in
+            let doc_id = Document.doc_id doc in
             let path = Document.path doc in
             let old_stats = Unix.stat path in
             Path_open.main
               ~close_term
-              ~doc_hash
+              ~doc_id
               ~path
               ~search_result;
             let new_stats = Unix.stat path in

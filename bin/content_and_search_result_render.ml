@@ -115,14 +115,14 @@ type word_grid = {
 }
 
 let start_and_end_inc_global_line_num_of_search_result
-    ~doc_hash
+    ~doc_id
     (search_result : Search_result.t)
   : (int * int) =
   match Search_result.found_phrase search_result with
   | [] -> failwith "unexpected case"
   | l -> (
       List.fold_left (fun s_e Search_result.{ found_word_pos; _ } ->
-          let loc = Index.loc_of_pos ~doc_hash found_word_pos in
+          let loc = Index.loc_of_pos ~doc_id found_word_pos in
           let line_loc = Index.Loc.line_loc loc in
           let global_line_num = Index.Line_loc.global_line_num line_loc in
           match s_e with
@@ -139,11 +139,11 @@ let start_and_end_inc_global_line_num_of_search_result
     )
 
 let word_grid_of_index
-    ~doc_hash
+    ~doc_id
     ~start_global_line_num
     ~end_inc_global_line_num
   : word_grid =
-  let global_line_count = Index.global_line_count ~doc_hash in
+  let global_line_count = Index.global_line_count ~doc_id in
   let check x =
     assert (0 <= x);
     assert (x <= global_line_count - 1);
@@ -157,7 +157,7 @@ let word_grid_of_index
       OSeq.(start_global_line_num -- end_inc_global_line_num)
       |> Seq.map (fun global_line_num ->
           let data =
-            Index.words_of_global_line_num ~doc_hash global_line_num
+            Index.words_of_global_line_num ~doc_id global_line_num
             |> Dynarray.to_seq
             |> Seq.map (fun word -> { word; typ = `Plain })
             |> Array.of_seq
@@ -170,13 +170,13 @@ let word_grid_of_index
   )
 
 let mark_search_result_in_word_grid
-    ~doc_hash
+    ~doc_id
     (grid : word_grid)
     (search_result : Search_result.t)
   : unit =
   let grid_end_inc_global_line_num = grid.start_global_line_num + Array.length grid.data - 1 in
   List.iter (fun Search_result.{ found_word_pos = pos; _ } ->
-      let loc = Index.loc_of_pos ~doc_hash pos in
+      let loc = Index.loc_of_pos ~doc_id pos in
       let line_loc = Index.Loc.line_loc loc in
       let global_line_num = Index.Line_loc.global_line_num line_loc in
       if grid.start_global_line_num <= global_line_num
@@ -198,7 +198,7 @@ type render_mode = [
 ]
 
 let render_grid
-    ~doc_hash
+    ~doc_id
     ~(view_offset : int Lwd.var option)
     ~(render_mode : render_mode)
     ~width
@@ -213,7 +213,7 @@ let render_grid
       (fun (rendered_line_count, rendered_lines_with_search_result_words_acc) i cells ->
          let cells = Array.to_list cells in
          let global_line_num = grid.start_global_line_num + i in
-         let line_loc = Index.line_loc_of_global_line_num ~doc_hash global_line_num in
+         let line_loc = Index.line_loc_of_global_line_num ~doc_id global_line_num in
          let displayed_line_num = Index.Line_loc.line_num_in_page line_loc + 1 in
          let displayed_page_num = Index.Line_loc.page_num line_loc + 1 in
          let left_column_label =
@@ -330,7 +330,7 @@ let render_grid
     )
 
 let content_snippet
-    ~doc_hash
+    ~doc_id
     ~(view_offset : int Lwd.var)
     ?(search_result : Search_result.t option)
     ~(width : int)
@@ -338,7 +338,7 @@ let content_snippet
     ?underline
     ()
   : Notty.image =
-  let max_end_inc_global_line_num = Index.global_line_count ~doc_hash - 1 in
+  let max_end_inc_global_line_num = Index.global_line_count ~doc_id - 1 in
   assert (height > 0);
   let compute_final_line_num_range
       ~(view_offset : int Lwd.var)
@@ -389,12 +389,12 @@ let content_snippet
       in
       let grid =
         word_grid_of_index
-          ~doc_hash
+          ~doc_id
           ~start_global_line_num
           ~end_inc_global_line_num
       in
       render_grid
-        ~doc_hash
+        ~doc_id
         ~view_offset:(Some view_offset)
         ~render_mode:`None
         ~width
@@ -404,7 +404,7 @@ let content_snippet
     )
   | Some search_result -> (
       let (relevant_start_line, relevant_end_inc_line) =
-        start_and_end_inc_global_line_num_of_search_result ~doc_hash search_result
+        start_and_end_inc_global_line_num_of_search_result ~doc_id search_result
       in
       let avg = (relevant_start_line + relevant_end_inc_line) / 2 in
       let start_global_line_num, end_inc_global_line_num =
@@ -418,13 +418,13 @@ let content_snippet
       in
       let grid =
         word_grid_of_index
-          ~doc_hash
+          ~doc_id
           ~start_global_line_num
           ~end_inc_global_line_num
       in
-      mark_search_result_in_word_grid ~doc_hash grid search_result;
+      mark_search_result_in_word_grid ~doc_id grid search_result;
       render_grid
-        ~doc_hash
+        ~doc_id
         ~view_offset:(Some view_offset)
         ~render_mode:`None
         ~width
@@ -437,14 +437,14 @@ let word_is_not_space s =
   String.length s > 0 && not (Parser_components.is_space s.[0])
 
 let grab_additional_lines
-    ~doc_hash
+    ~doc_id
     ~non_space_word_count
     start_global_line_num
     end_inc_global_line_num
   : int * int =
-  let max_end_inc_global_line_num = Index.global_line_count ~doc_hash - 1 in
+  let max_end_inc_global_line_num = Index.global_line_count ~doc_id - 1 in
   let non_space_word_count_of_line n =
-    Index.words_of_global_line_num ~doc_hash n
+    Index.words_of_global_line_num ~doc_id n
     |> Dynarray.to_seq
     |> Seq.filter word_is_not_space
     |> Seq.length
@@ -482,7 +482,7 @@ let grab_additional_lines
   aux ~non_space_word_count ~i:0 start_global_line_num end_inc_global_line_num
 
 let search_result
-    ~doc_hash
+    ~doc_id
     ~render_mode
     ~width
     ?underline
@@ -492,7 +492,7 @@ let search_result
   let open Notty in
   let open Notty.Infix in
   let (start_global_line_num, end_inc_global_line_num) =
-    start_and_end_inc_global_line_num_of_search_result ~doc_hash search_result
+    start_and_end_inc_global_line_num_of_search_result ~doc_id search_result
     |> (fun (x, y) ->
         if fill_in_context then (
           let non_space_word_count =
@@ -508,7 +508,7 @@ let search_result
               )
             |> List.length
           in
-          grab_additional_lines ~doc_hash ~non_space_word_count x y
+          grab_additional_lines ~doc_id ~non_space_word_count x y
         ) else (
           (x, y)
         )
@@ -516,14 +516,14 @@ let search_result
   in
   let grid =
     word_grid_of_index
-      ~doc_hash
+      ~doc_id
       ~start_global_line_num
       ~end_inc_global_line_num
   in
-  mark_search_result_in_word_grid ~doc_hash grid search_result;
+  mark_search_result_in_word_grid ~doc_id grid search_result;
   let img =
     render_grid
-      ~doc_hash
+      ~doc_id
       ~view_offset:None
       ~render_mode
       ~width

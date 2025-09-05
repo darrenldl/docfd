@@ -263,7 +263,7 @@ module Content_view = struct
     let$* _ = Lwd.get Vars.content_view_offset in
     let content =
       Content_and_search_result_render.content_snippet
-        ~doc_hash:(Document.doc_hash document)
+        ~doc_id:(Document.doc_id document)
         ~view_offset:Vars.content_view_offset
         ?search_result
         ~height
