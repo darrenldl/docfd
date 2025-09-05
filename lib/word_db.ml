@@ -107,6 +107,19 @@ let write_to_db db ~already_in_transaction : unit =
       if not already_in_transaction then (
         step_stmt ~db "BEGIN IMMEDIATE" ignore;
       );
+      let word_table_size =
+        step_stmt ~db
+          {|
+      SELECT COUNT(1) FROM word
+      |}
+          (fun stmt ->
+             Int64.to_int (column_int64 stmt 0)
+          )
+      in
+      if word_table_size <> t.size_written_to_db then (
+        Misc_utils.exit_with_error_msg
+          "unexpected change in word table, likely due to indexing from another Docfd instance";
+      );
       with_stmt ~db
         {|
   INSERT INTO word
