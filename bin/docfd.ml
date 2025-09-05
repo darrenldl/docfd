@@ -308,9 +308,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
         let indexed_files, unindexed_files =
           let open Sqlite3_utils in
           with_stmt
-            {|
-          SELECT 1 FROM doc_info WHERE hash = @doc_hash
-          |}
+          Index.is_indexed_sql
             (fun stmt ->
                List.partition (fun (_, _, doc_hash) ->
                    bind_names stmt [ ("@doc_hash", TEXT doc_hash) ];

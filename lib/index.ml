@@ -532,15 +532,18 @@ let ccvector_of_int_map
   |> CCVector.of_seq
   |> CCVector.freeze
 
-let is_indexed ~doc_hash =
-  let open Sqlite3_utils in
-  step_stmt
+let is_indexed_sql =
     {|
     SELECT 1
     FROM doc_info
     WHERE hash = @doc_hash
     AND status = 'COMPLETED'
     |}
+
+let is_indexed ~doc_hash =
+  let open Sqlite3_utils in
+  step_stmt
+  is_indexed_sql
     ~names:[ ("@doc_hash", TEXT doc_hash) ]
     (fun stmt ->
        data_count stmt > 0

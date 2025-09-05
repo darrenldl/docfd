@@ -80,6 +80,8 @@ val global_line_count : doc_id:int64 -> int
 
 val page_count : doc_id:int64 -> int
 
+val is_indexed_sql : string
+
 val is_indexed : doc_hash:string -> bool
 
 val refresh_last_used_batch : int64 list -> unit
