@@ -14,10 +14,6 @@ let frequencies_of_words_ci (s : string Seq.t) : int String_map.t =
     String_map.empty
     s
 
-let exit_with_error_msg (msg : string) =
-  Printf.printf "error: %s\n" msg;
-  exit 1
-
 let stdin_is_atty () =
   Unix.isatty Unix.stdin
 

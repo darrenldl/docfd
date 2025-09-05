@@ -1,3 +1,7 @@
+let exit_with_error_msg (msg : string) =
+  Printf.printf "error: %s\n" msg;
+  exit 1
+
 let ci_string_set_of_list (l : string list) =
   l
   |> List.map String.lowercase_ascii
