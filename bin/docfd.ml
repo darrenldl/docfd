@@ -403,21 +403,21 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             )
           |> Document_pipeline.make ~env pool
         in
-        let (), unindexed_files =
-          Eio.Fiber.pair
-            (fun () ->
-               progress_with_reporter
-                 ~interactive
-                 (byte_bar ~total_byte_count:unindexed_files_byte_count)
-                 (fun report_progress ->
-                    Document_pipeline.run
-                      ~document_sizes
-                      ~report_progress
-                      pipeline
-                 )
-            )
-            (fun () ->
-               Document_pipeline.finalize pipeline)
+        let unindexed_files =
+          progress_with_reporter
+            ~interactive
+            (byte_bar ~total_byte_count:unindexed_files_byte_count)
+            (fun report_progress ->
+               Document_pipeline.run
+                 ~document_sizes
+                 ~report_progress
+                 pipeline
+            );
+          if interactive then (
+            Printf.printf "Finalizing index\n";
+            flush stdout;
+          );
+          Document_pipeline.finalize pipeline
         in
         [ indexed_files; unindexed_files ]
       )
