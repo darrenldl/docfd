@@ -113,9 +113,26 @@ let refresh_search_results pool stop_signal (t : t) : t option =
                      (Search_phrase.Enriched_token.compatible_with_word first_word)
                  )
              in
+             let usable_doc_ids =
+               global_first_word_candidates
+               |> Int_set.to_seq
+               |> Seq.fold_left (fun acc word_id ->
+                   Int_set.union
+                     acc
+                     (Word_db.doc_ids_of_word_id ~word_id)
+                 )
+                 Int_set.empty
+             in
              documents_to_search_through
-             |> Task_pool.map_list pool (fun path ->
-                 let doc = String_map.find path t.all_documents in
+             |> List.to_seq
+             |> Seq.map (fun path ->
+                 String_map.find path t.all_documents
+               )
+             |> Seq.filter (fun doc ->
+                 Int_set.mem (Int64.to_int (Document.doc_id doc)) usable_doc_ids
+               )
+             |> List.of_seq
+             |> Task_pool.map_list pool (fun doc ->
                  let within_same_line =
                    match Document.search_mode doc with
                    | `Single_line -> true
@@ -134,7 +151,7 @@ let refresh_search_results pool stop_signal (t : t) : t option =
                    ~within_same_line
                    ~search_scope:(Document.search_scope doc)
                    phrase
-                 |> Seq.map (fun x -> (path, x))
+                 |> Seq.map (fun x -> (Document.path doc, x))
                  |> List.of_seq
                )
              |> List.concat

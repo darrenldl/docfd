@@ -429,6 +429,7 @@ let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
     |}
         (fun stmt ->
            Int_map.iter (fun word_id _pos_s ->
+               Word_db.add_word_id_doc_id_link ~word_id ~doc_id;
                bind_names stmt
                  [ ("@word_id", INT (Int64.of_int word_id))
                  ; ("@doc_id", INT doc_id)
