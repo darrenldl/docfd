@@ -54,15 +54,6 @@ Exact match:
   6: ABcdEF
   7: 
   8: 'abcd
-     ^
-  9: 'abcd'
-      ^^^^
-  10: ^efgh
-  11: ^^efgh
-  
-  6: ABcdEF
-  7: 
-  8: 'abcd
       ^^^^
   9: 'abcd'
      ^
@@ -75,6 +66,16 @@ Exact match:
       ^^^^^
   10: ^efgh
   11: ^^efgh
+  
+  4: ABCDEF
+  5: ABcd
+  6: ABcdEF
+     ^^^^^^
+  7: 
+  8: 'abcd
+     ^
+  9: 'abcd'
+  10: ^efgh
   $ docfd --cache-dir .cache test.txt --sample "'abcdef"
   $TESTCASE_ROOT/test.txt
   1: abcd
@@ -358,9 +359,9 @@ Fuzzy match explicit spaces:
   16: efgh$
   17: 
   18: hello world
-      ^^^^^
+           ^^^^^^
   19: hello   world
-           ^^^^^^^^
+      ^^^^^
   20: 
   21: Hello world
 
