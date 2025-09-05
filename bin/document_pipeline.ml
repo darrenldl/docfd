@@ -13,11 +13,15 @@ type t = {
   result : Document.t Dynarray.t Eio.Stream.t;
 }
 
-let make ~env pool : t =
+let make ~env pool (irs : Document.Ir0.t Seq.t) : t =
+  let ir0_queue = Eio.Stream.create Int.max_int in
+  Seq.iter (fun ir0 ->
+      Eio.Stream.add ir0_queue (Some ir0)
+    ) irs;
   {
     env;
     pool;
-    ir0_queue = Eio.Stream.create 100;
+    ir0_queue;
     ir1_of_ir0_workers_batch_release = Eio.Semaphore.make 0;
     ir1_queue = Eio.Stream.create 100;
     ir2_of_ir1_workers_batch_release = Eio.Semaphore.make 0;
@@ -60,7 +64,7 @@ let ir2_of_ir1_worker (t : t) =
       )
   done
 
-let document_of_ir2_worker (t : t) =
+let document_of_ir2_worker ~document_sizes ~report_progress (t : t) =
   let open Sqlite3_utils in
   let run = ref true in
   let counter = ref 0 in
@@ -78,6 +82,10 @@ let document_of_ir2_worker (t : t) =
          | Some ir -> (
              let doc = Document.of_ir2 db ~already_in_transaction:true ir in
              Dynarray.add_last t.documents doc;
+             (match String_map.find_opt (Document.path doc) document_sizes with
+              | None -> ()
+              | Some x -> report_progress x
+             );
              do_if_debug (fun oc ->
                  Printf.fprintf oc "Document %s loaded successfully\n" (Filename.quote (Document.path doc));
                );
@@ -117,14 +125,14 @@ let feed (t : t) search_mode ~doc_hash path =
       Eio.Stream.add t.ir0_queue (Some ir0)
     )
 
-let run (t : t) =
+let run ~document_sizes ~report_progress (t : t) =
   Eio.Fiber.all
     (List.concat
        [ CCList.(0 --^ Task_pool.size)
          |> List.map (fun _ -> (fun () -> ir1_of_ir0_worker t))
        ; CCList.(0 --^ Task_pool.size)
          |> List.map (fun _ -> (fun () -> ir2_of_ir1_worker t))
-       ; [ fun () -> document_of_ir2_worker t ]
+       ; [ fun () -> document_of_ir2_worker ~document_sizes ~report_progress t ]
        ]
     );
   Eio.Stream.add t.result t.documents
