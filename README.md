@@ -139,6 +139,9 @@ more examples/cookbook, and technical details.
       multiple instances of Docfd, but note that the instances of Docfd
       may exit unexpectedly
 
+    - That being said, running multiple instances of Docfd which are only reading
+      the index DB and not updating it should be fine
+
 - File auto-reloading is not supported for PDF files,
   as PDF viewers are invoked in the background via shell.
   It is possible to support this properly
