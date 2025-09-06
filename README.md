@@ -129,6 +129,16 @@ more examples/cookbook, and technical details.
 
 ## Limitations
 
+- Docfd generally expects one intance per index DB
+
+    - You should pick a different cache directory (which houses
+      the index DB) via `--cache-dir`
+      if you need multiple instances
+
+    - There are safe guards to avoid corruptions even if you do run
+      multiple instances of Docfd, but note that the instances of Docfd
+      may exit unexpectedly
+
 - File auto-reloading is not supported for PDF files,
   as PDF viewers are invoked in the background via shell.
   It is possible to support this properly
