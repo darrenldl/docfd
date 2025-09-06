@@ -4,7 +4,6 @@ type t = {
   mutable size_written_to_db : int;
   mutable word_of_index : string Int_map.t;
   index_of_word : (string, int) Hashtbl.t;
-  doc_ids_of_word_id : (int, Int_set.t) Hashtbl.t;
 }
 
 let t : t =
@@ -14,7 +13,6 @@ let t : t =
     size_written_to_db = 0;
     word_of_index = Int_map.empty;
     index_of_word = Hashtbl.create 10_000;
-    doc_ids_of_word_id = Hashtbl.create 10_000;
   }
 
 let lock : type a. (unit -> a) -> a =
@@ -69,21 +67,6 @@ let add (word : string) : int =
         )
     )
 
-let doc_ids_of_word_id ~word_id =
-  Hashtbl.find t.doc_ids_of_word_id word_id
-
-let add_word_id_doc_id_link ~word_id ~doc_id =
-  lock (fun () ->
-      let doc_ids =
-        Hashtbl.find_opt t.doc_ids_of_word_id word_id
-        |> Option.value ~default:Int_set.empty
-      in
-      Hashtbl.replace
-        t.doc_ids_of_word_id
-        word_id
-        (Int_set.add (Int64.to_int doc_id) doc_ids)
-    )
-
 let word_of_index i : string =
   lock (fun () ->
       Int_map.find i t.word_of_index
@@ -100,11 +83,11 @@ let read_from_db () : unit =
       with_db (fun db ->
           t.word_of_index <- Int_map.empty;
           Hashtbl.clear t.index_of_word;
-          Hashtbl.clear t.doc_ids_of_word_id;
           iter_stmt ~db
             {|
   SELECT id, word
   FROM word
+  ORDER by id
   |}
             ~names:[]
             (fun data ->
@@ -112,24 +95,6 @@ let read_from_db () : unit =
                let word = Data.to_string_exn data.(1) in
                t.word_of_index <- Int_map.add id word t.word_of_index;
                Hashtbl.replace t.index_of_word word id;
-            );
-          iter_stmt ~db
-            {|
-  SELECT word_id, doc_id
-  FROM word_id_doc_id_link
-  |}
-            ~names:[]
-            (fun data ->
-               let word_id = Data.to_int_exn data.(0) in
-               let doc_id = Data.to_int_exn data.(1) in
-               let doc_ids =
-                 Hashtbl.find_opt t.doc_ids_of_word_id word_id
-                 |> Option.value ~default:Int_set.empty
-               in
-               Hashtbl.replace
-                 t.doc_ids_of_word_id
-                 word_id
-                 (Int_set.add doc_id doc_ids);
             )
         );
       t.size <- Int_map.cardinal t.word_of_index;

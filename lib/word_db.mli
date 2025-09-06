@@ -2,11 +2,7 @@ type t
 
 val add : string -> int
 
-val add_word_id_doc_id_link : word_id:int -> doc_id:int64 -> unit
-
 val filter : Task_pool.t -> (string -> bool) -> Int_set.t
-
-val doc_ids_of_word_id : word_id:int -> Int_set.t
 
 val word_of_index : int -> string
 
