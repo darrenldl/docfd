@@ -23,6 +23,8 @@ module Enriched_token : sig
   type data = [ `String of string | `Explicit_spaces ]
   [@@deriving ord]
 
+  module Data_map : Map.S with type key = data
+
   type t
 
   val make :

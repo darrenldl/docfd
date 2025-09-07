@@ -46,6 +46,12 @@ module Enriched_token = struct
   type data = [ `String of string | `Explicit_spaces ]
   [@@deriving ord]
 
+  module Data_map = Map.Make (struct
+      type t = data
+
+      let compare = compare_data
+    end)
+
   let pp_data formatter data =
     Fmt.pf formatter "%s"
       (match data with
