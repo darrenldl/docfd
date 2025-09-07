@@ -1127,58 +1127,73 @@ module Search = struct
       ?(terminate_on_result_found = false)
       ~(cancellation_notifier : bool Atomic.t)
       ~doc_id
-      ~first_word_candidates
+      ~doc_word_ids
+      ~first_word_candidates_lookup
       ~within_same_line
       ~(search_scope : Diet.Int.t option)
-      (phrase : Search_phrase.t)
+      (exp : Search_exp.t)
     : Search_job_group.t Seq.t =
-    if Search_phrase.is_empty phrase then (
+    if Search_exp.is_empty exp then (
       Seq.empty
     ) else (
-      let possible_start_count, possible_starts =
-        first_word_candidates
-        |> Int_set.to_seq
-        |> positions_of_words ~doc_id
-        |> (fun s ->
-            match search_scope with
-            | None -> s
-            | Some search_scope -> (
-                Seq.filter (fun x ->
-                    Diet.Int.mem x search_scope
-                  ) s
+      Search_exp.flattened exp
+      |> List.to_seq
+      |> Seq.flat_map (fun phrase ->
+          let first_word_candidates =
+            match Search_phrase.enriched_tokens phrase with
+            | [] -> failwith "unexpected case"
+            | first_word :: _ -> (
+                Search_phrase.Enriched_token.Data_map.find
+                  (Search_phrase.Enriched_token.data first_word)
+                  first_word_candidates_lookup
+                |> Int_set.inter doc_word_ids
+              )
+          in
+          let possible_start_count, possible_starts =
+            first_word_candidates
+            |> Int_set.to_seq
+            |> positions_of_words ~doc_id
+            |> (fun s ->
+                match search_scope with
+                | None -> s
+                | Some search_scope -> (
+                    Seq.filter (fun x ->
+                        Diet.Int.mem x search_scope
+                      ) s
+                  )
+              )
+            |> Misc_utils.length_and_list_of_seq
+          in
+          if possible_start_count = 0 then (
+            Seq.empty
+          ) else (
+            let search_limit_per_start =
+              max
+                Params.search_result_min_per_start
+                (
+                  (Params.default_search_result_total_per_document + possible_start_count - 1) / possible_start_count
+                )
+            in
+            let search_chunk_size =
+              max 10 (possible_start_count / Task_pool.size)
+            in
+            possible_starts
+            |> CCList.chunks search_chunk_size
+            |> List.to_seq
+            |> Seq.map (fun possible_start_pos_list ->
+                {
+                  Search_job_group.stop_signal;
+                  terminate_on_result_found;
+                  cancellation_notifier;
+                  doc_id;
+                  within_same_line;
+                  phrase;
+                  possible_start_pos_list;
+                  search_limit_per_start;
+                }
               )
           )
-        |> Misc_utils.length_and_list_of_seq
-      in
-      if possible_start_count = 0 then (
-        Seq.empty
-      ) else (
-        let search_limit_per_start =
-          max
-            Params.search_result_min_per_start
-            (
-              (Params.default_search_result_total_per_document + possible_start_count - 1) / possible_start_count
-            )
-        in
-        let search_chunk_size =
-          max 10 (possible_start_count / Task_pool.size)
-        in
-        possible_starts
-        |> CCList.chunks search_chunk_size
-        |> List.to_seq
-        |> Seq.map (fun possible_start_pos_list ->
-            {
-              Search_job_group.stop_signal;
-              terminate_on_result_found;
-              cancellation_notifier;
-              doc_id;
-              within_same_line;
-              phrase;
-              possible_start_pos_list;
-              search_limit_per_start;
-            }
-          )
-      )
+        )
     )
 
   let search
@@ -1187,24 +1202,22 @@ module Search = struct
       ?terminate_on_result_found
       ~cancellation_notifier
       ~doc_id
-      ~first_word_candidates
+      ~doc_word_ids
+      ~first_word_candidates_lookup
       ~within_same_line
       ~search_scope
       (exp : Search_exp.t)
     : Search_result_heap.t =
-    Search_exp.flattened exp
-    |> List.to_seq
-    |> Seq.flat_map (fun phrase ->
-        make_search_job_groups
-          stop_signal
-          ?terminate_on_result_found
-          ~cancellation_notifier
-          ~doc_id
-          ~first_word_candidates
-          ~within_same_line
-          ~search_scope
-          phrase
-      )
+    make_search_job_groups
+      stop_signal
+      ?terminate_on_result_found
+      ~cancellation_notifier
+      ~doc_id
+      ~doc_word_ids
+      ~first_word_candidates_lookup
+      ~within_same_line
+      ~search_scope
+      exp
     |> List.of_seq
     |> Task_pool.map_list pool Search_job_group.run
     |> List.fold_left search_result_heap_merge_with_yield Search_result_heap.empty
@@ -1215,7 +1228,8 @@ let search
     stop_signal
     ?terminate_on_result_found
     ~doc_id
-    ~first_word_candidates
+    ~doc_word_ids
+    ~first_word_candidates_lookup
     ~within_same_line
     ~search_scope
     (exp : Search_exp.t)
@@ -1228,7 +1242,8 @@ let search
       ?terminate_on_result_found
       ~cancellation_notifier
       ~doc_id
-      ~first_word_candidates
+      ~doc_word_ids
+      ~first_word_candidates_lookup
       ~within_same_line
       ~search_scope
       exp
@@ -1247,6 +1262,28 @@ module Search_job = Search.Search_job
 module Search_job_group = Search.Search_job_group
 
 let make_search_job_groups = Search.make_search_job_groups
+
+let compute_first_word_candidates_lookup
+    pool
+    (exp : Search_exp.t)
+  : Int_set.t Search_phrase.Enriched_token.Data_map.t =
+  Search_exp.flattened exp
+  |> List.fold_left (fun acc phrase ->
+      match Search_phrase.enriched_tokens phrase with
+      | [] -> failwith "unexpected case"
+      | first_word :: _rest -> (
+          let candidates =
+            Word_db.filter
+              pool
+              (Search_phrase.Enriched_token.compatible_with_word first_word)
+          in
+          Search_phrase.Enriched_token.Data_map.add
+            (Search_phrase.Enriched_token.data first_word)
+            candidates
+            acc
+        )
+    )
+    Search_phrase.Enriched_token.Data_map.empty
 
 let word_ids ~doc_id =
   let open Sqlite3_utils in
