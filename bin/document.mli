@@ -32,7 +32,12 @@ val search_scope : t -> Diet.Int.t option
 
 val last_scan : t -> Timedesc.t
 
-val satisfies_filter_exp : Task_pool.t -> Filter_exp.t -> t -> bool
+val satisfies_filter_exp :
+  Task_pool.t ->
+  first_word_candidates_lookup:Int_set.t Search_phrase.Enriched_token.Data_map.t ->
+  Filter_exp.t ->
+  t ->
+  bool
 
 val of_path :
   env:Eio_unix.Stdenv.base ->

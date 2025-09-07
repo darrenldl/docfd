@@ -495,7 +495,7 @@ let of_path
 
 module ET = Search_phrase.Enriched_token
 
-let satisfies_filter_exp pool (exp : Filter_exp.t) (t : t) : bool =
+let satisfies_filter_exp pool ~first_word_candidates_lookup (exp : Filter_exp.t) (t : t) : bool =
   let open Filter_exp in
   let date_f (op : Filter_exp.compare_op) =
     match op with
@@ -582,7 +582,8 @@ let satisfies_filter_exp pool (exp : Filter_exp.t) (t : t) : bool =
             (Stop_signal.make ())
             ~terminate_on_result_found:true
             ~doc_id:t.doc_id
-            ~first_word_candidates:(word_ids t)
+            ~doc_word_ids:(word_ids t)
+            ~first_word_candidates_lookup
             ~within_same_line:false
             ~search_scope:None
             exp
