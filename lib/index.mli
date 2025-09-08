@@ -38,6 +38,7 @@ val line_count_of_page_num : doc_id:int64 -> int -> int
 
 val generate_candidates_lookup_for_first_search_word :
   Task_pool.t ->
+  ?acc:Int_set.t Search_phrase.Enriched_token.Data_map.t ->
   Search_exp.t ->
   Int_set.t Search_phrase.Enriched_token.Data_map.t
 

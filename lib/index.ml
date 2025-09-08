@@ -1265,6 +1265,7 @@ let make_search_job_groups = Search.make_search_job_groups
 
 let generate_candidates_lookup_for_first_search_word
     pool
+    ?(acc = Search_phrase.Enriched_token.Data_map.empty)
     (exp : Search_exp.t)
   : Int_set.t Search_phrase.Enriched_token.Data_map.t =
   Search_exp.flattened exp
@@ -1272,18 +1273,23 @@ let generate_candidates_lookup_for_first_search_word
       match Search_phrase.enriched_tokens phrase with
       | [] -> failwith "unexpected case"
       | first_word :: _rest -> (
-          let candidates =
-            Word_db.filter
-              pool
-              (Search_phrase.Enriched_token.compatible_with_word first_word)
-          in
-          Search_phrase.Enriched_token.Data_map.add
-            (Search_phrase.Enriched_token.data first_word)
-            candidates
-            acc
+          let data = Search_phrase.Enriched_token.data first_word in
+          match Search_phrase.Enriched_token.Data_map.find_opt data acc with
+          | None -> (
+              let candidates =
+                Word_db.filter
+                  pool
+                  (Search_phrase.Enriched_token.compatible_with_word first_word)
+              in
+              Search_phrase.Enriched_token.Data_map.add
+                data
+                candidates
+                acc
+            )
+          | Some _ -> acc
         )
     )
-    Search_phrase.Enriched_token.Data_map.empty
+    acc
 
 let word_ids ~doc_id =
   let open Sqlite3_utils in
