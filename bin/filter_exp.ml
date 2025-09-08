@@ -50,6 +50,21 @@ let equal (e1 : t) (e2 : t) =
   in
   aux e1 e2
 
+let all_content_search_exps (t : t) : Search_exp.t list =
+  let rec aux t =
+    match t with
+    | Empty
+    | Path_date _
+    | Path_fuzzy _
+    | Path_glob _
+    | Ext _
+    | Mod_date _ -> []
+    | Content e -> [e]
+    | Binary_op (_op, e1, e2) -> aux e1 @ aux e2
+    | Unary_op (_op, e) -> aux e
+  in
+  aux t
+
 module Parsers = struct
   type exp = t
 

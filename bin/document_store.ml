@@ -184,9 +184,14 @@ let update_filter_exp
         )
         (fun () ->
            let candidates_lookup_for_first_search_word =
-             Index.generate_candidates_lookup_for_first_search_word
-               pool
-               t.search_exp
+             Filter_exp.all_content_search_exps t.filter_exp
+             |> List.fold_left (fun acc search_exp ->
+                 Index.generate_candidates_lookup_for_first_search_word
+                   pool
+                   ~acc
+                   search_exp
+               )
+               Search_phrase.Enriched_token.Data_map.empty
            in
            t.all_documents
            |> String_map.to_seq
