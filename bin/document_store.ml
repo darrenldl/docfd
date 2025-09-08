@@ -184,7 +184,7 @@ let update_filter_exp
         )
         (fun () ->
            let candidates_lookup_for_first_search_word =
-             Filter_exp.all_content_search_exps t.filter_exp
+             Filter_exp.all_content_search_exps filter_exp
              |> List.fold_left (fun acc search_exp ->
                  Index.generate_candidates_lookup_for_first_search_word
                    pool
