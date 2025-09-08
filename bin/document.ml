@@ -495,7 +495,7 @@ let of_path
 
 module ET = Search_phrase.Enriched_token
 
-let satisfies_filter_exp pool ~global_first_word_candidates_lookup (exp : Filter_exp.t) (t : t) : bool =
+let satisfies_filter_exp pool ~candidates_lookup_for_first_search_word (exp : Filter_exp.t) (t : t) : bool =
   let open Filter_exp in
   let date_f (op : Filter_exp.compare_op) =
     match op with
@@ -583,7 +583,7 @@ let satisfies_filter_exp pool ~global_first_word_candidates_lookup (exp : Filter
             ~terminate_on_result_found:true
             ~doc_id:t.doc_id
             ~doc_word_ids:(word_ids t)
-            ~global_first_word_candidates_lookup
+            ~candidates_lookup_for_first_search_word
             ~within_same_line:false
             ~search_scope:None
             exp

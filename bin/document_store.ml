@@ -102,8 +102,8 @@ let refresh_search_results pool stop_signal (t : t) : t option =
              )
            |> List.of_seq
          in
-         let global_first_word_candidates_lookup =
-           Index.compute_global_first_word_candidates_lookup
+         let candidates_lookup_for_first_search_word =
+           Index.generate_candidates_lookup_for_first_search_word
              pool
              t.search_exp
          in
@@ -120,7 +120,7 @@ let refresh_search_results pool stop_signal (t : t) : t option =
                ~cancellation_notifier
                ~doc_id:(Document.doc_id doc)
                ~doc_word_ids:(Document.word_ids doc)
-               ~global_first_word_candidates_lookup
+               ~candidates_lookup_for_first_search_word
                ~within_same_line
                ~search_scope:(Document.search_scope doc)
                t.search_exp
@@ -183,8 +183,8 @@ let update_filter_exp
            String_set.empty
         )
         (fun () ->
-           let global_first_word_candidates_lookup =
-             Index.compute_global_first_word_candidates_lookup
+           let candidates_lookup_for_first_search_word =
+             Index.generate_candidates_lookup_for_first_search_word
                pool
                t.search_exp
            in
@@ -199,7 +199,7 @@ let update_filter_exp
                      Eio.Fiber.yield ();
                      Document.satisfies_filter_exp
                        pool
-                       ~global_first_word_candidates_lookup
+                       ~candidates_lookup_for_first_search_word
                        filter_exp
                        s
                    ) s
@@ -240,13 +240,13 @@ let add_document pool (doc : Document.t) (t : t) : t =
     | `Multiline -> false
   in
   let path = Document.path doc in
-  let global_first_word_candidates_lookup =
-    Index.compute_global_first_word_candidates_lookup
+  let candidates_lookup_for_first_search_word =
+    Index.generate_candidates_lookup_for_first_search_word
       pool
       t.search_exp
   in
   let documents_passing_filter =
-    if Document.satisfies_filter_exp pool ~global_first_word_candidates_lookup t.filter_exp doc
+    if Document.satisfies_filter_exp pool ~candidates_lookup_for_first_search_word t.filter_exp doc
     then
       String_set.add path t.documents_passing_filter
     else
@@ -260,7 +260,7 @@ let add_document pool (doc : Document.t) (t : t) : t =
          (Stop_signal.make ())
          ~doc_id:(Document.doc_id doc)
          ~doc_word_ids:(Document.word_ids doc)
-         ~global_first_word_candidates_lookup
+         ~candidates_lookup_for_first_search_word
          ~within_same_line
          ~search_scope:(Document.search_scope doc)
          t.search_exp
