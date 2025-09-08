@@ -245,12 +245,17 @@ let add_document pool (doc : Document.t) (t : t) : t =
     | `Multiline -> false
   in
   let path = Document.path doc in
-  let candidates_lookup_for_first_search_word =
-    Index.generate_candidates_lookup_for_first_search_word
-      pool
-      t.search_exp
-  in
   let documents_passing_filter =
+    let candidates_lookup_for_first_search_word =
+      Filter_exp.all_content_search_exps t.filter_exp
+      |> List.fold_left (fun acc search_exp ->
+          Index.generate_candidates_lookup_for_first_search_word
+            pool
+            ~acc
+            search_exp
+        )
+        Search_phrase.Enriched_token.Data_map.empty
+    in
     if Document.satisfies_filter_exp pool ~candidates_lookup_for_first_search_word t.filter_exp doc
     then
       String_set.add path t.documents_passing_filter
@@ -258,6 +263,11 @@ let add_document pool (doc : Document.t) (t : t) : t =
       t.documents_passing_filter
   in
   let search_results =
+    let candidates_lookup_for_first_search_word =
+      Index.generate_candidates_lookup_for_first_search_word
+        pool
+        t.search_exp
+    in
     String_map.add
       path
       (Index.search
