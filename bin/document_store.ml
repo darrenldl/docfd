@@ -102,8 +102,8 @@ let refresh_search_results pool stop_signal (t : t) : t option =
              )
            |> List.of_seq
          in
-         let candidates_lookup_for_first_search_word =
-           Index.generate_candidates_lookup_for_first_search_word
+         let first_word_candidates_lookup =
+           Index.generate_first_word_candidates_lookup
              pool
              t.search_exp
          in
@@ -120,7 +120,7 @@ let refresh_search_results pool stop_signal (t : t) : t option =
                ~cancellation_notifier
                ~doc_id:(Document.doc_id doc)
                ~doc_word_ids:(Document.word_ids doc)
-               ~candidates_lookup_for_first_search_word
+               ~first_word_candidates_lookup
                ~within_same_line
                ~search_scope:(Document.search_scope doc)
                t.search_exp
@@ -183,10 +183,10 @@ let update_filter_exp
            String_set.empty
         )
         (fun () ->
-           let candidates_lookup_for_first_search_word =
+           let first_word_candidates_lookup =
              Filter_exp.all_content_search_exps filter_exp
              |> List.fold_left (fun acc search_exp ->
-                 Index.generate_candidates_lookup_for_first_search_word
+                 Index.generate_first_word_candidates_lookup
                    pool
                    ~acc
                    search_exp
@@ -204,7 +204,7 @@ let update_filter_exp
                      Eio.Fiber.yield ();
                      Document.satisfies_filter_exp
                        pool
-                       ~candidates_lookup_for_first_search_word
+                       ~first_word_candidates_lookup
                        filter_exp
                        s
                    ) s
@@ -246,25 +246,25 @@ let add_document pool (doc : Document.t) (t : t) : t =
   in
   let path = Document.path doc in
   let documents_passing_filter =
-    let candidates_lookup_for_first_search_word =
+    let first_word_candidates_lookup =
       Filter_exp.all_content_search_exps t.filter_exp
       |> List.fold_left (fun acc search_exp ->
-          Index.generate_candidates_lookup_for_first_search_word
+          Index.generate_first_word_candidates_lookup
             pool
             ~acc
             search_exp
         )
         Search_phrase.Enriched_token.Data_map.empty
     in
-    if Document.satisfies_filter_exp pool ~candidates_lookup_for_first_search_word t.filter_exp doc
+    if Document.satisfies_filter_exp pool ~first_word_candidates_lookup t.filter_exp doc
     then
       String_set.add path t.documents_passing_filter
     else
       t.documents_passing_filter
   in
   let search_results =
-    let candidates_lookup_for_first_search_word =
-      Index.generate_candidates_lookup_for_first_search_word
+    let first_word_candidates_lookup =
+      Index.generate_first_word_candidates_lookup
         pool
         t.search_exp
     in
@@ -275,7 +275,7 @@ let add_document pool (doc : Document.t) (t : t) : t =
          (Stop_signal.make ())
          ~doc_id:(Document.doc_id doc)
          ~doc_word_ids:(Document.word_ids doc)
-         ~candidates_lookup_for_first_search_word
+         ~first_word_candidates_lookup
          ~within_same_line
          ~search_scope:(Document.search_scope doc)
          t.search_exp

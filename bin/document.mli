@@ -34,7 +34,7 @@ val last_scan : t -> Timedesc.t
 
 val satisfies_filter_exp :
   Task_pool.t ->
-  candidates_lookup_for_first_search_word:Int_set.t Search_phrase.Enriched_token.Data_map.t ->
+  first_word_candidates_lookup:Int_set.t Search_phrase.Enriched_token.Data_map.t ->
   Filter_exp.t ->
   t ->
   bool

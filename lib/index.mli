@@ -48,7 +48,7 @@ val search :
   ?terminate_on_result_found : bool ->
   doc_id:int64 ->
   doc_word_ids:Int_set.t ->
-  candidates_lookup_for_first_search_word:Int_set.t Search_phrase.Enriched_token.Data_map.t ->
+  first_word_candidates_lookup:Int_set.t Search_phrase.Enriched_token.Data_map.t ->
   within_same_line:bool ->
   search_scope:Diet.Int.t option ->
   Search_exp.t ->
@@ -76,7 +76,7 @@ val make_search_job_groups :
   cancellation_notifier:bool Atomic.t ->
   doc_id:int64 ->
   doc_word_ids:Int_set.t ->
-  candidates_lookup_for_first_search_word:Int_set.t Search_phrase.Enriched_token.Data_map.t ->
+  first_word_candidates_lookup:Int_set.t Search_phrase.Enriched_token.Data_map.t ->
   within_same_line:bool ->
   search_scope:Diet.Int.t option ->
   Search_exp.t ->

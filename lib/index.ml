@@ -1128,7 +1128,7 @@ module Search = struct
       ~(cancellation_notifier : bool Atomic.t)
       ~doc_id
       ~doc_word_ids
-      ~candidates_lookup_for_first_search_word
+      ~first_word_candidates_lookup
       ~within_same_line
       ~(search_scope : Diet.Int.t option)
       (exp : Search_exp.t)
@@ -1145,7 +1145,7 @@ module Search = struct
             | first_word :: _ -> (
                 Search_phrase.Enriched_token.Data_map.find
                   (Search_phrase.Enriched_token.data first_word)
-                  candidates_lookup_for_first_search_word
+                  first_word_candidates_lookup
                 |> Int_set.inter doc_word_ids
               )
           in
@@ -1203,7 +1203,7 @@ module Search = struct
       ~cancellation_notifier
       ~doc_id
       ~doc_word_ids
-      ~candidates_lookup_for_first_search_word
+      ~first_word_candidates_lookup
       ~within_same_line
       ~search_scope
       (exp : Search_exp.t)
@@ -1214,7 +1214,7 @@ module Search = struct
       ~cancellation_notifier
       ~doc_id
       ~doc_word_ids
-      ~candidates_lookup_for_first_search_word
+      ~first_word_candidates_lookup
       ~within_same_line
       ~search_scope
       exp
@@ -1229,7 +1229,7 @@ let search
     ?terminate_on_result_found
     ~doc_id
     ~doc_word_ids
-    ~candidates_lookup_for_first_search_word
+    ~first_word_candidates_lookup
     ~within_same_line
     ~search_scope
     (exp : Search_exp.t)
@@ -1243,7 +1243,7 @@ let search
       ~cancellation_notifier
       ~doc_id
       ~doc_word_ids
-      ~candidates_lookup_for_first_search_word
+      ~first_word_candidates_lookup
       ~within_same_line
       ~search_scope
       exp
