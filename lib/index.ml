@@ -1263,7 +1263,7 @@ module Search_job_group = Search.Search_job_group
 
 let make_search_job_groups = Search.make_search_job_groups
 
-let generate_candidates_lookup_for_first_search_word
+let generate_first_word_candidates_lookup
     pool
     ?(acc = Search_phrase.Enriched_token.Data_map.empty)
     (exp : Search_exp.t)
