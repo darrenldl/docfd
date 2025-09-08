@@ -104,29 +104,29 @@ let refresh_search_results pool stop_signal (t : t) : t option =
          in
          let global_first_word_candidates_lookup =
            Index.compute_global_first_word_candidates_lookup
-           pool
-           t.search_exp
+             pool
+             t.search_exp
          in
-             documents_to_search_through
-             |> Task_pool.map_list pool (fun path ->
-                 let doc = String_map.find path t.all_documents in
-                 let within_same_line =
-                   match Document.search_mode doc with
-                   | `Single_line -> true
-                   | `Multiline -> false
-                 in
-                 Index.make_search_job_groups
-                   stop_signal
-                   ~cancellation_notifier
-                   ~doc_id:(Document.doc_id doc)
-                   ~doc_word_ids:(Document.word_ids doc)
-                   ~global_first_word_candidates_lookup
-                   ~within_same_line
-                   ~search_scope:(Document.search_scope doc)
-                   t.search_exp
-                 |> Seq.map (fun x -> (path, x))
-                 |> List.of_seq
-               )
+         documents_to_search_through
+         |> Task_pool.map_list pool (fun path ->
+             let doc = String_map.find path t.all_documents in
+             let within_same_line =
+               match Document.search_mode doc with
+               | `Single_line -> true
+               | `Multiline -> false
+             in
+             Index.make_search_job_groups
+               stop_signal
+               ~cancellation_notifier
+               ~doc_id:(Document.doc_id doc)
+               ~doc_word_ids:(Document.word_ids doc)
+               ~global_first_word_candidates_lookup
+               ~within_same_line
+               ~search_scope:(Document.search_scope doc)
+               t.search_exp
+             |> Seq.map (fun x -> (path, x))
+             |> List.of_seq
+           )
          |> List.concat
          |> Task_pool.map_list pool (fun (path, search_job_group) ->
              let heap = Index.Search_job_group.run search_job_group in
@@ -183,11 +183,11 @@ let update_filter_exp
            String_set.empty
         )
         (fun () ->
-         let global_first_word_candidates_lookup =
-           Index.compute_global_first_word_candidates_lookup
-           pool
-           t.search_exp
-         in
+           let global_first_word_candidates_lookup =
+             Index.compute_global_first_word_candidates_lookup
+               pool
+               t.search_exp
+           in
            t.all_documents
            |> String_map.to_seq
            |> Seq.map snd
@@ -198,10 +198,10 @@ let update_filter_exp
                  Seq.filter (fun s ->
                      Eio.Fiber.yield ();
                      Document.satisfies_filter_exp
-                     pool
-                     ~global_first_word_candidates_lookup
-                     filter_exp
-                     s
+                       pool
+                       ~global_first_word_candidates_lookup
+                       filter_exp
+                       s
                    ) s
                )
              )
@@ -240,11 +240,11 @@ let add_document pool (doc : Document.t) (t : t) : t =
     | `Multiline -> false
   in
   let path = Document.path doc in
-         let global_first_word_candidates_lookup =
-           Index.compute_global_first_word_candidates_lookup
-           pool
-           t.search_exp
-         in
+  let global_first_word_candidates_lookup =
+    Index.compute_global_first_word_candidates_lookup
+      pool
+      t.search_exp
+  in
   let documents_passing_filter =
     if Document.satisfies_filter_exp pool ~global_first_word_candidates_lookup t.filter_exp doc
     then
