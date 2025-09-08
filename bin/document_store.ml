@@ -102,17 +102,11 @@ let refresh_search_results pool stop_signal (t : t) : t option =
              )
            |> List.of_seq
          in
-         Search_exp.flattened t.search_exp
-         |> List.map (fun phrase ->
-             let global_first_word_candidates =
-               match Search_phrase.enriched_tokens phrase with
-               | [] -> failwith "unexpected case"
-               | first_word :: _rest -> (
-                   Word_db.filter
-                     pool
-                     (Search_phrase.Enriched_token.compatible_with_word first_word)
-                 )
-             in
+         let global_first_word_candidates_lookup =
+           Index.compute_global_first_word_candidates_lookup
+           pool
+           t.search_exp
+         in
              documents_to_search_through
              |> Task_pool.map_list pool (fun path ->
                  let doc = String_map.find path t.all_documents in
@@ -121,24 +115,18 @@ let refresh_search_results pool stop_signal (t : t) : t option =
                    | `Single_line -> true
                    | `Multiline -> false
                  in
-                 let first_word_candidates =
-                   Int_set.inter
-                     global_first_word_candidates
-                     (Document.word_ids doc)
-                 in
                  Index.make_search_job_groups
                    stop_signal
                    ~cancellation_notifier
                    ~doc_id:(Document.doc_id doc)
-                   ~first_word_candidates
+                   ~doc_word_ids:(Document.word_ids doc)
+                   ~global_first_word_candidates_lookup
                    ~within_same_line
                    ~search_scope:(Document.search_scope doc)
-                   phrase
+                   t.search_exp
                  |> Seq.map (fun x -> (path, x))
                  |> List.of_seq
                )
-             |> List.concat
-           )
          |> List.concat
          |> Task_pool.map_list pool (fun (path, search_job_group) ->
              let heap = Index.Search_job_group.run search_job_group in
@@ -195,6 +183,11 @@ let update_filter_exp
            String_set.empty
         )
         (fun () ->
+         let global_first_word_candidates_lookup =
+           Index.compute_global_first_word_candidates_lookup
+           pool
+           t.search_exp
+         in
            t.all_documents
            |> String_map.to_seq
            |> Seq.map snd
@@ -204,7 +197,11 @@ let update_filter_exp
                ) else (
                  Seq.filter (fun s ->
                      Eio.Fiber.yield ();
-                     Document.satisfies_filter_exp pool filter_exp s
+                     Document.satisfies_filter_exp
+                     pool
+                     ~global_first_word_candidates_lookup
+                     filter_exp
+                     s
                    ) s
                )
              )
@@ -243,14 +240,18 @@ let add_document pool (doc : Document.t) (t : t) : t =
     | `Multiline -> false
   in
   let path = Document.path doc in
+         let global_first_word_candidates_lookup =
+           Index.compute_global_first_word_candidates_lookup
+           pool
+           t.search_exp
+         in
   let documents_passing_filter =
-    if Document.satisfies_filter_exp pool t.filter_exp doc
+    if Document.satisfies_filter_exp pool ~global_first_word_candidates_lookup t.filter_exp doc
     then
       String_set.add path t.documents_passing_filter
     else
       t.documents_passing_filter
   in
-  let first_word_candidates = Document.word_ids doc in
   let search_results =
     String_map.add
       path
@@ -258,7 +259,8 @@ let add_document pool (doc : Document.t) (t : t) : t =
          pool
          (Stop_signal.make ())
          ~doc_id:(Document.doc_id doc)
-         ~first_word_candidates
+         ~doc_word_ids:(Document.word_ids doc)
+         ~global_first_word_candidates_lookup
          ~within_same_line
          ~search_scope:(Document.search_scope doc)
          t.search_exp
