@@ -287,7 +287,7 @@ module Top_pane = struct
         |> Seq.map (fun global_line_num ->
             Index.words_of_global_line_num ~doc_id:(Document.doc_id doc) global_line_num
             |> Dynarray.to_list
-            |> Content_and_search_result_render.Text_block_render.of_words ~width:sub_item_width
+            |> Content_and_search_result_rendering.Text_block_render.of_words ~width:sub_item_width
           )
         |> Seq.map (fun img ->
             let left_padding =
@@ -310,7 +310,7 @@ module Top_pane = struct
          |> File_utils.remove_cwd_from_path
          |> Tokenization.tokenize ~drop_spaces:false
          |> List.of_seq
-         |> Content_and_search_result_render.Text_block_render.of_words ~width:sub_item_width
+         |> Content_and_search_result_rendering.Text_block_render.of_words ~width:sub_item_width
         )
       in
       let path_date_image =
@@ -346,7 +346,7 @@ module Top_pane = struct
             title
             |> Tokenization.tokenize ~drop_spaces:false
             |> List.of_seq
-            |> Content_and_search_result_render.Text_block_render.of_words ~attr ~width
+            |> Content_and_search_result_rendering.Text_block_render.of_words ~attr ~width
           )
       in
       (
@@ -434,7 +434,7 @@ module Top_pane = struct
               ~start:search_result_selected
               ~end_exc:(min result_count (search_result_selected + height))
               search_results
-            |> Seq.map (Content_and_search_result_render.search_result
+            |> Seq.map (Content_and_search_result_rendering.search_result
                           ~doc_id:(Document.doc_id document)
                           ~render_mode:(UI_base.render_mode_of_document document)
                           ~width

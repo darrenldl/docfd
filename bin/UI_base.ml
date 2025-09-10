@@ -41,7 +41,7 @@ type filter_status = [
 let empty_text_field = ("", 0)
 
 let render_mode_of_document (doc : Document.t)
-  : Content_and_search_result_render.render_mode =
+  : Content_and_search_result_rendering.render_mode =
   match File_utils.format_of_file (Document.path doc) with
   | `PDF -> `Page_num_only
   | `Pandoc_supported_format -> `None
@@ -262,7 +262,7 @@ module Content_view = struct
     in
     let$* _ = Lwd.get Vars.content_view_offset in
     let content =
-      Content_and_search_result_render.content_snippet
+      Content_and_search_result_rendering.content_snippet
         ~doc_id:(Document.doc_id document)
         ~view_offset:Vars.content_view_offset
         ?search_result
