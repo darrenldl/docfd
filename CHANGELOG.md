@@ -61,6 +61,8 @@
 
 - Added missing mutexes for caches, should further reduce random crashes
 
+- Added `yyyy-mmm-dd` path date extraction, where `-` is an optional separator that is not a digit and not a letter
+
 ## 12.0.0-alpha.12
 
 - Made resetting of search result selection and content view offset less aggressive

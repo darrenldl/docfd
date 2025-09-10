@@ -238,6 +238,8 @@ module Date_extract = struct
 
   let mm = "([01]\\d)"
 
+  let mmm = "(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)"
+
   let dd = "([0-3]\\d)"
 
   let yyyy_mm_dd =
@@ -256,6 +258,43 @@ module Date_extract = struct
         let start = Re.Group.start g 1 in
         let y = Re.Group.get g 1 |> int_of_string in
         let m = Re.Group.get g 2 |> int_of_string in
+        let d = Re.Group.get g 3 |> int_of_string in
+        Some (start, (y, m, d))
+      with
+      | _ -> None
+
+  let yyyy_mmm_dd =
+    let re =
+      Fmt.str
+        "(?:^|.*[^\\d])%s[^A-Za-z\\d]?%s[^A-Za-z\\d]?%s(?:$|[^\\d])"
+        yyyy
+        mmm
+        dd
+      |> Re.Pcre.re
+      |> Re.no_case
+      |> Re.compile
+    in
+    fun s ->
+      try
+        let g = Re.exec re s in
+        let start = Re.Group.start g 1 in
+        let y = Re.Group.get g 1 |> int_of_string in
+        let m =
+          match String.lowercase_ascii (Re.Group.get g 2) with
+          | "jan" -> 1
+          | "feb" -> 2
+          | "mar" -> 3
+          | "apr" -> 4
+          | "may" -> 5
+          | "jun" -> 6
+          | "jul" -> 7
+          | "aug" -> 8
+          | "sep" -> 9
+          | "oct" -> 10
+          | "nov" -> 11
+          | "dec" -> 12
+          | _ -> failwith "unexpected case"
+        in
         let d = Re.Group.get g 3 |> int_of_string in
         Some (start, (y, m, d))
       with
@@ -315,6 +354,7 @@ module Date_extract = struct
       None
       [
         yyyy_mm_dd;
+        yyyy_mmm_dd;
         yyyymmdd;
       ]
 end
