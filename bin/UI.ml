@@ -287,7 +287,7 @@ module Top_pane = struct
         |> Seq.map (fun global_line_num ->
             Index.words_of_global_line_num ~doc_id:(Document.doc_id doc) global_line_num
             |> Dynarray.to_list
-            |> Content_and_search_result_rendering.Text_block_render.of_words ~width:sub_item_width
+            |> Content_and_search_result_rendering.Text_block_rendering.of_words ~width:sub_item_width
           )
         |> Seq.map (fun img ->
             let left_padding =
@@ -310,7 +310,7 @@ module Top_pane = struct
          |> File_utils.remove_cwd_from_path
          |> Tokenization.tokenize ~drop_spaces:false
          |> List.of_seq
-         |> Content_and_search_result_rendering.Text_block_render.of_words ~width:sub_item_width
+         |> Content_and_search_result_rendering.Text_block_rendering.of_words ~width:sub_item_width
         )
       in
       let path_date_image =
@@ -346,7 +346,7 @@ module Top_pane = struct
             title
             |> Tokenization.tokenize ~drop_spaces:false
             |> List.of_seq
-            |> Content_and_search_result_rendering.Text_block_render.of_words ~attr ~width
+            |> Content_and_search_result_rendering.Text_block_rendering.of_words ~attr ~width
           )
       in
       (

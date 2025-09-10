@@ -14,7 +14,7 @@ type cell = {
   typ : cell_typ;
 }
 
-module Text_block_render = struct
+module Text_block_rendering = struct
   let hchunk_rev ~width (img : Notty.image) : Notty.image list =
     let open Notty in
     let rec aux acc img =
@@ -241,7 +241,7 @@ let render_grid
          in
          let content_width = max 1 (width - I.width left_column_label) in
          let content, rendered_lines_with_search_result_words =
-           Text_block_render.of_cells ?underline ~width:content_width cells
+           Text_block_rendering.of_cells ?underline ~width:content_width cells
          in
          ((rendered_line_count + I.height content,
            rendered_lines_with_search_result_words
