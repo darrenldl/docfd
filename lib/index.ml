@@ -109,7 +109,7 @@ module Raw = struct
     : multi_indexed_word Seq.t =
     s
     |> Seq.flat_map (fun (line_loc, s) ->
-        let seq = Tokenize.tokenize_with_pos ~drop_spaces:false s in
+        let seq = Tokenization.tokenize_with_pos ~drop_spaces:false s in
         if Seq.is_empty seq then (
           let empty_word = ({ Loc.line_loc; pos_in_line = 0 }, "") in
           Seq.return empty_word

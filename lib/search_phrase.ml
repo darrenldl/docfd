@@ -431,7 +431,7 @@ let of_tokens
 
 let parse phrase =
   phrase
-  |> Tokenize.tokenize ~drop_spaces:false
+  |> Tokenization.tokenize ~drop_spaces:false
   |> of_tokens
 
 let annotated_tokens t =

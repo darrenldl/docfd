@@ -12,7 +12,7 @@ module Search_result_heap = Search_result_heap
 
 module Word_db = Word_db
 
-module Tokenize = Tokenize
+module Tokenization = Tokenization
 
 module Params' = Params
 

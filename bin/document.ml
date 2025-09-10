@@ -26,7 +26,7 @@ let equal (x : t) (y : t) =
   Option.equal Diet.Int.equal x.search_scope y.search_scope
 
 let compute_path_parts (path : string) =
-  let path_parts = Tokenize.tokenize ~drop_spaces:false path
+  let path_parts = Tokenization.tokenize ~drop_spaces:false path
                    |> List.of_seq
   in
   let path_parts_ci = List.map String.lowercase_ascii path_parts in

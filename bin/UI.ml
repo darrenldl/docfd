@@ -308,7 +308,7 @@ module Top_pane = struct
         <|>
         (Document.path doc
          |> File_utils.remove_cwd_from_path
-         |> Tokenize.tokenize ~drop_spaces:false
+         |> Tokenization.tokenize ~drop_spaces:false
          |> List.of_seq
          |> Content_and_search_result_render.Text_block_render.of_words ~width:sub_item_width
         )
@@ -344,7 +344,7 @@ module Top_pane = struct
           I.void 0 1
         | Some title -> (
             title
-            |> Tokenize.tokenize ~drop_spaces:false
+            |> Tokenization.tokenize ~drop_spaces:false
             |> List.of_seq
             |> Content_and_search_result_render.Text_block_render.of_words ~attr ~width
           )
