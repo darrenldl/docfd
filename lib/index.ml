@@ -720,7 +720,7 @@ module Search = struct
   let positions_of_words
       ~doc_id
       (words : int Seq.t)
-    : int Seq.t =
+    : int Dynarray.t =
     let open Sqlite3_utils in
     let acc = Dynarray.create () in
     let f data =
@@ -745,7 +745,7 @@ module Search = struct
            )
            words
       );
-    Dynarray.to_seq acc
+    acc
 
   let usable_positions
       ~doc_id
@@ -1149,21 +1149,21 @@ module Search = struct
                 |> Int_set.inter doc_word_ids
               )
           in
-          let possible_start_count, possible_starts =
+          let possible_starts =
             first_word_candidates
             |> Int_set.to_seq
             |> positions_of_words ~doc_id
-            |> (fun s ->
+            |> (fun arr ->
                 match search_scope with
-                | None -> s
+                | None -> arr
                 | Some search_scope -> (
-                    Seq.filter (fun x ->
+                    Dynarray.filter (fun x ->
                         Diet.Int.mem x search_scope
-                      ) s
+                      ) arr
                   )
               )
-            |> Misc_utils.length_and_list_of_seq
           in
+          let possible_start_count = Dynarray.length possible_starts in
           if possible_start_count = 0 then (
             Seq.empty
           ) else (
@@ -1177,9 +1177,14 @@ module Search = struct
             let search_chunk_size =
               max 10 (possible_start_count / Task_pool.size)
             in
-            possible_starts
-            |> CCList.chunks search_chunk_size
-            |> List.to_seq
+            OSeq.(0 --^ possible_start_count)
+            |> OSeq.chunks search_chunk_size
+            |> Seq.map (fun index_arr ->
+                Array.map (fun i ->
+                    Dynarray.get possible_starts i
+                  ) index_arr
+                |> Array.to_list
+              )
             |> Seq.map (fun possible_start_pos_list ->
                 {
                   Search_job_group.stop_signal;
