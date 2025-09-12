@@ -240,7 +240,25 @@ module Date_extraction = struct
 
   let mmm = "(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)"
 
+  let mmmm = "(january|february|march|april|may|june|july|august|september|october|november|december)"
+
   let dd = "([0-3]\\d)"
+
+  let int_of_month_string s =
+    match String.lowercase_ascii (String.sub s 0 3) with
+    | "jan" -> 1
+    | "feb" -> 2
+    | "mar" -> 3
+    | "apr" -> 4
+    | "may" -> 5
+    | "jun" -> 6
+    | "jul" -> 7
+    | "aug" -> 8
+    | "sep" -> 9
+    | "oct" -> 10
+    | "nov" -> 11
+    | "dec" -> 12
+    | _ -> failwith "unexpected case"
 
   let yyyy_mm_dd =
     let re =
@@ -263,13 +281,20 @@ module Date_extraction = struct
       with
       | _ -> None
 
-  let yyyy_mmm_dd =
+  let yyyy_month_dd ~month ~reverse =
     let re =
+      let g1, g3 =
+        if not reverse then (
+          (yyyy, dd)
+        ) else (
+          (dd, yyyy)
+        )
+      in
       Fmt.str
         "(?:^|.*[^\\d])%s[^A-Za-z\\d]?%s[^A-Za-z\\d]?%s(?:$|[^\\d])"
-        yyyy
-        mmm
-        dd
+        g1
+        month
+        g3
       |> Re.Pcre.re
       |> Re.no_case
       |> Re.compile
@@ -278,24 +303,16 @@ module Date_extraction = struct
       try
         let g = Re.exec re s in
         let start = Re.Group.start g 1 in
-        let y = Re.Group.get g 1 |> int_of_string in
-        let m =
-          match String.lowercase_ascii (Re.Group.get g 2) with
-          | "jan" -> 1
-          | "feb" -> 2
-          | "mar" -> 3
-          | "apr" -> 4
-          | "may" -> 5
-          | "jun" -> 6
-          | "jul" -> 7
-          | "aug" -> 8
-          | "sep" -> 9
-          | "oct" -> 10
-          | "nov" -> 11
-          | "dec" -> 12
-          | _ -> failwith "unexpected case"
+        let y_group_index, d_group_index =
+          if not reverse then (
+            (1, 3)
+          ) else (
+            (3, 1)
+          )
         in
-        let d = Re.Group.get g 3 |> int_of_string in
+        let y = Re.Group.get g y_group_index |> int_of_string in
+        let m = int_of_month_string (Re.Group.get g 2) in
+        let d = Re.Group.get g d_group_index |> int_of_string in
         Some (start, (y, m, d))
       with
       | _ -> None
@@ -354,7 +371,10 @@ module Date_extraction = struct
       None
       [
         yyyy_mm_dd;
-        yyyy_mmm_dd;
+        yyyy_month_dd ~month:mmm ~reverse:true;
+        yyyy_month_dd ~month:mmm ~reverse:false;
+        yyyy_month_dd ~month:mmmm ~reverse:true;
+        yyyy_month_dd ~month:mmmm ~reverse:false;
         yyyymmdd;
       ]
 end
