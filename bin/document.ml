@@ -233,7 +233,7 @@ module Ir1 = struct
       )
 end
 
-module Date_extract = struct
+module Date_extraction = struct
   let yyyy = "(\\d{4})"
 
   let mm = "([01]\\d)"
@@ -421,7 +421,7 @@ module Ir2 = struct
   let of_ir1 pool (ir : Ir1.t) : t =
     let { Ir1.search_mode; doc_id; doc_hash; path; data; last_scan } = ir in
     let path_parts, path_parts_ci = compute_path_parts path in
-    let path_date = Date_extract.extract path in
+    let path_date = Date_extraction.extract path in
     let stats = Unix.stat path in
     let mod_time = Timedesc.of_timestamp_float_s_exn stats.Unix.st_mtime in
     let title, raw =
@@ -503,7 +503,7 @@ let of_path
         Some (Index.line_of_global_line_num ~doc_id 0)
     in
     let path_parts, path_parts_ci = compute_path_parts path in
-    let path_date = Date_extract.extract path in
+    let path_date = Date_extraction.extract path in
     let stats = Unix.stat path in
     let mod_time = Timedesc.of_timestamp_float_s_exn stats.Unix.st_mtime in
     Ok
