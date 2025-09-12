@@ -122,7 +122,9 @@ module Enriched_token = struct
          let search_word_ci = String.lowercase_ascii search_word in
          let indexed_word_ci = String.lowercase_ascii indexed_word in
          let use_ci_match = String.equal search_word search_word_ci in
+         let search_word_len = String.length search_word in
          let indexed_word_len = String.length indexed_word in
+         let edit_dist_based_match_min_len = !Params.max_fuzzy_edit_dist + 1 in
          if Parser_components.is_possibly_utf_8 indexed_word.[0] then (
            String.equal search_word indexed_word
          ) else (
@@ -132,7 +134,9 @@ module Enriched_token = struct
                || CCString.find ~sub:search_word_ci indexed_word_ci >= 0
                || (indexed_word_len >= 2
                    && CCString.find ~sub:indexed_word_ci search_word_ci >= 0)
-               || (Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word_ci search_word_ci.[0]
+               || (search_word_len >= edit_dist_based_match_min_len
+                   && indexed_word_len >= edit_dist_based_match_min_len
+                   && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word_ci search_word_ci.[0]
                    && Spelll.match_with (automaton token) indexed_word_ci)
              )
            | `Exact -> (
