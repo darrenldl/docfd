@@ -2,8 +2,8 @@ type t = {
   lock : Eio.Mutex.t;
   mutable size : int;
   mutable size_written_to_db : int;
-  mutable word_of_index : string Int_map.t;
-  index_of_word : (string, int) Hashtbl.t;
+  mutable word_of_id : string Int_map.t;
+  id_of_word : (string, int) Hashtbl.t;
 }
 
 let t : t =
@@ -11,8 +11,8 @@ let t : t =
     lock = Eio.Mutex.create ();
     size = 0;
     size_written_to_db = 0;
-    word_of_index = Int_map.empty;
-    index_of_word = Hashtbl.create 10_000;
+    word_of_id = Int_map.empty;
+    id_of_word = Hashtbl.create 10_000;
   }
 
 let lock : type a. (unit -> a) -> a =
@@ -20,9 +20,9 @@ let lock : type a. (unit -> a) -> a =
   Eio.Mutex.use_rw ~protect:true t.lock f
 
 let filter pool (f : string -> bool) : Int_set.t =
-  let word_of_index =
+  let word_of_id =
     lock (fun () ->
-        t.word_of_index
+        t.word_of_id
       )
   in
   let max_end_exc_seen = ref 0 in
@@ -46,7 +46,7 @@ let filter pool (f : string -> bool) : Int_set.t =
   |> Task_pool.map_list pool (fun (start, end_exc) ->
       let acc = ref Int_set.empty in
       for i=start to end_exc-1 do
-        if f (Int_map.find i word_of_index) then (
+        if f (Int_map.find i word_of_id) then (
           acc := Int_set.add i !acc
         )
       done;
@@ -56,33 +56,33 @@ let filter pool (f : string -> bool) : Int_set.t =
 
 let add (word : string) : int =
   lock (fun () ->
-      match Hashtbl.find_opt t.index_of_word word with
-      | Some index -> index
+      match Hashtbl.find_opt t.id_of_word word with
+      | Some id -> id
       | None -> (
-          let index = t.size in
+          let id = t.size in
           t.size <- t.size + 1;
-          t.word_of_index <- Int_map.add index word t.word_of_index;
-          Hashtbl.replace t.index_of_word word index;
-          index
+          t.word_of_id <- Int_map.add id word t.word_of_id;
+          Hashtbl.replace t.id_of_word word id;
+          id
         )
     )
 
-let word_of_index i : string =
+let word_of_id i : string =
   lock (fun () ->
-      Int_map.find i t.word_of_index
+      Int_map.find i t.word_of_id
     )
 
-let index_of_word s : int =
+let id_of_word s : int =
   lock (fun () ->
-      Hashtbl.find t.index_of_word s
+      Hashtbl.find t.id_of_word s
     )
 
 let read_from_db () : unit =
   let open Sqlite3_utils in
   lock (fun () ->
       with_db (fun db ->
-          t.word_of_index <- Int_map.empty;
-          Hashtbl.clear t.index_of_word;
+          t.word_of_id <- Int_map.empty;
+          Hashtbl.clear t.id_of_word;
           iter_stmt ~db
             {|
   SELECT id, word
@@ -93,11 +93,11 @@ let read_from_db () : unit =
             (fun data ->
                let id = Data.to_int_exn data.(0) in
                let word = Data.to_string_exn data.(1) in
-               t.word_of_index <- Int_map.add id word t.word_of_index;
-               Hashtbl.replace t.index_of_word word id;
+               t.word_of_id <- Int_map.add id word t.word_of_id;
+               Hashtbl.replace t.id_of_word word id;
             )
         );
-      t.size <- Int_map.cardinal t.word_of_index;
+      t.size <- Int_map.cardinal t.word_of_id;
       t.size_written_to_db <- t.size;
     )
 
@@ -130,7 +130,7 @@ let write_to_db db ~already_in_transaction : unit =
   |}
         (fun stmt ->
            for id = t.size_written_to_db to t.size-1 do
-             let word = Int_map.find id t.word_of_index in
+             let word = Int_map.find id t.word_of_id in
              bind_names
                stmt
                [ ("@id", INT (Int64.of_int id))

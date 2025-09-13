@@ -137,7 +137,7 @@ module Raw = struct
         }
         { pos; loc; word } ->
 
-        let index_of_word =
+        let word_id =
           Word_db.add word
         in
 
@@ -145,7 +145,7 @@ module Raw = struct
         let global_line_num = line_loc.global_line_num in
         let page_num = line_loc.page_num in
         let pos_s =
-          Int_map.find_opt index_of_word pos_s_of_word
+          Int_map.find_opt word_id pos_s_of_word
           |> Option.value ~default:Int_set.empty
           |> Int_set.add pos
         in
@@ -153,7 +153,7 @@ module Raw = struct
           Option.value ~default:0
             (Int_map.find_opt page_num line_count_of_page_num)
         in
-        { pos_s_of_word = Int_map.add index_of_word pos_s pos_s_of_word;
+        { pos_s_of_word = Int_map.add word_id pos_s pos_s_of_word;
           loc_of_pos = Int_map.add pos loc loc_of_pos;
           line_loc_of_global_line_num =
             Int_map.add global_line_num line_loc line_loc_of_global_line_num;
@@ -171,7 +171,7 @@ module Raw = struct
                | None -> (pos, pos)
                | Some (x, y) -> (min x pos, max y pos))
               start_end_inc_pos_of_page_num;
-          word_of_pos = Int_map.add pos index_of_word word_of_pos;
+          word_of_pos = Int_map.add pos word_id word_of_pos;
           line_count_of_page_num =
             Int_map.add line_loc.page_num (max cur_page_line_count (line_loc.line_num_in_page + 1)) line_count_of_page_num;
           page_count = max page_count (line_loc.page_num + 1);
