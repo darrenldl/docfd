@@ -750,14 +750,13 @@ module Search = struct
   let usable_positions
       ~doc_id
       ?within
-      ?around_pos
+      ~around_pos
       (token : Search_phrase.Enriched_token.t)
     : int Seq.t =
     let open Sqlite3_utils in
     Eio.Fiber.yield ();
     let match_typ = ET.match_typ token in
-    let start_end_inc =
-      Option.map (fun around_pos ->
+    let start, end_inc =
           let start, end_inc =
             if ET.is_linked_to_prev token then (
               match match_typ with
@@ -777,8 +776,6 @@ module Search = struct
           | Some (within_start_pos, within_end_inc_pos) -> (
               (max within_start_pos start, min within_end_inc_pos end_inc)
             )
-        )
-        around_pos
     in
     let word_candidates : int Dynarray.t =
       let acc : int Dynarray.t =
@@ -823,25 +820,6 @@ module Search = struct
                 )
             )
         in
-        match start_end_inc with
-        | None -> (
-            iter_stmt
-              (Fmt.str
-                 {|
-              SELECT DISTINCT
-                word.id AS word_id,
-                word.word AS word
-              FROM word
-              JOIN word_id_doc_id_link
-                ON word_id_doc_id_link.word_id = word.id
-              WHERE word_id_doc_id_link.doc_id = @doc_id
-              %s
-              |}
-                 extra_sql)
-              ~names:[ ("@doc_id", INT doc_id) ]
-              f
-          )
-        | Some (start, end_inc) -> (
             iter_stmt
               (Fmt.str
                  {|
@@ -861,7 +839,6 @@ module Search = struct
                      ; ("@end_inc", INT (Int64.of_int end_inc))
                      ]
               f
-          )
       );
       acc
     in
@@ -873,23 +850,6 @@ module Search = struct
     word_candidates
     |> Dynarray.iter (fun word_id ->
         Eio.Fiber.yield ();
-        match start_end_inc with
-        | None -> (
-            iter_stmt
-              {|
-              SELECT
-                p.pos
-              FROM position p
-              WHERE doc_id = @doc_id
-              AND word_id = @word_id
-              ORDER BY p.pos
-              |}
-              ~names:[ ("@doc_id", INT doc_id)
-                     ; ("@word_id", INT (Int64.of_int word_id))
-                     ]
-              record_position
-          )
-        | Some (start, end_inc) -> (
             iter_stmt
               {|
               SELECT
@@ -906,7 +866,6 @@ module Search = struct
                      ; ("@end_inc", INT (Int64.of_int end_inc))
                      ]
               record_position
-          )
       );
     Dynarray.to_seq positions
 
