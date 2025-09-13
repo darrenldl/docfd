@@ -757,25 +757,25 @@ module Search = struct
     Eio.Fiber.yield ();
     let match_typ = ET.match_typ token in
     let start, end_inc =
-          let start, end_inc =
-            if ET.is_linked_to_prev token then (
-              match match_typ with
-              | `Fuzzy ->
-                (around_pos - !Params.max_linked_token_search_dist,
-                 around_pos + !Params.max_linked_token_search_dist)
-              | `Exact | `Prefix | `Suffix ->
-                (around_pos + 1,
-                 around_pos + 1)
-            ) else (
-              (around_pos - !Params.max_token_search_dist,
-               around_pos + !Params.max_token_search_dist)
-            )
-          in
-          match within with
-          | None -> (start, end_inc)
-          | Some (within_start_pos, within_end_inc_pos) -> (
-              (max within_start_pos start, min within_end_inc_pos end_inc)
-            )
+      let start, end_inc =
+        if ET.is_linked_to_prev token then (
+          match match_typ with
+          | `Fuzzy ->
+            (around_pos - !Params.max_linked_token_search_dist,
+             around_pos + !Params.max_linked_token_search_dist)
+          | `Exact | `Prefix | `Suffix ->
+            (around_pos + 1,
+             around_pos + 1)
+        ) else (
+          (around_pos - !Params.max_token_search_dist,
+           around_pos + !Params.max_token_search_dist)
+        )
+      in
+      match within with
+      | None -> (start, end_inc)
+      | Some (within_start_pos, within_end_inc_pos) -> (
+          (max within_start_pos start, min within_end_inc_pos end_inc)
+        )
     in
     let word_candidates : int Dynarray.t =
       let acc : int Dynarray.t =
@@ -820,9 +820,9 @@ module Search = struct
                 )
             )
         in
-            iter_stmt
-              (Fmt.str
-                 {|
+        iter_stmt
+          (Fmt.str
+             {|
               SELECT DISTINCT
                 word.id AS word_id,
                 word.word AS word
@@ -833,12 +833,12 @@ module Search = struct
               AND p.pos BETWEEN @start AND @end_inc
               %s
               |}
-                 extra_sql)
-              ~names:[ ("@doc_id", INT doc_id)
-                     ; ("@start", INT (Int64.of_int start))
-                     ; ("@end_inc", INT (Int64.of_int end_inc))
-                     ]
-              f
+             extra_sql)
+          ~names:[ ("@doc_id", INT doc_id)
+                 ; ("@start", INT (Int64.of_int start))
+                 ; ("@end_inc", INT (Int64.of_int end_inc))
+                 ]
+          f
       );
       acc
     in
@@ -850,8 +850,8 @@ module Search = struct
     word_candidates
     |> Dynarray.iter (fun word_id ->
         Eio.Fiber.yield ();
-            iter_stmt
-              {|
+        iter_stmt
+          {|
               SELECT
                 p.pos
               FROM position p
@@ -860,12 +860,12 @@ module Search = struct
               AND pos BETWEEN @start AND @end_inc
               ORDER BY p.pos
               |}
-              ~names:[ ("@doc_id", INT doc_id)
-                     ; ("@word_id", INT (Int64.of_int word_id))
-                     ; ("@start", INT (Int64.of_int start))
-                     ; ("@end_inc", INT (Int64.of_int end_inc))
-                     ]
-              record_position
+          ~names:[ ("@doc_id", INT doc_id)
+                 ; ("@word_id", INT (Int64.of_int word_id))
+                 ; ("@start", INT (Int64.of_int start))
+                 ; ("@end_inc", INT (Int64.of_int end_inc))
+                 ]
+          record_position
       );
     Dynarray.to_seq positions
 
