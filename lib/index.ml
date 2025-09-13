@@ -781,17 +781,16 @@ module Search = struct
       let acc : int Dynarray.t =
         Dynarray.create ()
       in
-      let cache : (int, bool) Hashtbl.t = Hashtbl.create 100 in
+      let cache : (string, bool) Hashtbl.t = Hashtbl.create 100 in
       let f data =
         Eio.Fiber.yield ();
-        let word_id = Data.to_int_exn data.(0) in
+        let indexed_word = Data.to_string_exn data.(0) in
         let pos = Data.to_int_exn data.(1) in
         let compatible =
-          match Hashtbl.find_opt cache word_id with
+          match Hashtbl.find_opt cache indexed_word with
           | None -> (
-              let indexed_word = Word_db.word_of_index word_id in
               let compatible = ET.compatible_with_word token indexed_word in
-              Hashtbl.replace cache word_id compatible;
+              Hashtbl.replace cache indexed_word compatible;
               compatible
             )
           | Some compatible -> compatible
@@ -835,7 +834,7 @@ module Search = struct
           (Fmt.str
              {|
               SELECT
-                word.id AS word_id,
+                word.word AS word,
                 p.pos as pos
               FROM position p
               JOIN word
