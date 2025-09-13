@@ -777,16 +777,27 @@ module Search = struct
           (max within_start_pos start, min within_end_inc_pos end_inc)
         )
     in
-    let word_candidates : int Dynarray.t =
+    let positions : int Dynarray.t =
       let acc : int Dynarray.t =
         Dynarray.create ()
       in
+      let cache : (int, bool) Hashtbl.t = Hashtbl.create 100 in
       let f data =
         Eio.Fiber.yield ();
-        let indexed_word = Data.to_string_exn data.(1) in
-        if ET.compatible_with_word token indexed_word then (
-          let word_id = Data.to_int_exn data.(0) in
-          Dynarray.add_last acc word_id
+        let word_id = Data.to_int_exn data.(0) in
+        let pos = Data.to_int_exn data.(1) in
+        let compatible =
+          match Hashtbl.find_opt cache word_id with
+          | None -> (
+              let indexed_word = Word_db.word_of_index word_id in
+              let compatible = ET.compatible_with_word token indexed_word in
+              Hashtbl.replace cache word_id compatible;
+              compatible
+            )
+          | Some compatible -> compatible
+        in
+        if compatible then (
+          Dynarray.add_last acc pos
         )
       in
       (
@@ -823,9 +834,9 @@ module Search = struct
         iter_stmt
           (Fmt.str
              {|
-              SELECT DISTINCT
+              SELECT
                 word.id AS word_id,
-                word.word AS word
+                p.pos as pos
               FROM position p
               JOIN word
                   ON p.word_id = word.id
@@ -842,31 +853,6 @@ module Search = struct
       );
       acc
     in
-    let positions : int Dynarray.t = Dynarray.create () in
-    let record_position data =
-      Eio.Fiber.yield ();
-      Dynarray.add_last positions (Data.to_int_exn data.(0))
-    in
-    word_candidates
-    |> Dynarray.iter (fun word_id ->
-        Eio.Fiber.yield ();
-        iter_stmt
-          {|
-              SELECT
-                p.pos
-              FROM position p
-              WHERE doc_id = @doc_id
-              AND word_id = @word_id
-              AND pos BETWEEN @start AND @end_inc
-              ORDER BY p.pos
-              |}
-          ~names:[ ("@doc_id", INT doc_id)
-                 ; ("@word_id", INT (Int64.of_int word_id))
-                 ; ("@start", INT (Int64.of_int start))
-                 ; ("@end_inc", INT (Int64.of_int end_inc))
-                 ]
-          record_position
-      );
     Dynarray.to_seq positions
 
   let search_around_pos
