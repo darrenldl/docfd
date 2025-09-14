@@ -1072,7 +1072,7 @@ module Search = struct
       ~(cancellation_notifier : bool Atomic.t)
       ~doc_id
       ~doc_word_ids
-      ~first_word_candidates_lookup
+      ~global_first_word_candidates_lookup
       ~within_same_line
       ~(search_scope : Diet.Int.t option)
       (exp : Search_exp.t)
@@ -1089,7 +1089,7 @@ module Search = struct
             | first_word :: _ -> (
                 Search_phrase.Enriched_token.Data_map.find
                   (Search_phrase.Enriched_token.data first_word)
-                  first_word_candidates_lookup
+                  global_first_word_candidates_lookup
                 |> Int_set.inter doc_word_ids
               )
           in
@@ -1152,7 +1152,7 @@ module Search = struct
       ~cancellation_notifier
       ~doc_id
       ~doc_word_ids
-      ~first_word_candidates_lookup
+      ~global_first_word_candidates_lookup
       ~within_same_line
       ~search_scope
       (exp : Search_exp.t)
@@ -1163,7 +1163,7 @@ module Search = struct
       ~cancellation_notifier
       ~doc_id
       ~doc_word_ids
-      ~first_word_candidates_lookup
+      ~global_first_word_candidates_lookup
       ~within_same_line
       ~search_scope
       exp
@@ -1178,7 +1178,7 @@ let search
     ?terminate_on_result_found
     ~doc_id
     ~doc_word_ids
-    ~first_word_candidates_lookup
+    ~global_first_word_candidates_lookup
     ~within_same_line
     ~search_scope
     (exp : Search_exp.t)
@@ -1192,7 +1192,7 @@ let search
       ~cancellation_notifier
       ~doc_id
       ~doc_word_ids
-      ~first_word_candidates_lookup
+      ~global_first_word_candidates_lookup
       ~within_same_line
       ~search_scope
       exp
@@ -1212,7 +1212,7 @@ module Search_job_group = Search.Search_job_group
 
 let make_search_job_groups = Search.make_search_job_groups
 
-let generate_first_word_candidates_lookup
+let generate_global_first_word_candidates_lookup
     pool
     ?(acc = Search_phrase.Enriched_token.Data_map.empty)
     (exp : Search_exp.t)

@@ -36,7 +36,7 @@ val words_of_page_num : doc_id:int64 -> int -> string Dynarray.t
 
 val line_count_of_page_num : doc_id:int64 -> int -> int
 
-val generate_first_word_candidates_lookup :
+val generate_global_first_word_candidates_lookup :
   Task_pool.t ->
   ?acc:Int_set.t Search_phrase.Enriched_token.Data_map.t ->
   Search_exp.t ->
@@ -48,7 +48,7 @@ val search :
   ?terminate_on_result_found : bool ->
   doc_id:int64 ->
   doc_word_ids:Int_set.t ->
-  first_word_candidates_lookup:Int_set.t Search_phrase.Enriched_token.Data_map.t ->
+  global_first_word_candidates_lookup:Int_set.t Search_phrase.Enriched_token.Data_map.t ->
   within_same_line:bool ->
   search_scope:Diet.Int.t option ->
   Search_exp.t ->
@@ -76,7 +76,7 @@ val make_search_job_groups :
   cancellation_notifier:bool Atomic.t ->
   doc_id:int64 ->
   doc_word_ids:Int_set.t ->
-  first_word_candidates_lookup:Int_set.t Search_phrase.Enriched_token.Data_map.t ->
+  global_first_word_candidates_lookup:Int_set.t Search_phrase.Enriched_token.Data_map.t ->
   within_same_line:bool ->
   search_scope:Diet.Int.t option ->
   Search_exp.t ->
