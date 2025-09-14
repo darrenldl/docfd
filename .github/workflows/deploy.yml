@@ -47,19 +47,27 @@ jobs:
 
       - run: opam install . --deps-only --with-test
 
+      - name: Use commit hash as version if on ci-test branch
+        if: ${{ github.ref_name == 'ci-test' }}
+        run: |
+          echo "DOCFD_VERSION_OVERRIDE=${{ env.GITHUB_TAG }}" >> $GITHUB_ENV
+
       - name: Create build for macOS
         if: ${{ env.OS_SHORT_NAME == 'macos' }}
         run: |
+          export DOCFD_VERSION_OVERRIDE=${{ env.GITHUB_TAG }}
           opam exec -- make release-build
 
       - name: Create static build for Linux
         if: ${{ env.OS_SHORT_NAME == 'linux' }}
         run: |
+          export DOCFD_VERSION_OVERRIDE=${{ env.GITHUB_TAG }}
           opam exec -- make release-static-build
 
       - name: Create static build for Linux ARM
         if: ${{ env.OS_SHORT_NAME == 'linux-arm' }}
         run: |
+          export DOCFD_VERSION_OVERRIDE=${{ env.GITHUB_TAG }}
           opam exec -- make release-static-build-arm
 
       - name: Package into tar.gz

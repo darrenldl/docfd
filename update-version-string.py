@@ -5,7 +5,7 @@ ml_path = "bin/version_string.ml"
 
 version = os.environ.get('DOCFD_VERSION_OVERRIDE')
 
-if version is None:
+if version is None or version == "":
     with open("CHANGELOG.md") as f:
         for line in f:
             if line.startswith("## ") and not ("future release" in line.lower()):
