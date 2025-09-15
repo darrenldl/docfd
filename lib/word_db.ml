@@ -4,7 +4,7 @@ type t = {
   mutable size_written_to_db : int;
   mutable word_of_index : string Int_map.t;
   index_of_word : (string, int) Hashtbl.t;
-  doc_ids_of_word_id : (int, Int_set.t) Hashtbl.t;
+  doc_ids_of_word_id : (int, CCBV.t) Hashtbl.t;
 }
 
 let t : t =
@@ -75,13 +75,15 @@ let doc_ids_of_word_id ~word_id =
 let add_word_id_doc_id_link ~word_id ~doc_id =
   lock (fun () ->
       let doc_ids =
-        Hashtbl.find_opt t.doc_ids_of_word_id word_id
-        |> Option.value ~default:Int_set.empty
+        match Hashtbl.find_opt t.doc_ids_of_word_id word_id with
+        | Some doc_ids -> doc_ids
+        | None -> (
+            let bv = CCBV.empty () in
+            Hashtbl.replace t.doc_ids_of_word_id word_id bv;
+            bv
+          )
       in
-      Hashtbl.replace
-        t.doc_ids_of_word_id
-        word_id
-        (Int_set.add (Int64.to_int doc_id) doc_ids)
+      CCBV.set doc_ids (Int64.to_int doc_id)
     )
 
 let word_of_index i : string =
@@ -123,13 +125,15 @@ let read_from_db () : unit =
                let word_id = Data.to_int_exn data.(0) in
                let doc_id = Data.to_int_exn data.(1) in
                let doc_ids =
-                 Hashtbl.find_opt t.doc_ids_of_word_id word_id
-                 |> Option.value ~default:Int_set.empty
+                 match Hashtbl.find_opt t.doc_ids_of_word_id word_id with
+                 | Some doc_ids -> doc_ids
+                 | None -> (
+                     let bv = CCBV.empty () in
+                     Hashtbl.replace t.doc_ids_of_word_id word_id bv;
+                     bv
+                   )
                in
-               Hashtbl.replace
-                 t.doc_ids_of_word_id
-                 word_id
-                 (Int_set.add doc_id doc_ids);
+               CCBV.set doc_ids doc_id
             )
         );
       t.size <- Int_map.cardinal t.word_of_index;

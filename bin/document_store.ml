@@ -113,15 +113,20 @@ let refresh_search_results pool stop_signal (t : t) : t option =
                      (Search_phrase.Enriched_token.compatible_with_word first_word)
                  )
              in
+             let usable_doc_ids = CCBV.empty () in
+             global_first_word_candidates
+             |> Int_set.to_seq
+             |> Seq.iter (fun word_id ->
+                 CCBV.union_into ~into:usable_doc_ids
+                   (Word_db.doc_ids_of_word_id ~word_id)
+               );
              let usable_doc_ids =
-               global_first_word_candidates
-               |> Int_set.to_seq
-               |> Seq.fold_left (fun acc word_id ->
-                   Int_set.union
-                     acc
-                     (Word_db.doc_ids_of_word_id ~word_id)
-                 )
-                 Int_set.empty
+               let acc = ref Int_set.empty in
+               CCBV.to_iter usable_doc_ids
+                 (fun doc_id ->
+                    acc := Int_set.add doc_id !acc
+                 );
+               !acc
              in
              documents_to_search_through
              |> List.to_seq
