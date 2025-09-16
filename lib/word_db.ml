@@ -12,7 +12,7 @@ let t : t =
     size = 0;
     size_written_to_db = 0;
     word_of_id = Int_map.empty;
-    id_of_word = Hashtbl.create 10_000;
+    id_of_word = Hashtbl.create 100_000;
   }
 
 let lock : type a. (unit -> a) -> a =
