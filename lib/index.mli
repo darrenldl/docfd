@@ -114,3 +114,7 @@ val write_raw_to_db :
   doc_id:int64 ->
   Raw.t ->
   unit
+
+module State : sig
+  val read_from_db : unit -> unit
+end

@@ -245,6 +245,57 @@ module Raw = struct
     |> of_seq pool
 end
 
+module State = struct
+  type t = {
+    lock : Eio.Mutex.t;
+    doc_ids_of_word_id : (int, CCBV.t) Hashtbl.t;
+  }
+
+  let t : t =
+    {
+      lock = Eio.Mutex.create ();
+      doc_ids_of_word_id = Hashtbl.create 100_000;
+    }
+
+  let lock : type a. (unit -> a) -> a =
+    fun f ->
+    Eio.Mutex.use_rw ~protect:true t.lock f
+
+  let find_doc_ids_bv ~word_id =
+    match Hashtbl.find_opt t.doc_ids_of_word_id word_id with
+    | Some doc_ids -> doc_ids
+    | None -> (
+        let bv = CCBV.empty () in
+        Hashtbl.replace t.doc_ids_of_word_id word_id bv;
+        bv
+      )
+
+  let add_word_id_doc_id_link ~word_id ~doc_id =
+    lock (fun () ->
+        let doc_ids = find_doc_ids_bv ~word_id in
+        CCBV.set doc_ids (Int64.to_int doc_id)
+      )
+
+  let read_from_db () : unit =
+    let open Sqlite3_utils in
+    lock (fun () ->
+        with_db (fun db ->
+            iter_stmt ~db
+              {|
+  SELECT word_id, doc_id
+  FROM word_id_doc_id_link
+  |}
+              ~names:[]
+              (fun data ->
+                 let word_id = Data.to_int_exn data.(0) in
+                 let doc_id = Data.to_int_exn data.(1) in
+                 let doc_ids = find_doc_ids_bv ~word_id in
+                 CCBV.set doc_ids doc_id
+              )
+          )
+      )
+end
+
 let now_int64 () =
   Timedesc.Timestamp.now ()
   |> Timedesc.Timestamp.get_s
@@ -429,6 +480,7 @@ let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
     |}
         (fun stmt ->
            Int_map.iter (fun word_id _pos_s ->
+               State.add_word_id_doc_id_link ~word_id ~doc_id;
                bind_names stmt
                  [ ("@word_id", INT (Int64.of_int word_id))
                  ; ("@doc_id", INT doc_id)

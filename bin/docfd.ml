@@ -614,6 +614,7 @@ let run
    | Some msg -> exit_with_error_msg msg
   );
   Word_db.read_from_db ();
+  Index.State.read_from_db ();
   (match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
    | None, None -> (
        exit_with_error_msg
