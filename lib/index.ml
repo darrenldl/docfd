@@ -245,7 +245,13 @@ module Raw = struct
     |> of_seq pool
 end
 
-module State = struct
+module State : sig
+  val add_word_id_doc_id_link : word_id:int -> doc_id:int64 -> unit
+
+  val read_from_db : unit -> unit
+
+  val doc_ids_of_word_id : word_id:int -> CCBV.t
+end = struct
   type t = {
     lock : Eio.Mutex.t;
     doc_ids_of_word_id : (int, CCBV.t) Hashtbl.t;
@@ -276,6 +282,23 @@ module State = struct
         CCBV.set doc_ids (Int64.to_int doc_id)
       )
 
+  (* let iter_doc_ids_of_word_id ~word_id f =
+     lock (fun () ->
+      let doc_ids = find_doc_ids_bv ~word_id in
+      |> CCBV.iter_true doc_ids f
+     )
+
+     let fold_doc_ids_of_word_id ~word_id (f : 'a -> int -> 'a) (init : 'a) =
+     let acc = ref init in
+     iter_doc_ids_of_word_id ~word_id (fun doc_id ->
+      acc := f !acc doc_id
+     ) *)
+
+  let doc_ids_of_word_id ~word_id =
+    lock (fun () ->
+        find_doc_ids_bv ~word_id
+      )
+
   let read_from_db () : unit =
     let open Sqlite3_utils in
     lock (fun () ->
@@ -295,6 +318,12 @@ module State = struct
           )
       )
 end
+
+(*let union_doc_ids_of_word_id_into ~word_id ~into =
+  State.lock (fun () ->
+      let bv = State.find_doc_ids_bv ~word_id in
+      CCBV.union_into ~into bv
+    )*)
 
 let now_int64 () =
   Timedesc.Timestamp.now ()
@@ -769,6 +798,26 @@ let start_end_inc_pos_of_global_line_num ~doc_id global_line_num =
 module Search = struct
   module ET = Search_phrase.Enriched_token
 
+  let positions_of_word
+      ~word_id
+      ~doc_id
+    : int Dynarray.t =
+    let open Sqlite3_utils in
+    let acc = Dynarray.create () in
+    iter_stmt
+      {|
+    SELECT
+      p.pos
+    FROM position p
+    WHERE doc_id = @doc_id
+    AND word_id = @word_id
+    ORDER BY p.pos
+    |}
+      (fun data ->
+         Dynarray.add_last acc (Data.to_int_exn data.(0))
+      );
+    acc
+
   let positions_of_words
       ~doc_id
       (words : int Seq.t)
@@ -1081,6 +1130,7 @@ module Search = struct
       stop_signal : Stop_signal.t;
       cancellation_notifier : bool Atomic.t;
       doc_id : int64;
+      first_word_id : int;
       within_same_line : bool;
       phrase : Search_phrase.t;
       possible_start_pos_list : int list;
@@ -1119,14 +1169,13 @@ module Search = struct
   end
 
   let make_search_job_groups
+  pool
       stop_signal
       ?(terminate_on_result_found = false)
       ~(cancellation_notifier : bool Atomic.t)
-      ~doc_id
-      ~doc_word_ids
-      ~global_first_word_candidates_lookup
-      ~within_same_line
-      ~(search_scope : Diet.Int.t option)
+      ~doc_ids
+      ~(within_same_line_lookup : bool Int_map.t)
+      ~(search_scope_lookup : Diet.Int.t option Int_map.t)
       (exp : Search_exp.t)
     : Search_job_group.t Seq.t =
     if Search_exp.is_empty exp then (
@@ -1139,61 +1188,69 @@ module Search = struct
             match Search_phrase.enriched_tokens phrase with
             | [] -> failwith "unexpected case"
             | first_word :: _ -> (
-                Search_phrase.Enriched_token.Data_map.find
-                  (Search_phrase.Enriched_token.data first_word)
-                  global_first_word_candidates_lookup
-                |> Int_set.inter doc_word_ids
+                Word_db.filter
+                  pool
+                  (Search_phrase.Enriched_token.compatible_with_word first_word)
               )
           in
-          let possible_starts =
-            first_word_candidates
-            |> Int_set.to_seq
-            |> positions_of_words ~doc_id
-            |> (fun arr ->
-                match search_scope with
-                | None -> arr
-                | Some search_scope -> (
-                    Dynarray.filter (fun x ->
-                        Diet.Int.mem x search_scope
-                      ) arr
+          first_word_candidates
+          |> Int_set.to_seq
+          |> Seq.flat_map (fun word_id ->
+              let bv = State.doc_ids_of_word_id ~word_id in
+              doc_ids
+              |> Int_set.to_seq
+              |> Seq.filter (fun doc_id -> CCBV.get bv doc_id)
+              |> Seq.flat_map (fun doc_id ->
+                  let possible_starts =
+                    positions_of_word ~word_id ~doc_id
+                    |> (fun arr ->
+                        match Int_map.find doc_id search_scope_lookup with
+                        | None -> arr
+                        | Some search_scope -> (
+                            Dynarray.filter (fun x ->
+                                Diet.Int.mem x search_scope
+                              ) arr
+                          )
+                      )
+                  in
+                  let possible_start_count = Dynarray.length possible_starts in
+                  if possible_start_count = 0 then (
+                    Seq.empty
+                  ) else (
+                    let search_limit_per_start =
+                      max
+                        Params.search_result_min_per_start
+                        (
+                          (Params.default_search_result_total_per_document + possible_start_count - 1) / possible_start_count
+                        )
+                    in
+                    let search_chunk_size =
+                      max 10 (possible_start_count / Task_pool.size)
+                    in
+                    OSeq.(0 --^ possible_start_count)
+                    |> OSeq.chunks search_chunk_size
+                    |> Seq.map (fun index_arr ->
+                        Array.map (fun i ->
+                            Dynarray.get possible_starts i
+                          ) index_arr
+                        |> Array.to_list
+                      )
+                    |> Seq.map (fun possible_start_pos_list ->
+                        {
+                          Search_job_group.stop_signal;
+                          terminate_on_result_found;
+                          cancellation_notifier;
+                          first_word_id = word_id;
+                          doc_id = Int64.of_int doc_id;
+                          within_same_line = Int_map.find doc_id within_same_line_lookup;
+                          phrase;
+                          possible_start_pos_list;
+                          search_limit_per_start;
+                        }
+                      )
                   )
-              )
-          in
-          let possible_start_count = Dynarray.length possible_starts in
-          if possible_start_count = 0 then (
-            Seq.empty
-          ) else (
-            let search_limit_per_start =
-              max
-                Params.search_result_min_per_start
-                (
-                  (Params.default_search_result_total_per_document + possible_start_count - 1) / possible_start_count
                 )
-            in
-            let search_chunk_size =
-              max 10 (possible_start_count / Task_pool.size)
-            in
-            OSeq.(0 --^ possible_start_count)
-            |> OSeq.chunks search_chunk_size
-            |> Seq.map (fun index_arr ->
-                Array.map (fun i ->
-                    Dynarray.get possible_starts i
-                  ) index_arr
-                |> Array.to_list
-              )
-            |> Seq.map (fun possible_start_pos_list ->
-                {
-                  Search_job_group.stop_signal;
-                  terminate_on_result_found;
-                  cancellation_notifier;
-                  doc_id;
-                  within_same_line;
-                  phrase;
-                  possible_start_pos_list;
-                  search_limit_per_start;
-                }
-              )
-          )
+            )
         )
     )
 
@@ -1203,21 +1260,18 @@ module Search = struct
       ?terminate_on_result_found
       ~cancellation_notifier
       ~doc_id
-      ~doc_word_ids
-      ~global_first_word_candidates_lookup
       ~within_same_line
       ~search_scope
       (exp : Search_exp.t)
     : Search_result_heap.t =
     make_search_job_groups
+      pool
       stop_signal
       ?terminate_on_result_found
       ~cancellation_notifier
-      ~doc_id
-      ~doc_word_ids
-      ~global_first_word_candidates_lookup
-      ~within_same_line
-      ~search_scope
+      ~doc_ids:(Int_set.add doc_id Int_set.empty)
+      ~within_same_line_lookup:(Int_map.add doc_id within_same_line Int_map.empty)
+      ~search_scope_lookup:(Int_map.add doc_id search_scope Int_map.empty)
       exp
     |> List.of_seq
     |> Task_pool.map_list pool Search_job_group.run
@@ -1243,8 +1297,6 @@ let search
       ?terminate_on_result_found
       ~cancellation_notifier
       ~doc_id
-      ~doc_word_ids
-      ~global_first_word_candidates_lookup
       ~within_same_line
       ~search_scope
       exp

@@ -94,6 +94,16 @@ let refresh_search_results pool stop_signal (t : t) : t option =
          Atomic.set cancellation_notifier true;
          String_map.empty)
       (fun () ->
+         let global_first_word_candidates_lookup =
+           Index.generate_global_first_word_candidates_lookup
+             pool
+             t.search_exp
+         in
+         let usable_doc_ids = CCBV.empty () in
+         global_first_word_candidates
+         |> Int_set.iter (fun word_id ->
+             Index.union_doc_ids_of_word_id_into ~word_id ~into:usable_doc_ids
+           );
          let documents_to_search_through =
            t.documents_passing_filter
            |> String_set.to_seq
@@ -101,11 +111,6 @@ let refresh_search_results pool stop_signal (t : t) : t option =
                Option.is_none (String_map.find_opt path t.search_results)
              )
            |> List.of_seq
-         in
-         let global_first_word_candidates_lookup =
-           Index.generate_global_first_word_candidates_lookup
-             pool
-             t.search_exp
          in
          documents_to_search_through
          |> Task_pool.map_list pool (fun path ->

@@ -108,6 +108,8 @@ end
 
 val word_ids : doc_id:int64 -> Int_set.t
 
+(* val union_doc_ids_of_word_id_into : word_id:int -> into:CCBV.t -> unit*)
+
 val write_raw_to_db :
   Sqlite3.db ->
   already_in_transaction:bool ->
