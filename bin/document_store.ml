@@ -94,42 +94,62 @@ let refresh_search_results pool stop_signal (t : t) : t option =
          Atomic.set cancellation_notifier true;
          String_map.empty)
       (fun () ->
-         let global_first_word_candidates_lookup =
-           Index.generate_global_first_word_candidates_lookup
-             pool
-             t.search_exp
-         in
-         let usable_doc_ids = CCBV.empty () in
-         global_first_word_candidates
-         |> Int_set.iter (fun word_id ->
-             Index.union_doc_ids_of_word_id_into ~word_id ~into:usable_doc_ids
-           );
          let documents_to_search_through =
            t.documents_passing_filter
            |> String_set.to_seq
            |> Seq.filter (fun path ->
                Option.is_none (String_map.find_opt path t.search_results)
              )
+           |> Seq.map (fun path ->
+               String_map.find path t.all_documents
+               )
            |> List.of_seq
          in
-         documents_to_search_through
-         |> Task_pool.map_list pool (fun path ->
-             let doc = String_map.find path t.all_documents in
+         let within_same_line_lookup =
+           List.fold_left (fun acc doc ->
              let within_same_line =
                match Document.search_mode doc with
                | `Single_line -> true
                | `Multiline -> false
              in
+             Int_map.add
+             (Int64.to_int (Document.doc_id doc))
+             within_same_line
+             acc
+           )
+           Int_map.empty
+           documents_to_search_through
+         in
+         let search_scope_lookup =
+           List.fold_left (fun acc doc ->
+             Int_map.add
+             (Int64.to_int (Document.doc_id doc))
+             (Document.search_scope doc)
+             acc
+           )
+           Int_map.empty
+           documents_to_search_through
+         in
+         let doc_ids =
+           List.fold_left (fun acc doc ->
+             Int_set.add
+             (Int64.to_int (Document.doc_id doc))
+             acc
+           )
+           Int_set.empty
+           documents_to_search_through
+         in
+         documents_to_search_through
+         |> Task_pool.map_list pool (fun doc ->
              Index.make_search_job_groups
+             pool
                stop_signal
                ~cancellation_notifier
-               ~doc_id:(Document.doc_id doc)
-               ~doc_word_ids:(Document.word_ids doc)
-               ~global_first_word_candidates_lookup
-               ~within_same_line
-               ~search_scope:(Document.search_scope doc)
+               ~within_same_line_lookup
+               ~search_scope_lookup
+               ~doc_ids
                t.search_exp
-             |> Seq.map (fun x -> (path, x))
+             |> Seq.map (fun x -> (Document.path doc, x))
              |> List.of_seq
            )
          |> List.concat
@@ -188,16 +208,6 @@ let update_filter_exp
            String_set.empty
         )
         (fun () ->
-           let global_first_word_candidates_lookup =
-             Filter_exp.all_content_search_exps filter_exp
-             |> List.fold_left (fun acc search_exp ->
-                 Index.generate_global_first_word_candidates_lookup
-                   pool
-                   ~acc
-                   search_exp
-               )
-               Search_phrase.Enriched_token.Data_map.empty
-           in
            t.all_documents
            |> String_map.to_seq
            |> Seq.map snd
@@ -209,7 +219,6 @@ let update_filter_exp
                      Eio.Fiber.yield ();
                      Document.satisfies_filter_exp
                        pool
-                       ~global_first_word_candidates_lookup
                        filter_exp
                        s
                    ) s
@@ -251,36 +260,19 @@ let add_document pool (doc : Document.t) (t : t) : t =
   in
   let path = Document.path doc in
   let documents_passing_filter =
-    let global_first_word_candidates_lookup =
-      Filter_exp.all_content_search_exps t.filter_exp
-      |> List.fold_left (fun acc search_exp ->
-          Index.generate_global_first_word_candidates_lookup
-            pool
-            ~acc
-            search_exp
-        )
-        Search_phrase.Enriched_token.Data_map.empty
-    in
-    if Document.satisfies_filter_exp pool ~global_first_word_candidates_lookup t.filter_exp doc
+    if Document.satisfies_filter_exp pool t.filter_exp doc
     then
       String_set.add path t.documents_passing_filter
     else
       t.documents_passing_filter
   in
   let search_results =
-    let global_first_word_candidates_lookup =
-      Index.generate_global_first_word_candidates_lookup
-        pool
-        t.search_exp
-    in
     String_map.add
       path
       (Index.search
          pool
          (Stop_signal.make ())
          ~doc_id:(Document.doc_id doc)
-         ~doc_word_ids:(Document.word_ids doc)
-         ~global_first_word_candidates_lookup
          ~within_same_line
          ~search_scope:(Document.search_scope doc)
          t.search_exp

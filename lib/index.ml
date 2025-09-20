@@ -813,6 +813,9 @@ module Search = struct
     AND word_id = @word_id
     ORDER BY p.pos
     |}
+          ~names:[ ("@doc_id", INT (Int64.of_int doc_id))
+                 ; ("@word_id", INT (Int64.of_int word_id))
+                 ]
       (fun data ->
          Dynarray.add_last acc (Data.to_int_exn data.(0))
       );
@@ -1283,8 +1286,6 @@ let search
     stop_signal
     ?terminate_on_result_found
     ~doc_id
-    ~doc_word_ids
-    ~global_first_word_candidates_lookup
     ~within_same_line
     ~search_scope
     (exp : Search_exp.t)
@@ -1296,7 +1297,7 @@ let search
       stop_signal
       ?terminate_on_result_found
       ~cancellation_notifier
-      ~doc_id
+      ~doc_id:(Int64.to_int doc_id)
       ~within_same_line
       ~search_scope
       exp
@@ -1315,34 +1316,6 @@ module Search_job = Search.Search_job
 module Search_job_group = Search.Search_job_group
 
 let make_search_job_groups = Search.make_search_job_groups
-
-let generate_global_first_word_candidates_lookup
-    pool
-    ?(acc = Search_phrase.Enriched_token.Data_map.empty)
-    (exp : Search_exp.t)
-  : Int_set.t Search_phrase.Enriched_token.Data_map.t =
-  Search_exp.flattened exp
-  |> List.fold_left (fun acc phrase ->
-      match Search_phrase.enriched_tokens phrase with
-      | [] -> failwith "unexpected case"
-      | first_word :: _rest -> (
-          let data = Search_phrase.Enriched_token.data first_word in
-          match Search_phrase.Enriched_token.Data_map.find_opt data acc with
-          | None -> (
-              let candidates =
-                Word_db.filter
-                  pool
-                  (Search_phrase.Enriched_token.compatible_with_word first_word)
-              in
-              Search_phrase.Enriched_token.Data_map.add
-                data
-                candidates
-                acc
-            )
-          | Some _ -> acc
-        )
-    )
-    acc
 
 let word_ids ~doc_id =
   let open Sqlite3_utils in
