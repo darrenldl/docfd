@@ -140,7 +140,7 @@ let refresh_search_results pool stop_signal (t : t) : t option =
            documents_to_search_through
          in
          documents_to_search_through
-         |> Task_pool.map_list pool (fun doc ->
+         |> List.map (fun doc ->
              Index.make_search_job_groups
              pool
                stop_signal
