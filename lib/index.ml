@@ -1297,10 +1297,8 @@ let word_ids ~doc_id =
   with_db (fun db ->
       fold_stmt ~db
         {|
-    SELECT word.id
-    FROM word
-    JOIN word_id_doc_id_link
-      ON word.id = word_id_doc_id_link.word_id
+    SELECT word_id_doc_id_link.word_id
+    FROM word_id_doc_id_link
     WHERE word_id_doc_id_link.doc_id = @doc_id
     |}
         ~names:[ ("@doc_id", INT doc_id) ]
