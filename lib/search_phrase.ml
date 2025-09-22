@@ -136,7 +136,7 @@ module Enriched_token = struct
                    && CCString.find ~sub:indexed_word_ci search_word_ci >= 0)
                || (search_word_len >= edit_dist_based_match_min_len
                    && indexed_word_len >= edit_dist_based_match_min_len
-                   && Misc_utils.first_n_chars_of_string_contains ~n:5 indexed_word_ci search_word_ci.[0]
+                   && Misc_utils.first_n_chars_of_string_contains ~n:3 indexed_word_ci search_word_ci.[0]
                    && Spelll.match_with (automaton token) indexed_word_ci)
              )
            | `Exact -> (
