@@ -245,7 +245,13 @@ module Raw = struct
     |> of_seq pool
 end
 
-module State = struct
+module State : sig
+  val add_word_id_doc_id_link : word_id:int -> doc_id:int64 -> unit
+
+  val read_from_db : unit -> unit
+
+  val union_doc_ids_of_word_id_into_bv : word_id:int -> into:CCBV.t -> unit
+end = struct
   type t = {
     lock : Eio.Mutex.t;
     doc_ids_of_word_id : (int, CCBV.t) Hashtbl.t;
@@ -269,6 +275,10 @@ module State = struct
         Hashtbl.replace t.doc_ids_of_word_id word_id bv;
         bv
       )
+
+  let union_doc_ids_of_word_id_into_bv ~word_id ~into =
+    let bv = find_doc_ids_bv ~word_id in
+    CCBV.union_into ~into bv
 
   let add_word_id_doc_id_link ~word_id ~doc_id =
     lock (fun () ->

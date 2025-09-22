@@ -116,5 +116,7 @@ val write_raw_to_db :
   unit
 
 module State : sig
+  val union_doc_ids_of_word_id_into_bv : word_id:int -> into:CCBV.t -> unit
+
   val read_from_db : unit -> unit
 end
