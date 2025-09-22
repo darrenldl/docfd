@@ -277,8 +277,10 @@ end = struct
       )
 
   let union_doc_ids_of_word_id_into_bv ~word_id ~into =
-    let bv = find_doc_ids_bv ~word_id in
-    CCBV.union_into ~into bv
+    lock (fun () ->
+        let bv = find_doc_ids_bv ~word_id in
+        CCBV.union_into ~into bv
+      )
 
   let add_word_id_doc_id_link ~word_id ~doc_id =
     lock (fun () ->
