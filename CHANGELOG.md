@@ -57,6 +57,10 @@ This contains a **breaking** DB change, you will need to remove index DB generat
   storage and management, which makes the overall interaction
   between UI and core code much more robust (12.0.0-alpha.11)
 
+## 12.0.0-alpha.14
+
+- Added further search speed optimization via an additional document pruning stage
+
 ## 12.0.0-alpha.13
 
 - Moved to using a global word table to reduce index DB size and speed up search
