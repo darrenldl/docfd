@@ -2,7 +2,7 @@ type t
 
 val add : string -> int
 
-val filter : Task_pool.t -> (string -> bool) -> Int_set.t
+val filter : Task_pool.t -> (string -> bool) -> (int * string) Dynarray.t
 
 val word_of_id : int -> string
 

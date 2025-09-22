@@ -19,7 +19,7 @@ let lock : type a. (unit -> a) -> a =
   fun f ->
   Eio.Mutex.use_rw ~protect:true t.lock f
 
-let filter pool (f : string -> bool) : Int_set.t =
+let filter pool (f : string -> bool) : (int * string) Dynarray.t =
   let word_of_id =
     lock (fun () ->
         t.word_of_id
@@ -42,17 +42,24 @@ let filter pool (f : string -> bool) : Int_set.t =
     |> List.of_seq
   in
   assert (!max_end_exc_seen = t.size);
-  chunk_start_end_exc_ranges
-  |> Task_pool.map_list pool (fun (start, end_exc) ->
-      let acc = ref Int_set.empty in
-      for i=start to end_exc-1 do
-        if f (Int_map.find i word_of_id) then (
-          acc := Int_set.add i !acc
-        )
-      done;
-      !acc
-    )
-  |> List.fold_left Int_set.union Int_set.empty
+  let batches =
+    chunk_start_end_exc_ranges
+    |> Task_pool.map_list pool (fun (start, end_exc) ->
+        let acc = Dynarray.create () in
+        for i=start to end_exc-1 do
+          let word = Int_map.find i word_of_id in
+          if f word then (
+            Dynarray.add_last acc (i, word)
+          )
+        done;
+        acc
+      )
+  in
+  let acc = Dynarray.create () in
+  List.iter (fun batch ->
+      Dynarray.append acc batch
+    ) batches;
+  acc
 
 let add (word : string) : int =
   lock (fun () ->
