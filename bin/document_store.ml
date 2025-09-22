@@ -94,22 +94,35 @@ let refresh_search_results pool stop_signal (t : t) : t option =
          Atomic.set cancellation_notifier true;
          String_map.empty)
       (fun () ->
-         let documents_to_search_through =
-           t.documents_passing_filter
-           |> String_set.to_seq
-           |> Seq.filter (fun path ->
-               Option.is_none (String_map.find_opt path t.search_results)
-             )
-           |> List.of_seq
-         in
          let global_first_word_candidates_lookup =
            Index.generate_global_first_word_candidates_lookup
              pool
              t.search_exp
          in
+         let usable_doc_ids =
+           let bv = CCBV.empty () in
+           Search_phrase.Enriched_token.Data_map.iter
+             (fun _word word_ids ->
+                Int_set.iter (fun word_id ->
+                    Index.State.union_doc_ids_of_word_id_into_bv ~word_id ~into:bv
+                  )
+                  word_ids
+             )
+             global_first_word_candidates_lookup;
+           bv
+         in
+         let documents_to_search_through =
+           t.documents_passing_filter
+           |> String_set.to_seq
+           |> Seq.map (fun path -> (path, String_map.find path t.all_documents))
+           |> Seq.filter (fun (path, doc) ->
+               Option.is_none (String_map.find_opt path t.search_results)
+               && CCBV.get usable_doc_ids (Int64.to_int @@ Document.doc_id doc)
+             )
+           |> List.of_seq
+         in
          documents_to_search_through
-         |> Task_pool.map_list pool (fun path ->
-             let doc = String_map.find path t.all_documents in
+         |> Task_pool.map_list pool (fun (path, doc) ->
              let within_same_line =
                match Document.search_mode doc with
                | `Single_line -> true
