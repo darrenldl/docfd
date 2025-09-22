@@ -1078,8 +1078,8 @@ module Search = struct
                    if Search_result_heap.size best_results <= t.search_limit_per_start then (
                      best_results
                    ) else (
-                     let x = Search_result_heap.find_min_exn best_results in
-                     Search_result_heap.delete_one Search_result.equal x best_results
+                     let best_results, _ = Search_result_heap.take_exn best_results in
+                     best_results
                    )
                  )
                  Search_result_heap.empty
