@@ -47,7 +47,6 @@ val search :
   Stop_signal.t ->
   ?terminate_on_result_found : bool ->
   doc_id:int64 ->
-  doc_word_ids:Int_set.t ->
   global_first_word_candidates_lookup:Int_set.t Search_phrase.Enriched_token.Data_map.t ->
   within_same_line:bool ->
   search_scope:Diet.Int.t option ->
@@ -75,7 +74,6 @@ val make_search_job_groups :
   ?terminate_on_result_found : bool ->
   cancellation_notifier:bool Atomic.t ->
   doc_id:int64 ->
-  doc_word_ids:Int_set.t ->
   global_first_word_candidates_lookup:Int_set.t Search_phrase.Enriched_token.Data_map.t ->
   within_same_line:bool ->
   search_scope:Diet.Int.t option ->
@@ -117,6 +115,8 @@ val write_raw_to_db :
 
 module State : sig
   val union_doc_ids_of_word_id_into_bv : word_id:int -> into:CCBV.t -> unit
+
+  val word_id_doc_id_are_linked : word_id:int -> doc_id:int64 -> bool
 
   val read_from_db : unit -> unit
 end

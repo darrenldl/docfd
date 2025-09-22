@@ -22,8 +22,6 @@ val mod_time : t -> Timedesc.t
 
 val title : t -> string option
 
-val word_ids : t -> Int_set.t
-
 val doc_hash : t -> string
 
 val doc_id : t -> int64

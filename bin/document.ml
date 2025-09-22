@@ -11,7 +11,6 @@ type t = {
   title : string option;
   doc_id : int64;
   doc_hash : string;
-  word_ids : Int_set.t;
   search_scope : Diet.Int.t option;
   last_scan : Timedesc.t;
 }
@@ -45,8 +44,6 @@ let path_date (t : t) = t.path_date
 let mod_time (t : t) = t.mod_time
 
 let title (t : t) = t.title
-
-let word_ids (t : t) = t.word_ids
 
 let doc_hash (t : t) = t.doc_hash
 
@@ -495,7 +492,6 @@ let of_ir2 db ~already_in_transaction (ir : Ir2.t) : t =
     title;
     doc_id;
     doc_hash;
-    word_ids = Index.Raw.word_ids raw;
     search_scope = None;
     last_scan;
   }
@@ -537,7 +533,6 @@ let of_path
         title;
         doc_id;
         doc_hash;
-        word_ids = Index.word_ids ~doc_id;
         search_scope = None;
         last_scan = Timedesc.now ~tz_of_date_time:Params.tz ()
       }
@@ -642,7 +637,6 @@ let satisfies_filter_exp pool ~global_first_word_candidates_lookup (exp : Filter
             (Stop_signal.make ())
             ~terminate_on_result_found:true
             ~doc_id:t.doc_id
-            ~doc_word_ids:(word_ids t)
             ~global_first_word_candidates_lookup
             ~within_same_line:false
             ~search_scope:None

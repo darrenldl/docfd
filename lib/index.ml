@@ -248,6 +248,8 @@ end
 module State : sig
   val add_word_id_doc_id_link : word_id:int -> doc_id:int64 -> unit
 
+  val word_id_doc_id_are_linked : word_id:int -> doc_id:int64 -> bool
+
   val read_from_db : unit -> unit
 
   val union_doc_ids_of_word_id_into_bv : word_id:int -> into:CCBV.t -> unit
@@ -280,6 +282,12 @@ end = struct
     lock (fun () ->
         let bv = find_doc_ids_bv ~word_id in
         CCBV.union_into ~into bv
+      )
+
+  let word_id_doc_id_are_linked ~word_id ~doc_id =
+    lock (fun () ->
+        let doc_ids = find_doc_ids_bv ~word_id in
+        CCBV.get doc_ids (Int64.to_int doc_id)
       )
 
   let add_word_id_doc_id_link ~word_id ~doc_id =
@@ -1135,7 +1143,6 @@ module Search = struct
       ?(terminate_on_result_found = false)
       ~(cancellation_notifier : bool Atomic.t)
       ~doc_id
-      ~doc_word_ids
       ~global_first_word_candidates_lookup
       ~within_same_line
       ~(search_scope : Diet.Int.t option)
@@ -1154,7 +1161,9 @@ module Search = struct
                 Search_phrase.Enriched_token.Data_map.find
                   (Search_phrase.Enriched_token.data first_word)
                   global_first_word_candidates_lookup
-                |> Int_set.inter doc_word_ids
+                |> Int_set.filter (fun word_id ->
+                    State.word_id_doc_id_are_linked ~word_id ~doc_id
+                    )
               )
           in
           let possible_starts =
@@ -1215,7 +1224,6 @@ module Search = struct
       ?terminate_on_result_found
       ~cancellation_notifier
       ~doc_id
-      ~doc_word_ids
       ~global_first_word_candidates_lookup
       ~within_same_line
       ~search_scope
@@ -1226,7 +1234,6 @@ module Search = struct
       ?terminate_on_result_found
       ~cancellation_notifier
       ~doc_id
-      ~doc_word_ids
       ~global_first_word_candidates_lookup
       ~within_same_line
       ~search_scope
@@ -1241,7 +1248,6 @@ let search
     stop_signal
     ?terminate_on_result_found
     ~doc_id
-    ~doc_word_ids
     ~global_first_word_candidates_lookup
     ~within_same_line
     ~search_scope
@@ -1255,7 +1261,6 @@ let search
       ?terminate_on_result_found
       ~cancellation_notifier
       ~doc_id
-      ~doc_word_ids
       ~global_first_word_candidates_lookup
       ~within_same_line
       ~search_scope

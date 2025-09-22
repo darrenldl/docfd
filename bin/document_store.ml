@@ -132,7 +132,6 @@ let refresh_search_results pool stop_signal (t : t) : t option =
                stop_signal
                ~cancellation_notifier
                ~doc_id:(Document.doc_id doc)
-               ~doc_word_ids:(Document.word_ids doc)
                ~global_first_word_candidates_lookup
                ~within_same_line
                ~search_scope:(Document.search_scope doc)
@@ -287,7 +286,6 @@ let add_document pool (doc : Document.t) (t : t) : t =
          pool
          (Stop_signal.make ())
          ~doc_id:(Document.doc_id doc)
-         ~doc_word_ids:(Document.word_ids doc)
          ~global_first_word_candidates_lookup
          ~within_same_line
          ~search_scope:(Document.search_scope doc)
