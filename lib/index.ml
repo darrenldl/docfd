@@ -1276,6 +1276,12 @@ module Search_job_group = Search.Search_job_group
 
 let make_search_job_groups = Search.make_search_job_groups
 
+module Word_candidate_heap = CCHeap.Make_from_compare (struct
+    type t = int * float
+
+    let compare (_x0, y0) (_x1, y1) = Float.compare y0 y1
+  end)
+
 let generate_global_first_word_candidates_lookup
     pool
     ?(acc = Search_phrase.Enriched_token.Data_map.empty)
@@ -1294,9 +1300,32 @@ let generate_global_first_word_candidates_lookup
                   pool
                   (Search_phrase.Enriched_token.compatible_with_word first_word)
               in
+              let best_candidates =
+                Dynarray.fold_left (fun acc (id, word) ->
+                    let score =
+                      match data with
+                      | `Explicit_spaces -> 0.0
+                      | `String _ -> 0.0
+                    in
+                    let acc = Word_candidate_heap.add acc (id, score) in
+                    if Word_candidate_heap.size acc <= Params.max_first_word_candidate_count then (
+                      acc
+                    ) else (
+                      let acc, _ = Word_candidate_heap.take_exn acc in
+                      acc
+                    )
+                  )
+                  Word_candidate_heap.empty
+                  candidates
+                |> Word_candidate_heap.to_seq
+                |> Seq.map (fun (id, _score) ->
+                    id
+                  )
+                |> Int_set.of_seq
+              in
               Search_phrase.Enriched_token.Data_map.add
                 data
-                candidates
+                best_candidates
                 acc
             )
           | Some _ -> acc
