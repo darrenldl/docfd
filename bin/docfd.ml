@@ -613,6 +613,23 @@ let run
    | None -> ()
    | Some msg -> exit_with_error_msg msg
   );
+  let interactive =
+    Option.is_none filter_exp
+    &&
+    Option.is_none sample_search_exp
+    &&
+    Option.is_none search_exp
+    &&
+    not print_files_with_match
+    &&
+    not print_files_without_match
+    &&
+    Option.is_none script
+  in
+  if interactive then (
+    Printf.printf "Initializing in-memory index\n";
+    flush stdout;
+  );
   Word_db.read_from_db ();
   Index.State.read_from_db ();
   (match Sys.getenv_opt "VISUAL", Sys.getenv_opt "EDITOR" with
@@ -667,19 +684,6 @@ let run
         |> List.of_seq
         |> Option.some
       )
-  in
-  let interactive =
-    Option.is_none filter_exp
-    &&
-    Option.is_none sample_search_exp
-    &&
-    Option.is_none search_exp
-    &&
-    not print_files_with_match
-    &&
-    not print_files_without_match
-    &&
-    Option.is_none script
   in
   let file_constraints =
     make_file_constraints
