@@ -1295,37 +1295,72 @@ let generate_global_first_word_candidates_lookup
           let data = Search_phrase.Enriched_token.data first_word in
           match Search_phrase.Enriched_token.Data_map.find_opt data acc with
           | None -> (
+              let score ~search_word ~found_word =
+                let search_word_ci = String.lowercase_ascii search_word in
+                let search_word_len = Int.to_float (String.length search_word) in
+                let found_word_ci = String.lowercase_ascii found_word in
+                let found_word_len = Int.to_float (String.length found_word) in
+                if String.equal search_word found_word then (
+                  1.0
+                ) else if String.equal search_word_ci found_word_ci then (
+                  0.9
+                ) else if CCString.find ~sub:search_word found_word >= 0 then (
+                  search_word_len
+                  /.
+                  found_word_len
+                ) else if CCString.find ~sub:search_word_ci found_word_ci >= 0 then (
+                  0.9
+                  *.
+                  (search_word_len
+                   /.
+                   found_word_len)
+                ) else (
+                  1.0
+                  -.
+                  (Int.to_float (Spelll.edit_distance search_word_ci found_word_ci)
+                   /.
+                   search_word_len
+                  )
+                )
+              in
               let candidates =
                 Word_db.filter
                   pool
                   (Search_phrase.Enriched_token.compatible_with_word first_word)
               in
-              let best_candidates =
-                Dynarray.fold_left (fun acc (id, word) ->
-                    let score =
-                      match data with
-                      | `Explicit_spaces -> 0.0
-                      | `String _ -> 0.0
-                    in
-                    let acc = Word_candidate_heap.add acc (id, score) in
-                    if Word_candidate_heap.size acc <= Params.max_first_word_candidate_count then (
-                      acc
-                    ) else (
-                      let acc, _ = Word_candidate_heap.take_exn acc in
-                      acc
-                    )
+              let candidates =
+                match data with
+                | `Explicit_spaces -> (
+                    Dynarray.fold_left (fun acc (id, _word) ->
+                        Int_set.add id acc
+                      )
+                      Int_set.empty
+                      candidates
                   )
-                  Word_candidate_heap.empty
-                  candidates
-                |> Word_candidate_heap.to_seq
-                |> Seq.map (fun (id, _score) ->
-                    id
+                | `String s -> (
+                    let s_len = Int.to_float (String.length s) in
+                    let max_candidate_count = min 500 (Int.of_float @@ Float.pow 2.5 s_len) in
+                    Dynarray.fold_left (fun acc (id, word) ->
+                        let acc = Word_candidate_heap.add acc (id, score ~search_word:s ~found_word:word) in
+                        if Word_candidate_heap.size acc <= max_candidate_count then (
+                          acc
+                        ) else (
+                          let acc, _ = Word_candidate_heap.take_exn acc in
+                          acc
+                        )
+                      )
+                      Word_candidate_heap.empty
+                      candidates
+                    |> Word_candidate_heap.to_seq
+                    |> Seq.map (fun (id, _score) ->
+                        id
+                      )
+                    |> Int_set.of_seq
                   )
-                |> Int_set.of_seq
               in
               Search_phrase.Enriched_token.Data_map.add
                 data
-                best_candidates
+                candidates
                 acc
             )
           | Some _ -> acc
