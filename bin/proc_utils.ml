@@ -90,7 +90,16 @@ let pipe_to_fzf_for_selection ?preview_cmd (lines : string Seq.t)
     Unix.create_process "fzf" (Dynarray.to_array args)
       stdin_for_fzf stdout_for_fzf Unix.stderr
   in
-  let _, process_status = Unix.waitpid [] pid in
+  let _, process_status =
+    let res = ref None in
+    while Option.is_none !res do
+      try
+        res := Some (Unix.waitpid [] pid)
+      with
+      | Unix.Unix_error (Unix.EINTR, _, _) -> ()
+    done;
+    Option.get !res
+  in
   Unix.close stdin_for_fzf;
   Unix.close stdout_for_fzf;
   let selection = CCIO.read_lines_l (Unix.in_channel_of_descr read_from_fzf) in
