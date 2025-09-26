@@ -10,6 +10,12 @@ This contains a **breaking** DB change, you will need to remove index DB generat
 
     - This is the **breaking** DB change stated above
 
+- Added further search speed optimizations (12.0.0-alpha.14)
+
+    - Added an additional document pruning stage
+    - Added a first word candidate pruning stage based on length of the first search word
+        - Searching for short words should now feel much more responsive
+
 - Replaced filter glob with a more powerful filter language, with
   autocomplete in filter field (12.0.0-alpha.1, 12.0.0-alpha.2,
   12.0.0-alpha.5, 12.0.0-alpha.6, 12.0.0-alpha.10, 12.0.0-alpha.11)
@@ -63,9 +69,12 @@ This contains a **breaking** DB change, you will need to remove index DB generat
 
     - Added an additional document pruning stage
     - Added a first word candidate pruning stage based on length of the first search word
+        - Searching for short words should now feel much more responsive
 
 - Fixed interaction with fzf (which is used in some selection menus) on macOS
   due to different behavior of `Unix.waitpid` on macOS compared to Linux
+
+- Document sorting fine tuning
 
 ## 12.0.0-alpha.13
 
