@@ -59,7 +59,10 @@ This contains a **breaking** DB change, you will need to remove index DB generat
 
 ## 12.0.0-alpha.14
 
-- Added further search speed optimization via an additional document pruning stage
+- Added further search speed optimizations:
+
+    - Added an additional document pruning stage
+    - Added a first word candidate pruning stage based on length of the first search word
 
 ## 12.0.0-alpha.13
 
