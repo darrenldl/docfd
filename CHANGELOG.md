@@ -64,6 +64,9 @@ This contains a **breaking** DB change, you will need to remove index DB generat
     - Added an additional document pruning stage
     - Added a first word candidate pruning stage based on length of the first search word
 
+- Fixed interaction with fzf (which is used in some selection menus) on macOS
+  due to different behavior of `Unix.waitpid` on macOS compared to Linux
+
 ## 12.0.0-alpha.13
 
 - Moved to using a global word table to reduce index DB size and speed up search
