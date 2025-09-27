@@ -48,12 +48,7 @@ module Sort_by : sig
     | `Mod_time
   ]
 
-  type order = [
-    | `Asc
-    | `Desc
-  ]
-
-  type t = typ * order
+  type t = typ * Document.Compare.order
 
   val default : t
 end

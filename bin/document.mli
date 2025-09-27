@@ -5,11 +5,16 @@ type t
 val equal : t -> t -> bool
 
 module Compare : sig
-  val mod_time : t -> t -> int
+  type order = [
+    | `Asc
+    | `Desc
+  ]
 
-  val path_date : t -> t -> int
+  val mod_time : order -> t -> t -> int
 
-  val path : t -> t -> int
+  val path_date : order -> t -> t -> int
+
+  val path : order -> t -> t -> int
 end
 
 val search_mode : t -> Search_mode.t

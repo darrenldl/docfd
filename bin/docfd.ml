@@ -462,7 +462,7 @@ let parse_sort_by_arg ~no_score (s : string) : Document_store.Sort_by.t =
               (Fmt.str "unrecognized sort by type: %s" s)
           )
       in
-      let order : Document_store.Sort_by.order =
+      let order : Document.Compare.order =
         match String.lowercase_ascii (String.trim order) with
         | "asc" -> `Asc
         | "desc" -> `Desc
@@ -927,15 +927,12 @@ let run
         let (sort_by_typ, sort_by_order) = sort_by_no_score in
         let f =
           match sort_by_typ with
-          | `Path_date -> Document.Compare.path_date
-          | `Mod_time -> Document.Compare.mod_time
-          | `Path -> Document.Compare.path
+          | `Path_date -> Document.Compare.path_date sort_by_order
+          | `Mod_time -> Document.Compare.mod_time sort_by_order
+          | `Path -> Document.Compare.path sort_by_order
           | `Score -> failwith "unexpected case"
         in
-        (match sort_by_order with
-         | `Asc -> Array.sort f arr
-         | `Desc -> Array.sort (fun x y -> f y x) arr
-        );
+        Array.sort f arr;
         Array.iter (fun doc ->
             Printers.path_image ~color:print_with_color oc (Document.path doc)
           ) arr;

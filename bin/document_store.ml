@@ -321,36 +321,33 @@ module Sort_by = struct
     | `Mod_time
   ]
 
-  type order = [
-    | `Asc
-    | `Desc
-  ]
-
-  type t = typ * order
+  type t = typ * Document.Compare.order
 
   let default : t = (`Score, `Desc)
 end
 
 module Compare_search_result_group = struct
-  let mod_time (d0, _s0) (d1, _s1) =
-    Document.Compare.mod_time d0 d1
+  let mod_time order (d0, _s0) (d1, _s1) =
+    Document.Compare.mod_time order d0 d1
 
-  let path_date (d0, _s0) (d1, _s1) =
-    Document.Compare.path_date d0 d1
+  let path_date order (d0, _s0) (d1, _s1) =
+    Document.Compare.path_date order d0 d1
 
-  let path (d0, _s0) (d1, _s1) =
-    Document.Compare.path d0 d1
+  let path order (d0, _s0) (d1, _s1) =
+    Document.Compare.path order d0 d1
 
-  let score ~no_search_exp (d0, s0) (d1, s1) =
+  let score ~no_search_exp order (d0, s0) (d1, s1) =
     if no_search_exp then (
-      Document.Compare.path d0 d1
+      path order (d0, s0) (d1, s1)
     ) else (
       (* Search_result.compare_relevance puts the more relevant
          result to the front, so we flip the comparison here to
          obtain an ordering of "lowest score" first to match the
          usual definition of "sort by score in ascending order".
       *)
-      Search_result.compare_relevance s1.(0) s0.(0)
+      match order with
+      | `Asc -> Search_result.compare_relevance s1.(0) s0.(0)
+      | `Desc -> Search_result.compare_relevance s0.(0) s1.(0)
     )
 end
 
@@ -386,15 +383,12 @@ let search_result_groups
   let (sort_by_typ, sort_by_order) = sort_by in
   let f =
     match sort_by_typ with
-    | `Path_date -> Compare_search_result_group.path_date
-    | `Mod_time -> Compare_search_result_group.mod_time
-    | `Path -> Compare_search_result_group.path
-    | `Score -> Compare_search_result_group.score ~no_search_exp
+    | `Path_date -> Compare_search_result_group.path_date sort_by_order
+    | `Mod_time -> Compare_search_result_group.mod_time sort_by_order
+    | `Path -> Compare_search_result_group.path sort_by_order
+    | `Score -> Compare_search_result_group.score ~no_search_exp sort_by_order
   in
-  (match sort_by_order with
-   | `Asc -> Array.sort f arr
-   | `Desc -> Array.sort (fun x y -> f y x) arr
-  );
+  Array.sort f arr;
   arr
 
 let usable_document_paths (t : t) : String_set.t =

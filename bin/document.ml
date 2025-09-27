@@ -72,18 +72,41 @@ let inter_search_scope (x : Diet.Int.t) (t : t) : t =
   { t with search_scope = Some search_scope }
 
 module Compare = struct
-  let mod_time d0 d1 =
-    Timedesc.compare_chrono_min (mod_time d0) (mod_time d1)
+  type order = [
+    | `Asc
+    | `Desc
+  ]
 
-  let path_date d0 d1 =
+  let mod_time order d0 d1 =
+    match order with
+    | `Asc ->
+      Timedesc.compare_chrono_min (mod_time d0) (mod_time d1)
+    | `Desc ->
+      Timedesc.compare_chrono_min (mod_time d1) (mod_time d0)
+
+  let path order d0 d1 =
+    match order with
+    | `Asc ->
+      String.compare (path d0) (path d1)
+    | `Desc ->
+      String.compare (path d1) (path d0)
+
+  let path_date order d0 d1 =
     match path_date d0, path_date d1 with
-    | None, None -> mod_time d0 d1
-    | None, Some _ -> -1
-    | Some _, None -> 1
-    | Some x0, Some x1 -> Timedesc.Date.compare x0 x1
-
-  let path d0 d1 =
-    String.compare (path d0) (path d1)
+    | None, None -> path order d0 d1
+    | None, Some _ -> (
+        (* Always shuffle document with no path date to the back. *)
+        1
+      )
+    | Some _, None -> (
+        (* Always shuffle document with no path date to the back. *)
+        -1
+      )
+    | Some x0, Some x1 -> (
+        match order with
+        | `Asc -> Timedesc.Date.compare x0 x1
+        | `Desc -> Timedesc.Date.compare x1 x0
+      )
 end
 
 module Ir0 = struct
