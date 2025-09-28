@@ -600,12 +600,12 @@ let run
     )
   );
   List.iter (fun spec ->
-      match Path_open.parse_spec spec with
+      match Path_opening.parse_spec spec with
       | Error msg -> (
           exit_with_error_msg (Fmt.str "failed to parse %s, %s" spec msg)
         )
       | Ok (ext, launch_mode, cmd) -> (
-          Hashtbl.replace Path_open.specs ext (launch_mode, cmd)
+          Hashtbl.replace Path_opening.specs ext (launch_mode, cmd)
         )
     ) path_open_specs;
   let db_path = Filename.concat cache_dir Params.db_file_name in
@@ -1054,7 +1054,7 @@ let run
             let doc_id = Document.doc_id doc in
             let path = Document.path doc in
             let old_stats = Unix.stat path in
-            Path_open.main
+            Path_opening.main
               ~close_term
               ~doc_id
               ~path
@@ -1136,12 +1136,12 @@ let run
                 );
               let old_stats = Unix.stat file in
               close_term ();
-              Path_open.config_and_cmd_to_open_text_file
+              Path_opening.config_and_cmd_to_open_text_file
                 ~path:file
                 ~line_num:(max 1 (Dynarray.length snapshots - 1))
                 ()
               |> (fun (config, cmd) ->
-                  Result.get_ok (Path_open.resolve_cmd config cmd)
+                  Result.get_ok (Path_opening.resolve_cmd config cmd)
                 )
               |> Sys.command
               |> ignore;
@@ -1278,11 +1278,11 @@ let run
           )
         | Edit_script path -> (
             close_term ();
-            Path_open.config_and_cmd_to_open_text_file
+            Path_opening.config_and_cmd_to_open_text_file
               ~path
               ()
             |> (fun (config, cmd) ->
-                Result.get_ok (Path_open.resolve_cmd config cmd)
+                Result.get_ok (Path_opening.resolve_cmd config cmd)
               )
             |> Sys.command
             |> ignore;
