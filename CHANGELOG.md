@@ -76,6 +76,8 @@ This contains a **breaking** DB change, you will need to remove index DB generat
 
 - Document sorting fine tuning
 
+- Fixed macOS detection
+
 ## 12.0.0-alpha.13
 
 - Moved to using a global word table to reduce index DB size and speed up search

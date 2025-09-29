@@ -106,7 +106,11 @@ let last_modified_format_string =
 let blink_on_duration : Mtime.span = Mtime.Span.(140 * ms)
 
 let os_typ : [ `Darwin | `Linux ] =
-  match String.lowercase_ascii (CCUnix.call_stdout "uname") with
+  let s = CCUnix.call_stdout "uname"
+          |> String.trim
+          |> String.lowercase_ascii
+  in
+  match s with
   | "darwin" -> `Darwin
   | _ -> `Linux
 
