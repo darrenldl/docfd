@@ -3,7 +3,7 @@ open Debug_utils
 
 type launch_mode = [ `Terminal | `Detached ]
 
-type spec = string * launch_mode * string
+type spec = string list * launch_mode * string
 
 let specs : (string, launch_mode * string) Hashtbl.t = Hashtbl.create 128
 
@@ -52,8 +52,9 @@ module Parsers = struct
     >>| fun l -> String.concat "" l
 
   let spec : spec t =
-    take_while1 (function ':' -> false | _ -> true)
-    >>= fun ext ->
+    sep_by (char ',')
+      (take_while1 (function ':' | ',' -> false | _ -> true))
+    >>= fun exts ->
     (char ':' <|> expected_char ':')*>
     (choice [
         string "terminal" *> return `Terminal;
@@ -64,7 +65,7 @@ module Parsers = struct
     >>= fun launch_mode ->
     (char '=' <|> expected_char '=') *> any_string
     >>= fun cmd ->
-    return (ext, launch_mode, cmd)
+    return (exts, launch_mode, cmd)
 end
 
 module Config = struct
@@ -109,33 +110,40 @@ let parse_spec (s : string) : (spec, string) result =
     parse_string ~consume:All Parsers.spec s
   with
   | Error msg -> Error (Misc_utils.trim_angstrom_error_msg msg)
-  | Ok (ext, launch_mode, cmd) -> (
-      let ext = ext
-                |> String.lowercase_ascii
-                |> String_utils.remove_leading_dots
-                |> Fmt.str ".%s"
+  | Ok (exts', launch_mode, cmd) -> (
+      let rec aux acc exts =
+        match exts with
+        | [] -> Ok (List.rev acc, launch_mode, cmd)
+        | ext :: rest -> (
+            let ext = ext
+                      |> String.lowercase_ascii
+                      |> String_utils.remove_leading_dots
+                      |> Fmt.str ".%s"
+            in
+            let config =
+              if ext = ".pdf" then (
+                Config.make
+                  ~path:"path"
+                  ~page_num:1
+                  ~search_word:"word"
+                  ~launch_mode:`Detached
+                  ()
+              ) else (
+                Config.make
+                  ~path:"path"
+                  ~line_num:1
+                  ~launch_mode:`Terminal
+                  ()
+              )
+            in
+            match
+              resolve_cmd config cmd
+            with
+            | Error msg -> Error msg
+            | Ok _ -> aux (ext :: acc) rest
+          )
       in
-      let config =
-        if ext = ".pdf" then (
-          Config.make
-            ~path:"path"
-            ~page_num:1
-            ~search_word:"word"
-            ~launch_mode:`Detached
-            ()
-        ) else (
-          Config.make
-            ~path:"path"
-            ~line_num:1
-            ~launch_mode:`Terminal
-            ()
-        )
-      in
-      match
-        resolve_cmd config cmd
-      with
-      | Error msg -> Error msg
-      | Ok _ -> Ok (ext, launch_mode, cmd)
+      aux [] exts'
     )
 
 let xdg_open_cmd =
