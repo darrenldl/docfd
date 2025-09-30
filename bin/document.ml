@@ -5,7 +5,6 @@ type t = {
   search_mode : Search_mode.t;
   path : string;
   path_parts : string list;
-  path_parts_ci : string list;
   path_date : Timedesc.Date.t option;
   mod_time : Timedesc.t;
   title : string option;
@@ -29,16 +28,13 @@ let compute_path_parts (path : string) =
   let path_parts = Tokenization.tokenize ~drop_spaces:false path
                    |> List.of_seq
   in
-  let path_parts_ci = List.map String.lowercase_ascii path_parts in
-  (path_parts, path_parts_ci)
+  (path_parts)
 
 let search_mode (t : t) = t.search_mode
 
 let path (t : t) = t.path
 
 let path_parts (t : t) = t.path_parts
-
-let path_parts_ci (t : t) = t.path_parts_ci
 
 let path_date (t : t) = t.path_date
 
@@ -409,7 +405,6 @@ module Ir2 = struct
     doc_hash : string;
     path : string;
     path_parts : string list;
-    path_parts_ci : string list;
     path_date : Timedesc.Date.t option;
     mod_time : Timedesc.t;
     title : string option;
@@ -463,7 +458,7 @@ module Ir2 = struct
 
   let of_ir1 pool (ir : Ir1.t) : t =
     let { Ir1.search_mode; doc_id; doc_hash; path; data; last_scan } = ir in
-    let path_parts, path_parts_ci = compute_path_parts path in
+    let path_parts = compute_path_parts path in
     let path_date = Date_extraction.extract path in
     let stats = Unix.stat path in
     let mod_time = Timedesc.of_timestamp_float_s_exn stats.Unix.st_mtime in
@@ -480,7 +475,6 @@ module Ir2 = struct
       search_mode;
       path;
       path_parts;
-      path_parts_ci;
       path_date;
       mod_time;
       doc_id;
@@ -497,7 +491,6 @@ let of_ir2 db ~already_in_transaction (ir : Ir2.t) : t =
       Ir2.search_mode;
       path;
       path_parts;
-      path_parts_ci;
       path_date;
       mod_time;
       title;
@@ -512,7 +505,6 @@ let of_ir2 db ~already_in_transaction (ir : Ir2.t) : t =
     search_mode;
     path;
     path_parts;
-    path_parts_ci;
     path_date;
     mod_time;
     title;
@@ -545,7 +537,7 @@ let of_path
       else
         Some (Index.line_of_global_line_num ~doc_id 0)
     in
-    let path_parts, path_parts_ci = compute_path_parts path in
+    let path_parts = compute_path_parts path in
     let path_date = Date_extraction.extract path in
     let stats = Unix.stat path in
     let mod_time = Timedesc.of_timestamp_float_s_exn stats.Unix.st_mtime in
@@ -554,7 +546,6 @@ let of_path
         search_mode;
         path;
         path_parts;
-        path_parts_ci;
         path_date;
         mod_time;
         title;
@@ -575,8 +566,6 @@ let of_path
     in
     res
   )
-
-module ET = Search_phrase.Enriched_token
 
 let satisfies_filter_exp pool ~global_first_word_candidates_lookup (exp : Filter_exp.t) (t : t) : bool =
   let open Filter_exp in
@@ -604,49 +593,10 @@ let satisfies_filter_exp pool ~global_first_word_candidates_lookup (exp : Filter
     | Path_fuzzy exp -> (
         List.exists (fun phrase ->
             List.for_all (fun token ->
-                match ET.data token with
-                | `Explicit_spaces -> (
-                    List.exists (fun path_part ->
-                        Parser_components.is_space path_part.[0]
-                      )
-                      t.path_parts
+                List.exists (fun path_part ->
+                    Search_phrase.Enriched_token.compatible_with_word token path_part
                   )
-                | `String token_word -> (
-                    let token_word_ci = String.lowercase_ascii token_word in
-                    let use_ci_match = String.equal token_word token_word_ci in
-                    List.exists2 (fun path_part path_part_ci ->
-                        match ET.match_typ token with
-                        | `Fuzzy -> (
-                            String.equal path_part_ci token_word_ci
-                            || CCString.find ~sub:token_word_ci path_part_ci >= 0
-                            || (Misc_utils.first_n_chars_of_string_contains ~n:5 path_part_ci token_word_ci.[0]
-                                && Spelll.match_with (ET.automaton token) path_part_ci)
-                          )
-                        | `Exact -> (
-                            if use_ci_match then (
-                              String.equal token_word_ci path_part_ci
-                            ) else (
-                              String.equal token_word path_part
-                            )
-                          )
-                        | `Prefix -> (
-                            if use_ci_match then (
-                              CCString.prefix ~pre:token_word_ci path_part_ci
-                            ) else (
-                              CCString.prefix ~pre:token_word path_part
-                            )
-                          )
-                        | `Suffix -> (
-                            if use_ci_match then (
-                              CCString.suffix ~suf:token_word_ci path_part_ci
-                            ) else (
-                              CCString.suffix ~suf:token_word path_part
-                            )
-                          )
-                      )
-                      t.path_parts
-                      t.path_parts_ci
-                  )
+                  t.path_parts
               )
               (Search_phrase.enriched_tokens phrase)
           )
