@@ -375,7 +375,7 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
             )
         in
         if interactive then (
-          Printf.printf "Processing files with index\n";
+          Printf.printf "Processing indexed files\n";
           flush stdout;
         );
         let indexed_files =
