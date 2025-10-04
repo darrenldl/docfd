@@ -485,7 +485,7 @@ let parse_sort_by_arg ~no_score (s : string) : Document_store.Sort_by.t =
     )
 
 let run
-    ~(env : Eio_unix.Stdenv.base)
+    ~(eio_env : Eio_unix.Stdenv.base)
     ~sw
     (debug_log : string option)
     (no_pdftotext : bool)
@@ -529,6 +529,7 @@ let run
     (print_files_without_match : bool)
     (paths : string list)
   =
+  let env = eio_env in
   Args.check
     ~max_depth
     ~max_fuzzy_edit_dist
@@ -1330,13 +1331,13 @@ let run
      )
   )
 
-let cmd ~env ~sw =
+let cmd ~eio_env ~sw =
   let open Term in
   let open Args in
   let doc = "TUI multiline fuzzy document finder" in
   let version = Version_string.s in
   Cmd.v (Cmd.info "docfd" ~version ~doc)
-    (const (run ~env ~sw)
+    (const (run ~eio_env ~sw)
      $ debug_log_arg
      $ no_pdftotext_arg
      $ no_pandoc_arg
@@ -1384,7 +1385,7 @@ let () =
     exit_with_error_msg "Windows is not supported"
   );
   Random.self_init ();
-  Eio_posix.run (fun env ->
+  Eio_posix.run (fun eio_env ->
       Eio.Switch.run (fun sw ->
-          exit (Cmd.eval (cmd ~env ~sw))
+          exit (Cmd.eval (cmd ~eio_env ~sw))
         ))

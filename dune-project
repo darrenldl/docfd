@@ -49,7 +49,7 @@ Features:
    notty
    (nottui (= "0.3"))
    lwd
-   (cmdliner (>= "1.1.0"))
+   (cmdliner (>= "2.0.0"))
    (eio (>= "0.14"))
    digestif
    eio_main
