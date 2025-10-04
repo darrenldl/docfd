@@ -502,7 +502,7 @@ let drop
   let aux ~(keep : string -> bool) =
     let keep' : 'a. string -> 'a -> bool =
       fun path _ ->
-        keep path
+      keep path
     in
     { all_documents = String_map.filter keep' t.all_documents;
       filter_exp = t.filter_exp;

@@ -116,9 +116,9 @@ let parse_spec (s : string) : (spec, string) result =
         | [] -> Ok (List.rev acc, launch_mode, cmd)
         | ext :: rest -> (
             let ext = ext
-                      |> String.lowercase_ascii
-                      |> String_utils.remove_leading_dots
-                      |> Fmt.str ".%s"
+              |> String.lowercase_ascii
+              |> String_utils.remove_leading_dots
+              |> Fmt.str ".%s"
             in
             let config =
               if ext = ".pdf" then (
@@ -155,13 +155,13 @@ let pandoc_supported_format_config_and_cmd ~path =
 
 let compute_most_unique_word_and_residing_page_num ~doc_id found_phrase =
   let page_nums = found_phrase
-                  |> List.map (fun word ->
-                      word.Search_result.found_word_pos
-                      |> (fun pos -> Index.loc_of_pos ~doc_id pos)
-                      |> Index.Loc.line_loc
-                      |> Index.Line_loc.page_num
-                    )
-                  |> List.sort_uniq Int.compare
+    |> List.map (fun word ->
+        word.Search_result.found_word_pos
+        |> (fun pos -> Index.loc_of_pos ~doc_id pos)
+        |> Index.Loc.line_loc
+        |> Index.Line_loc.page_num
+      )
+    |> List.sort_uniq Int.compare
   in
   let frequency_of_word_of_page_ci : int String_map.t Int_map.t =
     List.fold_left (fun acc page_num ->

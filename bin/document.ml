@@ -26,7 +26,7 @@ let equal (x : t) (y : t) =
 
 let compute_path_parts (path : string) =
   let path_parts = Tokenization.tokenize ~drop_spaces:false path
-                   |> List.of_seq
+    |> List.of_seq
   in
   (path_parts)
 
@@ -198,12 +198,12 @@ module Ir1 = struct
     let fs = Eio.Stdenv.fs env in
     let ext = File_utils.extension_of_file path in
     let from_format = ext
-                      |> String_utils.remove_leading_dots
-                      |> (fun s ->
-                          match s with
-                          | "htm" -> "html"
-                          | _ -> s
-                        )
+      |> String_utils.remove_leading_dots
+      |> (fun s ->
+          match s with
+          | "htm" -> "html"
+          | _ -> s
+        )
     in
     let cmd = [ "pandoc"
               ; "--from"

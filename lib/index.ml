@@ -880,9 +880,9 @@ module Search = struct
             )
           | `String search_word -> (
               let search_word = search_word
-                                |> CCString.replace ~sub:"'" ~by:"''"
-                                |> CCString.replace ~sub:"\\" ~by:"\\\\"
-                                |> CCString.replace ~sub:"%" ~by:"\\%"
+                |> CCString.replace ~sub:"'" ~by:"''"
+                |> CCString.replace ~sub:"\\" ~by:"\\\\"
+                |> CCString.replace ~sub:"%" ~by:"\\%"
               in
               match match_typ with
               | `Fuzzy | `Suffix -> ""

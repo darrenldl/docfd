@@ -107,8 +107,8 @@ let blink_on_duration : Mtime.span = Mtime.Span.(140 * ms)
 
 let os_typ : [ `Darwin | `Linux ] =
   let s = CCUnix.call_stdout "uname"
-          |> String.trim
-          |> String.lowercase_ascii
+    |> String.trim
+    |> String.lowercase_ascii
   in
   match s with
   | "darwin" -> `Darwin

@@ -571,8 +571,8 @@ let autocomplete ~choices (text, pos) : string * int =
   | [] -> (text, pos)
   | _ -> (
       let best_fit = usable_choices
-                     |> List.to_seq
-                     |> String_utils.longest_common_prefix
+        |> List.to_seq
+        |> String_utils.longest_common_prefix
       in
       let left =
         String.sub

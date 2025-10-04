@@ -779,8 +779,8 @@ let run
        let pdftotext_exists = Proc_utils.command_exists "pdftotext" in
        let pandoc_exists = Proc_utils.command_exists "pandoc" in
        let formats = Document_src.seq_of_file_collection file_collection
-                     |> Seq.map format_of_file
-                     |> Seq.fold_left (fun acc x -> File_format_set.add x acc) File_format_set.empty
+         |> Seq.map format_of_file
+         |> Seq.fold_left (fun acc x -> File_format_set.add x acc) File_format_set.empty
        in
        if not pdftotext_exists && File_format_set.mem `PDF formats then (
          exit_with_error_msg
