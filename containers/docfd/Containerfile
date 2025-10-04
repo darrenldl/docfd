@@ -1,23 +1,27 @@
-FROM docker.io/ocaml/opam:alpine-ocaml-5.2
+FROM docker.io/alpine:3.22
 
 USER root
 RUN apk add linux-headers
 RUN apk add poppler-utils
 RUN apk add sqlite sqlite-libs sqlite-dev sqlite-static
 RUN apk add sqlite-analyzer
+RUN apk add make
+RUN apk add clang
+RUN apk add opam
+RUN apk add git
+RUN apk add python3
 
-USER opam
-RUN sudo ln -s $(which opam-2.2) /usr/local/bin/opam
+# RUN ln -s $(which opam-2.2) /usr/local/bin/opam
+RUN opam --version
+RUN apk add bash
 RUN opam init --disable-sandboxing
-SHELL ["/bin/bash", "--login" , "-c"]
-RUN opam install dune
-RUN opam install utop ocp-indent
+RUN opam install --yes dune
+RUN opam install --yes utop ocp-indent
 
-USER root
-COPY . /home/opam/docfd
-RUN chown -R opam:opam /home/opam/docfd
+COPY . /root/docfd
+# RUN chown -R root:root /home/opam/docfd
 
-USER opam
-WORKDIR /home/opam/docfd
-RUN dune build docfd.opam
-RUN opam install . --deps-only --with-test
+WORKDIR /root/docfd
+RUN eval $(opam env) && dune build docfd.opam
+RUN opam install --yes . --deps-only --with-test
+RUN echo 'eval $(opam env)' >> /root/.bash_profile
