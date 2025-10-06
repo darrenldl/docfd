@@ -78,6 +78,9 @@ This contains a **breaking** DB change, you will need to remove index DB generat
 
 - Fixed macOS detection
 
+- Updated `--open-with` to accept a list of extensions, e.g.
+  `--open-with ts,js:detached="... {path}"`
+
 ## 12.0.0-alpha.13
 
 - Moved to using a global word table to reduce index DB size and speed up search
