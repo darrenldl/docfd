@@ -52,7 +52,7 @@ This contains a **breaking** DB change, you will need to remove index DB generat
     - Using `{page_num}` and `{line_num}` crashes in 11.0.1
       when there are no search results
 
-- Added sorting to document list (12.0.0-alpha.11)
+- Added sorting to document list (12.0.0-alpha.11, 12.0.0-alpha.14)
 
 - Adjusted attributes listed in document list entry (12.0.0-alpha.11)
 
@@ -80,6 +80,8 @@ This contains a **breaking** DB change, you will need to remove index DB generat
 
 - Updated `--open-with` to accept a list of extensions, e.g.
   `--open-with ts,js:detached="... {path}"`
+
+- Added sort by fzf functionality
 
 ## 12.0.0-alpha.13
 
