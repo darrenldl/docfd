@@ -75,11 +75,6 @@ let pipe_to_fzf ~get_ranking ?preview_cmd (lines : string Seq.t)
   let read_from_fzf, stdout_for_fzf = Unix.pipe ~cloexec:true () in
   let write_to_fzf_oc = Unix.out_channel_of_descr write_to_fzf in
   let read_from_fzf_ic = Unix.in_channel_of_descr read_from_fzf in
-  Seq.iter (fun file ->
-      output_string write_to_fzf_oc file;
-      output_string write_to_fzf_oc "\n";
-    ) lines;
-  Out_channel.close write_to_fzf_oc;
   let args = Dynarray.create () in
   Dynarray.add_last args "fzf";
   Dynarray.add_last args "--print-query";
@@ -91,6 +86,11 @@ let pipe_to_fzf ~get_ranking ?preview_cmd (lines : string Seq.t)
     Unix.create_process "fzf" (Dynarray.to_array args)
       stdin_for_fzf stdout_for_fzf Unix.stderr
   in
+  Seq.iter (fun line ->
+      output_string write_to_fzf_oc line;
+      output_string write_to_fzf_oc "\n";
+    ) lines;
+  Out_channel.close write_to_fzf_oc;
   let _, process_status =
     let res = ref None in
     while Option.is_none !res do
