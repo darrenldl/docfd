@@ -65,8 +65,8 @@ let pipe_to_command (f : out_channel -> unit) command args =
   Out_channel.flush oc;
   Out_channel.close oc
 
-let pipe_to_fzf_for_selection ?preview_cmd (lines : string Seq.t)
-  : [ `Selection of string list | `Cancelled of int ] =
+let pipe_to_fzf ~get_ranking ?preview_cmd (lines : string Seq.t)
+  : [ `Selection of string list | `Ranking of string list | `Cancelled of int ] =
   if not (command_exists "fzf") then (
     exit_with_error_msg
       (Fmt.str "command fzf not found")
@@ -82,6 +82,7 @@ let pipe_to_fzf_for_selection ?preview_cmd (lines : string Seq.t)
   Out_channel.close write_to_fzf_oc;
   let args = Dynarray.create () in
   Dynarray.add_last args "fzf";
+  Dynarray.add_last args "--print-query";
   Option.iter (fun preview_cmd ->
       Dynarray.add_last args "--preview";
       Dynarray.add_last args preview_cmd;
@@ -102,7 +103,11 @@ let pipe_to_fzf_for_selection ?preview_cmd (lines : string Seq.t)
   in
   Unix.close stdin_for_fzf;
   Unix.close stdout_for_fzf;
-  let selection = CCIO.read_lines_l (Unix.in_channel_of_descr read_from_fzf) in
+  let query, selection =
+    match CCIO.read_lines_l (Unix.in_channel_of_descr read_from_fzf) with
+    | [] -> failwith "unexpected case"
+    | query :: selection -> query, selection
+  in
   In_channel.close read_from_fzf_ic;
   match process_status with
   | WEXITED n when n <> 0 -> (
@@ -112,5 +117,31 @@ let pipe_to_fzf_for_selection ?preview_cmd (lines : string Seq.t)
       `Cancelled 1
     )
   | _ -> (
-      `Selection selection
+      if get_ranking then (
+        let ic =
+          Unix.open_process_args_in "fzf" [| "fzf"; "--filter"; query |]
+        in
+        let l = CCIO.read_lines_l ic in
+        Unix.close_process_in ic |> ignore;
+        `Ranking
+          (selection
+           @
+           (List.filter (fun s -> not (List.mem s selection)) l))
+      ) else (
+        `Selection selection
+      )
     )
+
+let pipe_to_fzf_for_selection ?preview_cmd (lines : string Seq.t)
+  : [ `Selection of string list | `Cancelled of int ] =
+  match pipe_to_fzf ~get_ranking:false ?preview_cmd lines with
+  | `Ranking _ -> failwith "unexpected case"
+  | `Selection l -> `Selection l
+  | `Cancelled x -> `Cancelled x
+
+let pipe_to_fzf_for_ranking ?preview_cmd (lines : string Seq.t)
+  : [ `Ranking of string list | `Cancelled of int ] =
+  match pipe_to_fzf ~get_ranking:true ?preview_cmd lines with
+  | `Ranking l -> `Ranking l
+  | `Selection _ -> failwith "unexpected case"
+  | `Cancelled x -> `Cancelled x

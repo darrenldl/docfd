@@ -46,6 +46,7 @@ module Sort_by : sig
     | `Path
     | `Score
     | `Mod_time
+    | `Fzf_ranking of int String_map.t
   ]
 
   type t = typ * Document.Compare.order

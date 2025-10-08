@@ -847,6 +847,7 @@ module Bottom_pane = struct
             { label = "p"; msg = "path" };
             { label = "d"; msg = "path date" };
             { label = "m"; msg = "mod time" };
+            { label = "f"; msg = "fzf" };
           ];
           [
             { label = "Esc"; msg = "cancel" };
@@ -1326,6 +1327,11 @@ let keyboard_handler
           )
         | (`ASCII 'm', []) -> (
             Lwd.set Vars.sort_by (`Mod_time, order);
+            true
+          )
+        | (`ASCII 'f', []) -> (
+            Lwd.set UI_base.Vars.quit true;
+            UI_base.Vars.action := Some (UI_base.Sort_by_fzf order);
             true
           )
         | _ -> false

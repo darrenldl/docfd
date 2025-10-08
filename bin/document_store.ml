@@ -319,6 +319,7 @@ module Sort_by = struct
     | `Path
     | `Score
     | `Mod_time
+    | `Fzf_ranking of int String_map.t
   ]
 
   type t = typ * Document.Compare.order
@@ -335,6 +336,26 @@ module Compare_search_result_group = struct
 
   let path order (d0, _s0) (d1, _s1) =
     Document.Compare.path order d0 d1
+
+  let fzf_ranking ranking order (d0, _s0) (d1, _s1) =
+    match
+      String_map.find_opt (Document.path d0) ranking,
+      String_map.find_opt (Document.path d1) ranking
+    with
+    | None, None -> Document.Compare.path order d0 d1
+    | None, Some _ -> (
+        (* Always shuffle document with no fzf matches to the back. *)
+        1
+      )
+    | Some _, None -> (
+        (* Always shuffle document with no fzf matches to the back. *)
+        -1
+      )
+    | Some x0, Some x1 -> (
+        match order with
+        | `Asc -> Int.compare x0 x1
+        | `Desc -> Int.compare x1 x0
+      )
 
   let score ~no_search_exp order (d0, s0) (d1, s1) =
     if no_search_exp then (
@@ -387,6 +408,8 @@ let search_result_groups
     | `Mod_time -> Compare_search_result_group.mod_time sort_by_order
     | `Path -> Compare_search_result_group.path sort_by_order
     | `Score -> Compare_search_result_group.score ~no_search_exp sort_by_order
+    | `Fzf_ranking ranking ->
+      Compare_search_result_group.fzf_ranking ranking sort_by_order
   in
   Array.sort f arr;
   arr

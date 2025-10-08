@@ -934,7 +934,7 @@ let run
           | `Path_date -> Document.Compare.path_date sort_by_order
           | `Mod_time -> Document.Compare.mod_time sort_by_order
           | `Path -> Document.Compare.path sort_by_order
-          | `Score -> failwith "unexpected case"
+          | `Score | `Fzf_ranking _ -> failwith "unexpected case"
         in
         Array.sort f arr;
         Array.iter (fun doc ->
@@ -1290,6 +1290,40 @@ let run
               )
             |> Sys.command
             |> ignore;
+            loop ()
+          )
+        | Sort_by_fzf order -> (
+            close_term ();
+            let store =
+              Document_store_manager.lock_with_view (fun view ->
+                  Dynarray.get_last view.snapshots
+                  |> Document_store_snapshot.store
+                )
+            in
+            let ranking =
+              Document_store.usable_document_paths store
+              |> String_set.to_seq
+              |> Seq.map File_utils.remove_cwd_from_path
+              |> Proc_utils.pipe_to_fzf_for_ranking
+            in
+            (match ranking with
+             | `Ranking l -> (
+                 let cwd = Sys.getcwd () in
+                 let ranking =
+                   CCList.foldi (fun acc i path ->
+                       let path =
+                         if Filename.is_relative path then (
+                           Filename.concat cwd path
+                         ) else (
+                           path
+                         )
+                       in
+                       String_map.add path i acc
+                     ) String_map.empty l
+                 in
+                 Lwd.set UI.Vars.sort_by (`Fzf_ranking ranking, order)
+               )
+             | `Cancelled _ -> ());
             loop ()
           )
       )
