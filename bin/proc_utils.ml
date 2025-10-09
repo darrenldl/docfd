@@ -103,10 +103,10 @@ let pipe_to_fzf ~get_ranking ?preview_cmd (lines : string Seq.t)
   in
   Unix.close stdin_for_fzf;
   Unix.close stdout_for_fzf;
-  let query, selection =
+  let query_and_selection =
     match CCIO.read_lines_l (Unix.in_channel_of_descr read_from_fzf) with
-    | [] -> failwith "unexpected case"
-    | query :: selection -> query, selection
+    | [] -> None
+    | query :: selection -> Some (query, selection)
   in
   In_channel.close read_from_fzf_ic;
   match process_status with
@@ -117,19 +117,23 @@ let pipe_to_fzf ~get_ranking ?preview_cmd (lines : string Seq.t)
       `Cancelled 1
     )
   | _ -> (
-      if get_ranking then (
-        let ic =
-          Unix.open_process_args_in "fzf" [| "fzf"; "--filter"; query |]
-        in
-        let l = CCIO.read_lines_l ic in
-        Unix.close_process_in ic |> ignore;
-        `Ranking
-          (selection
-           @
-           (List.filter (fun s -> not (List.mem s selection)) l))
-      ) else (
-        `Selection selection
-      )
+      match query_and_selection with
+      | None -> `Cancelled 1
+      | Some (query, selection) -> (
+          if get_ranking then (
+            let ic =
+              Unix.open_process_args_in "fzf" [| "fzf"; "--filter"; query |]
+            in
+            let l = CCIO.read_lines_l ic in
+            Unix.close_process_in ic |> ignore;
+            `Ranking
+              (selection
+               @
+               (List.filter (fun s -> not (List.mem s selection)) l))
+          ) else (
+            `Selection selection
+          )
+        )
     )
 
 let pipe_to_fzf_for_selection ?preview_cmd (lines : string Seq.t)
