@@ -54,6 +54,16 @@ This contains a **breaking** DB change, you will need to remove index DB generat
 
 - Added sorting to document list (12.0.0-alpha.11, 12.0.0-alpha.14)
 
+    - `s` for sort ascending mode and `Shift+S` for sort descending mode
+    - Under the sort modes, the sort by types are as follows:
+        - `p` sort by path
+        - `d` sort by path date
+        - `s` sort by score
+        - `m` sort by modification time
+        - `f` sort by an interactive fzf search
+            - Selected option will be ranked the highest
+            - Rest of the documents will be ranked using the ranking from fzf
+
 - Adjusted attributes listed in document list entry (12.0.0-alpha.11)
 
     - Added path date
@@ -82,6 +92,10 @@ This contains a **breaking** DB change, you will need to remove index DB generat
   `--open-with ts,js:detached="... {path}"`
 
 - Added sort by fzf functionality
+    - Under sort mode
+        - `f` sort by an interactive fzf search
+            - Selected option will be ranked the highest
+            - Rest of the documents will be ranked using the ranking from fzf
 
 ## 12.0.0-alpha.13
 
