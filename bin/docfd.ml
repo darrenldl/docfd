@@ -584,7 +584,7 @@ let run
     search_result_print_max_add_lines;
   Params.samples_per_document := samples_per_doc;
   Lwd.set UI.Vars.sort_by (parse_sort_by_arg ~no_score:false sort_by);
-  let sort_by_no_score = parse_sort_by_arg ~no_score:true sort_by_no_score in
+  Lwd.set UI.Vars.sort_by_no_score (parse_sort_by_arg ~no_score:true sort_by_no_score);
   Params.cache_dir := (
     mkdir_recursive cache_dir;
     Some cache_dir
@@ -917,6 +917,7 @@ let run
         let arr =
           Document_store.search_result_groups
             ~sort_by:(Lwd.peek UI.Vars.sort_by)
+            ~sort_by_no_score:(Lwd.peek UI.Vars.sort_by_no_score)
             document_store
         in
         Array.iter (fun (doc, _search_result) ->
@@ -928,7 +929,7 @@ let run
           Document_store.unusable_documents document_store
           |> Array.of_seq
         in
-        let (sort_by_typ, sort_by_order) = sort_by_no_score in
+        let (sort_by_typ, sort_by_order) = Lwd.peek UI.Vars.sort_by_no_score in
         let f =
           match sort_by_typ with
           | `Path_date -> Document.Compare.path_date sort_by_order
@@ -945,6 +946,7 @@ let run
         let s =
           Document_store.search_result_groups
             ~sort_by:(Lwd.peek UI.Vars.sort_by)
+            ~sort_by_no_score:(Lwd.peek UI.Vars.sort_by_no_score)
             document_store
           |> Array.to_seq
           |> Seq.map (fun (doc, arr) ->

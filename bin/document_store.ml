@@ -325,6 +325,8 @@ module Sort_by = struct
   type t = typ * Document.Compare.order
 
   let default : t = (`Score, `Desc)
+
+  let default_no_score : t = (`Path, `Asc)
 end
 
 module Compare_search_result_group = struct
@@ -357,23 +359,22 @@ module Compare_search_result_group = struct
         | `Desc -> Int.compare x1 x0
       )
 
-  let score ~no_search_exp order (d0, s0) (d1, s1) =
-    if no_search_exp then (
-      path order (d0, s0) (d1, s1)
-    ) else (
-      (* Search_result.compare_relevance puts the more relevant
-         result to the front, so we flip the comparison here to
-         obtain an ordering of "lowest score" first to match the
-         usual definition of "sort by score in ascending order".
-      *)
-      match order with
-      | `Asc -> Search_result.compare_relevance s1.(0) s0.(0)
-      | `Desc -> Search_result.compare_relevance s0.(0) s1.(0)
-    )
+  let score order (_d0, s0) (_d1, s1) =
+    assert (Array.length s0 > 0);
+    assert (Array.length s1 > 0);
+    (* Search_result.compare_relevance puts the more relevant
+       result to the front, so we flip the comparison here to
+       obtain an ordering of "lowest score" first to match the
+       usual definition of "sort by score in ascending order".
+    *)
+    match order with
+    | `Asc -> Search_result.compare_relevance s1.(0) s0.(0)
+    | `Desc -> Search_result.compare_relevance s0.(0) s1.(0)
 end
 
 let search_result_groups
     ?(sort_by : Sort_by.t = Sort_by.default)
+    ?(sort_by_no_score : Sort_by.t = Sort_by.default_no_score)
     (t : t)
   : (Document.t * Search_result.t array) array =
   let no_search_exp = Search_exp.is_empty t.search_exp in
@@ -401,17 +402,22 @@ let search_result_groups
       )
     |> Array.of_seq
   in
-  let (sort_by_typ, sort_by_order) = sort_by in
-  let f =
+  let rec f (sort_by_typ, sort_by_order) =
     match sort_by_typ with
     | `Path_date -> Compare_search_result_group.path_date sort_by_order
     | `Mod_time -> Compare_search_result_group.mod_time sort_by_order
     | `Path -> Compare_search_result_group.path sort_by_order
-    | `Score -> Compare_search_result_group.score ~no_search_exp sort_by_order
+    | `Score -> (
+        if no_search_exp then (
+          f sort_by_no_score
+        ) else (
+          Compare_search_result_group.score sort_by_order
+        )
+      )
     | `Fzf_ranking ranking ->
       Compare_search_result_group.fzf_ranking ranking sort_by_order
   in
-  Array.sort f arr;
+  Array.sort (f sort_by) arr;
   arr
 
 let usable_document_paths (t : t) : String_set.t =

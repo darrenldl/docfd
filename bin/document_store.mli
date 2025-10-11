@@ -52,9 +52,15 @@ module Sort_by : sig
   type t = typ * Document.Compare.order
 
   val default : t
+
+  val default_no_score : t
 end
 
-val search_result_groups : ?sort_by:Sort_by.t -> t -> search_result_group array
+val search_result_groups :
+  ?sort_by:Sort_by.t ->
+  ?sort_by_no_score:Sort_by.t ->
+  t ->
+  search_result_group array
 
 val usable_document_paths : t -> String_set.t
 

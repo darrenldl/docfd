@@ -33,6 +33,8 @@ module Vars = struct
 
   let sort_by : Document_store.Sort_by.t Lwd.var = Lwd.var Document_store.Sort_by.default
 
+  let sort_by_no_score : Document_store.Sort_by.t Lwd.var = Lwd.var Document_store.Sort_by.default_no_score
+
   let search_result_groups : Document_store.search_result_group array Lwd.t =
     let$* _ver, snapshot =
       Document_store_manager.cur_snapshot
@@ -40,8 +42,12 @@ module Vars = struct
     let document_store =
       Document_store_snapshot.store snapshot
     in
-    let$ sort_by = Lwd.get sort_by in
-    Document_store.search_result_groups ~sort_by document_store
+    let$* sort_by = Lwd.get sort_by in
+    let$ sort_by_no_score = Lwd.get sort_by_no_score in
+    Document_store.search_result_groups
+      ~sort_by
+      ~sort_by_no_score
+      document_store
 end
 
 let reload_document (doc : Document.t) =
