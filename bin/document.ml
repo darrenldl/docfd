@@ -88,8 +88,9 @@ module Compare = struct
       String.compare (path d1) (path d0)
 
   let path_date order d0 d1 =
+    let fallback () = path order d0 d1 in
     match path_date d0, path_date d1 with
-    | None, None -> path order d0 d1
+    | None, None -> fallback ()
     | None, Some _ -> (
         (* Always shuffle document with no path date to the back. *)
         1
@@ -100,8 +101,16 @@ module Compare = struct
       )
     | Some x0, Some x1 -> (
         match order with
-        | `Asc -> Timedesc.Date.compare x0 x1
-        | `Desc -> Timedesc.Date.compare x1 x0
+        | `Asc -> (
+            match Timedesc.Date.compare x0 x1 with
+            | 0 -> fallback ()
+            | n -> n
+          )
+        | `Desc -> (
+            match Timedesc.Date.compare x1 x0 with
+            | 0 -> fallback ()
+            | n -> n
+          )
       )
 end
 
