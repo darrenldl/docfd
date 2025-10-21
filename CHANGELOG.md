@@ -1,6 +1,6 @@
 # Changelog
 
-## 12.0.1
+## 12.1.0
 
 - Added missing sorting based on paths when path dates are the same
 - Added PDF viewer integration for zathura
