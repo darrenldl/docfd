@@ -274,6 +274,11 @@ let pdf_config_and_cmd ~doc_id ~path ~search_result : Config.t * string =
                 else if contains "atril" then
                   make_command "atril"
                     "--page-index {page_num} --find {search_word} {path}"
+                (*note: keep this _before_ mupdf, since zathura might be
+                 `org.pwmt.zathura-pdf-mupdf.desktop`*)
+                else if contains "zathura" then
+                  make_command "zathura"
+                    "--page {page_num} --find {search_word} {path}"
                 else if contains "mupdf" then
                   make_command "mupdf" "{path} {page_num}"
                 else
