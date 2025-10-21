@@ -3,6 +3,7 @@
 ## 12.0.1
 
 - Added missing sorting based on paths when path dates are the same
+- Added PDF viewer integration for zathura
 
 ## 12.0.0
 
