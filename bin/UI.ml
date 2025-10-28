@@ -846,7 +846,7 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
-      let sort_grid =
+      let sort_asc_grid =
         [
           [
             { label = "s"; msg = "score" };
@@ -854,6 +854,20 @@ module Bottom_pane = struct
             { label = "d"; msg = "path date" };
             { label = "m"; msg = "mod time" };
             { label = "f"; msg = "fzf" };
+          ];
+          [
+            { label = "Esc"; msg = "cancel" };
+          ];
+          empty_row;
+        ]
+      in
+      let sort_desc_grid =
+        [
+          [
+            { label = "s"; msg = "score" };
+            { label = "p"; msg = "path" };
+            { label = "d"; msg = "path date" };
+            { label = "m"; msg = "mod time" };
           ];
           [
             { label = "Esc"; msg = "cancel" };
@@ -970,10 +984,10 @@ module Bottom_pane = struct
          clear_grid
         );
         ({ input_mode = Sort `Asc },
-         sort_grid
+         sort_asc_grid
         );
         ({ input_mode = Sort `Desc },
-         sort_grid
+         sort_desc_grid
         );
         ({ input_mode = Drop },
          drop_grid
@@ -1336,9 +1350,13 @@ let keyboard_handler
             true
           )
         | (`ASCII 'f', []) -> (
-            Lwd.set UI_base.Vars.quit true;
-            UI_base.Vars.action := Some (UI_base.Sort_by_fzf order);
-            true
+            match order with
+            | `Asc -> (
+                Lwd.set UI_base.Vars.quit true;
+                UI_base.Vars.action := Some (UI_base.Sort_by_fzf order);
+                true
+              )
+            | `Desc -> false
           )
         | _ -> false
       in

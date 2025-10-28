@@ -40,7 +40,7 @@ type t = [
   | `Drop_unlisted
   | `Narrow_level of int
   | `Sort of Sort_by.t * Sort_by.t
-  | `Sort_by_fzf of string * int String_map.t
+  | `Sort_by_fzf of string * int String_map.t option
   | `Search of string
   | `Filter of string
 ]

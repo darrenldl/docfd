@@ -1325,7 +1325,7 @@ let run
                        String_map.add path i acc
                      ) String_map.empty l
                  in
-                 let command = `Sort_by_fzf (query, ranking) in
+                 let command = `Sort_by_fzf (query, Some ranking) in
                  let new_store =
                    Document_store.run_command
                      pool
