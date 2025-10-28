@@ -25,7 +25,7 @@ type top_level_action =
   | Edit_command_history
   | Select_and_load_script
   | Edit_script of string
-  | Sort_by_fzf of Document.Compare.order
+  | Sort_by_fzf
 
 type search_status = [
   | `Idle

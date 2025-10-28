@@ -35,7 +35,7 @@ let run pool ~init_store ~path
                            (Fmt.str "failed to run command on line %d: %s"
                               line_num_in_error_msg line))
                 )
-              | Some store -> (
+              | Some (command, store) -> (
                   let snapshot =
                     Document_store_snapshot.make
                       ~last_command:(Some command)

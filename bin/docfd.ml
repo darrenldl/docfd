@@ -1192,7 +1192,7 @@ let run
                                       "# Failed to run the above command, check if the arguments are correct"
                                     ]
                                   )
-                                | Some x -> (
+                                | Some (command, x) -> (
                                     store := x;
                                     let snapshot =
                                       Document_store_snapshot.make
@@ -1294,7 +1294,7 @@ let run
             |> ignore;
             loop ()
           )
-        | Sort_by_fzf order -> (
+        | Sort_by_fzf -> (
             close_term ();
             let snapshots =
               Document_store_manager.lock_with_view (fun view ->
@@ -1326,7 +1326,7 @@ let run
                      ) String_map.empty l
                  in
                  let command = `Sort_by_fzf (query, Some ranking) in
-                 let new_store =
+                 let command, new_store =
                    Document_store.run_command
                      pool
                      command
@@ -1334,7 +1334,9 @@ let run
                    |> Option.get
                  in
                  Dynarray.add_last snapshots
-                   (Document_store_snapshot.make ~last_command:(Some command) store);
+                   (Document_store_snapshot.make
+                      ~last_command:(Some command)
+                      new_store);
                  Document_store_manager.load_snapshots snapshots
                )
              | `Cancelled _ -> ());

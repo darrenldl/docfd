@@ -68,4 +68,4 @@ val drop : [ `Path of string | `All_except of string | `Marked | `Unmarked | `Us
 
 val narrow_search_scope_to_level : level:int -> t -> t
 
-val run_command : Task_pool.t -> Command.t -> t -> t option
+val run_command : Task_pool.t -> Command.t -> t -> (Command.t * t) option

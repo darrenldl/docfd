@@ -112,8 +112,10 @@ let toggle_mark ~path =
          (UI_base.task_pool ())
          new_command
        |> Option.get
-       |> Document_store_snapshot.make
-         ~last_command:(Some new_command)
+       |> (fun (new_command, store) ->
+           Document_store_snapshot.make
+             ~last_command:(Some new_command)
+             store)
     )
 
 let drop ~document_count (choice : [`Path of string | `All_except of string | `Marked | `Unmarked | `Listed | `Unlisted]) =
@@ -151,8 +153,10 @@ let drop ~document_count (choice : [`Path of string | `All_except of string | `M
         (UI_base.task_pool ())
         new_command
       |> Option.get
-      |> Document_store_snapshot.make
-        ~last_command:(Some new_command)
+      |> (fun (new_command, store) ->
+          Document_store_snapshot.make
+            ~last_command:(Some new_command)
+            store)
     )
 
 let mark (choice : [`Path of string | `Listed]) =
@@ -167,8 +171,10 @@ let mark (choice : [`Path of string | `Listed]) =
         (UI_base.task_pool ())
         new_command
       |> Option.get
-      |> Document_store_snapshot.make
-        ~last_command:(Some new_command)
+      |> (fun (new_command, store) ->
+          Document_store_snapshot.make
+            ~last_command:(Some new_command)
+            store)
     )
 
 let unmark (choice : [`Path of string | `Listed | `All]) =
@@ -184,8 +190,10 @@ let unmark (choice : [`Path of string | `Listed | `All]) =
         (UI_base.task_pool ())
         new_command
       |> Option.get
-      |> Document_store_snapshot.make
-        ~last_command:(Some new_command)
+      |> (fun (new_command, store) ->
+          Document_store_snapshot.make
+            ~last_command:(Some new_command)
+            store)
     )
 
 let narrow_search_scope_to_level ~level =
@@ -1353,7 +1361,7 @@ let keyboard_handler
             match order with
             | `Asc -> (
                 Lwd.set UI_base.Vars.quit true;
-                UI_base.Vars.action := Some (UI_base.Sort_by_fzf order);
+                UI_base.Vars.action := Some UI_base.Sort_by_fzf;
                 true
               )
             | `Desc -> false

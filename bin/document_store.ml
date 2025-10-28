@@ -623,43 +623,43 @@ let narrow_search_scope_to_level ~level (t : t) : t =
   in
   { t with all_documents }
 
-let run_command pool (command : Command.t) (t : t) : t option =
+let run_command pool (command : Command.t) (t : t) : (Command.t * t) option =
   match command with
   | `Mark path -> (
-      Some (mark (`Path path) t)
+      Some (command, mark (`Path path) t)
     )
   | `Mark_listed -> (
-      Some (mark `Usable t)
+      Some (command, mark `Usable t)
     )
   | `Unmark path -> (
-      Some (unmark (`Path path) t)
+      Some (command, unmark (`Path path) t)
     )
   | `Unmark_listed -> (
-      Some (unmark `Usable t)
+      Some (command, unmark `Usable t)
     )
   | `Unmark_all -> (
-      Some (unmark `All t)
+      Some (command, unmark `All t)
     )
   | `Drop s -> (
-      Some (drop (`Path s) t)
+      Some (command, drop (`Path s) t)
     )
   | `Drop_all_except s -> (
-      Some (drop (`All_except s) t)
+      Some (command, drop (`All_except s) t)
     )
   | `Drop_marked -> (
-      Some (drop `Marked t)
+      Some (command, drop `Marked t)
     )
   | `Drop_unmarked -> (
-      Some (drop `Unmarked t)
+      Some (command, drop `Unmarked t)
     )
   | `Drop_listed -> (
-      Some (drop `Usable t)
+      Some (command, drop `Usable t)
     )
   | `Drop_unlisted -> (
-      Some (drop `Unusable t)
+      Some (command, drop `Unusable t)
     )
   | `Narrow_level level -> (
-      Some (narrow_search_scope_to_level ~level t)
+      Some (command, narrow_search_scope_to_level ~level t)
     )
   | `Sort _ -> failwith "TODO"
   | `Sort_by_fzf _ -> failwith "TODO"
@@ -673,6 +673,7 @@ let run_command pool (command : Command.t) (t : t) : t option =
             s
             search_exp
             t
+          |> Option.map (fun store -> (command, store))
         )
     )
   | `Filter s -> (
@@ -685,5 +686,6 @@ let run_command pool (command : Command.t) (t : t) : t option =
             s
             exp
             t
+          |> Option.map (fun store -> (command, store))
         )
     )

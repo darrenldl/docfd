@@ -140,8 +140,9 @@ let update_starting_store (starting_store : Document_store.t) =
           match Document_store_snapshot.last_command cur with
           | None -> prev_store
           | Some command ->
-            Option.value ~default:prev_store
-              (Document_store.run_command pool command prev_store)
+            Document_store.run_command pool command prev_store
+            |> Option.map snd
+            |> Option.value ~default:prev_store
         in
         Dynarray.set
           snapshots
