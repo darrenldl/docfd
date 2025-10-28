@@ -1,3 +1,31 @@
+module Sort_by = struct
+  type typ = [
+    | `Path_date
+    | `Path
+    | `Score
+    | `Mod_time
+  ]
+
+  type t = typ * Document.Compare.order
+
+  let default : t = (`Score, `Desc)
+
+  let default_no_score : t = (`Path, `Asc)
+
+  let pp formatter ((typ, order) : t) =
+    Fmt.pf formatter "%s,%s"
+      (match typ with
+       | `Path_date -> "path-date"
+       | `Path -> "path"
+       | `Score -> "score"
+       | `Mod_time -> "mod-time"
+      )
+      (match order with
+       | `Asc -> "asc"
+       | `Desc -> "desc"
+      )
+end
+
 type t = [
   | `Mark of string
   | `Mark_listed
@@ -11,6 +39,8 @@ type t = [
   | `Drop_listed
   | `Drop_unlisted
   | `Narrow_level of int
+  | `Sort of Sort_by.t * Sort_by.t
+  | `Sort_by_fzf of string * int String_map.t
   | `Search of string
   | `Filter of string
 ]
@@ -29,6 +59,16 @@ let pp fmt (t : t) =
   | `Drop_listed -> Fmt.pf fmt "drop listed"
   | `Drop_unlisted -> Fmt.pf fmt "drop unlisted"
   | `Narrow_level x -> Fmt.pf fmt "narrow level: %d" x
+  | `Sort (x, y) -> (
+      Fmt.pf fmt "sort by: %a %a"
+        Sort_by.pp
+        x
+        Sort_by.pp
+        y
+    )
+  | `Sort_by_fzf (query, _ranking) -> (
+      Fmt.pf fmt "sort by fzf: %s" query
+    )
   | `Search s -> (
       if String.length s = 0 then (
         Fmt.pf fmt "clear search"

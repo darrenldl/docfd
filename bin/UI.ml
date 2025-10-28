@@ -31,9 +31,9 @@ module Vars = struct
       ) arr;
     acc
 
-  let sort_by : Document_store.Sort_by.t Lwd.var = Lwd.var Document_store.Sort_by.default
+  let sort_by : Command.Sort_by.t Lwd.var = Lwd.var Command.Sort_by.default
 
-  let sort_by_no_score : Document_store.Sort_by.t Lwd.var = Lwd.var Document_store.Sort_by.default_no_score
+  let sort_by_no_score : Command.Sort_by.t Lwd.var = Lwd.var Command.Sort_by.default_no_score
 
   let search_result_groups : Document_store.search_result_group array Lwd.t =
     let$* _ver, snapshot =

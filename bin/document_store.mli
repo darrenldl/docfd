@@ -40,25 +40,9 @@ val add_document : Task_pool.t -> Document.t -> t -> t
 
 val of_seq : Task_pool.t -> Document.t Seq.t -> t
 
-module Sort_by : sig
-  type typ = [
-    | `Path_date
-    | `Path
-    | `Score
-    | `Mod_time
-    | `Fzf_ranking of int String_map.t
-  ]
-
-  type t = typ * Document.Compare.order
-
-  val default : t
-
-  val default_no_score : t
-end
-
 val search_result_groups :
-  ?sort_by:Sort_by.t ->
-  ?sort_by_no_score:Sort_by.t ->
+  ?sort_by:Command.Sort_by.t ->
+  ?sort_by_no_score:Command.Sort_by.t ->
   t ->
   search_result_group array
 

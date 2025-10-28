@@ -313,22 +313,6 @@ let of_seq pool (s : Document.t Seq.t) =
     empty
     s
 
-module Sort_by = struct
-  type typ = [
-    | `Path_date
-    | `Path
-    | `Score
-    | `Mod_time
-    | `Fzf_ranking of int String_map.t
-  ]
-
-  type t = typ * Document.Compare.order
-
-  let default : t = (`Score, `Desc)
-
-  let default_no_score : t = (`Path, `Asc)
-end
-
 module Compare_search_result_group = struct
   let mod_time order (d0, _s0) (d1, _s1) =
     Document.Compare.mod_time order d0 d1
@@ -373,8 +357,8 @@ module Compare_search_result_group = struct
 end
 
 let search_result_groups
-    ?(sort_by : Sort_by.t = Sort_by.default)
-    ?(sort_by_no_score : Sort_by.t = Sort_by.default_no_score)
+    ?(sort_by : Command.Sort_by.t = Command.Sort_by.default)
+    ?(sort_by_no_score : Command.Sort_by.t = Command.Sort_by.default_no_score)
     (t : t)
   : (Document.t * Search_result.t array) array =
   let no_search_exp = Search_exp.is_empty t.search_exp in
@@ -414,8 +398,6 @@ let search_result_groups
           Compare_search_result_group.score sort_by_order
         )
       )
-    | `Fzf_ranking ranking ->
-      Compare_search_result_group.fzf_ranking ranking sort_by_order
   in
   Array.sort (f sort_by) arr;
   arr
@@ -679,6 +661,8 @@ let run_command pool (command : Command.t) (t : t) : t option =
   | `Narrow_level level -> (
       Some (narrow_search_scope_to_level ~level t)
     )
+  | `Sort _ -> failwith "TODO"
+  | `Sort_by_fzf _ -> failwith "TODO"
   | `Search s -> (
       match Search_exp.parse s with
       | None -> None

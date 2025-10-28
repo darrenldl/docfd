@@ -66,7 +66,7 @@ let pipe_to_command (f : out_channel -> unit) command args =
   Out_channel.close oc
 
 let pipe_to_fzf ~get_ranking ?preview_cmd (lines : string Seq.t)
-  : [ `Selection of string list | `Ranking of string list | `Cancelled of int ] =
+  : [ `Selection of string * string list | `Ranking of string * string list | `Cancelled of int ] =
   if not (command_exists "fzf") then (
     exit_with_error_msg
       (Fmt.str "command fzf not found")
@@ -127,25 +127,26 @@ let pipe_to_fzf ~get_ranking ?preview_cmd (lines : string Seq.t)
             let l = CCIO.read_lines_l ic in
             Unix.close_process_in ic |> ignore;
             `Ranking
-              (selection
-               @
-               (List.filter (fun s -> not (List.mem s selection)) l))
+              (query,
+               (selection
+                @
+                (List.filter (fun s -> not (List.mem s selection)) l)))
           ) else (
-            `Selection selection
+            `Selection (query, selection)
           )
         )
     )
 
 let pipe_to_fzf_for_selection ?preview_cmd (lines : string Seq.t)
-  : [ `Selection of string list | `Cancelled of int ] =
+  : [ `Selection of string * string list | `Cancelled of int ] =
   match pipe_to_fzf ~get_ranking:false ?preview_cmd lines with
   | `Ranking _ -> failwith "unexpected case"
-  | `Selection l -> `Selection l
+  | `Selection (q, l) -> `Selection (q, l)
   | `Cancelled x -> `Cancelled x
 
 let pipe_to_fzf_for_ranking ?preview_cmd (lines : string Seq.t)
-  : [ `Ranking of string list | `Cancelled of int ] =
+  : [ `Ranking of string * string list | `Cancelled of int ] =
   match pipe_to_fzf ~get_ranking:true ?preview_cmd lines with
-  | `Ranking l -> `Ranking l
+  | `Ranking (q, l) -> `Ranking (q, l)
   | `Selection _ -> failwith "unexpected case"
   | `Cancelled x -> `Cancelled x

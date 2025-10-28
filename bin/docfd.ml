@@ -448,10 +448,10 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
   Gc.compact ();
   store
 
-let parse_sort_by_arg ~no_score (s : string) : Document_store.Sort_by.t =
+let parse_sort_by_arg ~no_score (s : string) : Command.Sort_by.t =
   match String.split_on_char ',' s with
   | [ typ; order ] -> (
-      let typ : Document_store.Sort_by.typ =
+      let typ : Command.Sort_by.typ =
         match String.lowercase_ascii (String.trim typ) with
         | "path" -> `Path
         | "path-date" -> `Path_date
@@ -935,7 +935,7 @@ let run
           | `Path_date -> Document.Compare.path_date sort_by_order
           | `Mod_time -> Document.Compare.mod_time sort_by_order
           | `Path -> Document.Compare.path sort_by_order
-          | `Score | `Fzf_ranking _ -> failwith "unexpected case"
+          | `Score -> failwith "unexpected case"
         in
         Array.sort f arr;
         Array.iter (fun doc ->
@@ -1258,7 +1258,7 @@ let run
                 ~preview_cmd:(Fmt.str "cat %s/{}" dir)
             in
             match selection with
-            | `Selection [ file ] -> (
+            | `Selection (_, [ file ]) -> (
                 let path = Filename.concat dir file in
                 let init_store =
                   Document_store_manager.lock_with_view (fun view ->
@@ -1277,7 +1277,7 @@ let run
                     loop ()
                   )
               )
-            | `Selection _ -> failwith "unexpected case"
+            | `Selection (_, _) -> failwith "unexpected case"
             | `Cancelled _ -> (
                 loop ()
               )
@@ -1296,11 +1296,13 @@ let run
           )
         | Sort_by_fzf order -> (
             close_term ();
-            let store =
+            let snapshots =
               Document_store_manager.lock_with_view (fun view ->
-                  Dynarray.get_last view.snapshots
-                  |> Document_store_snapshot.store
+                  view.snapshots
                 )
+            in
+            let store = Dynarray.get_last snapshots
+              |> Document_store_snapshot.store
             in
             let ranking =
               Document_store.usable_document_paths store
@@ -1309,7 +1311,7 @@ let run
               |> Proc_utils.pipe_to_fzf_for_ranking
             in
             (match ranking with
-             | `Ranking l -> (
+             | `Ranking (query, l) -> (
                  let cwd = Sys.getcwd () in
                  let ranking =
                    CCList.foldi (fun acc i path ->
@@ -1323,7 +1325,17 @@ let run
                        String_map.add path i acc
                      ) String_map.empty l
                  in
-                 Lwd.set UI.Vars.sort_by (`Fzf_ranking ranking, order)
+                 let command = `Sort_by_fzf (query, ranking) in
+                 let new_store =
+                   Document_store.run_command
+                     pool
+                     command
+                     store
+                   |> Option.get
+                 in
+                 Dynarray.add_last snapshots
+                   (Document_store_snapshot.make ~last_command:(Some command) store);
+                 Document_store_manager.load_snapshots snapshots
                )
              | `Cancelled _ -> ());
             loop ()
