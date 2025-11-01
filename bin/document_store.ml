@@ -704,8 +704,9 @@ let run_command pool (command : Command.t) (t : t) : (Command.t * t) option =
           )
         | Some x -> x
       in
+      let sort_by = (`Fzf_ranking ranking, `Asc) in
       let command = `Sort_by_fzf (query, Some ranking) in
-      Some (command, t)
+      Some (command, { t with sort_by; sort_by_no_score = sort_by })
     )
   | `Search s -> (
       match Search_exp.parse s with
