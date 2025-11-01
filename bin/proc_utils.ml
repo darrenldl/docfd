@@ -74,7 +74,7 @@ let filter_via_fzf query =
   l
 
 let pipe_to_fzf ~get_ranking ?preview_cmd (lines : string Seq.t)
-  : [ `Selection of string * string list | `Ranking of string * string list | `Cancelled of int ] =
+  : [ `Selection of string * string list | `Ranking of string * int String_map.t | `Cancelled of int ] =
   if not (command_exists "fzf") then (
     exit_with_error_msg
       (Fmt.str "command fzf not found")
@@ -134,7 +134,9 @@ let pipe_to_fzf ~get_ranking ?preview_cmd (lines : string Seq.t)
               (query,
                (selection
                 @
-                (List.filter (fun s -> not (List.mem s selection)) l)))
+                (List.filter (fun s -> not (List.mem s selection)) l))
+               |> Misc_utils.ranking_of_ranked_document_list
+              )
           ) else (
             `Selection (query, selection)
           )
@@ -149,7 +151,7 @@ let pipe_to_fzf_for_selection ?preview_cmd (lines : string Seq.t)
   | `Cancelled x -> `Cancelled x
 
 let pipe_to_fzf_for_ranking ?preview_cmd (lines : string Seq.t)
-  : [ `Ranking of string * string list | `Cancelled of int ] =
+  : [ `Ranking of string * int String_map.t | `Cancelled of int ] =
   match pipe_to_fzf ~get_ranking:true ?preview_cmd lines with
   | `Ranking (q, l) -> `Ranking (q, l)
   | `Selection _ -> failwith "unexpected case"

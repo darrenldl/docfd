@@ -1311,20 +1311,7 @@ let run
               |> Proc_utils.pipe_to_fzf_for_ranking
             in
             (match ranking with
-             | `Ranking (query, l) -> (
-                 let cwd = Sys.getcwd () in
-                 let ranking =
-                   CCList.foldi (fun acc i path ->
-                       let path =
-                         if Filename.is_relative path then (
-                           Filename.concat cwd path
-                         ) else (
-                           path
-                         )
-                       in
-                       String_map.add path i acc
-                     ) String_map.empty l
-                 in
+             | `Ranking (query, ranking) -> (
                  let command = `Sort_by_fzf (query, Some ranking) in
                  let command, new_store =
                    Document_store.run_command
