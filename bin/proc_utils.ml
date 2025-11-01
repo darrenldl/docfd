@@ -65,6 +65,14 @@ let pipe_to_command (f : out_channel -> unit) command args =
   Out_channel.flush oc;
   Out_channel.close oc
 
+let filter_via_fzf query =
+  let ic =
+    Unix.open_process_args_in "fzf" [| "fzf"; "--filter"; query |]
+  in
+  let l = CCIO.read_lines_l ic in
+  Unix.close_process_in ic |> ignore;
+  l
+
 let pipe_to_fzf ~get_ranking ?preview_cmd (lines : string Seq.t)
   : [ `Selection of string * string list | `Ranking of string * string list | `Cancelled of int ] =
   if not (command_exists "fzf") then (
@@ -121,11 +129,7 @@ let pipe_to_fzf ~get_ranking ?preview_cmd (lines : string Seq.t)
       | None -> `Cancelled 1
       | Some (query, selection) -> (
           if get_ranking then (
-            let ic =
-              Unix.open_process_args_in "fzf" [| "fzf"; "--filter"; query |]
-            in
-            let l = CCIO.read_lines_l ic in
-            Unix.close_process_in ic |> ignore;
+            let l = filter_via_fzf query in
             `Ranking
               (query,
                (selection
