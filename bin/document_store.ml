@@ -684,8 +684,29 @@ let run_command pool (command : Command.t) (t : t) : (Command.t * t) option =
   | `Narrow_level level -> (
       Some (command, narrow_search_scope_to_level ~level t)
     )
-  | `Sort _ -> failwith "TODO"
-  | `Sort_by_fzf _ -> failwith "TODO"
+  | `Sort (sort_by, sort_by_no_score) -> (
+      let sort_by =
+        sort_by
+        |> (fun (typ, order) -> ((typ :> Sort_by.typ), order))
+      in
+      let sort_by_no_score =
+        sort_by_no_score
+        |> (fun (typ, order) -> ((typ :> Sort_by.typ), order))
+      in
+      Some (command, { t with sort_by; sort_by_no_score })
+    )
+  | `Sort_by_fzf (query, ranking) -> (
+      let ranking =
+        match ranking with
+        | None -> (
+            Proc_utils.filter_via_fzf query
+            |> Misc_utils.ranking_of_ranked_document_list
+          )
+        | Some x -> x
+      in
+      let command = `Sort_by_fzf (query, Some ranking) in
+      Some (command, t)
+    )
   | `Search s -> (
       match Search_exp.parse s with
       | None -> None
