@@ -30,24 +30,6 @@ module Vars = struct
         )
       ) arr;
     acc
-
-  let sort_by : Command.Sort_by.t Lwd.var = Lwd.var Command.Sort_by.default
-
-  let sort_by_no_score : Command.Sort_by.t Lwd.var = Lwd.var Command.Sort_by.default_no_score
-
-  let search_result_groups : Document_store.search_result_group array Lwd.t =
-    let$* _ver, snapshot =
-      Document_store_manager.cur_snapshot
-    in
-    let document_store =
-      Document_store_snapshot.store snapshot
-    in
-    let$* sort_by = Lwd.get sort_by in
-    let$ sort_by_no_score = Lwd.get sort_by_no_score in
-    Document_store.search_result_groups
-      ~sort_by
-      ~sort_by_no_score
-      document_store
 end
 
 let reload_document (doc : Document.t) =
@@ -184,6 +166,20 @@ let unmark (choice : [`Path of string | `Listed | `All]) =
     | `Listed -> `Unmark_listed
     | `All -> `Unmark_all
   in
+  Document_store_manager.update_from_cur_snapshot (fun cur_snapshot ->
+      Document_store_snapshot.store cur_snapshot
+      |> Document_store.run_command
+        (UI_base.task_pool ())
+        new_command
+      |> Option.get
+      |> (fun (new_command, store) ->
+          Document_store_snapshot.make
+            ~last_command:(Some new_command)
+            store)
+    )
+
+let sort (sort_by : Command.Sort_by.t) =
+  let new_command = `Sort (sort_by, Command.Sort_by.default_no_score) in
   Document_store_manager.update_from_cur_snapshot (fun cur_snapshot ->
       Document_store_snapshot.store cur_snapshot
       |> Document_store.run_command
@@ -1342,19 +1338,19 @@ let keyboard_handler
         match key with
         | (`Escape, []) -> true
         | (`ASCII 's', []) -> (
-            Lwd.set Vars.sort_by (`Score, order);
+            sort (`Score, order);
             true
           )
         | (`ASCII 'p', []) -> (
-            Lwd.set Vars.sort_by (`Path, order);
+            sort (`Path, order);
             true
           )
         | (`ASCII 'd', []) -> (
-            Lwd.set Vars.sort_by (`Path_date, order);
+            sort (`Path_date, order);
             true
           )
         | (`ASCII 'm', []) -> (
-            Lwd.set Vars.sort_by (`Mod_time, order);
+            sort (`Mod_time, order);
             true
           )
         | (`ASCII 'f', []) -> (
@@ -1704,7 +1700,9 @@ let main : Nottui.ui Lwd.t =
   let document_store =
     Document_store_snapshot.store snapshot
   in
-  let$* search_result_groups = Vars.search_result_groups in
+  let search_result_groups =
+    Document_store.search_result_groups document_store
+  in
   let document_count = Array.length search_result_groups in
   UI_base.set_document_selected
     ~choice_count:document_count

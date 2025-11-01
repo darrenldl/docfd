@@ -4,6 +4,18 @@ type key = string
 
 type search_result_group = Document.t * Search_result.t array
 
+module Sort_by = struct
+  type typ = [
+    | `Path_date
+    | `Path
+    | `Score
+    | `Mod_time
+    | `Fzf_ranking of int String_map.t
+  ]
+
+  type t = typ * Document.Compare.order
+end
+
 type t = {
   all_documents : Document.t String_map.t;
   filter_exp : Filter_exp.t;
@@ -13,6 +25,8 @@ type t = {
   search_exp : Search_exp.t;
   search_exp_string : string;
   search_results : Search_result.t array String_map.t;
+  sort_by : Sort_by.t;
+  sort_by_no_score : Sort_by.t;
 }
 
 let equal (x : t) (y : t) =
@@ -44,6 +58,10 @@ let empty : t =
     search_exp = Search_exp.empty;
     search_exp_string = "";
     search_results = String_map.empty;
+    sort_by = Command.Sort_by.default
+      |> (fun (typ, order) -> ((typ :> Sort_by.typ), order));
+    sort_by_no_score = Command.Sort_by.default_no_score
+      |> (fun (typ, order) -> ((typ :> Sort_by.typ), order));
   }
 
 let filter_exp (t : t) = t.filter_exp
@@ -357,8 +375,6 @@ module Compare_search_result_group = struct
 end
 
 let search_result_groups
-    ?(sort_by : Command.Sort_by.t = Command.Sort_by.default)
-    ?(sort_by_no_score : Command.Sort_by.t = Command.Sort_by.default_no_score)
     (t : t)
   : (Document.t * Search_result.t array) array =
   let no_search_exp = Search_exp.is_empty t.search_exp in
@@ -393,13 +409,16 @@ let search_result_groups
     | `Path -> Compare_search_result_group.path sort_by_order
     | `Score -> (
         if no_search_exp then (
-          f sort_by_no_score
+          f t.sort_by_no_score
         ) else (
           Compare_search_result_group.score sort_by_order
         )
       )
+    | `Fzf_ranking ranking -> (
+        Compare_search_result_group.fzf_ranking ranking sort_by_order
+      )
   in
-  Array.sort (f sort_by) arr;
+  Array.sort (f t.sort_by) arr;
   arr
 
 let usable_document_paths (t : t) : String_set.t =
@@ -523,6 +542,8 @@ let drop
       search_exp = t.search_exp;
       search_exp_string = t.search_exp_string;
       search_results = String_map.filter keep' t.search_results;
+      sort_by = t.sort_by;
+      sort_by_no_score = t.sort_by_no_score;
     }
   in
   match choice with
@@ -535,6 +556,8 @@ let drop
         search_exp = t.search_exp;
         search_exp_string = t.search_exp_string;
         search_results = String_map.remove path t.search_results;
+        sort_by = t.sort_by;
+        sort_by_no_score = t.sort_by_no_score;
       }
     )
   | `All_except path -> (

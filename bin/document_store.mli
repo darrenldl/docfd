@@ -40,11 +40,7 @@ val add_document : Task_pool.t -> Document.t -> t -> t
 
 val of_seq : Task_pool.t -> Document.t Seq.t -> t
 
-val search_result_groups :
-  ?sort_by:Command.Sort_by.t ->
-  ?sort_by_no_score:Command.Sort_by.t ->
-  t ->
-  search_result_group array
+val search_result_groups : t -> search_result_group array
 
 val usable_document_paths : t -> String_set.t
 
