@@ -24,6 +24,44 @@ module Sort_by = struct
        | `Asc -> "asc"
        | `Desc -> "desc"
       )
+
+  let p ~no_score : t Angstrom.t =
+    let open Angstrom in
+    let open Parser_components in
+    skip_spaces *>
+    (choice (List.filter_map
+               Fun.id ([
+                   Some (string "path" *> return `Path);
+                   Some (string "path-date" *> return `Path_date);
+                   (if no_score then
+                      None
+                    else
+                      Some (string "score" *> return `Score));
+                   Some (string "mod-time" *> return `Mod_time);
+                 ]))
+     <|>
+     (take_while (fun c -> is_not_space c && c <> ',') >>=
+      fun s -> fail (Fmt.str "unrecognized sort by type: %s" s))
+    )
+    >>= fun typ ->
+    skip_spaces *>
+    char ',' *> skip_spaces *>
+    (choice [
+        string "asc" *> return `Asc;
+        string "desc" *> return `Desc;
+      ]
+     <|>
+     (take_while is_not_space >>=
+      fun s -> fail (Fmt.str "unrecognized sort by order: %s" s))
+    )
+    >>= fun order -> (
+      return (typ, order)
+    )
+
+  let parse ~no_score s =
+    match Angstrom.(parse_string ~consume:Consume.All) (p ~no_score) s with
+    | Ok t -> Ok t
+    | Error msg -> Error msg
 end
 
 type t = [
@@ -141,6 +179,20 @@ module Parsers = struct
           string "filter" *> skip_spaces *> return (`Filter "");
         ]
       );
+      string "sort" *> skip_spaces *>
+      string "by" *> skip_spaces *>
+      string "fzf" *> skip_spaces *>
+      char ':' *> skip_spaces *>
+      any_string_trimmed >>| (fun s -> (`Sort_by_fzf (s, None)));
+      (string "sort" *> skip_spaces *>
+       string "by" *> skip_spaces *>
+       char ':' *> skip_spaces *>
+       Sort_by.p ~no_score:false >>= fun sort_by ->
+       skip_spaces *>
+       char ';' *>
+       skip_spaces *>
+       Sort_by.p ~no_score:true >>| fun sort_by_no_score ->
+       `Sort (sort_by, sort_by_no_score));
       string "search" *> skip_spaces *>
       char ':' *> skip_spaces *>
       any_string_trimmed >>| (fun s -> (`Search s));

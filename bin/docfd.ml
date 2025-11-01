@@ -449,31 +449,12 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
   store
 
 let parse_sort_by_arg ~no_score (s : string) : Command.Sort_by.t =
-  match String.split_on_char ',' s with
-  | [ typ; order ] -> (
-      let typ : Command.Sort_by.typ =
-        match String.lowercase_ascii (String.trim typ) with
-        | "path" -> `Path
-        | "path-date" -> `Path_date
-        | "score" when not no_score -> `Score
-        | "mod-time" -> `Mod_time
-        | s -> (
-            exit_with_error_msg
-              (Fmt.str "unrecognized sort by type: %s" s)
-          )
+  match Command.Sort_by.parse ~no_score s with
+  | Ok t -> t
+  | Error msg -> (
+      let msg = CCString.chop_prefix ~pre:": " msg
+        |> Option.value ~default:msg
       in
-      let order : Document.Compare.order =
-        match String.lowercase_ascii (String.trim order) with
-        | "asc" -> `Asc
-        | "desc" -> `Desc
-        | s -> (
-            exit_with_error_msg
-              (Fmt.str "unrecognized sort by order: %s" s)
-          )
-      in
-      (typ, order)
-    )
-  | _ -> (
       exit_with_error_msg
         (Fmt.str "failed to parse --%s argument: %s"
            (if no_score then (
@@ -481,7 +462,8 @@ let parse_sort_by_arg ~no_score (s : string) : Command.Sort_by.t =
              ) else (
               Args.sort_arg_name
             ))
-           s)
+           msg
+        )
     )
 
 let run
