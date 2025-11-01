@@ -1096,6 +1096,9 @@ let run
                       Fmt.str "# - %a" Command.pp (`Search "");
                       Fmt.str "# - %a" Command.pp (`Filter "path-fuzzy:\"file txt\"");
                       Fmt.str "# - %a" Command.pp (`Filter "");
+                      Fmt.str "# - %a" Command.pp (`Sort (Command.Sort_by.default, Command.Sort_by.default_no_score));
+                      Fmt.str "# - %a" Command.pp (`Sort_by_fzf ("", None));
+                      Fmt.str "# - %a" Command.pp (`Sort_by_fzf ("readme", None));
                       Fmt.str "# - %a" Command.pp (`Narrow_level 1);
                       Fmt.str "# - %a" Command.pp (`Mark "/path/to/document");
                       Fmt.str "# - %a" Command.pp `Mark_listed;

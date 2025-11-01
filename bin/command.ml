@@ -98,14 +98,18 @@ let pp fmt (t : t) =
   | `Drop_unlisted -> Fmt.pf fmt "drop unlisted"
   | `Narrow_level x -> Fmt.pf fmt "narrow level: %d" x
   | `Sort (x, y) -> (
-      Fmt.pf fmt "sort by: %a %a"
+      Fmt.pf fmt "sort by: %a; %a"
         Sort_by.pp
         x
         Sort_by.pp
         y
     )
   | `Sort_by_fzf (query, _ranking) -> (
-      Fmt.pf fmt "sort by fzf: %s" query
+      if String.length (String.trim query) = 0 then (
+        Fmt.pf fmt "sort by fzf"
+      ) else (
+        Fmt.pf fmt "sort by fzf: %s" query
+      )
     )
   | `Search s -> (
       if String.length s = 0 then (
@@ -184,6 +188,10 @@ module Parsers = struct
       string "fzf" *> skip_spaces *>
       char ':' *> skip_spaces *>
       any_string_trimmed >>| (fun s -> (`Sort_by_fzf (s, None)));
+      string "sort" *> skip_spaces *>
+      string "by" *> skip_spaces *>
+      string "fzf" *> skip_spaces *>
+      (return (`Sort_by_fzf ("", None)));
       (string "sort" *> skip_spaces *>
        string "by" *> skip_spaces *>
        char ':' *> skip_spaces *>
