@@ -179,6 +179,7 @@ let unmark (choice : [`Path of string | `Listed | `All]) =
     )
 
 let sort (sort_by : Command.Sort_by.t) =
+  UI_base.reset_document_selected ();
   let new_command = `Sort (sort_by, Command.Sort_by.default_no_score) in
   Document_store_manager.update_from_cur_snapshot (fun cur_snapshot ->
       Document_store_snapshot.store cur_snapshot
@@ -1356,6 +1357,7 @@ let keyboard_handler
         | (`ASCII 'f', []) -> (
             match order with
             | `Asc -> (
+                UI_base.reset_document_selected ();
                 Lwd.set UI_base.Vars.quit true;
                 UI_base.Vars.action := Some UI_base.Sort_by_fzf;
                 true
