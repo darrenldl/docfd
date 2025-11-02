@@ -79,6 +79,7 @@ type t = [
   | `Narrow_level of int
   | `Sort of Sort_by.t * Sort_by.t
   | `Sort_by_fzf of string * int String_map.t option
+  | `Focus of string
   | `Search of string
   | `Filter of string
 ]
@@ -111,6 +112,7 @@ let pp fmt (t : t) =
         Fmt.pf fmt "sort by fzf: %s" query
       )
     )
+  | `Focus s -> Fmt.pf fmt "focus: %s" s
   | `Search s -> (
       if String.length s = 0 then (
         Fmt.pf fmt "clear search"
@@ -201,6 +203,9 @@ module Parsers = struct
        skip_spaces *>
        Sort_by.p ~no_score:true >>| fun sort_by_no_score ->
        `Sort (sort_by, sort_by_no_score));
+      string "focus" *> skip_spaces *>
+      char ':' *> skip_spaces *>
+      any_string_trimmed >>| (fun s -> (`Focus s));
       string "search" *> skip_spaces *>
       char ':' *> skip_spaces *>
       any_string_trimmed >>| (fun s -> (`Search s));
