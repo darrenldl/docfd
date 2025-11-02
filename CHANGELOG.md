@@ -4,7 +4,7 @@
 
 - Added missing sorting based on paths when path dates are the same
 - Added PDF viewer integration for zathura
-- Moved sorting handling to the level of document store command instead of just plain UI element
+- Moved sorting handling to the level of document store command instead of just plain UI element update
     - This allows Docfd script to better capture the view on screen
 
 ## 12.0.0
