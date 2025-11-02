@@ -102,14 +102,6 @@ let trim_angstrom_error_msg (s : string) =
   |> Option.value ~default:s
 
 let ranking_of_ranked_document_list (l : string list) : int String_map.t =
-  let cwd = Sys.getcwd () in
   CCList.foldi (fun acc i path ->
-      let path =
-        if Filename.is_relative path then (
-          Filename.concat cwd path
-        ) else (
-          path
-        )
-      in
       String_map.add path i acc
     ) String_map.empty l

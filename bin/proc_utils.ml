@@ -65,16 +65,23 @@ let pipe_to_command (f : out_channel -> unit) command args =
   Out_channel.flush oc;
   Out_channel.close oc
 
-let filter_via_fzf query =
-  let ic =
-    Unix.open_process_args_in "fzf" [| "fzf"; "--filter"; query |]
+let filter_via_fzf query lines =
+  let ic, oc =
+    Unix.open_process_args "fzf" [| "fzf"; "--filter"; query |]
   in
+  Seq.iter (fun line ->
+      output_string oc line;
+      output_string oc "\n";
+    ) lines;
+  Out_channel.close oc;
   let l = CCIO.read_lines_l ic in
-  Unix.close_process_in ic |> ignore;
+  Unix.close_process (ic, oc) |> ignore;
   l
 
 let pipe_to_fzf ~get_ranking ?preview_cmd (lines : string Seq.t)
-  : [ `Selection of string * string list | `Ranking of string * int String_map.t | `Cancelled of int ] =
+  : [ `Selection of string * string list
+    | `Ranking of string * string list * string list
+    | `Cancelled of int ] =
   if not (command_exists "fzf") then (
     exit_with_error_msg
       (Fmt.str "command fzf not found")
@@ -129,14 +136,9 @@ let pipe_to_fzf ~get_ranking ?preview_cmd (lines : string Seq.t)
       | None -> `Cancelled 1
       | Some (query, selection) -> (
           if get_ranking then (
-            let l = filter_via_fzf query in
+            let l = filter_via_fzf query lines in
             `Ranking
-              (query,
-               (selection
-                @
-                (List.filter (fun s -> not (List.mem s selection)) l))
-               |> Misc_utils.ranking_of_ranked_document_list
-              )
+              (query, selection, l)
           ) else (
             `Selection (query, selection)
           )
@@ -151,8 +153,8 @@ let pipe_to_fzf_for_selection ?preview_cmd (lines : string Seq.t)
   | `Cancelled x -> `Cancelled x
 
 let pipe_to_fzf_for_ranking ?preview_cmd (lines : string Seq.t)
-  : [ `Ranking of string * int String_map.t | `Cancelled of int ] =
+  : [ `Ranking of string * string list * string list | `Cancelled of int ] =
   match pipe_to_fzf ~get_ranking:true ?preview_cmd lines with
-  | `Ranking (q, l) -> `Ranking (q, l)
+  | `Ranking (q, selection, l) -> `Ranking (q, selection, l)
   | `Selection _ -> failwith "unexpected case"
   | `Cancelled x -> `Cancelled x
