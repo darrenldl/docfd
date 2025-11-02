@@ -27,6 +27,7 @@ type t = {
   search_results : Search_result.t array String_map.t;
   sort_by : Sort_by.t;
   sort_by_no_score : Sort_by.t;
+  focus_list : string list;
 }
 
 let equal (x : t) (y : t) =
@@ -62,6 +63,7 @@ let empty : t =
       |> (fun (typ, order) -> ((typ :> Sort_by.typ), order));
     sort_by_no_score = Command.Sort_by.default_no_score
       |> (fun (typ, order) -> ((typ :> Sort_by.typ), order));
+    focus_list = [];
   }
 
 let filter_exp (t : t) = t.filter_exp
@@ -419,6 +421,21 @@ let search_result_groups
       )
   in
   Array.sort (f t.sort_by) arr;
+  let focus_ranking =
+    List.rev t.focus_list
+    |> CCList.foldi (fun ranking i x ->
+        String_map.add x i ranking) String_map.empty
+  in
+  Array.stable_sort (fun (d0, _) (d1, _) ->
+      match
+        String_map.find_opt (Document.path d0) focus_ranking,
+        String_map.find_opt (Document.path d1) focus_ranking
+      with
+      | Some x0, Some x1 -> Int.compare x0 x1
+      | Some _, None -> -1
+      | None, Some _ -> 1
+      | None, None -> 0
+    ) arr;
   arr
 
 let usable_document_paths (t : t) : String_set.t =
@@ -544,6 +561,7 @@ let drop
       search_results = String_map.filter keep' t.search_results;
       sort_by = t.sort_by;
       sort_by_no_score = t.sort_by_no_score;
+      focus_list = t.focus_list;
     }
   in
   match choice with
@@ -558,6 +576,7 @@ let drop
         search_results = String_map.remove path t.search_results;
         sort_by = t.sort_by;
         sort_by_no_score = t.sort_by_no_score;
+        focus_list = t.focus_list;
       }
     )
   | `All_except path -> (
@@ -647,6 +666,7 @@ let narrow_search_scope_to_level ~level (t : t) : t =
   { t with all_documents }
 
 let run_command pool (command : Command.t) (t : t) : (Command.t * t) option =
+  let reset_focus_list t = { t with focus_list = [] } in
   match command with
   | `Mark path -> (
       Some (command, mark (`Path path) t)
@@ -684,7 +704,12 @@ let run_command pool (command : Command.t) (t : t) : (Command.t * t) option =
   | `Narrow_level level -> (
       Some (command, narrow_search_scope_to_level ~level t)
     )
+  | `Focus path -> (
+      let focus_list = path :: t.focus_list in
+      Some (command, { t with focus_list })
+    )
   | `Sort (sort_by, sort_by_no_score) -> (
+      let t = reset_focus_list t in
       let sort_by =
         sort_by
         |> (fun (typ, order) -> ((typ :> Sort_by.typ), order))
@@ -696,6 +721,7 @@ let run_command pool (command : Command.t) (t : t) : (Command.t * t) option =
       Some (command, { t with sort_by; sort_by_no_score })
     )
   | `Sort_by_fzf (query, ranking) -> (
+      let t = reset_focus_list t in
       let ranking =
         match ranking with
         | None -> (
