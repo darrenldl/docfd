@@ -725,7 +725,11 @@ let run_command pool (command : Command.t) (t : t) : (Command.t * t) option =
       let ranking =
         match ranking with
         | None -> (
-            Proc_utils.filter_via_fzf query
+            usable_document_paths t
+            |> String_set.to_seq
+            |> Seq.map File_utils.remove_cwd_from_path
+            |> Proc_utils.filter_via_fzf query
+            |> List.map Misc_utils.normalize_path_to_absolute
             |> Misc_utils.ranking_of_ranked_document_list
           )
         | Some x -> x

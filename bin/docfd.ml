@@ -1295,19 +1295,36 @@ let run
               |> Proc_utils.pipe_to_fzf_for_ranking
             in
             (match ranking with
-             | `Ranking (query, ranking) -> (
-                 let command = `Sort_by_fzf (query, Some ranking) in
-                 let command, new_store =
-                   Document_store.run_command
-                     pool
-                     command
-                     store
-                   |> Option.get
+             | `Ranking (query, selection, ranked_document_list) -> (
+                 let selection =
+                   selection
+                   |> List.map Misc_utils.normalize_path_to_absolute
                  in
-                 Dynarray.add_last snapshots
-                   (Document_store_snapshot.make
-                      ~last_command:(Some command)
-                      new_store);
+                 let ranking =
+                   ranked_document_list
+                   |> List.map Misc_utils.normalize_path_to_absolute
+                   |> Misc_utils.ranking_of_ranked_document_list
+                 in
+                 let commands =
+                   (`Sort_by_fzf (query, Some ranking))
+                   ::
+                   (List.map (fun path -> `Focus path) selection)
+                 in
+                 let store = ref store in
+                 List.iter (fun command ->
+                     let command, new_store =
+                       Document_store.run_command
+                         pool
+                         command
+                         !store
+                       |> Option.get
+                     in
+                     Dynarray.add_last snapshots
+                       (Document_store_snapshot.make
+                          ~last_command:(Some command)
+                          new_store);
+                     store := new_store;
+                   ) commands;
                  Document_store_manager.load_snapshots snapshots
                )
              | `Cancelled _ -> ());
