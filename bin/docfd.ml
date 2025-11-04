@@ -1088,7 +1088,7 @@ let run
                       "# Each command adds one to the version number.";
                       "# Command at the top is oldest, command at bottom is the newest.";
                       "#";
-                      "# Note that for commands that accept text, all trailing text is trimmed and then used in full.";
+                      "# Note that for commands that accept text, all text after `:` is trimmed and then used in full.";
                       "# This means \" and ' are treated literally and are not used to delimit strings.";
                       "#";
                       "# Possible commands:";
