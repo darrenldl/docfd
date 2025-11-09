@@ -31,8 +31,8 @@ module Sort_by = struct
     skip_spaces *>
     (choice (List.filter_map
                Fun.id ([
-                   Some (string "path" *> return `Path);
                    Some (string "path-date" *> return `Path_date);
+                   Some (string "path" *> return `Path);
                    (if no_score then
                       None
                     else
@@ -201,8 +201,9 @@ module Parsers = struct
        skip_spaces *>
        char ';' *>
        skip_spaces *>
-       Sort_by.p ~no_score:true >>| fun sort_by_no_score ->
-       `Sort (sort_by, sort_by_no_score));
+       Sort_by.p ~no_score:true >>= fun sort_by_no_score ->
+       skip_spaces *>
+       return (`Sort (sort_by, sort_by_no_score)));
       string "focus" *> skip_spaces *>
       char ':' *> skip_spaces *>
       any_string_trimmed >>| (fun s -> (`Focus s));
