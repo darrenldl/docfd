@@ -6,6 +6,8 @@
 - Added PDF viewer integration for Zathura on Linux
 - Moved sorting handling to the level of document store command instead of just plain UI update
     - This allows Docfd script to better capture the view on screen
+- Fixed default cache directory location on macOS
+    - Changed from `~/Library/Application Support` to `~/Library/Caches`
 
 ## 12.0.0
 

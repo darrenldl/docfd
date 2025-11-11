@@ -78,5 +78,5 @@ let cache_home =
     )
   | `Darwin -> (
       Filename.concat home_dir
-        (Filename.concat "Library" "Application Support")
+        (Filename.concat "Library" "Caches")
     )
