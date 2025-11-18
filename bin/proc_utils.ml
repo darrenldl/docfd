@@ -93,6 +93,7 @@ let pipe_to_fzf ~get_ranking ?preview_cmd (lines : string Seq.t)
   let args = Dynarray.create () in
   Dynarray.add_last args "fzf";
   Dynarray.add_last args "--print-query";
+  Dynarray.add_last args "--reverse";
   Option.iter (fun preview_cmd ->
       Dynarray.add_last args "--preview";
       Dynarray.add_last args preview_cmd;

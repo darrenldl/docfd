@@ -8,6 +8,7 @@
     - This allows Docfd script to better capture the view on screen
 - Fixed default cache directory location on macOS
     - Changed from `~/Library/Application Support` to `~/Library/Caches`
+- Added `--reverse` to fzf invocation for better UX
 
 ## 12.0.0
 
