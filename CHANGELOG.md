@@ -9,6 +9,7 @@
 - Fixed default cache directory location on macOS
     - Changed from `~/Library/Application Support` to `~/Library/Caches`
 - Added `--reverse` to fzf invocation for better UX
+- Added `Ctrl`+`D` for script deletion
 
 ## 12.0.0
 
