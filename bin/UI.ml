@@ -672,6 +672,20 @@ module Bottom_pane = struct
         let$ bar = UI_base.Status_bar.background_bar in
         Nottui.Ui.join_z bar content
       )
+    | Delete_script_confirm (script, _) -> (
+        let$* content =
+          Lwd.return
+            (Nottui.Ui.atom
+               (Notty.I.hcat
+                  [
+                    input_mode_image;
+                    UI_base.Status_bar.element_spacer;
+                    Notty.I.strf ~attr "Confirm deletion of %s?" script;
+                  ]))
+        in
+        let$ bar = UI_base.Status_bar.background_bar in
+        Nottui.Ui.join_z bar content
+      )
     | _ -> (
         let$* index_of_document_selected = Lwd.get UI_base.Vars.index_of_document_selected in
         let document_count = Array.length search_result_groups in
@@ -762,6 +776,7 @@ module Bottom_pane = struct
             { label = "n"; msg = "narrow mode" };
             { label = "Space"; msg = "toggle mark" };
             { label = "h"; msg = "command history" };
+            { label = "Ctrl+S"; msg = "save script" };
           ];
           [
             { label = "?"; msg = "rotate key binding info" };
@@ -771,7 +786,8 @@ module Bottom_pane = struct
             { label = "Shift+Y"; msg = "copy/yank paths mode" };
             { label = "d"; msg = "drop mode" };
             { label = "m"; msg = "mark mode" };
-            { label = "Ctrl+S"; msg = "save script" };
+            { label = ""; msg = "" };
+            { label = "Ctrl+O"; msg = "load script" };
           ];
           [
             { label = "Ctrl+C"; msg = "exit" };
@@ -781,7 +797,8 @@ module Bottom_pane = struct
             { label = ""; msg = "" };
             { label = "r"; msg = "reload mode" };
             { label = "Shift+M"; msg = "unmark mode" };
-            { label = "Ctrl+O"; msg = "load script" };
+            { label = ""; msg = "" };
+            { label = "Ctrl+D"; msg = "delete script" };
           ];
         ]
       in
@@ -834,6 +851,16 @@ module Bottom_pane = struct
           [
             { label = "y"; msg = "open in editor" };
             { label = "Esc/n"; msg = "skip" };
+          ];
+          empty_row;
+          empty_row;
+        ]
+      in
+      let delete_script_confirm_grid =
+        [
+          [
+            { label = "y"; msg = "confirm delete" };
+            { label = "Esc/n"; msg = "cancel" };
           ];
           empty_row;
           empty_row;
@@ -1305,6 +1332,11 @@ let keyboard_handler
           UI_base.Vars.action := Some UI_base.Select_and_load_script;
           `Handled
         )
+      | (`ASCII 'D', [`Ctrl]) -> (
+          Lwd.set UI_base.Vars.quit true;
+          UI_base.Vars.action := Some UI_base.Delete_script_select;
+          `Handled
+        )
       | (`ASCII 'x', []) -> (
           UI_base.set_input_mode Clear;
           `Handled
@@ -1690,6 +1722,20 @@ let keyboard_handler
       in
       if exit then (
         UI_base.set_input_mode Navigate;
+      );
+      `Handled
+    )
+  | Delete_script_confirm (_script, path) -> (
+      (match key with
+       | (`Escape, [])
+       | (`ASCII 'n', []) -> (
+           UI_base.set_input_mode Navigate;
+         )
+       | (`ASCII 'y', []) -> (
+           Sys.remove path;
+           UI_base.set_input_mode Navigate;
+         )
+       | _ -> ()
       );
       `Handled
     )

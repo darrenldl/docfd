@@ -1266,6 +1266,34 @@ let run
                 loop ()
               )
           )
+        | Delete_script_select -> (
+            close_term ();
+            let dir = Params.script_dir () in
+            let choices =
+              File_utils.list_files_recursive_filter_by_exts
+                ~max_depth:1
+                ~report_progress:(fun () -> ())
+                ~exts:[ Params.docfd_script_ext ]
+                (Seq.return dir)
+            in
+            let selection =
+              choices
+              |> String_set.to_seq
+              |> Seq.map Filename.basename
+              |> Proc_utils.pipe_to_fzf_for_selection
+                ~preview_cmd:(Fmt.str "cat %s/{}" dir)
+            in
+            match selection with
+            | `Selection (_, [ file ]) -> (
+                let path = Filename.concat dir file in
+                Lwd.set UI_base.Vars.input_mode (Delete_script_confirm (file, path));
+                loop ()
+              )
+            | `Selection (_, _) -> failwith "unexpected case"
+            | `Cancelled _ -> (
+                loop ()
+              )
+          )
         | Edit_script path -> (
             close_term ();
             Path_opening.config_and_cmd_to_open_text_file

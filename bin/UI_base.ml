@@ -18,6 +18,7 @@ type input_mode =
   | Save_script_overwrite
   | Save_script_no_name
   | Save_script_edit
+  | Delete_script_confirm of string * string
 
 type top_level_action =
   | Recompute_document_src
