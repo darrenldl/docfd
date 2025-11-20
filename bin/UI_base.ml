@@ -19,6 +19,16 @@ type input_mode =
   | Save_script_no_name
   | Save_script_edit
   | Delete_script_confirm of string * string
+[@@deriving ord]
+
+module Input_mode_map = Map.Make (struct
+    type t = input_mode
+
+    let compare x y =
+      match x, y with
+      | Delete_script_confirm _, Delete_script_confirm _ -> 0
+      | _, _ -> compare_input_mode x y
+  end)
 
 type top_level_action =
   | Recompute_document_src
@@ -337,10 +347,11 @@ module Status_bar = struct
     let input_mode_string_background =
       Notty.I.char Notty.A.(bg bg_color) ' ' max_input_mode_string_len 1
     in
-    List.map (fun (mode, s) ->
+    List.fold_left (fun m (mode, s) ->
         let s = Notty.(I.string A.(bg bg_color ++ fg fg_color ++ st bold) s) in
-        (mode, Notty.I.(s </> input_mode_string_background))
+        Input_mode_map.add mode Notty.I.(s </> input_mode_string_background) m
       )
+      Input_mode_map.empty
       l
 end
 
@@ -360,13 +371,9 @@ module Key_binding_info = struct
 
   type labelled_msg_line = labelled_msg list
 
-  type grid_key = {
-    input_mode : input_mode;
-  }
+  type grid_contents = (input_mode * (labelled_msg_line list)) list
 
-  type grid_contents = (grid_key * (labelled_msg_line list)) list
-
-  type grid_lookup = (grid_key * Nottui.ui Lwd.t) list
+  type grid_lookup = Nottui.ui Lwd.t Input_mode_map.t
 
   let grid_lights : (string, Mtime.t ref * bool Lwd.var list) Hashtbl.t = Hashtbl.create 100
 
@@ -416,7 +423,7 @@ module Key_binding_info = struct
       )
 
   let make_grid_lookup grid_contents : grid_lookup =
-    let max_label_msg_len_lookup : (grid_key * (int * int) Int_map.t) list =
+    let max_label_msg_len_lookup : (input_mode * (int * int) Int_map.t) list =
       grid_contents
       |> List.map (fun (grid_key, grid) ->
           let lookup =
@@ -488,7 +495,7 @@ module Key_binding_info = struct
       Notty.I.(content </> full_background)
       |> Nottui.Ui.atom
     in
-    List.map (fun (grid_key, grid_contents) ->
+    List.fold_left (fun m (grid_key, grid_contents) ->
         let max_row_size =
           List.fold_left (fun n l ->
               max n (List.length l)
@@ -518,12 +525,13 @@ module Key_binding_info = struct
           |> Nottui_widgets.grid
             ~pad:(Nottui.Gravity.make ~h:`Negative ~v:`Negative)
         in
-        (grid_key, grid)
+        Input_mode_map.add grid_key grid m
       )
+      Input_mode_map.empty
       grid_contents
 
   let main ~(grid_lookup : grid_lookup) ~(input_mode : input_mode) =
-    List.assoc { input_mode; } grid_lookup
+    Input_mode_map.find input_mode grid_lookup
 end
 
 let filter_bar_label_string = "Document filter"

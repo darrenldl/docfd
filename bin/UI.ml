@@ -567,7 +567,7 @@ module Bottom_pane = struct
     : Nottui.Ui.t Lwd.t =
     let open Notty.Infix in
     let input_mode_image =
-      List.assoc input_mode UI_base.Status_bar.input_mode_images
+      UI_base.Input_mode_map.find input_mode UI_base.Status_bar.input_mode_images
     in
     let attr = UI_base.Status_bar.attr in
     let edit_field = Vars.save_script_field in
@@ -1003,57 +1003,24 @@ module Bottom_pane = struct
         ]
       in
       [
-        ({ input_mode = Navigate },
-         navigate_grid
-        );
-        ({ input_mode = Search },
-         search_grid
-        );
-        ({ input_mode = Filter },
-         filter_grid
-        );
-        ({ input_mode = Clear },
-         clear_grid
-        );
-        ({ input_mode = Sort `Asc },
-         sort_asc_grid
-        );
-        ({ input_mode = Sort `Desc },
-         sort_desc_grid
-        );
-        ({ input_mode = Drop },
-         drop_grid
-        );
-        ({ input_mode = Mark },
-         mark_grid
-        );
-        ({ input_mode = Unmark },
-         unmark_grid
-        );
-        ({ input_mode = Narrow },
-         narrow_grid
-        );
-        ({ input_mode = Copy },
-         copy_grid
-        );
-        ({ input_mode = Copy_paths },
-         copy_paths_grid
-        );
-        ({ input_mode = Reload },
-         reload_grid
-        );
-        ({ input_mode = Save_script },
-         save_script_grid
-        );
-        ({ input_mode = Save_script_overwrite },
-         save_script_confirm_grid
-        );
-        ({ input_mode = Save_script_no_name },
-         save_script_cancel_grid
-        );
-        ({ input_mode = Save_script_edit },
-         save_script_edit_grid
-        );
+        (Navigate, navigate_grid);
+        (Search, search_grid);
+        (Filter, filter_grid);
+        (Clear, clear_grid);
+        (Sort `Asc, sort_asc_grid);
+        (Sort `Desc, sort_desc_grid);
+        (Drop, drop_grid);
+        (Mark, mark_grid);
+        (Unmark, unmark_grid);
+        (Narrow, narrow_grid);
+        (Copy, copy_grid);
+        (Copy_paths, copy_paths_grid);
+        (Reload, reload_grid);
+        (Save_script, save_script_grid);
+        (Save_script_overwrite, save_script_confirm_grid);
+        (Save_script_no_name, save_script_cancel_grid);
+        (Save_script_edit, save_script_edit_grid);
+        (Delete_script_confirm ("", ""), delete_script_confirm_grid);
       ]
 
     let grid_lookup = UI_base.Key_binding_info.make_grid_lookup grid_contents
