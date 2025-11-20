@@ -25,6 +25,7 @@ type top_level_action =
   | Open_file_and_search_result of Document.t * Search_result.t option
   | Edit_command_history
   | Select_and_load_script
+  | Delete_script_select
   | Edit_script of string
   | Sort_by_fzf
 
@@ -323,6 +324,7 @@ module Status_bar = struct
       ; (Save_script_overwrite, "SAVE-SCRIPT")
       ; (Save_script_no_name, "SAVE-SCRIPT")
       ; (Save_script_edit, "SAVE-SCRIPT")
+      ; (Delete_script_confirm ("", ""), "SAVE-SCRIPT")
       ]
     in
     let max_input_mode_string_len =
