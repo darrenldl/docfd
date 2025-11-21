@@ -334,7 +334,7 @@ module Status_bar = struct
       ; (Save_script_overwrite, "SAVE-SCRIPT")
       ; (Save_script_no_name, "SAVE-SCRIPT")
       ; (Save_script_edit, "SAVE-SCRIPT")
-      ; (Delete_script_confirm ("", ""), "SAVE-SCRIPT")
+      ; (Delete_script_confirm ("", ""), "DELETE-SCRIPT")
       ]
     in
     let max_input_mode_string_len =
