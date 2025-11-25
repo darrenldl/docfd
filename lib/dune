@@ -21,5 +21,6 @@
             uuseg
             uucp
             timedesc
+            timedesc-tzlocal.unix-or-utc
  )
 )
