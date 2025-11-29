@@ -64,6 +64,34 @@ module Sort_by = struct
     | Error msg -> Error msg
 end
 
+type screen_split = [
+  | `Even
+  | `Focus_left
+  | `Wide_left
+  | `Focus_right
+  | `Wide_right
+]
+
+let screen_split_of_int (x : int) : screen_split =
+  if x <= 0 then
+    `Focus_right
+  else if x = 1 then
+    `Wide_right
+  else if x = 2 then
+    `Even
+  else if x = 3 then
+    `Wide_left
+  else
+    `Focus_left
+
+let int_of_screen_split (x : screen_split) =
+  match x with
+  | `Focus_right -> 0
+  | `Wide_right -> 1
+  | `Even -> 2
+  | `Wide_left -> 3
+  | `Focus_left -> 4
+
 type t = [
   | `Mark of string
   | `Mark_listed
@@ -79,6 +107,7 @@ type t = [
   | `Narrow_level of int
   | `Sort of Sort_by.t * Sort_by.t
   | `Sort_by_fzf of string * int String_map.t option
+  | `Split_screen of screen_split
   | `Focus of string
   | `Search of string
   | `Filter of string
@@ -111,6 +140,16 @@ let pp fmt (t : t) =
       ) else (
         Fmt.pf fmt "sort by fzf: %s" query
       )
+    )
+  | `Split_screen s -> (
+      Fmt.pf fmt "split screen: %s"
+        (match s with
+         | `Even -> "even"
+         | `Focus_left -> "focus-left"
+         | `Wide_left -> "wide-left"
+         | `Focus_right -> "focus-right"
+         | `Wide_right -> "wide-right"
+        )
     )
   | `Focus s -> Fmt.pf fmt "focus: %s" s
   | `Search s -> (
@@ -207,6 +246,17 @@ module Parsers = struct
       string "focus" *> skip_spaces *>
       char ':' *> skip_spaces *>
       any_string_trimmed >>| (fun s -> (`Focus s));
+      string "split" *> skip_spaces *>
+      string "screen" *> skip_spaces *>
+      char ':' *> skip_spaces *> (
+        choice [
+          string "even" *> skip_spaces *> return (`Split_screen `Even);
+          string "focus-left" *> skip_spaces *> return (`Split_screen `Focus_left);
+          string "wide-left" *> skip_spaces *> return (`Split_screen `Wide_left);
+          string "focus-right" *> skip_spaces *> return (`Split_screen `Focus_right);
+          string "wide-right" *> skip_spaces *> return (`Split_screen `Wide_right);
+        ]
+      );
       string "search" *> skip_spaces *>
       char ':' *> skip_spaces *>
       any_string_trimmed >>| (fun s -> (`Search s));

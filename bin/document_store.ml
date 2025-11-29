@@ -27,6 +27,7 @@ type t = {
   search_results : Search_result.t array String_map.t;
   sort_by : Sort_by.t;
   sort_by_no_score : Sort_by.t;
+  screen_split : Command.screen_split;
   focus_list : string list;
 }
 
@@ -63,6 +64,7 @@ let empty : t =
       |> (fun (typ, order) -> ((typ :> Sort_by.typ), order));
     sort_by_no_score = Command.Sort_by.default_no_score
       |> (fun (typ, order) -> ((typ :> Sort_by.typ), order));
+    screen_split = `Even;
     focus_list = [];
   }
 
@@ -73,6 +75,8 @@ let filter_exp_string (t : t) = t.filter_exp_string
 let search_exp (t : t) = t.search_exp
 
 let search_exp_string (t : t) = t.search_exp_string
+
+let screen_split (t : t) = t.screen_split
 
 let single_out ~path (t : t) =
   match String_map.find_opt path t.all_documents with
@@ -561,6 +565,7 @@ let drop
       search_results = String_map.filter keep' t.search_results;
       sort_by = t.sort_by;
       sort_by_no_score = t.sort_by_no_score;
+      screen_split = t.screen_split;
       focus_list = t.focus_list;
     }
   in
@@ -576,6 +581,7 @@ let drop
         search_results = String_map.remove path t.search_results;
         sort_by = t.sort_by;
         sort_by_no_score = t.sort_by_no_score;
+        screen_split = t.screen_split;
         focus_list = t.focus_list;
       }
     )
@@ -737,6 +743,9 @@ let run_command pool (command : Command.t) (t : t) : (Command.t * t) option =
       let sort_by = (`Fzf_ranking ranking, `Asc) in
       let command = `Sort_by_fzf (query, Some ranking) in
       Some (command, { t with sort_by; sort_by_no_score = sort_by })
+    )
+  | `Split_screen screen_split -> (
+      Some (command, { t with screen_split })
     )
   | `Search s -> (
       match Search_exp.parse s with

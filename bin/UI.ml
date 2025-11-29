@@ -6,16 +6,6 @@ module Vars = struct
 
   let save_script_field_focus_handle = Nottui.Focus.make ()
 
-  let document_list_screen_ratio
-    : [ `Hide_left
-      | `Left_split
-      | `Mid_split
-      | `Right_split
-      | `Hide_right ]
-        Lwd.var
-    =
-    Lwd.var `Mid_split
-
   let script_files : string Dynarray.t Lwd.var = Lwd.var (Dynarray.create ())
 
   let script_selected = Lwd.var 0
@@ -528,6 +518,7 @@ module Top_pane = struct
       ~width
       ~height
       ~documents_marked
+      ~screen_split
       ~(search_result_groups : Document_store.search_result_group array)
     : Nottui.ui Lwd.t =
     let$* input_mode = Lwd.get UI_base.Vars.input_mode in
@@ -537,14 +528,13 @@ module Top_pane = struct
       )
     | _ -> (
         let$* document_selected = Lwd.get UI_base.Vars.index_of_document_selected in
-        let$* l_ratio = Lwd.get Vars.document_list_screen_ratio in
         let l_ratio =
-          match l_ratio with
-          | `Hide_left -> 0.0
-          | `Left_split -> 1.0 -. 0.618
-          | `Mid_split -> 0.50
-          | `Right_split -> 0.618
-          | `Hide_right -> 1.0
+          match screen_split with
+          | `Even -> 0.50
+          | `Focus_left -> 1.0
+          | `Wide_left -> 0.618
+          | `Focus_right -> 0.0
+          | `Wide_right -> 1.0 -. 0.618
         in
         UI_base.hpane ~l_ratio ~width ~height
           (Document_list.main
@@ -772,6 +762,7 @@ module Bottom_pane = struct
             { label = "/"; msg = "search mode" };
             { label = "↑/↓/j/k"; msg = "select document" };
             { label = "s"; msg = "sort asc mode" };
+            { label = "Tab"; msg = "expand right pane" };
             { label = "y"; msg = "copy/yank mode" };
             { label = "n"; msg = "narrow mode" };
             { label = "Space"; msg = "toggle mark" };
@@ -783,6 +774,7 @@ module Bottom_pane = struct
             { label = "f"; msg = "filter mode" };
             { label = "Shift+↑/↓/j/k"; msg = "select search result" };
             { label = "Shift+S"; msg = "sort desc mode" };
+            { label = "Shift+Tab"; msg = "expand left pane" };
             { label = "Shift+Y"; msg = "copy/yank paths mode" };
             { label = "d"; msg = "drop mode" };
             { label = "m"; msg = "mark mode" };
@@ -793,7 +785,8 @@ module Bottom_pane = struct
             { label = "Ctrl+C"; msg = "exit" };
             { label = "x"; msg = "clear mode" };
             { label = "-/="; msg = "scroll content view" };
-            { label = "Tab"; msg = "change pane split ratio" };
+            { label = ""; msg = "" };
+            { label = ""; msg = "" };
             { label = ""; msg = "" };
             { label = "r"; msg = "reload mode" };
             { label = "Shift+M"; msg = "unmark mode" };
@@ -1179,24 +1172,37 @@ let keyboard_handler
           Document_store_manager.shift_ver ~offset:1;
           `Handled
         )
-      | (`Tab, []) -> (
-          (match Lwd.peek Vars.document_list_screen_ratio with
-           | `Hide_left -> (
-               Lwd.set Vars.document_list_screen_ratio `Hide_right
-             )
-           | `Left_split -> (
-               Lwd.set Vars.document_list_screen_ratio `Hide_left
-             )
-           | `Mid_split -> (
-               Lwd.set Vars.document_list_screen_ratio `Left_split
-             )
-           | `Right_split -> (
-               Lwd.set Vars.document_list_screen_ratio `Mid_split
-             )
-           | `Hide_right -> (
-               Lwd.set Vars.document_list_screen_ratio `Right_split
-             )
-          );
+      | (`Tab, [])
+      | (`Tab, [`Shift]) -> (
+          let direction =
+            match key with
+            | (_, [`Shift]) -> `Expand_left
+            | (_, _) -> `Expand_right
+          in
+          Document_store_manager.update_from_cur_snapshot
+            (fun cur_snapshot ->
+               let store = Document_store_snapshot.store cur_snapshot in
+               let cur = Document_store.screen_split document_store in
+               let offset =
+                 match direction with
+                 | `Expand_left -> 1
+                 | `Expand_right -> -1
+               in
+               let next =
+                 Command.screen_split_of_int
+                   (Command.int_of_screen_split cur + offset)
+               in
+               let command = `Split_screen next in
+               store
+               |> Document_store.run_command
+                 (UI_base.task_pool ())
+                 command
+               |> Option.get
+               |> (fun (command, store) ->
+                   Document_store_snapshot.make
+                     ~last_command:(Some command)
+                     store)
+            );
           `Handled
         )
       | (`ASCII '=', []) -> (
@@ -1736,11 +1742,13 @@ let main : Nottui.ui Lwd.t =
   in
   let bottom_pane_height = Nottui.Ui.layout_height bottom_pane in
   let top_pane_height = term_height - bottom_pane_height in
+  let screen_split = Document_store.screen_split document_store in
   let$* top_pane =
     Top_pane.main
       ~width:term_width
       ~height:top_pane_height
       ~documents_marked:(Document_store.marked_document_paths document_store)
+      ~screen_split
       ~search_result_groups
   in
   Nottui_widgets.vbox
