@@ -1,5 +1,14 @@
 # Changelog
 
+## 12.2.0
+
+- Dependencies adjustment for CI build
+- Moved screen split handling to the level of document store command
+  instead of just plain UI update
+    - This allows Docfd script to better capture the view on screen
+- Added `Shift`+`Tab` for changing screen split ratio in the other
+  direction, and removed the "rotating" behaviour of `Tab`
+
 ## 12.1.0
 
 - Added missing sorting based on paths when path dates are the same
