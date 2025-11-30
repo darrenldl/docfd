@@ -51,8 +51,6 @@ module State : sig
 
   val marked_document_paths : t -> String_set.t
 
-  val single_out : path:string -> t -> t option
-
   val mark : [ `Path of string | `Usable | `Unusable ] -> t -> t
 
   val unmark : [ `Path of string | `Usable | `Unusable | `All ] -> t -> t

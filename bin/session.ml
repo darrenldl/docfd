@@ -77,27 +77,6 @@ module State = struct
 
   let screen_split (t : t) = t.screen_split
 
-  let single_out ~path (t : t) =
-    match String_map.find_opt path t.all_documents with
-    | None -> None
-    | Some doc ->
-      let search_results = String_map.find path t.search_results in
-      let all_documents = String_map.(add path doc empty) in
-      let documents_passing_filter =
-        if String_set.mem path t.documents_passing_filter then (
-          String_set.(add path empty)
-        ) else (
-          String_set.empty
-        )
-      in
-      Some
-        {
-          t with
-          all_documents;
-          documents_passing_filter;
-          search_results = String_map.(add path search_results empty);
-        }
-
   let refresh_search_results pool stop_signal (t : t) : t option =
     let cancellation_notifier = Atomic.make false in
     let updates =
