@@ -1,5 +1,5 @@
 let run pool ~init_store ~path
-  : (Document_store_snapshot.t Dynarray.t, string) result =
+  : (Session.Snapshot.t Dynarray.t, string) result =
   let exception Error_with_msg of string in
   let snapshots = Dynarray.create () in
   try
@@ -13,7 +13,7 @@ let run pool ~init_store ~path
     in
     Dynarray.add_last
       snapshots
-      (Document_store_snapshot.make
+      (Session.Snapshot.make
          ~last_command:None
          init_store);
     lines
@@ -37,7 +37,7 @@ let run pool ~init_store ~path
                 )
               | Some (command, store) -> (
                   let snapshot =
-                    Document_store_snapshot.make
+                    Session.Snapshot.make
                       ~last_command:(Some command)
                       store
                   in

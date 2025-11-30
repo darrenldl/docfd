@@ -67,7 +67,7 @@ let reload_document_selected
 let toggle_mark ~path =
   Document_store_manager.update_from_cur_snapshot
     (fun cur_snapshot ->
-       let store = Document_store_snapshot.store cur_snapshot in
+       let store = Session.Snapshot.store cur_snapshot in
        let new_command =
          if
            String_set.mem
@@ -85,7 +85,7 @@ let toggle_mark ~path =
          new_command
        |> Option.get
        |> (fun (new_command, store) ->
-           Document_store_snapshot.make
+           Session.Snapshot.make
              ~last_command:(Some new_command)
              store)
     )
@@ -120,13 +120,13 @@ let drop ~document_count (choice : [`Path of string | `All_except of string | `M
       )
   in
   Document_store_manager.update_from_cur_snapshot (fun cur_snapshot ->
-      Document_store_snapshot.store cur_snapshot
+      Session.Snapshot.store cur_snapshot
       |> Document_store.run_command
         (UI_base.task_pool ())
         new_command
       |> Option.get
       |> (fun (new_command, store) ->
-          Document_store_snapshot.make
+          Session.Snapshot.make
             ~last_command:(Some new_command)
             store)
     )
@@ -138,13 +138,13 @@ let mark (choice : [`Path of string | `Listed]) =
     | `Listed -> `Mark_listed
   in
   Document_store_manager.update_from_cur_snapshot (fun cur_snapshot ->
-      Document_store_snapshot.store cur_snapshot
+      Session.Snapshot.store cur_snapshot
       |> Document_store.run_command
         (UI_base.task_pool ())
         new_command
       |> Option.get
       |> (fun (new_command, store) ->
-          Document_store_snapshot.make
+          Session.Snapshot.make
             ~last_command:(Some new_command)
             store)
     )
@@ -157,13 +157,13 @@ let unmark (choice : [`Path of string | `Listed | `All]) =
     | `All -> `Unmark_all
   in
   Document_store_manager.update_from_cur_snapshot (fun cur_snapshot ->
-      Document_store_snapshot.store cur_snapshot
+      Session.Snapshot.store cur_snapshot
       |> Document_store.run_command
         (UI_base.task_pool ())
         new_command
       |> Option.get
       |> (fun (new_command, store) ->
-          Document_store_snapshot.make
+          Session.Snapshot.make
             ~last_command:(Some new_command)
             store)
     )
@@ -172,24 +172,24 @@ let sort (sort_by : Command.Sort_by.t) =
   UI_base.reset_document_selected ();
   let new_command = `Sort (sort_by, Command.Sort_by.default_no_score) in
   Document_store_manager.update_from_cur_snapshot (fun cur_snapshot ->
-      Document_store_snapshot.store cur_snapshot
+      Session.Snapshot.store cur_snapshot
       |> Document_store.run_command
         (UI_base.task_pool ())
         new_command
       |> Option.get
       |> (fun (new_command, store) ->
-          Document_store_snapshot.make
+          Session.Snapshot.make
             ~last_command:(Some new_command)
             store)
     )
 
 let narrow_search_scope_to_level ~level =
   Document_store_manager.update_from_cur_snapshot (fun cur_snapshot ->
-      Document_store_snapshot.make
+      Session.Snapshot.make
         ~last_command:(Some (`Narrow_level level))
         (Document_store.narrow_search_scope_to_level
            ~level
-           (Document_store_snapshot.store cur_snapshot))
+           (Session.Snapshot.store cur_snapshot))
     )
 
 let update_filter ~commit () =
@@ -231,10 +231,10 @@ let save_script ~path =
     Document_store_manager.lock_with_view (fun view ->
         view.snapshots
         |> Dynarray.to_seq
-        |> Seq.filter_map  (fun (snapshot : Document_store_snapshot.t) ->
+        |> Seq.filter_map  (fun (snapshot : Session.Snapshot.t) ->
             Option.map
               Command.to_string
-              (Document_store_snapshot.last_command snapshot)
+              (Session.Snapshot.last_command snapshot)
           )
         |> List.of_seq
       )
@@ -685,7 +685,7 @@ module Bottom_pane = struct
             Notty.I.strf ~attr
               "%5d/%d documents listed"
               document_count
-              (Document_store_snapshot.store snapshot
+              (Session.Snapshot.store snapshot
                |> Document_store.size)
           in
           let version =
@@ -696,7 +696,7 @@ module Bottom_pane = struct
           let desc =
             Notty.I.strf ~attr
               "Last command: %s"
-              (match Document_store_snapshot.last_command snapshot with
+              (match Session.Snapshot.last_command snapshot with
                | None -> "N/A"
                | Some command -> Command.to_string command)
           in
@@ -1181,7 +1181,7 @@ let keyboard_handler
           in
           Document_store_manager.update_from_cur_snapshot
             (fun cur_snapshot ->
-               let store = Document_store_snapshot.store cur_snapshot in
+               let store = Session.Snapshot.store cur_snapshot in
                let cur = Document_store.screen_split document_store in
                let offset =
                  match direction with
@@ -1199,7 +1199,7 @@ let keyboard_handler
                  command
                |> Option.get
                |> (fun (command, store) ->
-                   Document_store_snapshot.make
+                   Session.Snapshot.make
                      ~last_command:(Some command)
                      store)
             );
@@ -1719,7 +1719,7 @@ let main : Nottui.ui Lwd.t =
     Document_store_manager.cur_snapshot
   in
   let document_store =
-    Document_store_snapshot.store snapshot
+    Session.Snapshot.store snapshot
   in
   let search_result_groups =
     Document_store.search_result_groups document_store

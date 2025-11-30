@@ -26,11 +26,11 @@ type egress_payload =
   | Search_exp_parse_error
   | Searching
   | Search_cancelled
-  | Search_done of int * Document_store_snapshot.t
+  | Search_done of int * Session.Snapshot.t
   | Filter_glob_parse_error
   | Filtering
   | Filtering_cancelled
-  | Filtering_done of int * Document_store_snapshot.t
+  | Filtering_done of int * Session.Snapshot.t
 
 let egress : egress_payload Eio.Stream.t =
   Eio.Stream.create 0
@@ -60,25 +60,25 @@ let init_document_store : Document_store.t ref = ref Document_store.empty
 
 let snapshots =
   let arr = Dynarray.create () in
-  Dynarray.add_last arr (Document_store_snapshot.make_empty ());
+  Dynarray.add_last arr (Session.Snapshot.make_empty ());
   arr
 
 let cur_ver = ref 0
 
-let cur_snapshot_var = Lwd.var (0, Document_store_snapshot.make_empty ())
+let cur_snapshot_var = Lwd.var (0, Session.Snapshot.make_empty ())
 
 let cur_snapshot = Lwd.get cur_snapshot_var
 
 type view = {
   init_document_store : Document_store.t;
-  snapshots : Document_store_snapshot.t Dynarray.t;
+  snapshots : Session.Snapshot.t Dynarray.t;
   cur_ver : int;
 }
 
 let sync_input_fields_from_snapshot
-    (x : Document_store_snapshot.t)
+    (x : Session.Snapshot.t)
   =
-  let store = Document_store_snapshot.store x in
+  let store = Session.Snapshot.store x in
   Document_store.filter_exp_string store
   |> (fun s ->
       Lwd.set UI_base.Vars.filter_field (s, String.length s));
@@ -127,17 +127,17 @@ let update_starting_store (starting_store : Document_store.t) =
       let pool = UI_base.task_pool () in
       init_document_store := starting_store;
       let starting_snapshot =
-        Document_store_snapshot.make
+        Session.Snapshot.make
           ~last_command:None
           starting_store
       in
       Dynarray.set snapshots 0 starting_snapshot;
       for i=1 to Dynarray.length snapshots - 1 do
         let prev = Dynarray.get snapshots (i - 1) in
-        let prev_store = Document_store_snapshot.store prev in
+        let prev_store = Session.Snapshot.store prev in
         let cur = Dynarray.get snapshots i in
         let store =
-          match Document_store_snapshot.last_command cur with
+          match Session.Snapshot.last_command cur with
           | None -> prev_store
           | Some command ->
             Document_store.run_command pool command prev_store
@@ -147,7 +147,7 @@ let update_starting_store (starting_store : Document_store.t) =
         Dynarray.set
           snapshots
           i
-          (Document_store_snapshot.update_store store cur)
+          (Session.Snapshot.update_store store cur)
       done;
       cur_ver := (Dynarray.length snapshots - 1);
     )
@@ -157,7 +157,7 @@ let load_snapshots snapshots' =
   lock_for_external_editing ~clean_up:true (fun () ->
       assert
         (Document_store.equal
-           (Document_store_snapshot.store @@ Dynarray.get snapshots' 0)
+           (Session.Snapshot.store @@ Dynarray.get snapshots' 0)
            !init_document_store);
       Dynarray.clear snapshots;
       Dynarray.append snapshots snapshots';
@@ -263,7 +263,7 @@ let worker_fiber pool =
         send_to_manager Searching;
         let store =
           get_cur_snapshot ()
-          |> Document_store_snapshot.store
+          |> Session.Snapshot.store
           |> Document_store.update_search_exp
             pool
             stop_signal
@@ -278,16 +278,16 @@ let worker_fiber pool =
         | Some store -> (
             let command = Some (`Search s) in
             let snapshot =
-              Document_store_snapshot.make
+              Session.Snapshot.make
                 ~committed:commit
                 ~last_command:command
                 store
             in
             add_snapshot
               ~overwrite_if_last_snapshot_satisfies:(fun snapshot ->
-                  match Document_store_snapshot.last_command snapshot with
+                  match Session.Snapshot.last_command snapshot with
                   | Some (`Search s') -> (
-                      not (Document_store_snapshot.committed snapshot)
+                      not (Session.Snapshot.committed snapshot)
                       ||
                       s' = s
                     )
@@ -304,7 +304,7 @@ let worker_fiber pool =
         send_to_manager Filtering;
         let store =
           get_cur_snapshot ()
-          |> Document_store_snapshot.store
+          |> Session.Snapshot.store
           |> Document_store.update_filter_exp
             pool
             stop_signal
@@ -318,16 +318,16 @@ let worker_fiber pool =
         | Some store -> (
             let command = Some (`Filter s) in
             let snapshot =
-              Document_store_snapshot.make
+              Session.Snapshot.make
                 ~committed:commit
                 ~last_command:command
                 store
             in
             add_snapshot
               ~overwrite_if_last_snapshot_satisfies:(fun snapshot ->
-                  match Document_store_snapshot.last_command snapshot with
+                  match Session.Snapshot.last_command snapshot with
                   | Some (`Filter s') -> (
-                      not (Document_store_snapshot.committed snapshot)
+                      not (Session.Snapshot.committed snapshot)
                       ||
                       s' = s
                     )

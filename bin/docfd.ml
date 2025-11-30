@@ -894,7 +894,7 @@ let run
       | Some _ -> (
           Document_store_manager.lock_with_view (fun view ->
               Dynarray.get_last view.snapshots
-              |> Document_store_snapshot.store
+              |> Session.Snapshot.store
             )
         )
     in
@@ -1067,10 +1067,10 @@ let run
                 (
                   init_snapshots
                   |> Dynarray.to_seq
-                  |> Seq.filter_map  (fun (snapshot : Document_store_snapshot.t) ->
+                  |> Seq.filter_map  (fun (snapshot : Session.Snapshot.t) ->
                       Option.map
                         Command.to_string
-                        (Document_store_snapshot.last_command snapshot)
+                        (Session.Snapshot.last_command snapshot)
                     )
                 )
                 (
@@ -1120,7 +1120,7 @@ let run
                   view.init_document_store
                 )
             in
-            let rec aux rerun snapshots lines : [ `No_changes | `Changes_made of Document_store_snapshot.t Dynarray.t ] =
+            let rec aux rerun snapshots lines : [ `No_changes | `Changes_made of Session.Snapshot.t Dynarray.t ] =
               CCIO.with_out file (fun oc ->
                   CCIO.write_lines_l oc lines;
                 );
@@ -1146,7 +1146,7 @@ let run
                 let snapshots = Dynarray.create () in
                 Dynarray.add_last
                   snapshots
-                  (Document_store_snapshot.make
+                  (Session.Snapshot.make
                      ~last_command:None
                      init_store);
                 let rerun = ref false in
@@ -1179,7 +1179,7 @@ let run
                                 | Some (command, x) -> (
                                     store := x;
                                     let snapshot =
-                                      Document_store_snapshot.make
+                                      Session.Snapshot.make
                                         ~last_command:(Some command)
                                         !store
                                     in
@@ -1314,7 +1314,7 @@ let run
                 )
             in
             let store = Dynarray.get_last snapshots
-              |> Document_store_snapshot.store
+              |> Session.Snapshot.store
             in
             let ranking =
               Document_store.usable_document_paths store
@@ -1348,7 +1348,7 @@ let run
                        |> Option.get
                      in
                      Dynarray.add_last snapshots
-                       (Document_store_snapshot.make
+                       (Session.Snapshot.make
                           ~last_command:(Some command)
                           new_store);
                      store := new_store;
