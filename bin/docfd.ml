@@ -783,7 +783,7 @@ let run
       |> Option.get
       |> snd
     )
-  |> Session.update_starting_state;
+  |> Session_manager.update_starting_state;
   if index_only then (
     clean_up ();
     exit 0
@@ -902,7 +902,7 @@ let run
     let no_results =
       if print_files_with_match then (
         let arr =
-          Session.search_result_groups session_state
+          Session.State.search_result_groups session_state
         in
         Array.iter (fun (doc, _search_result) ->
             Printers.path_image ~color:print_with_color oc (Document.path doc)
