@@ -4,23 +4,23 @@ val manager_fiber : unit -> unit
 
 val worker_fiber : Task_pool.t -> unit
 
-val cur_snapshot : (int * Document_store_snapshot.t) Lwd.t
+val cur_snapshot : (int * Session.Snapshot.t) Lwd.t
 
 type view = {
-  init_document_store : Document_store.t;
-  snapshots : Document_store_snapshot.t Dynarray.t;
+  init_state : Session.State.t;
+  snapshots : Session.Snapshot.t Dynarray.t;
   cur_ver : int;
 }
 
 val lock_with_view : (view -> 'a) -> 'a
 
-val update_starting_store : Document_store.t -> unit
+val update_starting_state : Session.State.t -> unit
 
-val load_snapshots : Document_store_snapshot.t Dynarray.t -> unit
+val load_snapshots : Session.Snapshot.t Dynarray.t -> unit
 
 val shift_ver : offset:int -> unit
 
-val update_from_cur_snapshot : (Document_store_snapshot.t -> Document_store_snapshot.t) -> unit
+val update_from_cur_snapshot : (Session.Snapshot.t -> Session.Snapshot.t) -> unit
 
 val submit_filter_req : commit:bool -> string -> unit
 

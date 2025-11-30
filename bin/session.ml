@@ -1,10 +1,8 @@
 open Docfd_lib
 
+type search_result_group = Document.t * Search_result.t array
+
 module State = struct
-  type key = string
-
-  type search_result_group = Document.t * Search_result.t array
-
   module Sort_by = struct
     type typ = [
       | `Path_date
@@ -99,16 +97,6 @@ module State = struct
           documents_passing_filter;
           search_results = String_map.(add path search_results empty);
         }
-
-  let min_binding (t : t) =
-    match String_map.min_binding_opt t.all_documents with
-    | None -> None
-    | Some (path, doc) -> (
-        let search_results =
-          String_map.find path t.search_results
-        in
-        Some (path, (doc, search_results))
-      )
 
   let refresh_search_results pool stop_signal (t : t) : t option =
     let cancellation_notifier = Atomic.make false in

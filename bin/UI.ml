@@ -39,24 +39,24 @@ let reload_document (doc : Document.t) =
         None
       )
   in
-  let document_store =
-    Document_store_manager.lock_with_view (fun view ->
-        view.init_document_store
+  let session_state =
+    Session_manager.lock_with_view (fun view ->
+        view.init_state
       )
-    |> (fun store ->
+    |> (fun state ->
         match doc with
         | Some doc -> (
-            Document_store.add_document pool doc store
+            Session.State.add_document pool doc state
           )
         | None -> (
-            Document_store.drop (`Path path) store
+            Session.State.drop (`Path path) state
           )
       )
   in
-  Document_store_manager.update_starting_store document_store
+  Session_manager.update_starting_state session_state
 
 let reload_document_selected
-    ~(search_result_groups : Document_store.search_result_group array)
+    ~(search_result_groups : Session.search_result_group array)
   : unit =
   if Array.length search_result_groups > 0 then (
     let index = Lwd.peek UI_base.Vars.index_of_document_selected in
@@ -65,29 +65,29 @@ let reload_document_selected
   )
 
 let toggle_mark ~path =
-  Document_store_manager.update_from_cur_snapshot
+  Session_manager.update_from_cur_snapshot
     (fun cur_snapshot ->
-       let store = Session.Snapshot.store cur_snapshot in
+       let state = Session.Snapshot.state cur_snapshot in
        let new_command =
          if
            String_set.mem
              path
-             (Document_store.marked_document_paths store)
+             (Session.State.marked_document_paths state)
          then (
            `Unmark path
          ) else (
            `Mark path
          )
        in
-       store
-       |> Document_store.run_command
+       state
+       |> Session.run_command
          (UI_base.task_pool ())
          new_command
        |> Option.get
-       |> (fun (new_command, store) ->
+       |> (fun (new_command, state) ->
            Session.Snapshot.make
              ~last_command:(Some new_command)
-             store)
+             state)
     )
 
 let drop ~document_count (choice : [`Path of string | `All_except of string | `Marked | `Unmarked | `Listed | `Unlisted]) =
@@ -119,16 +119,16 @@ let drop ~document_count (choice : [`Path of string | `All_except of string | `M
         `Drop_unlisted
       )
   in
-  Document_store_manager.update_from_cur_snapshot (fun cur_snapshot ->
-      Session.Snapshot.store cur_snapshot
-      |> Document_store.run_command
+  Session_manager.update_from_cur_snapshot (fun cur_snapshot ->
+      Session.Snapshot.state cur_snapshot
+      |> Session.run_command
         (UI_base.task_pool ())
         new_command
       |> Option.get
-      |> (fun (new_command, store) ->
+      |> (fun (new_command, state) ->
           Session.Snapshot.make
             ~last_command:(Some new_command)
-            store)
+            state)
     )
 
 let mark (choice : [`Path of string | `Listed]) =
@@ -137,16 +137,16 @@ let mark (choice : [`Path of string | `Listed]) =
     | `Path path -> `Mark path
     | `Listed -> `Mark_listed
   in
-  Document_store_manager.update_from_cur_snapshot (fun cur_snapshot ->
-      Session.Snapshot.store cur_snapshot
-      |> Document_store.run_command
+  Session_manager.update_from_cur_snapshot (fun cur_snapshot ->
+      Session.Snapshot.state cur_snapshot
+      |> Session.run_command
         (UI_base.task_pool ())
         new_command
       |> Option.get
-      |> (fun (new_command, store) ->
+      |> (fun (new_command, state) ->
           Session.Snapshot.make
             ~last_command:(Some new_command)
-            store)
+            state)
     )
 
 let unmark (choice : [`Path of string | `Listed | `All]) =
@@ -156,49 +156,49 @@ let unmark (choice : [`Path of string | `Listed | `All]) =
     | `Listed -> `Unmark_listed
     | `All -> `Unmark_all
   in
-  Document_store_manager.update_from_cur_snapshot (fun cur_snapshot ->
-      Session.Snapshot.store cur_snapshot
-      |> Document_store.run_command
+  Session_manager.update_from_cur_snapshot (fun cur_snapshot ->
+      Session.Snapshot.state cur_snapshot
+      |> Session.run_command
         (UI_base.task_pool ())
         new_command
       |> Option.get
-      |> (fun (new_command, store) ->
+      |> (fun (new_command, state) ->
           Session.Snapshot.make
             ~last_command:(Some new_command)
-            store)
+            state)
     )
 
 let sort (sort_by : Command.Sort_by.t) =
   UI_base.reset_document_selected ();
   let new_command = `Sort (sort_by, Command.Sort_by.default_no_score) in
-  Document_store_manager.update_from_cur_snapshot (fun cur_snapshot ->
-      Session.Snapshot.store cur_snapshot
-      |> Document_store.run_command
+  Session_manager.update_from_cur_snapshot (fun cur_snapshot ->
+      Session.Snapshot.state cur_snapshot
+      |> Session.run_command
         (UI_base.task_pool ())
         new_command
       |> Option.get
-      |> (fun (new_command, store) ->
+      |> (fun (new_command, state) ->
           Session.Snapshot.make
             ~last_command:(Some new_command)
-            store)
+            state)
     )
 
 let narrow_search_scope_to_level ~level =
-  Document_store_manager.update_from_cur_snapshot (fun cur_snapshot ->
+  Session_manager.update_from_cur_snapshot (fun cur_snapshot ->
       Session.Snapshot.make
         ~last_command:(Some (`Narrow_level level))
-        (Document_store.narrow_search_scope_to_level
+        (Session.State.narrow_search_scope_to_level
            ~level
-           (Session.Snapshot.store cur_snapshot))
+           (Session.Snapshot.state cur_snapshot))
     )
 
 let update_filter ~commit () =
   let s = fst @@ Lwd.peek UI_base.Vars.filter_field in
-  Document_store_manager.submit_filter_req ~commit s
+  Session_manager.submit_filter_req ~commit s
 
 let update_search ~commit () =
   let s = fst @@ Lwd.peek UI_base.Vars.search_field in
-  Document_store_manager.submit_search_req ~commit s
+  Session_manager.submit_search_req ~commit s
 
 let compute_save_script_path () =
   let base_name, _ = Lwd.peek Vars.save_script_field in
@@ -226,9 +226,9 @@ let save_script ~path =
           (Fmt.str "failed to read script %s" path)
       )
   in
-  Document_store_manager.stop_filter_and_search_and_restore_input_fields ();
+  Session_manager.stop_filter_and_search_and_restore_input_fields ();
   let lines =
-    Document_store_manager.lock_with_view (fun view ->
+    Session_manager.lock_with_view (fun view ->
         view.snapshots
         |> Dynarray.to_seq
         |> Seq.filter_map  (fun (snapshot : Session.Snapshot.t) ->
@@ -255,7 +255,7 @@ module Top_pane = struct
     let render_document_entry
         ~width
         ~documents_marked
-        ~(search_result_group : Document_store.search_result_group)
+        ~(search_result_group : Session.search_result_group)
         ~selected
       : Notty.image =
       let open Notty in
@@ -372,7 +372,7 @@ module Top_pane = struct
         ~width
         ~height
         ~documents_marked
-        ~(search_result_groups : Document_store.search_result_group array)
+        ~(search_result_groups : Session.search_result_group array)
         ~(document_selected : int)
       : Nottui.ui Lwd.t =
       let document_count = Array.length search_result_groups in
@@ -421,7 +421,7 @@ module Top_pane = struct
       let main
           ~height
           ~width
-          ~(search_result_group : Document_store.search_result_group)
+          ~(search_result_group : Session.search_result_group)
           ~(index_of_search_result_selected : int Lwd.var)
         : Nottui.ui Lwd.t =
         let (document, search_results) = search_result_group in
@@ -471,7 +471,7 @@ module Top_pane = struct
     let main
         ~width
         ~height
-        ~(search_result_groups : Document_store.search_result_group array)
+        ~(search_result_groups : Session.search_result_group array)
         ~(document_selected : int)
       : Nottui.ui Lwd.t =
       if Array.length search_result_groups = 0 then (
@@ -519,7 +519,7 @@ module Top_pane = struct
       ~height
       ~documents_marked
       ~screen_split
-      ~(search_result_groups : Document_store.search_result_group array)
+      ~(search_result_groups : Session.search_result_group array)
     : Nottui.ui Lwd.t =
     let$* input_mode = Lwd.get UI_base.Vars.input_mode in
     match input_mode with
@@ -552,7 +552,7 @@ end
 module Bottom_pane = struct
   let status_bar
       ~width
-      ~(search_result_groups : Document_store.search_result_group array)
+      ~(search_result_groups : Session.search_result_group array)
       ~(input_mode : UI_base.input_mode)
     : Nottui.Ui.t Lwd.t =
     let open Notty.Infix in
@@ -679,14 +679,14 @@ module Bottom_pane = struct
     | _ -> (
         let$* index_of_document_selected = Lwd.get UI_base.Vars.index_of_document_selected in
         let document_count = Array.length search_result_groups in
-        let$* (cur_ver, snapshot) = Document_store_manager.cur_snapshot in
+        let$* (cur_ver, snapshot) = Session_manager.cur_snapshot in
         let content =
           let file_shown_count =
             Notty.I.strf ~attr
               "%5d/%d documents listed"
               document_count
-              (Session.Snapshot.store snapshot
-               |> Document_store.size)
+              (Session.Snapshot.state snapshot
+               |> Session.State.size)
           in
           let version =
             Notty.I.strf ~attr
@@ -1087,8 +1087,8 @@ module Bottom_pane = struct
 end
 
 let keyboard_handler
-    ~(document_store : Document_store.t)
-    ~(search_result_groups : Document_store.search_result_group array)
+    ~(session_state : Session.State.t)
+    ~(search_result_groups : Session.search_result_group array)
     (key : Nottui.Ui.key)
   =
   let document_count =
@@ -1163,13 +1163,13 @@ let keyboard_handler
       | (`Arrow `Left, [])
       | (`ASCII 'u', [])
       | (`ASCII 'Z', [`Ctrl]) -> (
-          Document_store_manager.shift_ver ~offset:(-1);
+          Session_manager.shift_ver ~offset:(-1);
           `Handled
         )
       | (`Arrow `Right, [])
       | (`ASCII 'R', [`Ctrl])
       | (`ASCII 'Y', [`Ctrl]) -> (
-          Document_store_manager.shift_ver ~offset:1;
+          Session_manager.shift_ver ~offset:1;
           `Handled
         )
       | (`Tab, [])
@@ -1179,10 +1179,10 @@ let keyboard_handler
             | (_, [`Shift]) -> `Expand_left
             | (_, _) -> `Expand_right
           in
-          Document_store_manager.update_from_cur_snapshot
+          Session_manager.update_from_cur_snapshot
             (fun cur_snapshot ->
-               let store = Session.Snapshot.store cur_snapshot in
-               let cur = Document_store.screen_split document_store in
+               let state = Session.Snapshot.state cur_snapshot in
+               let cur = Session.State.screen_split state in
                let offset =
                  match direction with
                  | `Expand_left -> 1
@@ -1193,15 +1193,15 @@ let keyboard_handler
                    (Command.int_of_screen_split cur + offset)
                in
                let command = `Split_screen next in
-               store
-               |> Document_store.run_command
+               state
+               |> Session.run_command
                  (UI_base.task_pool ())
                  command
                |> Option.get
-               |> (fun (command, store) ->
+               |> (fun (command, state) ->
                    Session.Snapshot.make
                      ~last_command:(Some command)
-                     store)
+                     state)
             );
           `Handled
         )
@@ -1510,7 +1510,7 @@ let keyboard_handler
       `Handled
     )
   | Copy -> (
-      let copy_search_result_groups (s : Document_store.search_result_group Seq.t) =
+      let copy_search_result_groups (s : Session.search_result_group Seq.t) =
         Clipboard.pipe_to_clipboard (fun oc ->
             Printers.search_result_groups
               ~color:false
@@ -1550,7 +1550,7 @@ let keyboard_handler
           )
         | (`ASCII 'm', []) -> (
             let marked =
-              Document_store.marked_document_paths document_store
+              Session.State.marked_document_paths session_state
             in
             search_result_groups
             |> Array.to_seq
@@ -1594,28 +1594,28 @@ let keyboard_handler
           )
         | (`ASCII 'm', []) -> (
             String_set.inter
-              (Document_store.usable_document_paths document_store)
-              (Document_store.marked_document_paths document_store)
+              (Session.State.usable_document_paths session_state)
+              (Session.State.marked_document_paths session_state)
             |> String_set.to_seq
             |> copy_paths;
             true
           )
         | (`ASCII 'M', []) -> (
             String_set.diff
-              (Document_store.usable_document_paths document_store)
-              (Document_store.marked_document_paths document_store)
+              (Session.State.usable_document_paths session_state)
+              (Session.State.marked_document_paths session_state)
             |> String_set.to_seq
             |> copy_paths;
             true
           )
         | (`ASCII 'l', []) -> (
-            Document_store.usable_document_paths document_store
+            Session.State.usable_document_paths session_state
             |> String_set.to_seq
             |> copy_paths;
             true
           )
         | (`ASCII 'L', []) -> (
-            Document_store.unusable_document_paths document_store
+            Session.State.unusable_document_paths session_state
             |> copy_paths;
             true
           )
@@ -1716,13 +1716,13 @@ let keyboard_handler
 
 let main : Nottui.ui Lwd.t =
   let$* (_, snapshot) =
-    Document_store_manager.cur_snapshot
+    Session_manager.cur_snapshot
   in
-  let document_store =
-    Session.Snapshot.store snapshot
+  let session_state =
+    Session.Snapshot.state snapshot
   in
   let search_result_groups =
-    Document_store.search_result_groups document_store
+    Session.State.search_result_groups session_state
   in
   let document_count = Array.length search_result_groups in
   UI_base.set_document_selected
@@ -1742,19 +1742,19 @@ let main : Nottui.ui Lwd.t =
   in
   let bottom_pane_height = Nottui.Ui.layout_height bottom_pane in
   let top_pane_height = term_height - bottom_pane_height in
-  let screen_split = Document_store.screen_split document_store in
+  let screen_split = Session.State.screen_split session_state in
   let$* top_pane =
     Top_pane.main
       ~width:term_width
       ~height:top_pane_height
-      ~documents_marked:(Document_store.marked_document_paths document_store)
+      ~documents_marked:(Session.State.marked_document_paths session_state)
       ~screen_split
       ~search_result_groups
   in
   Nottui_widgets.vbox
     [
       Lwd.return (Nottui.Ui.keyboard_area
-                    (keyboard_handler ~document_store ~search_result_groups)
+                    (keyboard_handler ~session_state ~search_result_groups)
                     top_pane);
       Lwd.return bottom_pane;
     ]

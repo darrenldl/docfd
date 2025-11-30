@@ -1,13 +1,11 @@
 open Docfd_lib
 
+type search_result_group = Document.t * Search_result.t array
+
 module State : sig
   type t
 
   val equal : t -> t -> bool
-
-  type key = string
-
-  type search_result_group = Document.t * Search_result.t array
 
   val size : t -> int
 
@@ -52,8 +50,6 @@ module State : sig
   val all_document_paths : t -> string Seq.t
 
   val marked_document_paths : t -> String_set.t
-
-  val min_binding : t -> (key * search_result_group) option
 
   val single_out : path:string -> t -> t option
 

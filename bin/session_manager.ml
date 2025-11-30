@@ -56,7 +56,7 @@ let lock_worker_state : type a. (unit -> a) -> a =
   fun f ->
   Eio.Mutex.use_rw ~protect:false _worker_state_lock f
 
-let init_document_store : Document_store.t ref = ref Document_store.empty
+let init_state : Session.State.t ref = ref Session.State.empty
 
 let snapshots =
   let arr = Dynarray.create () in

@@ -19,7 +19,7 @@ let path_image ~color oc path =
   |> Notty_unix.eol
   |> output_image ~color oc
 
-let search_result_group ~color ~underline (oc : out_channel) ((document, results) : Document_store.search_result_group) =
+let search_result_group ~color ~underline (oc : out_channel) ((document, results) : Session.search_result_group) =
   let path = Document.path document in
   path_image ~color oc path;
   Array.iteri (fun i search_result ->
@@ -43,7 +43,7 @@ let search_result_groups
     ~color
     ~underline
     (oc : out_channel)
-    (s : Document_store.search_result_group Seq.t)
+    (s : Session.search_result_group Seq.t)
   =
   Seq.iteri (fun i x ->
       if i > 0 then (

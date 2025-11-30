@@ -1,4 +1,4 @@
-let run pool ~init_store ~path
+let run pool ~init_state ~path
   : (Session.Snapshot.t Dynarray.t, string) result =
   let exception Error_with_msg of string in
   let snapshots = Dynarray.create () in
@@ -15,12 +15,12 @@ let run pool ~init_store ~path
       snapshots
       (Session.Snapshot.make
          ~last_command:None
-         init_store);
+         init_state);
     lines
-    |> CCList.foldi (fun store i line ->
+    |> CCList.foldi (fun state i line ->
         let line_num_in_error_msg = i + 1 in
         if String_utils.line_is_blank_or_comment line then (
-          store
+          state
         ) else (
           match Command.of_string line with
           | None -> (
@@ -29,24 +29,24 @@ let run pool ~init_store ~path
                           line_num_in_error_msg line))
             )
           | Some command -> (
-              match Document_store.run_command pool command store with
+              match Session.run_command pool command state with
               | None -> (
                   raise (Error_with_msg
                            (Fmt.str "failed to run command on line %d: %s"
                               line_num_in_error_msg line))
                 )
-              | Some (command, store) -> (
+              | Some (command, state) -> (
                   let snapshot =
                     Session.Snapshot.make
                       ~last_command:(Some command)
-                      store
+                      state
                   in
                   Dynarray.add_last snapshots snapshot;
-                  store
+                  state
                 )
             )
         )
-      ) init_store
+      ) init_state
     |> ignore;
     Ok snapshots
   with
