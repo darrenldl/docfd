@@ -190,7 +190,7 @@ let files_satisfying_constraints
        }
     )
 
-let document_store_of_document_src ~env ~interactive pool (document_src : Document_src.t) =
+let init_session_state_of_document_src ~env ~interactive pool (document_src : Document_src.t) =
   let file_bar ~total_file_count =
     let open Progress.Line in
     list
@@ -439,14 +439,14 @@ let document_store_of_document_src ~env ~interactive pool (document_src : Docume
         [ indexed_files; unindexed_files ]
       )
   in
-  let store =
+  let state =
     all_documents
     |> List.to_seq
     |> Seq.flat_map List.to_seq
-    |> Document_store.of_seq pool
+    |> Session.State.of_seq pool
   in
   Gc.compact ();
-  store
+  state
 
 let parse_sort_by_arg ~no_score (s : string) : Command.Sort_by.t =
   match Command.Sort_by.parse ~no_score s with
@@ -777,13 +777,13 @@ let run
      )
   );
   Lwd.set UI_base.Vars.hide_document_list hide_document_list_initially;
-  document_store_of_document_src ~env pool ~interactive init_document_src
-  |> (fun store ->
-      Document_store.run_command pool (`Sort (sort_by, sort_by_no_score)) store
+  init_session_state_of_document_src ~env pool ~interactive init_document_src
+  |> (fun state ->
+      Session.run_command pool (`Sort (sort_by, sort_by_no_score)) state
       |> Option.get
       |> snd
     )
-  |> Document_store_manager.update_starting_store;
+  |> Session.update_starting_state;
   if index_only then (
     clean_up ();
     exit 0
@@ -807,15 +807,15 @@ let run
     | Some _, Some _ -> failwith "unexpected case"
     | Some script, None
     | None, Some script -> (
-        let init_store =
-          Document_store_manager.lock_with_view (fun view ->
-              view.init_document_store
+        let init_state =
+          Session_manager.lock_with_view (fun view ->
+              view.init_state
             )
         in
         match
           Script.run
             pool
-            ~init_store
+            ~init_state
             ~path:script
         with
         | Error msg -> exit_with_error_msg msg
@@ -825,7 +825,7 @@ let run
   (match snapshots_from_script with
    | None -> ()
    | Some snapshots -> (
-       Document_store_manager.load_snapshots snapshots;
+       Session_manager.load_snapshots snapshots;
      ));
   if not interactive then (
     let filter_exp_and_original_string =
@@ -856,45 +856,45 @@ let run
           (print_limit_per_doc, Some (search_exp, search_exp_string))
         )
     in
-    let document_store =
+    let session_state =
       match snapshots_from_script with
       | None -> (
-          Document_store_manager.lock_with_view (fun view ->
-              view.init_document_store
+          Session_manager.lock_with_view (fun view ->
+              view.init_state
             )
-          |> (fun store ->
+          |> (fun state ->
               match filter_exp_and_original_string with
-              | None -> store
+              | None -> state
               | Some (filter_exp, filter_exp_string) -> (
                   Option.get
-                    (Document_store.update_filter_exp
+                    (Session.State.update_filter_exp
                        pool
                        (Stop_signal.make ())
                        filter_exp_string
                        filter_exp
-                       store
+                       state
                     )
                 )
             )
-          |> (fun store ->
+          |> (fun state ->
               match search_exp_and_original_string with
-              | None -> store
+              | None -> state
               | Some (search_exp, search_exp_string) -> (
                   Option.get
-                    (Document_store.update_search_exp
+                    (Session.State.update_search_exp
                        pool
                        (Stop_signal.make ())
                        search_exp_string
                        search_exp
-                       store
+                       state
                     )
                 )
             )
         )
       | Some _ -> (
-          Document_store_manager.lock_with_view (fun view ->
+          Session_manager.lock_with_view (fun view ->
               Dynarray.get_last view.snapshots
-              |> Session.Snapshot.store
+              |> Session.Snapshot.state
             )
         )
     in
@@ -902,7 +902,7 @@ let run
     let no_results =
       if print_files_with_match then (
         let arr =
-          Document_store.search_result_groups document_store
+          Session.search_result_groups session_state
         in
         Array.iter (fun (doc, _search_result) ->
             Printers.path_image ~color:print_with_color oc (Document.path doc)
@@ -910,7 +910,7 @@ let run
         Array.length arr = 0
       ) else if print_files_without_match then (
         let arr =
-          Document_store.unusable_documents document_store
+          Session.State.unusable_documents session_state
           |> Array.of_seq
         in
         let (sort_by_typ, sort_by_order) = sort_by_no_score in
@@ -928,7 +928,7 @@ let run
         Array.length arr = 0
       ) else (
         let s =
-          Document_store.search_result_groups document_store
+          Session.State.search_result_groups session_state
           |> Array.to_seq
           |> Seq.map (fun (doc, arr) ->
               let arr =
@@ -1026,15 +1026,15 @@ let run
     match !UI_base.Vars.action with
     | None -> ()
     | Some action -> (
-        Document_store_manager.stop_filter_and_search_and_restore_input_fields ();
+        Session_manager.stop_filter_and_search_and_restore_input_fields ();
         match action with
         | UI_base.Recompute_document_src -> (
             close_term ();
-            let new_starting_store =
+            let new_starting_state =
               compute_document_src ()
-              |> document_store_of_document_src ~env ~interactive pool
+              |> init_session_state_of_document_src ~env ~interactive pool
             in
-            Document_store_manager.update_starting_store new_starting_store;
+            Session_manager.update_starting_state new_starting_state;
             loop ()
           )
         | Open_file_and_search_result (doc, search_result) -> (
@@ -1058,7 +1058,7 @@ let run
         | Edit_command_history -> (
             let file = Filename.temp_file "" Params.docfd_script_ext in
             let init_snapshots =
-              Document_store_manager.lock_with_view (fun view ->
+              Session_manager.lock_with_view (fun view ->
                   view.snapshots
                 )
             in
@@ -1084,7 +1084,7 @@ let run
                       "# then the line should contain exactly one command.";
                       "# A command cannot be written across multiple lines.";
                       "#";
-                      "# Starting point is v0, the full document store.";
+                      "# Starting point is v0, the state with the full set of documents.";
                       "# Each command adds one to the version number.";
                       "# Command at the top is oldest, command at bottom is the newest.";
                       "#";
@@ -1115,9 +1115,9 @@ let run
                 )
               |> List.of_seq
             in
-            let init_store =
-              Document_store_manager.lock_with_view (fun view ->
-                  view.init_document_store
+            let init_state =
+              Session_manager.lock_with_view (fun view ->
+                  view.init_state
                 )
             in
             let rec aux rerun snapshots lines : [ `No_changes | `Changes_made of Session.Snapshot.t Dynarray.t ] =
@@ -1142,13 +1142,13 @@ let run
                 Float.abs
                   (new_stats.st_mtime -. old_stats.st_mtime) >= Params.float_compare_margin
               then (
-                let store = ref init_store in
+                let state = ref init_state in
                 let snapshots = Dynarray.create () in
                 Dynarray.add_last
                   snapshots
                   (Session.Snapshot.make
                      ~last_command:None
-                     init_store);
+                     init_state);
                 let rerun = ref false in
                 let lines =
                   CCIO.with_in file (fun ic ->
@@ -1168,7 +1168,7 @@ let run
                                 ]
                               )
                             | Some command -> (
-                                match Document_store.run_command pool command !store with
+                                match Session.run_command pool command !state with
                                 | None -> (
                                     rerun := true;
                                     [
@@ -1177,11 +1177,11 @@ let run
                                     ]
                                   )
                                 | Some (command, x) -> (
-                                    store := x;
+                                    state := x;
                                     let snapshot =
                                       Session.Snapshot.make
                                         ~last_command:(Some command)
-                                        !store
+                                        !state
                                     in
                                     Dynarray.add_last
                                       snapshots
@@ -1214,7 +1214,7 @@ let run
                (match res with
                 | `No_changes -> ()
                 | `Changes_made snapshots -> (
-                    Document_store_manager.load_snapshots snapshots
+                    Session_manager.load_snapshots snapshots
                   )
                );
              with
@@ -1244,20 +1244,20 @@ let run
             match selection with
             | `Selection (_, [ file ]) -> (
                 let path = Filename.concat dir file in
-                let init_store =
-                  Document_store_manager.lock_with_view (fun view ->
-                      view.init_document_store
+                let init_state =
+                  Session_manager.lock_with_view (fun view ->
+                      view.init_state
                     )
                 in
                 match
                   Script.run
                     pool
-                    ~init_store
+                    ~init_state
                     ~path
                 with
                 | Error msg -> exit_with_error_msg msg
                 | Ok snapshots -> (
-                    Document_store_manager.load_snapshots snapshots;
+                    Session_manager.load_snapshots snapshots;
                     loop ()
                   )
               )
@@ -1309,15 +1309,15 @@ let run
         | Sort_by_fzf -> (
             close_term ();
             let snapshots =
-              Document_store_manager.lock_with_view (fun view ->
+              Session_manager.lock_with_view (fun view ->
                   view.snapshots
                 )
             in
-            let store = Dynarray.get_last snapshots
-              |> Session.Snapshot.store
+            let state = Dynarray.get_last snapshots
+              |> Session.Snapshot.state
             in
             let ranking =
-              Document_store.usable_document_paths store
+              Session.State.usable_document_paths state
               |> String_set.to_seq
               |> Seq.map File_utils.remove_cwd_from_path
               |> Proc_utils.pipe_to_fzf_for_ranking
@@ -1338,22 +1338,22 @@ let run
                    ::
                    (List.map (fun path -> `Focus path) selection)
                  in
-                 let store = ref store in
+                 let state = ref state in
                  List.iter (fun command ->
-                     let command, new_store =
-                       Document_store.run_command
+                     let command, new_state =
+                       Session.run_command
                          pool
                          command
-                         !store
+                         !state
                        |> Option.get
                      in
                      Dynarray.add_last snapshots
                        (Session.Snapshot.make
                           ~last_command:(Some command)
-                          new_store);
-                     store := new_store;
+                          new_state);
+                     state := new_state;
                    ) commands;
-                 Document_store_manager.load_snapshots snapshots
+                 Session_manager.load_snapshots snapshots
                )
              | `Cancelled _ -> ());
             loop ()
@@ -1363,8 +1363,8 @@ let run
   Eio.Fiber.any [
     (fun () ->
        Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env)
-         (fun () -> Document_store_manager.worker_fiber pool));
-    Document_store_manager.manager_fiber;
+         (fun () -> Session_manager.worker_fiber pool));
+    Session_manager.manager_fiber;
     UI_base.Key_binding_info.grid_light_fiber;
     (fun () ->
        (match start_with_filter with
