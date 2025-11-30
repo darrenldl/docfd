@@ -671,117 +671,118 @@ module State = struct
       )
     in
     { t with all_documents }
-
-  let run_command pool (command : Command.t) (t : t) : (Command.t * t) option =
-    let reset_focus_list t = { t with focus_list = [] } in
-    match command with
-    | `Mark path -> (
-        Some (command, mark (`Path path) t)
-      )
-    | `Mark_listed -> (
-        Some (command, mark `Usable t)
-      )
-    | `Unmark path -> (
-        Some (command, unmark (`Path path) t)
-      )
-    | `Unmark_listed -> (
-        Some (command, unmark `Usable t)
-      )
-    | `Unmark_all -> (
-        Some (command, unmark `All t)
-      )
-    | `Drop s -> (
-        Some (command, drop (`Path s) t)
-      )
-    | `Drop_all_except s -> (
-        Some (command, drop (`All_except s) t)
-      )
-    | `Drop_marked -> (
-        Some (command, drop `Marked t)
-      )
-    | `Drop_unmarked -> (
-        Some (command, drop `Unmarked t)
-      )
-    | `Drop_listed -> (
-        Some (command, drop `Usable t)
-      )
-    | `Drop_unlisted -> (
-        Some (command, drop `Unusable t)
-      )
-    | `Narrow_level level -> (
-        Some (command, narrow_search_scope_to_level ~level t)
-      )
-    | `Focus path -> (
-        let focus_list = path :: t.focus_list in
-        Some (command, { t with focus_list })
-      )
-    | `Sort (sort_by, sort_by_no_score) -> (
-        let t = reset_focus_list t in
-        let sort_by =
-          sort_by
-          |> (fun (typ, order) -> ((typ :> Sort_by.typ), order))
-        in
-        let sort_by_no_score =
-          sort_by_no_score
-          |> (fun (typ, order) -> ((typ :> Sort_by.typ), order))
-        in
-        Some (command, { t with sort_by; sort_by_no_score })
-      )
-    | `Sort_by_fzf (query, ranking) -> (
-        let t = reset_focus_list t in
-        let ranking =
-          match ranking with
-          | None -> (
-              usable_document_paths t
-              |> String_set.to_seq
-              |> Seq.map File_utils.remove_cwd_from_path
-              |> Proc_utils.filter_via_fzf query
-              |> List.map Misc_utils.normalize_path_to_absolute
-              |> Misc_utils.ranking_of_ranked_document_list
-            )
-          | Some x -> x
-        in
-        let sort_by = (`Fzf_ranking ranking, `Asc) in
-        let command = `Sort_by_fzf (query, Some ranking) in
-        Some (command, { t with sort_by; sort_by_no_score = sort_by })
-      )
-    | `Split_screen screen_split -> (
-        Some (command, { t with screen_split })
-      )
-    | `Search s -> (
-        match Search_exp.parse s with
-        | None -> None
-        | Some search_exp -> (
-            update_search_exp
-              pool
-              (Stop_signal.make ())
-              s
-              search_exp
-              t
-            |> Option.map (fun store -> (command, store))
-          )
-      )
-    | `Filter s -> (
-        match Filter_exp.parse s with
-        | None -> None
-        | Some exp -> (
-            update_filter_exp
-              pool
-              (Stop_signal.make ())
-              s
-              exp
-              t
-            |> Option.map (fun store -> (command, store))
-          )
-      )
 end
+
+let run_command pool (command : Command.t) (st : State.t) : (Command.t * State.t) option =
+  let open State in
+  let reset_focus_list st = { st with focus_list = [] } in
+  match command with
+  | `Mark path -> (
+      Some (command, mark (`Path path) st)
+    )
+  | `Mark_listed -> (
+      Some (command, mark `Usable st)
+    )
+  | `Unmark path -> (
+      Some (command, unmark (`Path path) st)
+    )
+  | `Unmark_listed -> (
+      Some (command, unmark `Usable st)
+    )
+  | `Unmark_all -> (
+      Some (command, unmark `All st)
+    )
+  | `Drop s -> (
+      Some (command, drop (`Path s) st)
+    )
+  | `Drop_all_except s -> (
+      Some (command, drop (`All_except s) st)
+    )
+  | `Drop_marked -> (
+      Some (command, drop `Marked st)
+    )
+  | `Drop_unmarked -> (
+      Some (command, drop `Unmarked st)
+    )
+  | `Drop_listed -> (
+      Some (command, drop `Usable st)
+    )
+  | `Drop_unlisted -> (
+      Some (command, drop `Unusable st)
+    )
+  | `Narrow_level level -> (
+      Some (command, narrow_search_scope_to_level ~level st)
+    )
+  | `Focus path -> (
+      let focus_list = path :: st.focus_list in
+      Some (command, { st with focus_list })
+    )
+  | `Sort (sort_by, sort_by_no_score) -> (
+      let st = reset_focus_list st in
+      let sort_by =
+        sort_by
+        |> (fun (typ, order) -> ((typ :> Sort_by.typ), order))
+      in
+      let sort_by_no_score =
+        sort_by_no_score
+        |> (fun (typ, order) -> ((typ :> Sort_by.typ), order))
+      in
+      Some (command, { st with sort_by; sort_by_no_score })
+    )
+  | `Sort_by_fzf (query, ranking) -> (
+      let st = reset_focus_list st in
+      let ranking =
+        match ranking with
+        | None -> (
+            usable_document_paths st
+            |> String_set.to_seq
+            |> Seq.map File_utils.remove_cwd_from_path
+            |> Proc_utils.filter_via_fzf query
+            |> List.map Misc_utils.normalize_path_to_absolute
+            |> Misc_utils.ranking_of_ranked_document_list
+          )
+        | Some x -> x
+      in
+      let sort_by = (`Fzf_ranking ranking, `Asc) in
+      let command = `Sort_by_fzf (query, Some ranking) in
+      Some (command, { st with sort_by; sort_by_no_score = sort_by })
+    )
+  | `Split_screen screen_split -> (
+      Some (command, { st with screen_split })
+    )
+  | `Search s -> (
+      match Search_exp.parse s with
+      | None -> None
+      | Some search_exp -> (
+          update_search_exp
+            pool
+            (Stop_signal.make ())
+            s
+            search_exp
+            st
+          |> Option.map (fun state -> (command, state))
+        )
+    )
+  | `Filter s -> (
+      match Filter_exp.parse s with
+      | None -> None
+      | Some exp -> (
+          update_filter_exp
+            pool
+            (Stop_signal.make ())
+            s
+            exp
+            st
+          |> Option.map (fun state -> (command, state))
+        )
+    )
 
 module Snapshot = struct
   let counter = ref 0
 
   type t = {
     last_command : Command.t option;
-    store : Document_store.t;
+    state : State.t;
     committed : bool;
     id : int;
   }
@@ -790,21 +791,21 @@ module Snapshot = struct
 
   let last_command t = t.last_command
 
-  let store t = t.store
+  let state t = t.state
 
   let id t = t.id
 
   let equal_id x y =
     id x = id y
 
-  let make ?(committed = true) ~last_command store : t =
+  let make ?(committed = true) ~last_command state : t =
     let id = !counter in
     counter := id + 1;
-    { last_command; store; id; committed }
+    { last_command; state; id; committed }
 
   let make_empty ?committed () =
-    make ?committed ~last_command:None Document_store.empty
+    make ?committed ~last_command:None State.empty
 
-  let update_store store t =
-    { t with store }
+  let update_state state t =
+    { t with state }
 end
