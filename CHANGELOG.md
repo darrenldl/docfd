@@ -3,8 +3,12 @@
 ## 12.2.0
 
 - Dependencies adjustment for CI build
-- Moved screen split handling to the level of document store command
-  instead of just plain UI update
+- Internal refactoring
+    - Refactored document store module into session state module to
+      better reflect that the data structure is capturing not just
+      documents and search results, but also some UI states, etc
+- Moved screen split handling to the level of session state instead of
+  plain UI state
     - This allows Docfd script to better capture the view on screen
 - Added `Shift`+`Tab` for changing screen split ratio in the other
   direction, and removed the "rotating" behaviour of `Tab`
