@@ -767,7 +767,7 @@ module Bottom_pane = struct
             { label = "n"; msg = "narrow mode" };
             { label = "Space"; msg = "toggle mark" };
             { label = "h"; msg = "command history" };
-            { label = "Ctrl+S"; msg = "save script" };
+            { label = "Ctrl+S"; msg = "save session as script" };
           ];
           [
             { label = "?"; msg = "rotate key binding info" };
