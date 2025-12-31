@@ -12,13 +12,33 @@ parser_init = subparsers.add_parser('init')
 
 parser_start = subparsers.add_parser('start')
 
+BOB_FILES = 'bob-files'
+
+DATA_DIR = '/tmp/docfd-interactive-tutorial/data'
+
+CACHE_DIR = '/tmp/docfd-interactive-tutorial/cache'
+
+def run_docfd(dir, script=None):
+    args = ["docfd",
+            "--cache-dir",
+            CACHE_DIR,
+            "--data-dir",
+            DATA_DIR,
+            dir]
+    capture_output = False
+    if script is not None:
+        args.append("--script")
+        args.append(script)
+        capture_output = True
+    return subprocess.run(args, capture_output=capture_output)
+
 def main():
     args = parser.parse_args()
 
     if args.command == 'init':
         fake = Faker('en_US')
 
-        os.makedirs('bob-files', exist_ok=True)
+        os.makedirs(BOB_FILES, exist_ok=True)
 
         for y in range(2010, 2010 + 1):
             for m in range(1, 12 + 1):
@@ -27,8 +47,17 @@ def main():
                     date_str = f"{y:04}-{m:02}-{d:02}"
                     print(date_str)
 
-        print(fake.word())
+        with open(os.path.join(BOB_FILES, 'note_2010-12-31.txt'), 'w') as f:
+            f.write("""Writing down some hints for future reference as we are storing the the archive of the
+year into cold storage at midnight.
+Password is: my favourite food + my favourite drink.
+
+Check receipts used for reimbursement for what I spent the most on.
+""")
     elif args.command == 'start':
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        os.makedirs(DATA_DIR, exist_ok=True)
+
         print(f"""Welcome to the Docfd interactive tutorial. There will be an interactive puzzle to demonstrate the main uses of Docfd, with some additional challenges for advanced users.
 """)
 
@@ -60,15 +89,41 @@ Bob mentioned he wrote down the "password hint" somewhere, lets start off with t
 To search for a phrase in Docfd, first type `/` to enter SEARCH mode, then enter: password hint
 
 When you are finished, use Ctrl+C to exit Docfd to return to the puzzle dialog.
+
+(Don't worry about remembering the file name right now, next step will be about saving your solution for the puzzle program to read.)
 """)
 
 # For file name, type key `f` to enter FILTER mode, and type `path-fuzzy:hint` (Tab to autocomplete to save typing).
 # 
 
+        questionary.press_any_key_to_continue().ask()
+
+        run_docfd(BOB_FILES)
+
+        print(f"""
+Seems like you have given Docfd a short try.
+
+Now let's do the same search again and pass the file with the hint to the
+puzzle program.
+
+This will require the use of the scripting functionality of Docfd,
+which allows you to save and load Docfd sessions (similar to the
+the "save query" or "save view" functionality of other document search programs).
+
+After you have completed the search and pinpointed the file with the password hint, drop unrelated files by typing `dD` (if there are more than one file), and use Ctrl+S to save the session as a Docfd script.
+
+In practice, you would pick a name you'd remember for the script. But for the purpose of this tutorial, input "solution" so the final name is "solution.docfd-script".
+""")
 
         questionary.press_any_key_to_continue().ask()
 
-        subprocess.run(["docfd", "bob-files"])
+        run = True
+        while run:
+            run_docfd("bob-files")
 
+            res = run_docfd("bob-files", script=f"{DATA_DIR}/scripts/solution.docfd-script")
+            print(res)
+            break
+        
 if __name__ == "__main__":
     main()
