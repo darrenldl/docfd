@@ -768,6 +768,7 @@ module Bottom_pane = struct
             { label = "Space"; msg = "toggle mark" };
             { label = "h"; msg = "command history" };
             { label = "Ctrl+S"; msg = "save session as script" };
+            { label = "Ctrl+R"; msg = "rename script" };
           ];
           [
             { label = "?"; msg = "rotate key binding info" };

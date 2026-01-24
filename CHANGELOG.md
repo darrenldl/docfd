@@ -1,5 +1,9 @@
 # Changelog
 
+## 12.3.0
+
+- Added `Ctrl`+`R` for script renaming
+
 ## 12.2.0
 
 - Dependencies adjustment for CI build

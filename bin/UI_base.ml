@@ -18,6 +18,7 @@ type input_mode =
   | Save_script_overwrite
   | Save_script_no_name
   | Save_script_edit
+  | Rename_script_confirm of string * string
   | Delete_script_confirm of string * string
 [@@deriving ord]
 
@@ -36,6 +37,7 @@ type top_level_action =
   | Edit_command_history
   | Select_and_load_script
   | Delete_script_select
+  | Rename_script_select
   | Edit_script of string
   | Sort_by_fzf
 
