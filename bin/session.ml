@@ -717,6 +717,9 @@ let run_command pool (command : Command.t) (st : State.t) : (Command.t * State.t
   | `Split_screen screen_split -> (
       Some (command, { st with screen_split })
     )
+  | `Comment _ -> (
+      Some (command, st)
+    )
   | `Search s -> (
       match Search_exp.parse s with
       | None -> None

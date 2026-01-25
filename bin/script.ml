@@ -19,7 +19,7 @@ let run pool ~init_state ~path
     lines
     |> CCList.foldi (fun state i line ->
         let line_num_in_error_msg = i + 1 in
-        if String_utils.line_is_blank_or_comment line then (
+        if String_utils.line_is_blank_or_system_comment line then (
           state
         ) else (
           match Command.of_string line with

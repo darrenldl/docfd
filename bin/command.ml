@@ -108,6 +108,7 @@ type t = [
   | `Sort of Sort_by.t * Sort_by.t
   | `Sort_by_fzf of string * int String_map.t option
   | `Split_screen of screen_split
+  | `Comment of string
   | `Focus of string
   | `Search of string
   | `Filter of string
@@ -151,6 +152,7 @@ let pp fmt (t : t) =
          | `Wide_right -> "wide-right"
         )
     )
+  | `Comment s -> Fmt.pf fmt "#%s" s
   | `Focus s -> Fmt.pf fmt "focus: %s" s
   | `Search s -> (
       if String.length s = 0 then (
@@ -257,6 +259,7 @@ module Parsers = struct
           string "wide-right" *> skip_spaces *> return (`Split_screen `Wide_right);
         ]
       );
+      string "#" *> any_string >>| (fun s -> (`Comment s));
       string "search" *> skip_spaces *>
       char ':' *> skip_spaces *>
       any_string_trimmed >>| (fun s -> (`Search s));

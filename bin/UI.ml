@@ -209,23 +209,6 @@ let compute_save_script_path () =
     (Fmt.str "%s%s" base_name Params.docfd_script_ext)
 
 let save_script ~path =
-  let comments =
-    try
-      if Sys.file_exists path then (
-        CCIO.with_in path (fun ic ->
-            CCIO.read_lines_seq ic
-            |> Seq.filter String_utils.line_is_comment
-            |> List.of_seq
-          )
-      ) else (
-        []
-      )
-    with
-    | Sys_error _ -> (
-        Misc_utils.exit_with_error_msg
-          (Fmt.str "failed to read script %s" path)
-      )
-  in
   Session_manager.stop_filter_and_search_and_restore_input_fields ();
   let lines =
     Session_manager.lock_with_view (fun view ->
@@ -241,7 +224,6 @@ let save_script ~path =
   in
   try
     CCIO.with_out path (fun oc ->
-        CCIO.write_lines_l oc comments;
         CCIO.write_lines_l oc lines;
       )
   with

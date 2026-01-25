@@ -1,5 +1,12 @@
 # Changelog
 
+## 12.3.0
+
+- Comment support improvement
+    - Added `;` prefix for system comments, which are not preserved after editing of command history
+    - `#` now denotes user comment and is preserved after editing of command history
+    - Ordering of `#` is also preserved during saving a session as script
+
 ## 12.2.0
 
 - Dependencies adjustment for CI build

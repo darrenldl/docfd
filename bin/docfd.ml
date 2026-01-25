@@ -1077,40 +1077,45 @@ let run
                   List.to_seq
                     [
                       "";
-                      "# You are viewing/editing Docfd command history.";
-                      "# If any change is made to this file, Docfd will replay the commands from the start.";
-                      "#";
-                      "# If a line is not blank and does not start with #,";
-                      "# then the line should contain exactly one command.";
-                      "# A command cannot be written across multiple lines.";
-                      "#";
-                      "# Starting point is v0, the state with the full set of documents.";
-                      "# Each command adds one to the version number.";
-                      "# Command at the top is oldest, command at bottom is the newest.";
-                      "#";
-                      "# Note that for commands that accept text, all text after `:` is trimmed and then used in full.";
-                      "# This means \" and ' are treated literally and are not used to delimit strings.";
-                      "#";
-                      "# Possible commands:";
-                      Fmt.str "# - %a" Command.pp (`Search "search phrase");
-                      Fmt.str "# - %a" Command.pp (`Search "");
-                      Fmt.str "# - %a" Command.pp (`Filter "path-fuzzy:\"file txt\"");
-                      Fmt.str "# - %a" Command.pp (`Filter "");
-                      Fmt.str "# - %a" Command.pp (`Sort (Command.Sort_by.default, Command.Sort_by.default_no_score));
-                      Fmt.str "# - %a" Command.pp (`Sort_by_fzf ("", None));
-                      Fmt.str "# - %a" Command.pp (`Sort_by_fzf ("readme", None));
-                      Fmt.str "# - %a" Command.pp (`Narrow_level 1);
-                      Fmt.str "# - %a" Command.pp (`Mark "/path/to/document");
-                      Fmt.str "# - %a" Command.pp `Mark_listed;
-                      Fmt.str "# - %a" Command.pp (`Unmark "/path/to/document");
-                      Fmt.str "# - %a" Command.pp `Unmark_listed;
-                      Fmt.str "# - %a" Command.pp `Unmark_all;
-                      Fmt.str "# - %a" Command.pp (`Drop "/path/to/document");
-                      Fmt.str "# - %a" Command.pp (`Drop_all_except "/path/to/document");
-                      Fmt.str "# - %a" Command.pp `Drop_marked;
-                      Fmt.str "# - %a" Command.pp `Drop_unmarked;
-                      Fmt.str "# - %a" Command.pp `Drop_listed;
-                      Fmt.str "# - %a" Command.pp `Drop_unlisted;
+                      "; You are viewing/editing Docfd command history.";
+                      "; If any change is made to this file, Docfd will replay the commands from the start.";
+                      ";";
+                      "; There are two types of comments:";
+                      "; - System comments begin with `;`, and are not preserved after editing of command history.";
+                      ";   These are for communication of error message to user during command history editing.";
+                      "; - User comments begin with `#`, and are preserved after editing of command history.";
+                      ";";
+                      "; If a line is not blank and is not a comment,";
+                      "; then the line should contain exactly one command.";
+                      "; A command cannot be written across multiple lines.";
+                      ";";
+                      "; Starting point is v0, the state with the full set of documents.";
+                      "; Each command adds one to the version number.";
+                      "; Command at the top is oldest, command at bottom is the newest.";
+                      ";";
+                      "; Note that for commands that accept text, all text after `:` is trimmed and then used in full.";
+                      "; This means \" and ' are treated literally and are not used to delimit strings.";
+                      ";";
+                      "; Possible commands:";
+                      Fmt.str "; - %a" Command.pp (`Search "search phrase");
+                      Fmt.str "; - %a" Command.pp (`Search "");
+                      Fmt.str "; - %a" Command.pp (`Filter "path-fuzzy:\"file txt\"");
+                      Fmt.str "; - %a" Command.pp (`Filter "");
+                      Fmt.str "; - %a" Command.pp (`Sort (Command.Sort_by.default, Command.Sort_by.default_no_score));
+                      Fmt.str "; - %a" Command.pp (`Sort_by_fzf ("", None));
+                      Fmt.str "; - %a" Command.pp (`Sort_by_fzf ("readme", None));
+                      Fmt.str "; - %a" Command.pp (`Narrow_level 1);
+                      Fmt.str "; - %a" Command.pp (`Mark "/path/to/document");
+                      Fmt.str "; - %a" Command.pp `Mark_listed;
+                      Fmt.str "; - %a" Command.pp (`Unmark "/path/to/document");
+                      Fmt.str "; - %a" Command.pp `Unmark_listed;
+                      Fmt.str "; - %a" Command.pp `Unmark_all;
+                      Fmt.str "; - %a" Command.pp (`Drop "/path/to/document");
+                      Fmt.str "; - %a" Command.pp (`Drop_all_except "/path/to/document");
+                      Fmt.str "; - %a" Command.pp `Drop_marked;
+                      Fmt.str "; - %a" Command.pp `Drop_unmarked;
+                      Fmt.str "; - %a" Command.pp `Drop_listed;
+                      Fmt.str "; - %a" Command.pp `Drop_unlisted;
                     ]
                 )
               |> List.of_seq
@@ -1155,7 +1160,7 @@ let run
                       CCIO.read_lines_l ic
                       |> CCList.flat_map (fun line ->
                           if
-                            String_utils.line_is_blank_or_comment line
+                            String_utils.line_is_blank_or_system_comment line
                           then (
                             [ line ]
                           ) else (
