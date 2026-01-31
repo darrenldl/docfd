@@ -53,6 +53,8 @@ let search_scope (t : t) = t.search_scope
 
 let last_scan (t : t) = t.last_scan
 
+let links (t : t) = Array.of_list t.links
+
 let refresh_modification_time ~path =
   let time = Unix.time () in
   Unix.utimes path time time

@@ -37,6 +37,8 @@ val search_scope : t -> Diet.Int.t option
 
 val last_scan : t -> Timedesc.t
 
+val links : t -> Link.t array
+
 val satisfies_filter_exp :
   Task_pool.t ->
   global_first_word_candidates_lookup:Int_set.t Search_phrase.Enriched_token.Data_map.t ->
