@@ -352,7 +352,7 @@ let render_grid
 let content_snippet
     ~doc_id
     ~(view_offset : int Lwd.var)
-    ?(search_result : Search_result.t option)
+    ?(data : [ `Search_result of Search_result.t | `Link of Link.t ] option)
     ~(width : int)
     ~(height : int)
     ?underline
@@ -400,7 +400,7 @@ let content_snippet
       (start_global_line_num, end_inc_global_line_num)
     )
   in
-  match search_result with
+  match data with
   | None -> (
       let start_global_line_num, end_inc_global_line_num =
         compute_final_line_num_range
@@ -422,18 +422,29 @@ let content_snippet
         ?underline
         grid
     )
-  | Some search_result -> (
-      let (relevant_start_line, relevant_end_inc_line) =
-        start_and_end_inc_global_line_num_of_search_result ~doc_id search_result
+  | Some data -> (
+      let focal_line =
+        match data with
+        | `Search_result search_result -> (
+            let (relevant_start_line, relevant_end_inc_line) =
+              start_and_end_inc_global_line_num_of_search_result ~doc_id search_result
+            in
+            let avg = (relevant_start_line + relevant_end_inc_line) / 2 in
+            avg
+          )
+        | `Link link -> (
+            let loc = Index.loc_of_pos ~doc_id link.Link.start_pos in
+            let line_loc = Index.Loc.line_loc loc in
+            Index.Line_loc.global_line_num line_loc
+          )
       in
-      let avg = (relevant_start_line + relevant_end_inc_line) / 2 in
       let start_global_line_num, end_inc_global_line_num =
         compute_final_line_num_range
           ~view_offset
           ~start_global_line_num:(
             max
               0
-              (avg - (Misc_utils.div_round_to_closest height 2))
+              (focal_line - (Misc_utils.div_round_to_closest height 2))
           )
       in
       let grid =
@@ -442,7 +453,14 @@ let content_snippet
           ~start_global_line_num
           ~end_inc_global_line_num
       in
-      mark_search_result_in_word_grid ~doc_id grid search_result;
+      (match data with
+       | `Search_result search_result -> (
+           mark_search_result_in_word_grid ~doc_id grid search_result
+         )
+       | `Link link -> (
+           mark_link_in_word_grid ~doc_id grid link
+         )
+      );
       render_grid
         ~doc_id
         ~view_offset:(Some view_offset)
