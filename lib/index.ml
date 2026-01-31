@@ -1389,13 +1389,23 @@ let links ~doc_id : Link.t list =
   let flush_buf link_typ ~acc ~buf =
     let start_pos, end_inc_pos, strings =
       List.fold_left (fun (start, end_inc, strings) (pos, word) ->
-          let start = min pos start in
-          let end_inc = max pos end_inc in
+          let start =
+            match start with
+            | None -> Some pos
+            | Some start -> Some (min pos start)
+          in
+          let end_inc =
+            match end_inc with
+            | None -> Some pos
+            | Some end_inc -> Some (max pos end_inc)
+          in
           (start, end_inc, word :: strings)
         )
-        (0, 0, [])
+        (None, None, [])
         buf
     in
+    let start_pos = Option.get start_pos in
+    let end_inc_pos = Option.get end_inc_pos in
     let link = Link.{
         start_pos;
         end_inc_pos;
