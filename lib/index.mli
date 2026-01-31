@@ -104,6 +104,8 @@ module Raw : sig
   val of_lines : Task_pool.t -> string Seq.t -> t
 
   val of_pages : Task_pool.t -> string list Seq.t -> t
+
+  val links : t -> Link.t array
 end
 
 val word_ids : doc_id:int64 -> Int_set.t
@@ -121,4 +123,4 @@ module State : sig
   val read_from_db : unit -> unit
 end
 
-val links : doc_id:int64 -> Link.t list
+val links : doc_id:int64 -> Link.t array

@@ -243,6 +243,168 @@ module Raw = struct
         ({ line_loc with global_line_num }, line)
       )
     |> of_seq pool
+
+  let links (t : t) : Link.t array =
+    let flush_buf link_typ ~acc ~buf =
+      let start_pos, end_inc_pos, strings =
+        List.fold_left (fun (start, end_inc, strings) (pos, word) ->
+            let start =
+              match start with
+              | None -> Some pos
+              | Some start -> Some (min pos start)
+            in
+            let end_inc =
+              match end_inc with
+              | None -> Some pos
+              | Some end_inc -> Some (max pos end_inc)
+            in
+            (start, end_inc, word :: strings)
+          )
+          (None, None, [])
+          buf
+      in
+      let start_pos = Option.get start_pos in
+      let end_inc_pos = Option.get end_inc_pos in
+      let link = Link.{
+          start_pos;
+          end_inc_pos;
+          typ = link_typ;
+          link = String.concat "" strings;
+        }
+      in
+      (link :: acc, [])
+    in
+    let process_line (line : (int * string) Dynarray.t) : Link.t list =
+      assert (Dynarray.length line > 0);
+      let word_at pos = Dynarray.get line pos in
+      let word_string_at pos = snd @@ word_at pos in
+      let word_ci_string_at pos = String.lowercase_ascii @@ word_string_at pos in
+      let rec aux
+          (state : [ `Scanning | `In_link of Link.typ ])
+          ~(acc : Link.t list)
+          ~(buf : (int * string) list)
+          (cur : int)
+        : Link.t list
+        =
+        if cur >= Dynarray.length line then (
+          acc
+        ) else (
+          let words_left = Dynarray.length line - cur - 1 in
+          let pos, word = word_at cur in
+          let word_ci = String.lowercase_ascii word in
+          match state with
+          | `Scanning -> (
+              let link_typ =
+                if List.mem word_ci [ "https"; "http"; "file" ]
+                && words_left >= 3
+                && word_ci_string_at (cur + 1) = ":"
+                && word_ci_string_at (cur + 2) = "/"
+                && word_ci_string_at (cur + 3) = "/"
+                then (
+                  Some `URL
+                ) else if cur >= 2
+                       && word_ci_string_at (cur - 2) = "]"
+                       && word_ci_string_at (cur - 1) = "("
+                then (
+                  Some `Markdown
+                ) else if cur >= 2
+                       && word_ci_string_at (cur - 2) = "["
+                       && word_ci_string_at (cur - 1) = "["
+                then (
+                  Some `Wiki
+                ) else (
+                  None
+                )
+              in
+              match link_typ with
+              | Some link_typ -> (
+                  aux (`In_link link_typ) ~acc ~buf:((pos, word) :: buf) (cur + 1)
+                )
+              | None -> (
+                  aux `Scanning ~acc ~buf (cur + 1)
+                )
+            )
+          | `In_link link_typ -> (
+              let link_ended =
+                String.length word = 0
+                || Parser_components.is_space word.[0]
+                || List.mem word [ "]"; ")"; "|" ]
+              in
+              if link_ended then (
+                let acc, buf = flush_buf link_typ ~acc ~buf in
+                aux `Scanning ~acc ~buf (cur + 1)
+              ) else (
+                aux state ~acc ~buf:((pos, word) :: buf) (cur + 1)
+              )
+            )
+        )
+      in
+      aux `Scanning ~acc:[] ~buf:[] 0
+    in
+    let lines_with (mode : [ `Any_of | `All_of ]) l =
+      let line_nums_by_word =
+        l
+        |> List.to_seq
+        |> Seq.filter_map Word_db.id_of_word
+        |> Seq.map (fun word_id ->
+            Int_map.find_opt word_id t.pos_s_of_word
+            |> Option.value ~default:Int_set.empty
+            |> Int_set.to_seq
+            |> Seq.fold_left (fun acc pos ->
+                let loc = Int_map.find pos t.loc_of_pos in
+                let line_loc = Loc.line_loc loc in
+                Int_set.add line_loc.global_line_num acc
+              )
+              Int_set.empty
+          )
+      in
+      line_nums_by_word
+      |> Seq.fold_left
+        (match mode with
+         | `Any_of -> (fun acc s ->
+             let acc = Option.value ~default:Int_set.empty acc in
+             Some (Int_set.union acc s)
+           )
+         | `All_of -> (fun acc s ->
+             match acc with
+             | None -> Some s
+             | Some acc -> Some (Int_set.inter acc s)
+           )
+        )
+        None
+      |> Option.value ~default:Int_set.empty
+    in
+    let url_line_candidates =
+      Int_set.inter
+        (lines_with `Any_of [ "http"; "https"; "file" ])
+        (lines_with `All_of [ ":"; "/" ])
+    in
+    let markdown_and_wiki_line_candidates =
+      lines_with `All_of [ "["; "]" ]
+    in
+    let line_candidates =
+      Int_set.union
+        url_line_candidates
+        markdown_and_wiki_line_candidates
+      |> Int_set.to_seq
+    in
+    let rec aux acc line_nums =
+      match line_nums () with
+      | Seq.Nil -> List.rev acc
+      | Seq.Cons (cur, rest) -> (
+          let start, end_inc = Int_map.find cur t.start_end_inc_pos_of_global_line_num in
+          let links =
+            OSeq.(start -- end_inc)
+            |> Seq.map (fun pos -> (pos, Int_map.find pos t.word_of_pos))
+            |> Seq.map (fun (pos, word_id) -> (pos, Word_db.word_of_id word_id))
+            |> Dynarray.of_seq
+            |> process_line
+          in
+          aux (links @ acc) rest
+        )
+    in
+    aux [] line_candidates
+    |> Array.of_list
 end
 
 module State : sig
@@ -1384,115 +1546,19 @@ let word_ids ~doc_id =
         Int_set.empty
     )
 
-let links ~doc_id : Link.t list =
-  let line_count = global_line_count ~doc_id in
-  let flush_buf link_typ ~acc ~buf =
-    let start_pos, end_inc_pos, strings =
-      List.fold_left (fun (start, end_inc, strings) (pos, word) ->
-          let start =
-            match start with
-            | None -> Some pos
-            | Some start -> Some (min pos start)
-          in
-          let end_inc =
-            match end_inc with
-            | None -> Some pos
-            | Some end_inc -> Some (max pos end_inc)
-          in
-          (start, end_inc, word :: strings)
+let links ~doc_id : Link.t array =
+  (*let open Sqlite3_utils in
+    with_db (fun db ->
+      fold_stmt ~db
+        {|
+    SELECT word_id_doc_id_link.word_id
+    FROM word_id_doc_id_link
+    WHERE word_id_doc_id_link.doc_id = @doc_id
+    |}
+        ~names:[ ("@doc_id", INT doc_id) ]
+        (fun acc data ->
+           Int_set.add (Data.to_int_exn data.(0)) acc
         )
-        (None, None, [])
-        buf
-    in
-    let start_pos = Option.get start_pos in
-    let end_inc_pos = Option.get end_inc_pos in
-    let link = Link.{
-        start_pos;
-        end_inc_pos;
-        typ = link_typ;
-        link = String.concat "" strings;
-      }
-    in
-    (link :: acc, [])
-  in
-  let process_line (line : (int * string) Dynarray.t) : Link.t list =
-    assert (Dynarray.length line > 0);
-    let word_at pos = Dynarray.get line pos in
-    let word_string_at pos = snd @@ word_at pos in
-    let word_ci_string_at pos = String.lowercase_ascii @@ word_string_at pos in
-    let rec aux
-        (state : [ `Scanning | `In_link of Link.typ ])
-        ~(acc : Link.t list)
-        ~(buf : (int * string) list)
-        (cur : int)
-      : Link.t list
-      =
-      if cur >= Dynarray.length line then (
-        acc
-      ) else (
-        let words_left = Dynarray.length line - cur - 1 in
-        let pos, word = word_at cur in
-        let word_ci = String.lowercase_ascii word in
-        match state with
-        | `Scanning -> (
-            let link_typ =
-              if List.mem word_ci [ "https"; "http"; "file" ]
-              && words_left >= 3
-              && word_ci_string_at (cur + 1) = ":"
-              && word_ci_string_at (cur + 2) = "/"
-              && word_ci_string_at (cur + 3) = "/"
-              then (
-                Some `URL
-              ) else if cur >= 2
-                     && word_ci_string_at (cur - 2) = "]"
-                     && word_ci_string_at (cur - 1) = "("
-              then (
-                Some `Markdown
-              ) else if cur >= 2
-                     && word_ci_string_at (cur - 2) = "["
-                     && word_ci_string_at (cur - 1) = "["
-              then (
-                Some `Wiki
-              ) else (
-                None
-              )
-            in
-            match link_typ with
-            | Some link_typ -> (
-                aux (`In_link link_typ) ~acc ~buf:((pos, word) :: buf) (cur + 1)
-              )
-            | None -> (
-                aux `Scanning ~acc ~buf (cur + 1)
-              )
-          )
-        | `In_link link_typ -> (
-            let link_ended =
-              String.length word = 0
-              || Parser_components.is_space word.[0]
-              || List.mem word [ "]"; ")"; "|" ]
-            in
-            if link_ended then (
-              let acc, buf = flush_buf link_typ ~acc ~buf in
-              aux `Scanning ~acc ~buf (cur + 1)
-            ) else (
-              aux state ~acc ~buf:((pos, word) :: buf) (cur + 1)
-            )
-          )
-      )
-    in
-    aux `Scanning ~acc:[] ~buf:[] 0
-  in
-  let rec aux acc cur =
-    if cur >= line_count then (
-      List.rev acc
-    ) else (
-      let start, _end_inc = start_end_inc_pos_of_global_line_num ~doc_id cur in
-      let links =
-        words_of_global_line_num ~doc_id cur
-        |> Dynarray.mapi (fun i word -> (start + i, word))
-        |> process_line
-      in
-      aux (links @ acc) (cur + 1)
-    )
-  in
-  aux [] 0
+        Int_set.empty
+    )*)
+  failwith "TODO"
