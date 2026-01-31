@@ -654,6 +654,30 @@ let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
         );
       with_stmt ~db
         {|
+  INSERT INTO link
+  (doc_id, start_pos, end_inc_pos, typ, link)
+  VALUES
+  (@doc_id, @start_pos, @end_inc_pos, @typ, @link)
+  ON CONFLICT(doc_id, start_pos, end_inc_pos) DO NOTHING
+    |}
+        (fun stmt ->
+           Array.iter (fun link ->
+               let { Link.start_pos; end_inc_pos; typ; link } = link in
+               let typ = Link.string_of_typ typ in
+               bind_names stmt
+                 [ ("@doc_id", INT doc_id)
+                 ; ("@start_pos", INT (Int64.of_int start_pos))
+                 ; ("@end_inc_pos", INT (Int64.of_int end_inc_pos))
+                 ; ("@typ", TEXT typ)
+                 ; ("@link", TEXT link)
+                 ];
+               step stmt;
+               reset stmt;
+             )
+             x.links
+        );
+      with_stmt ~db
+        {|
   INSERT INTO word_id_doc_id_link
   (word_id, doc_id)
   VALUES
@@ -1555,18 +1579,26 @@ let word_ids ~doc_id =
     )
 
 let links ~doc_id : Link.t array =
-  (*let open Sqlite3_utils in
-    with_db (fun db ->
-      fold_stmt ~db
+  let open Sqlite3_utils in
+  let acc = Dynarray.create () in
+  with_db (fun db ->
+      iter_stmt ~db
         {|
-    SELECT word_id_doc_id_link.word_id
-    FROM word_id_doc_id_link
-    WHERE word_id_doc_id_link.doc_id = @doc_id
+    SELECT start_pos, end_inc_pos, typ, link
+    FROM link
+    WHERE link.doc_id = @doc_id
     |}
         ~names:[ ("@doc_id", INT doc_id) ]
-        (fun acc data ->
-           Int_set.add (Data.to_int_exn data.(0)) acc
-        )
-        Int_set.empty
-    )*)
-  failwith "TODO"
+        (fun data ->
+           let start_pos = Data.to_int_exn data.(0) in
+           let end_inc_pos = Data.to_int_exn data.(1) in
+           let typ =
+             Data.to_string_exn data.(2)
+             |> Link.typ_of_string
+             |> Option.get
+           in
+           let link = Data.to_string_exn data.(3) in
+           Dynarray.add_last acc { Link.start_pos; end_inc_pos; typ; link }
+        );
+    );
+  Dynarray.to_array acc
