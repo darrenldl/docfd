@@ -464,10 +464,12 @@ module Top_pane = struct
         UI_base.vpane ~width ~height
           blank blank
       ) else (
+        let$* input_mode = Lwd.get UI_base.Vars.input_mode in
         let$* search_result_selected = Lwd.get UI_base.Vars.index_of_search_result_selected in
         let search_result_group = search_result_groups.(document_selected) in
         UI_base.vpane ~width ~height
           (UI_base.Content_view.main
+             ~input_mode
              ~width
              ~search_result_group
              ~search_result_selected)
@@ -977,6 +979,18 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
+      let links_grid =
+        [
+          [
+            { label = "Enter"; msg = "open link" };
+            { label = "↑/↓/j/k"; msg = "select link" };
+          ];
+          [
+            { label = "Esc"; msg = "exit" };
+          ];
+          empty_row;
+        ]
+      in
       [
         (Navigate, navigate_grid);
         (Search, search_grid);
@@ -996,6 +1010,7 @@ module Bottom_pane = struct
         (Save_script_no_name, save_script_cancel_grid);
         (Save_script_edit, save_script_edit_grid);
         (Delete_script_confirm ("", ""), delete_script_confirm_grid);
+        (Links, links_grid);
       ]
 
     let grid_lookup = UI_base.Key_binding_info.make_grid_lookup grid_contents
@@ -1294,6 +1309,10 @@ let keyboard_handler
         )
       | (`ASCII 'x', []) -> (
           UI_base.set_input_mode Clear;
+          `Handled
+        )
+      | (`ASCII 'l', []) -> (
+          UI_base.set_input_mode Links;
           `Handled
         )
       | (`ASCII 's', []) -> (
@@ -1625,6 +1644,31 @@ let keyboard_handler
              Lwd.set UI_base.Vars.quit true;
              UI_base.Vars.action := Some UI_base.Recompute_document_src;
              true
+           )
+         | _ -> false
+        );
+      in
+      if exit then (
+        UI_base.set_input_mode Navigate;
+      );
+      `Handled
+    )
+  | Links -> (
+      let exit =
+        (match key with
+         | (`Escape, []) -> true
+         | (`Enter, []) -> (
+             false
+           )
+         | (`Page `Down, [])
+         | (`ASCII 'j', [])
+         | (`Arrow `Down, []) -> (
+             false
+           )
+         | (`Page `Up, [])
+         | (`ASCII 'k', [])
+         | (`Arrow `Up, []) -> (
+             false
            )
          | _ -> false
         );

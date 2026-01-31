@@ -19,6 +19,7 @@ type input_mode =
   | Save_script_no_name
   | Save_script_edit
   | Delete_script_confirm of string * string
+  | Links
 [@@deriving ord]
 
 module Input_mode_map = Map.Make (struct
@@ -261,24 +262,43 @@ let mouse_handler
 
 module Content_view = struct
   let main
+      ~(input_mode : input_mode)
       ~height
       ~width
       ~(search_result_group : Document.t * Search_result.t array)
       ~(search_result_selected : int)
     : Nottui.ui Lwd.t =
     let (document, search_results) = search_result_group in
-    let search_result =
-      if Array.length search_results = 0 then
-        None
-      else
-        Some search_results.(search_result_selected)
+    let links = Document.links document in
+    let data =
+      let search_result_count = Array.length search_results in
+      let link_count = Array.length links in
+      match input_mode with
+      | Links -> (
+          if search_result_count = 0 && link_count = 0 then (
+            None
+          ) else if search_result_count = 0 && link_count > 0 then (
+            Some (`Link links.(0))
+          ) else if search_result_count > 0 && link_count = 0 then (
+            Some (`Search_result search_results.(search_result_selected))
+          ) else (
+            None
+          )
+        )
+      | _ -> (
+          if search_result_count = 0 then (
+            None
+          ) else (
+            Some (`Search_result search_results.(search_result_selected))
+          )
+        )
     in
     let$* _ = Lwd.get Vars.content_view_offset in
     let content =
       Content_and_search_result_rendering.content_snippet
         ~doc_id:(Document.doc_id document)
         ~view_offset:Vars.content_view_offset
-        ?search_result
+        ?data
         ~height
         ~width
         ()
@@ -335,6 +355,7 @@ module Status_bar = struct
       ; (Save_script_no_name, "SAVE-SCRIPT")
       ; (Save_script_edit, "SAVE-SCRIPT")
       ; (Delete_script_confirm ("", ""), "DELETE-SCRIPT")
+      ; (Links, "LINKS")
       ]
     in
     let max_input_mode_string_len =
