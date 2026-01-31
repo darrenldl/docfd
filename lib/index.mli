@@ -120,3 +120,5 @@ module State : sig
 
   val read_from_db : unit -> unit
 end
+
+val links : doc_id:int64 -> Link.t list

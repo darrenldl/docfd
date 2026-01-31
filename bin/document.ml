@@ -12,6 +12,7 @@ type t = {
   doc_hash : string;
   word_ids : Int_set.t;
   search_scope : Diet.Int.t option;
+  links : Link.t list;
   last_scan : Timedesc.t;
 }
 
@@ -510,6 +511,7 @@ let of_ir2 db ~already_in_transaction (ir : Ir2.t) : t =
     } = ir in
   Word_db.write_to_db db ~already_in_transaction;
   Index.write_raw_to_db db ~already_in_transaction ~doc_id raw;
+  let links = Index.links ~doc_id in
   {
     search_mode;
     path;
@@ -521,6 +523,7 @@ let of_ir2 db ~already_in_transaction (ir : Ir2.t) : t =
     doc_hash;
     word_ids = Index.Raw.word_ids raw;
     search_scope = None;
+    links;
     last_scan;
   }
 
@@ -562,6 +565,7 @@ let of_path
         doc_hash;
         word_ids = Index.word_ids ~doc_id;
         search_scope = None;
+        links = Index.links ~doc_id;
         last_scan = Timedesc.now ~tz_of_date_time:Params.tz ()
       }
   ) else (

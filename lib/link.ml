@@ -1,5 +1,6 @@
 type typ = [
   | `Markdown
+  | `Wiki
   | `URL
 ]
 

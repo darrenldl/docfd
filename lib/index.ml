@@ -1387,28 +1387,29 @@ let word_ids ~doc_id =
 let links ~doc_id : Link.t list =
   let line_count = global_line_count ~doc_id in
   let flush_buf link_typ ~acc ~buf =
-    let str = Buffer.create 20 in
-    let start_pos, end_inc_pos =
-      List.fold_left (fun (start, end_inc) (pos, word) ->
+    let start_pos, end_inc_pos, strings =
+      List.fold_left (fun (start, end_inc, strings) (pos, word) ->
           let start = min pos start in
           let end_inc = max pos end_inc in
-          Buffer.add_string str word;
-          (start, end_inc)
+          (start, end_inc, word :: strings)
         )
-        (0, 0)
+        (0, 0, [])
         buf
     in
     let link = Link.{
         start_pos;
         end_inc_pos;
         typ = link_typ;
-        link = Buffer.contents str;
+        link = String.concat "" strings;
       }
     in
     (link :: acc, [])
   in
   let process_line (line : (int * string) Dynarray.t) : Link.t list =
     assert (Dynarray.length line > 0);
+    let word_at pos = Dynarray.get line pos in
+    let word_string_at pos = snd @@ word_at pos in
+    let word_ci_string_at pos = String.lowercase_ascii @@ word_string_at pos in
     let rec aux
         (state : [ `Scanning | `In_link of Link.typ ])
         ~(acc : Link.t list)
@@ -1419,12 +1420,29 @@ let links ~doc_id : Link.t list =
       if cur >= Dynarray.length line then (
         acc
       ) else (
-        let pos, word = Dynarray.get line cur in
+        let words_left = Dynarray.length line - cur - 1 in
+        let pos, word = word_at cur in
+        let word_ci = String.lowercase_ascii word in
         match state with
         | `Scanning -> (
             let link_typ =
-              if List.mem word [ "https" ] then (
+              if List.mem word_ci [ "https"; "http"; "file" ]
+              && words_left >= 3
+              && word_ci_string_at (cur + 1) = ":"
+              && word_ci_string_at (cur + 2) = "/"
+              && word_ci_string_at (cur + 3) = "/"
+              then (
                 Some `URL
+              ) else if cur >= 2
+                     && word_ci_string_at (cur - 2) = "]"
+                     && word_ci_string_at (cur - 1) = "("
+              then (
+                Some `Markdown
+              ) else if cur >= 2
+                     && word_ci_string_at (cur - 2) = "["
+                     && word_ci_string_at (cur - 1) = "["
+              then (
+                Some `Wiki
               ) else (
                 None
               )
@@ -1439,13 +1457,9 @@ let links ~doc_id : Link.t list =
           )
         | `In_link link_typ -> (
             let link_ended =
-              if String.length word = 0 then (
-                true
-              ) else if Parser_components.is_space word.[0] then (
-                true
-              ) else (
-                false
-              )
+              String.length word = 0
+              || Parser_components.is_space word.[0]
+              || List.mem word [ "]"; ")"; "|" ]
             in
             if link_ended then (
               let acc, buf = flush_buf link_typ ~acc ~buf in
@@ -1465,8 +1479,7 @@ let links ~doc_id : Link.t list =
       let start, _end_inc = start_end_inc_pos_of_global_line_num ~doc_id cur in
       let links =
         words_of_global_line_num ~doc_id cur
-        |> Dynarray.mapi (fun i word ->
-            (start + i, String.lowercase_ascii word))
+        |> Dynarray.mapi (fun i word -> (start + i, word))
         |> process_line
       in
       aux (links @ acc) (cur + 1)
