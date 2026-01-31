@@ -1383,3 +1383,93 @@ let word_ids ~doc_id =
         )
         Int_set.empty
     )
+
+let links ~doc_id : Link.t list =
+  let line_count = global_line_count ~doc_id in
+  let flush_buf link_typ ~acc ~buf =
+    let str = Buffer.create 20 in
+    let start_pos, end_inc_pos =
+      List.fold_left (fun (start, end_inc) (pos, word) ->
+          let start = min pos start in
+          let end_inc = max pos end_inc in
+          Buffer.add_string str word;
+          (start, end_inc)
+        )
+        (0, 0)
+        buf
+    in
+    let link = Link.{
+        start_pos;
+        end_inc_pos;
+        typ = link_typ;
+        link = Buffer.contents str;
+      }
+    in
+    (link :: acc, [])
+  in
+  let process_line (line : (int * string) Dynarray.t) : Link.t list =
+    assert (Dynarray.length line > 0);
+    let rec aux
+        (state : [ `Scanning | `In_link of Link.typ ])
+        ~(acc : Link.t list)
+        ~(buf : (int * string) list)
+        (cur : int)
+      : Link.t list
+      =
+      if cur >= Dynarray.length line then (
+        acc
+      ) else (
+        let pos, word = Dynarray.get line cur in
+        match state with
+        | `Scanning -> (
+            let link_typ =
+              if List.mem word [ "https" ] then (
+                Some `URL
+              ) else (
+                None
+              )
+            in
+            match link_typ with
+            | Some link_typ -> (
+                aux (`In_link link_typ) ~acc ~buf:((pos, word) :: buf) (cur + 1)
+              )
+            | None -> (
+                aux `Scanning ~acc ~buf (cur + 1)
+              )
+          )
+        | `In_link link_typ -> (
+            let link_ended =
+              if String.length word = 0 then (
+                true
+              ) else if Parser_components.is_space word.[0] then (
+                true
+              ) else (
+                false
+              )
+            in
+            if link_ended then (
+              let acc, buf = flush_buf link_typ ~acc ~buf in
+              aux `Scanning ~acc ~buf (cur + 1)
+            ) else (
+              aux state ~acc ~buf:((pos, word) :: buf) (cur + 1)
+            )
+          )
+      )
+    in
+    aux `Scanning ~acc:[] ~buf:[] 0
+  in
+  let rec aux acc cur =
+    if cur >= line_count then (
+      List.rev acc
+    ) else (
+      let start, _end_inc = start_end_inc_pos_of_global_line_num ~doc_id cur in
+      let links =
+        words_of_global_line_num ~doc_id cur
+        |> Dynarray.mapi (fun i word ->
+            (start + i, String.lowercase_ascii word))
+        |> process_line
+      in
+      aux (links @ acc) (cur + 1)
+    )
+  in
+  aux [] 0
