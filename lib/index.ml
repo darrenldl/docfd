@@ -39,6 +39,7 @@ module Raw = struct
     line_count_of_page_num : int Int_map.t;
     page_count : int;
     global_line_count : int;
+    links : Link.t array;
   }
 
   type multi_indexed_word = {
@@ -59,6 +60,7 @@ module Raw = struct
     line_count_of_page_num = Int_map.empty;
     page_count = 0;
     global_line_count = 0;
+    links = [||];
   }
 
   let word_ids (t : t) : Int_set.t =
@@ -67,6 +69,8 @@ module Raw = struct
       )
       t.pos_s_of_word
       Int_set.empty
+
+  let links (t : t) = t.links
 
   let union (x : t) (y : t) =
     {
@@ -102,6 +106,7 @@ module Raw = struct
           y.line_count_of_page_num;
       page_count = max x.page_count y.page_count;
       global_line_count = max x.global_line_count y.global_line_count;
+      links = [||];
     }
 
   let words_of_lines
@@ -176,6 +181,7 @@ module Raw = struct
             Int_map.add line_loc.page_num (max cur_page_line_count (line_loc.line_num_in_page + 1)) line_count_of_page_num;
           page_count = max page_count (line_loc.page_num + 1);
           global_line_count = max global_line_count (global_line_num + 1);
+          links = [||];
         }
       )
       (make ())
@@ -196,55 +202,7 @@ module Raw = struct
      ))
     |> OSeq.chunks !Params.index_chunk_size
 
-  let of_seq pool (s : (Line_loc.t * string) Seq.t) : t =
-    let indices =
-      s
-      |> Seq.map (fun (line_loc, s) -> (line_loc, Misc_utils.sanitize_string s))
-      |> words_of_lines
-      |> chunks_of_words
-      |> List.of_seq
-      |> Task_pool.map_list pool of_chunk
-    in
-    let res =
-      List.fold_left (fun acc index ->
-          union acc index
-        )
-        (make ())
-        indices
-    in
-    res
-
-  let of_lines pool (s : string Seq.t) : t =
-    s
-    |> Seq.mapi (fun global_line_num line ->
-        ({ Line_loc.page_num = 0; line_num_in_page = global_line_num; global_line_num }, line)
-      )
-    |> of_seq pool
-
-  let of_pages pool (s : string list Seq.t) : t =
-    s
-    |> Seq.mapi (fun page_num page ->
-        (page_num, page)
-      )
-    |> Seq.flat_map (fun (page_num, page) ->
-        match page with
-        | [] -> (
-            let empty_line = ({ Line_loc.page_num; line_num_in_page = 0; global_line_num = 0 }, "") in
-            Seq.return empty_line
-          )
-        | _ -> (
-            List.to_seq page
-            |> Seq.mapi (fun line_num_in_page line ->
-                ({ Line_loc.page_num; line_num_in_page; global_line_num = 0 }, line)
-              )
-          )
-      )
-    |> Seq.mapi (fun global_line_num ((line_loc : Line_loc.t), line) ->
-        ({ line_loc with global_line_num }, line)
-      )
-    |> of_seq pool
-
-  let links (t : t) : Link.t array =
+  let extract_links (t : t) : Link.t array =
     let flush_buf link_typ ~acc ~buf =
       let start_pos, end_inc_pos, strings =
         List.fold_left (fun (start, end_inc, strings) (pos, word) ->
@@ -405,6 +363,56 @@ module Raw = struct
     in
     aux [] line_candidates
     |> Array.of_list
+
+  let of_seq pool (s : (Line_loc.t * string) Seq.t) : t =
+    let indices =
+      s
+      |> Seq.map (fun (line_loc, s) -> (line_loc, Misc_utils.sanitize_string s))
+      |> words_of_lines
+      |> chunks_of_words
+      |> List.of_seq
+      |> Task_pool.map_list pool of_chunk
+    in
+    let res =
+      List.fold_left (fun acc index ->
+          union acc index
+        )
+        (make ())
+        indices
+    in
+    let links = extract_links res in
+    { res with links }
+
+  let of_lines pool (s : string Seq.t) : t =
+    s
+    |> Seq.mapi (fun global_line_num line ->
+        ({ Line_loc.page_num = 0; line_num_in_page = global_line_num; global_line_num }, line)
+      )
+    |> of_seq pool
+
+  let of_pages pool (s : string list Seq.t) : t =
+    s
+    |> Seq.mapi (fun page_num page ->
+        (page_num, page)
+      )
+    |> Seq.flat_map (fun (page_num, page) ->
+        match page with
+        | [] -> (
+            let empty_line = ({ Line_loc.page_num; line_num_in_page = 0; global_line_num = 0 }, "") in
+            Seq.return empty_line
+          )
+        | _ -> (
+            List.to_seq page
+            |> Seq.mapi (fun line_num_in_page line ->
+                ({ Line_loc.page_num; line_num_in_page; global_line_num = 0 }, line)
+              )
+          )
+      )
+    |> Seq.mapi (fun global_line_num ((line_loc : Line_loc.t), line) ->
+        ({ line_loc with global_line_num }, line)
+      )
+    |> of_seq pool
+
 end
 
 module State : sig
