@@ -12,7 +12,7 @@ type t = {
   doc_hash : string;
   word_ids : Int_set.t;
   search_scope : Diet.Int.t option;
-  links : Link.t list;
+  links : Link.t array;
   last_scan : Timedesc.t;
 }
 
@@ -53,7 +53,7 @@ let search_scope (t : t) = t.search_scope
 
 let last_scan (t : t) = t.last_scan
 
-let links (t : t) = Array.of_list t.links
+let links (t : t) = t.links
 
 let refresh_modification_time ~path =
   let time = Unix.time () in
@@ -421,6 +421,7 @@ module Ir2 = struct
     mod_time : Timedesc.t;
     title : string option;
     raw : Index.Raw.t;
+    links : Link.t array;
     last_scan : Timedesc.t;
   }
 
@@ -483,6 +484,7 @@ module Ir2 = struct
           parse_pages pool (Dynarray.to_seq x)
         )
     in
+    let links = Index.Raw.links raw in
     {
       search_mode;
       path;
@@ -493,6 +495,7 @@ module Ir2 = struct
       doc_hash;
       title;
       raw;
+      links;
       last_scan;
     }
 end
@@ -509,11 +512,11 @@ let of_ir2 db ~already_in_transaction (ir : Ir2.t) : t =
       doc_id;
       doc_hash;
       raw;
+      links;
       last_scan;
     } = ir in
   Word_db.write_to_db db ~already_in_transaction;
   Index.write_raw_to_db db ~already_in_transaction ~doc_id raw;
-  let links = Index.links ~doc_id in
   {
     search_mode;
     path;
