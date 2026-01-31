@@ -169,13 +169,13 @@ let word_grid_of_index
     { start_global_line_num; data }
   )
 
-let mark_search_result_in_word_grid
+let mark_in_word_grid
     ~doc_id
     (grid : word_grid)
-    (search_result : Search_result.t)
+    (positions : int list)
   : unit =
   let grid_end_inc_global_line_num = grid.start_global_line_num + Array.length grid.data - 1 in
-  List.iter (fun Search_result.{ found_word_pos = pos; _ } ->
+  List.iter (fun pos ->
       let loc = Index.loc_of_pos ~doc_id pos in
       let line_loc = Index.Loc.line_loc loc in
       let global_line_num = Index.Line_loc.global_line_num line_loc in
@@ -188,7 +188,27 @@ let mark_search_result_in_word_grid
         grid.data.(row).(pos_in_line) <- { cell with typ = `Search_result }
       )
     )
-    (Search_result.found_phrase search_result)
+    positions
+
+let mark_search_result_in_word_grid
+    ~doc_id
+    (grid : word_grid)
+    (search_result : Search_result.t)
+  : unit =
+  Search_result.found_phrase search_result
+  |> List.map (fun Search_result.{ found_word_pos; _ } ->
+      found_word_pos
+    )
+  |> mark_in_word_grid ~doc_id grid
+
+let mark_link_in_word_grid
+    ~doc_id
+    (grid : word_grid)
+    (link : Link.t)
+  : unit =
+  let { Link.start_pos; end_inc_pos; _ } = link in
+  CCList.(start_pos -- end_inc_pos)
+  |> mark_in_word_grid ~doc_id grid
 
 type render_mode = [
   | `Page_num_only
