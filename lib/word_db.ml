@@ -79,9 +79,9 @@ let word_of_id i : string =
       Int_map.find i t.word_of_id
     )
 
-let id_of_word s : int =
+let id_of_word s : int option =
   lock (fun () ->
-      Hashtbl.find t.id_of_word s
+      Hashtbl.find_opt t.id_of_word s
     )
 
 let read_from_db () : unit =
