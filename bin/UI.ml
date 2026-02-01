@@ -466,13 +466,15 @@ module Top_pane = struct
       ) else (
         let$* input_mode = Lwd.get UI_base.Vars.input_mode in
         let$* search_result_selected = Lwd.get UI_base.Vars.index_of_search_result_selected in
+        let$* link_selected = Lwd.get UI_base.Vars.index_of_link_selected in
         let search_result_group = search_result_groups.(document_selected) in
         UI_base.vpane ~width ~height
           (UI_base.Content_view.main
              ~input_mode
              ~width
              ~search_result_group
-             ~search_result_selected)
+             ~search_result_selected
+             ~link_selected)
           (Search_result_list.main
              ~width
              ~search_result_group
@@ -1105,8 +1107,16 @@ let keyboard_handler
     | None -> 0
     | Some (_doc, search_results) -> Array.length search_results
   in
+  let link_choice_count =
+    match search_result_group with
+    | None -> 0
+    | Some (doc, _search_results) -> Array.length (Document.links doc)
+  in
   let search_result_current_choice =
     Lwd.peek UI_base.Vars.index_of_search_result_selected
+  in
+  let link_current_choice =
+    Lwd.peek UI_base.Vars.index_of_link_selected
   in
   match Lwd.peek UI_base.Vars.input_mode with
   | Navigate -> (
@@ -1663,11 +1673,17 @@ let keyboard_handler
          | (`Page `Down, [])
          | (`ASCII 'j', [])
          | (`Arrow `Down, []) -> (
+             UI_base.set_link_selected
+               ~choice_count:link_choice_count
+               (link_current_choice+1);
              false
            )
          | (`Page `Up, [])
          | (`ASCII 'k', [])
          | (`Arrow `Up, []) -> (
+             UI_base.set_link_selected
+               ~choice_count:link_choice_count
+               (link_current_choice-1);
              false
            )
          | _ -> false
@@ -1759,6 +1775,14 @@ let main : Nottui.ui Lwd.t =
       ~choice_count:(Array.length
                        (snd search_result_groups.(Lwd.peek UI_base.Vars.index_of_document_selected)))
       (Lwd.peek UI_base.Vars.index_of_search_result_selected)
+  );
+  if document_count > 0 then (
+    UI_base.set_link_selected
+      ~choice_count:(search_result_groups.(Lwd.peek UI_base.Vars.index_of_document_selected)
+                     |> fst
+                     |> Document.links
+                     |> Array.length)
+      (Lwd.peek UI_base.Vars.index_of_link_selected)
   );
   let$* (term_width, term_height) = Lwd.get UI_base.Vars.term_width_height in
   let$* bottom_pane =

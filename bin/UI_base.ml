@@ -99,6 +99,8 @@ module Vars = struct
   let index_of_document_selected = Lwd.var 0
 
   let index_of_search_result_selected = Lwd.var 0
+
+  let index_of_link_selected = Lwd.var 0
 end
 
 let reset_content_view_offset () =
@@ -115,7 +117,8 @@ let incr_content_view_offset () =
 let reset_document_selected () =
   reset_content_view_offset ();
   Lwd.set Vars.index_of_document_selected 0;
-  Lwd.set Vars.index_of_search_result_selected 0
+  Lwd.set Vars.index_of_search_result_selected 0;
+  Lwd.set Vars.index_of_link_selected 0
 
 let set_document_selected ~choice_count n =
   let n = Misc_utils.bound_selection ~choice_count n in
@@ -123,7 +126,8 @@ let set_document_selected ~choice_count n =
   if old <> n then (
     reset_content_view_offset ();
     Lwd.set Vars.index_of_document_selected n;
-    Lwd.set Vars.index_of_search_result_selected 0
+    Lwd.set Vars.index_of_search_result_selected 0;
+    Lwd.set Vars.index_of_link_selected 0;
   )
 
 let set_search_result_selected ~choice_count n =
@@ -132,6 +136,14 @@ let set_search_result_selected ~choice_count n =
     reset_content_view_offset ();
     let n = Misc_utils.bound_selection ~choice_count n in
     Lwd.set Vars.index_of_search_result_selected n
+  )
+
+let set_link_selected ~choice_count n =
+  let old = Lwd.peek Vars.index_of_link_selected in
+  if old <> n then (
+    reset_content_view_offset ();
+    let n = Misc_utils.bound_selection ~choice_count n in
+    Lwd.set Vars.index_of_link_selected n
   )
 
 let task_pool () =
@@ -267,6 +279,7 @@ module Content_view = struct
       ~width
       ~(search_result_group : Document.t * Search_result.t array)
       ~(search_result_selected : int)
+      ~(link_selected : int)
     : Nottui.ui Lwd.t =
     let (document, search_results) = search_result_group in
     let links = Document.links document in
@@ -278,7 +291,7 @@ module Content_view = struct
           if search_result_count = 0 && link_count = 0 then (
             None
           ) else if search_result_count = 0 && link_count > 0 then (
-            Some (`Link links.(0))
+            Some (`Link links.(link_selected))
           ) else if search_result_count > 0 && link_count = 0 then (
             Some (`Search_result search_results.(search_result_selected))
           ) else (
