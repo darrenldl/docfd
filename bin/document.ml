@@ -13,6 +13,7 @@ type t = {
   word_ids : Int_set.t;
   search_scope : Diet.Int.t option;
   links : Link.t array;
+  link_index_of_start_pos : int Int_map.t;
   last_scan : Timedesc.t;
 }
 
@@ -30,6 +31,13 @@ let compute_path_parts (path : string) =
     |> List.of_seq
   in
   (path_parts)
+
+let compute_link_index_of_start_pos links =
+  CCArray.foldi (fun acc i link ->
+      Int_map.add link.Link.start_pos i acc
+    )
+    Int_map.empty
+    links
 
 let search_mode (t : t) = t.search_mode
 
@@ -54,6 +62,8 @@ let search_scope (t : t) = t.search_scope
 let last_scan (t : t) = t.last_scan
 
 let links (t : t) = t.links
+
+let link_index_of_start_pos (t : t) = t.link_index_of_start_pos
 
 let refresh_modification_time ~path =
   let time = Unix.time () in
@@ -517,6 +527,7 @@ let of_ir2 db ~already_in_transaction (ir : Ir2.t) : t =
     } = ir in
   Word_db.write_to_db db ~already_in_transaction;
   Index.write_raw_to_db db ~already_in_transaction ~doc_id raw;
+  let link_index_of_start_pos = compute_link_index_of_start_pos links in
   {
     search_mode;
     path;
@@ -529,6 +540,7 @@ let of_ir2 db ~already_in_transaction (ir : Ir2.t) : t =
     word_ids = Index.Raw.word_ids raw;
     search_scope = None;
     links;
+    link_index_of_start_pos;
     last_scan;
   }
 
@@ -558,6 +570,7 @@ let of_path
     let path_date = Date_extraction.extract path in
     let stats = Unix.stat path in
     let mod_time = Timedesc.of_timestamp_float_s_exn stats.Unix.st_mtime in
+    let links = Index.links ~doc_id in
     Ok
       {
         search_mode;
@@ -570,7 +583,8 @@ let of_path
         doc_hash;
         word_ids = Index.word_ids ~doc_id;
         search_scope = None;
-        links = Index.links ~doc_id;
+        links;
+        link_index_of_start_pos = compute_link_index_of_start_pos links;
         last_scan = Timedesc.now ~tz_of_date_time:Params.tz ()
       }
   ) else (

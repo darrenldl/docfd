@@ -39,6 +39,8 @@ val last_scan : t -> Timedesc.t
 
 val links : t -> Link.t array
 
+val link_index_of_start_pos : t -> int Int_map.t
+
 val satisfies_filter_exp :
   Task_pool.t ->
   global_first_word_candidates_lookup:Int_set.t Search_phrase.Enriched_token.Data_map.t ->
