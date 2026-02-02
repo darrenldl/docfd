@@ -385,3 +385,16 @@ let main ~close_term ~doc_id ~path ~search_result =
         );
       Proc_utils.run_in_background cmd |> ignore
     )
+
+let open_link ~close_term link =
+  let { Link.typ; link; _ } = link in
+  match typ with
+  | `Markdown | `Wiki -> (
+    )
+  | `URL -> (
+      let config = Config.make ~path:link ~launch_mode:`Detached () in
+      resolve_cmd config fallback_cmd
+      |> Result.get_ok
+      |> Proc_utils.run_in_background
+      |> ignore
+    )

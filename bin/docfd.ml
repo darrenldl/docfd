@@ -1055,6 +1055,12 @@ let run
             );
             loop ()
           )
+        | Open_link link -> (
+            Path_opening.open_link
+              ~close_term
+              link;
+            loop ()
+          )
         | Edit_command_history -> (
             let file = Filename.temp_file "" Params.docfd_script_ext in
             let init_snapshots =

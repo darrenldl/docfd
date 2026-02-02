@@ -1728,10 +1728,24 @@ let keyboard_handler
       `Handled
     )
   | Links -> (
+      let link =
+        if link_choice_count > 0 then (
+          Option.map (fun (doc, _search_results) -> (
+                (Document.links doc).(link_current_choice))
+            ) search_result_group
+        ) else (
+          None
+        )
+      in
       let exit =
         (match key with
          | (`Escape, []) -> true
          | (`Enter, []) -> (
+             Option.iter (fun link ->
+                 Lwd.set UI_base.Vars.quit true;
+                 UI_base.Vars.action :=
+                   Some (UI_base.Open_link link)
+               ) link;
              false
            )
          | (`Page `Down, [])
