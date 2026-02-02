@@ -153,6 +153,11 @@ let pandoc_supported_format_config_and_cmd ~path =
   (Config.make ~path ~launch_mode:`Detached (),
    xdg_open_cmd)
 
+let fallback_cmd : string =
+  match Params.os_typ with
+  | `Linux -> xdg_open_cmd
+  | `Darwin -> "open {path}"
+
 let compute_most_unique_word_and_residing_page_num ~doc_id found_phrase =
   let page_nums = found_phrase
     |> List.map (fun word ->
@@ -231,16 +236,11 @@ let pdf_config_and_cmd ~doc_id ~path ~search_result : Config.t * string =
     in
     Config.make ~path ~page_num ~search_word ~launch_mode:`Detached ()
   in
-  let fallback : string =
-    match Params.os_typ with
-    | `Linux -> xdg_open_cmd
-    | `Darwin -> "open {path}"
-  in
   let cmd =
     match Params.os_typ with
     | `Linux -> (
         match Xdg_utils.default_desktop_file_path `PDF with
-        | None -> fallback
+        | None -> fallback_cmd
         | Some viewer_desktop_file_path -> (
             let flatpak_package_name =
               let s = Filename.basename viewer_desktop_file_path in
@@ -260,7 +260,7 @@ let pdf_config_and_cmd ~doc_id ~path ~search_result : Config.t * string =
                 Fmt.str "%s %s" name args
             in
             match search_result with
-            | None -> fallback
+            | None -> fallback_cmd
             | Some _ -> (
                 if contains "okular" then
                   make_command "okular"
@@ -283,11 +283,11 @@ let pdf_config_and_cmd ~doc_id ~path ~search_result : Config.t * string =
                 else if contains "mupdf" then
                   make_command "mupdf" "{path} {page_num}"
                 else
-                  fallback
+                  fallback_cmd
               )
           )
       )
-    | `Darwin -> fallback
+    | `Darwin -> fallback_cmd
   in
   (config, cmd)
 
