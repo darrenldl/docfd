@@ -1043,9 +1043,8 @@ let run
             let old_stats = Unix.stat path in
             Path_opening.main
               ~close_term
-              ~doc_id
               ~path
-              ~search_result;
+              ~doc_id_and_search_result:(Option.map (fun x -> (doc_id, x)) search_result);
             let new_stats = Unix.stat path in
             if
               Float.abs

@@ -218,14 +218,14 @@ let compute_most_unique_word_and_residing_page_num ~doc_id found_phrase =
   |> (fun (word, page_num, _freq) ->
       (word.found_word, page_num))
 
-let pdf_config_and_cmd ~doc_id ~path ~search_result : Config.t * string =
+let pdf_config_and_cmd ~path ~doc_id_and_search_result : Config.t * string =
   let config =
     let page_num, search_word =
-      match search_result with
+      match doc_id_and_search_result with
       | None -> (
           (1, "")
         )
-      | Some search_result -> (
+      | Some (doc_id, search_result) -> (
           let found_phrase = Search_result.found_phrase search_result in
           let (most_unique_word, most_unique_word_page_num) =
             compute_most_unique_word_and_residing_page_num ~doc_id found_phrase
@@ -259,7 +259,7 @@ let pdf_config_and_cmd ~doc_id ~path ~search_result : Config.t * string =
               else
                 Fmt.str "%s %s" name args
             in
-            match search_result with
+            match doc_id_and_search_result with
             | None -> fallback_cmd
             | Some _ -> (
                 if contains "okular" then
@@ -317,11 +317,11 @@ let config_and_cmd_to_open_text_file ~path ?(line_num = 1) () : Config.t * strin
   in
   (config, cmd)
 
-let text_config_and_cmd ~doc_id ~path ~search_result : Config.t * string =
+let text_config_and_cmd ~path ~doc_id_and_search_result : Config.t * string =
   let line_num =
-    match search_result with
+    match doc_id_and_search_result with
     | None -> None
-    | Some search_result -> (
+    | Some (doc_id, search_result) -> (
         let first_word = List.hd @@ Search_result.found_phrase search_result in
         let first_word_loc =
           Index.loc_of_pos ~doc_id first_word.Search_result.found_word_pos
@@ -338,18 +338,18 @@ let text_config_and_cmd ~doc_id ~path ~search_result : Config.t * string =
     ?line_num
     ()
 
-let main ~close_term ~doc_id ~path ~search_result =
+let main ~close_term ~path ~doc_id_and_search_result =
   let ext = File_utils.extension_of_file path in
   let config, cmd =
     (match File_utils.format_of_file path with
      | `PDF -> (
-         pdf_config_and_cmd ~doc_id ~path ~search_result
+         pdf_config_and_cmd ~path ~doc_id_and_search_result
        )
      | `Pandoc_supported_format -> (
          pandoc_supported_format_config_and_cmd ~path
        )
      | `Text -> (
-         text_config_and_cmd ~doc_id ~path ~search_result
+         text_config_and_cmd ~path ~doc_id_and_search_result
        )
     )
     |> (fun (config, cmd) ->
@@ -390,6 +390,14 @@ let open_link ~close_term link =
   let { Link.typ; link; _ } = link in
   match typ with
   | `Markdown | `Wiki -> (
+      let path =
+        if Filename.is_relative link then (
+          Filename.concat (Sys.getcwd ()) link
+        ) else (
+          link
+        )
+      in
+      main ~close_term ~path ~doc_id_and_search_result:None
     )
   | `URL -> (
       let config = Config.make ~path:link ~launch_mode:`Detached () in
