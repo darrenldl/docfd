@@ -745,25 +745,25 @@ module Bottom_pane = struct
         [
           [
             { label = "Enter"; msg = "open document" };
-            { label = "/"; msg = "search mode" };
+            { label = "/"; msg = "SEARCH" };
             { label = "↑/↓/j/k"; msg = "select document" };
-            { label = "s"; msg = "sort asc mode" };
+            { label = "s"; msg = "SORT-ASC" };
             { label = "Tab"; msg = "expand right pane" };
-            { label = "y"; msg = "copy/yank mode" };
-            { label = "n"; msg = "narrow mode" };
+            { label = "y"; msg = "COPY" };
+            { label = "n"; msg = "NARROW" };
             { label = "Space"; msg = "toggle mark" };
             { label = "h"; msg = "command history" };
             { label = "Ctrl+S"; msg = "save session as script" };
           ];
           [
             { label = "?"; msg = "rotate key binding info" };
-            { label = "f"; msg = "filter mode" };
+            { label = "f"; msg = "FILTER" };
             { label = "Shift+↑/↓/j/k"; msg = "select search result" };
             { label = "Shift+S"; msg = "sort desc mode" };
             { label = "Shift+Tab"; msg = "expand left pane" };
-            { label = "Shift+Y"; msg = "copy/yank paths mode" };
-            { label = "d"; msg = "drop mode" };
-            { label = "m"; msg = "mark mode" };
+            { label = "Shift+Y"; msg = "COPY-PATHS" };
+            { label = "d"; msg = "DROP" };
+            { label = "m"; msg = "MARK" };
             { label = ""; msg = "" };
             { label = "Ctrl+O"; msg = "load script" };
           ];
@@ -774,8 +774,8 @@ module Bottom_pane = struct
             { label = ""; msg = "" };
             { label = ""; msg = "" };
             { label = ""; msg = "" };
-            { label = "r"; msg = "reload mode" };
-            { label = "Shift+M"; msg = "unmark mode" };
+            { label = "r"; msg = "RELOAD" };
+            { label = "Shift+M"; msg = "UNMARK" };
             { label = ""; msg = "" };
             { label = "Ctrl+D"; msg = "delete script" };
           ];
@@ -784,14 +784,14 @@ module Bottom_pane = struct
       let search_grid =
         [
           [
-            { label = "Enter"; msg = "exit search mode" };
+            { label = "Enter"; msg = "exit SEARCH" };
           ];
         ]
       in
       let filter_grid =
         [
           [
-            { label = "Enter"; msg = "exit filter mode" };
+            { label = "Enter"; msg = "exit FILTER" };
             { label = "Tab"; msg = "autocomplete" };
           ];
         ]
@@ -984,13 +984,15 @@ module Bottom_pane = struct
       let links_grid =
         [
           [
-            { label = "Enter"; msg = "open link" };
-            { label = "↑/↓/j/k"; msg = "select link" };
+            { label = "Enter"; msg = "open" };
+            { label = "↑/↓/j/k"; msg = "select" };
+          ];
+          [
+            { label = "Ctrl+Enter"; msg = "open and remain LINKS" };
           ];
           [
             { label = "Esc"; msg = "exit" };
           ];
-          empty_row;
         ]
       in
       [
