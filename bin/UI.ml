@@ -1739,15 +1739,22 @@ let keyboard_handler
           None
         )
       in
+      let set_action_to_open_link link =
+        Option.iter (fun link ->
+            Lwd.set UI_base.Vars.quit true;
+            UI_base.Vars.action :=
+              Some (UI_base.Open_link link)
+          ) link
+      in
       let exit =
         (match key with
          | (`Escape, []) -> true
          | (`Enter, []) -> (
-             Option.iter (fun link ->
-                 Lwd.set UI_base.Vars.quit true;
-                 UI_base.Vars.action :=
-                   Some (UI_base.Open_link link)
-               ) link;
+             set_action_to_open_link link;
+             true
+           )
+         | (`Enter, [`Ctrl]) -> (
+             set_action_to_open_link link;
              false
            )
          | (`Page `Down, [])
