@@ -988,7 +988,7 @@ module Bottom_pane = struct
             { label = "↑/↓/j/k"; msg = "select" };
           ];
           [
-            { label = "Ctrl+Enter"; msg = "open and remain LINKS" };
+            { label = "Ctrl+Enter"; msg = "open and remain in LINKS" };
           ];
           [
             { label = "Esc"; msg = "exit" };
