@@ -1323,6 +1323,70 @@ let keyboard_handler
         )
       | (`ASCII 'l', []) -> (
           UI_base.set_input_mode Links;
+          if search_result_choice_count > 0  then (
+            let (doc, search_results) = Option.get search_result_group in
+            let search_result = search_results.(search_result_current_choice) in
+            let links = Document.links doc in
+            let avg_pos =
+              List.fold_left (fun min_max_pos search_result ->
+                  let { Search_result.found_word_pos; _ } = search_result in
+                  match min_max_pos with
+                  | None -> Some (found_word_pos, found_word_pos)
+                  | Some (min_pos, max_pos) -> (
+                      Some (min found_word_pos min_pos,
+                            max found_word_pos max_pos)
+                    )
+                )
+                None
+                (Search_result.found_phrase search_result)
+              |> (fun x ->
+                  let (x, y) = Option.get x in
+                  (x + y) / 2)
+            in
+            let before, exact, after = Int_map.split avg_pos (Document.link_index_of_start_pos doc) in
+            let index =
+              match exact with
+              | Some index -> Some index
+              | None -> (
+                  match
+                    Int_map.max_binding_opt before,
+                    Int_map.min_binding_opt after
+                  with
+                  | Some (pos_x, index_x), Some (pos_y, index_y) -> (
+                      let diff_x = Int.to_float (Int.abs (pos_x - avg_pos)) in
+                      let diff_y = Int.to_float (Int.abs (pos_y - avg_pos)) in
+                      (* We prefer picking y (link after search result)
+                         over x (link before search result), as it usually feels more
+                         intuitive to jump forward than backward.
+
+                         But if distance to x is <= 50% the distance
+                         to y, then we resort to x.
+                      *)
+                      if diff_x /. diff_y <= 0.5 then (
+                        Some index_x
+                      ) else (
+                        let link_x = links.(index_x) in
+                        let end_inc_pos_x = link_x.Link.end_inc_pos in
+                        if pos_x <= avg_pos && avg_pos <= end_inc_pos_x then (
+                          Some index_x
+                        ) else (
+                          Some index_y
+                        )
+                      )
+                    )
+                  | Some (_pos, index), None
+                  | None, Some (_pos, index) -> Some index
+                  | None, None -> None
+                )
+            in
+            match index with
+            | None -> ()
+            | Some index -> (
+                UI_base.set_link_selected
+                  ~choice_count:link_choice_count
+                  index
+              )
+          );
           `Handled
         )
       | (`ASCII 's', []) -> (

@@ -288,14 +288,10 @@ module Content_view = struct
       let link_count = Array.length links in
       match input_mode with
       | Links -> (
-          if search_result_count = 0 && link_count = 0 then (
+          if link_count = 0 then (
             None
-          ) else if search_result_count = 0 && link_count > 0 then (
-            Some (`Link links.(link_selected))
-          ) else if search_result_count > 0 && link_count = 0 then (
-            Some (`Search_result search_results.(search_result_selected))
           ) else (
-            None
+            Some (`Link links.(link_selected))
           )
         )
       | _ -> (
