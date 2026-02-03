@@ -204,33 +204,37 @@ module Raw = struct
 
   let extract_links (t : t) : Link.t array =
     let flush_buf link_typ ~acc ~buf =
-      let start_pos, end_inc_pos, strings =
-        List.fold_left (fun (start, end_inc, strings) (pos, word) ->
-            let start =
-              match start with
-              | None -> Some pos
-              | Some start -> Some (min pos start)
-            in
-            let end_inc =
-              match end_inc with
-              | None -> Some pos
-              | Some end_inc -> Some (max pos end_inc)
-            in
-            (start, end_inc, word :: strings)
-          )
-          (None, None, [])
-          buf
-      in
-      let start_pos = Option.get start_pos in
-      let end_inc_pos = Option.get end_inc_pos in
-      let link = Link.{
-          start_pos;
-          end_inc_pos;
-          typ = link_typ;
-          link = String.concat "" strings;
-        }
-      in
-      (link :: acc, [])
+      match buf with
+      | [] -> (acc, buf)
+      | _ -> (
+          let start_pos, end_inc_pos, strings =
+            List.fold_left (fun (start, end_inc, strings) (pos, word) ->
+                let start =
+                  match start with
+                  | None -> Some pos
+                  | Some start -> Some (min pos start)
+                in
+                let end_inc =
+                  match end_inc with
+                  | None -> Some pos
+                  | Some end_inc -> Some (max pos end_inc)
+                in
+                (start, end_inc, word :: strings)
+              )
+              (None, None, [])
+              buf
+          in
+          let start_pos = Option.get start_pos in
+          let end_inc_pos = Option.get end_inc_pos in
+          let link = Link.{
+              start_pos;
+              end_inc_pos;
+              typ = link_typ;
+              link = String.concat "" strings;
+            }
+          in
+          (link :: acc, [])
+        )
     in
     let process_line (line : (int * string) Dynarray.t) : Link.t list =
       assert (Dynarray.length line > 0);
@@ -245,7 +249,14 @@ module Raw = struct
         : Link.t list
         =
         if cur >= Dynarray.length line then (
-          acc
+          match state with
+          | `Scanning -> (
+              acc
+            )
+          | `In_link link_typ -> (
+              let acc, _buf = flush_buf link_typ ~acc ~buf in
+              acc
+            )
         ) else (
           let words_left = Dynarray.length line - cur - 1 in
           let pos, word = word_at cur in
