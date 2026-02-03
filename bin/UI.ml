@@ -1730,31 +1730,31 @@ let keyboard_handler
       `Handled
     )
   | Links -> (
-      let link =
+      let doc_and_link =
         if link_choice_count > 0 then (
-          Option.map (fun (doc, _search_results) -> (
-                (Document.links doc).(link_current_choice))
+          Option.map (fun (doc, _search_results) ->
+              (doc, (Document.links doc).(link_current_choice))
             ) search_result_group
         ) else (
           None
         )
       in
-      let set_action_to_open_link link =
-        Option.iter (fun link ->
+      let set_action_to_open_link () =
+        Option.iter (fun (doc, link) ->
             Lwd.set UI_base.Vars.quit true;
             UI_base.Vars.action :=
-              Some (UI_base.Open_link link)
-          ) link
+              Some (UI_base.Open_link (doc, link))
+          ) doc_and_link
       in
       let exit =
         (match key with
          | (`Escape, []) -> true
          | (`Enter, []) -> (
-             set_action_to_open_link link;
+             set_action_to_open_link ();
              true
            )
          | (`Enter, [`Ctrl]) -> (
-             set_action_to_open_link link;
+             set_action_to_open_link ();
              false
            )
          | (`Page `Down, [])

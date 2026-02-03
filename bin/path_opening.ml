@@ -386,13 +386,14 @@ let main ~close_term ~path ~doc_id_and_search_result =
       Proc_utils.run_in_background cmd |> ignore
     )
 
-let open_link ~close_term link =
+let open_link ~close_term ~doc link =
   let { Link.typ; link; _ } = link in
   match typ with
   | `Markdown | `Wiki -> (
       let path =
         if Filename.is_relative link then (
-          Filename.concat (Sys.getcwd ()) link
+          let dir = Filename.dirname (Document.path doc) in
+          Filename.concat dir link
         ) else (
           link
         )

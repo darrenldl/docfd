@@ -1054,9 +1054,10 @@ let run
             );
             loop ()
           )
-        | Open_link link -> (
+        | Open_link (doc, link) -> (
             Path_opening.open_link
               ~close_term
+              ~doc
               link;
             loop ()
           )
