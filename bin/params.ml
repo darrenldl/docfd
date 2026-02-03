@@ -26,6 +26,27 @@ let pandoc_supported_exts =
   ; ".htm"
   ]
 
+let common_text_exts =
+  [ ".txt"
+  ; ".md"
+  ; ".markdown"
+  ; ".rst"
+  ; ".adoc"
+  ; ".org"
+  ; ".json"
+  ; ".yaml"
+  ; ".yml"
+  ; ".toml"
+  ; ".xml"
+  ; ".csv"
+  ; ".tsv"
+  ; ".conf"
+  ; ".cfg"
+  ; ".ini"
+  ; ".env"
+  ; ".log"
+  ]
+
 let default_recognized_exts =
   ([ "txt"; "md"; "pdf" ]
    @
