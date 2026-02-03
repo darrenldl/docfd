@@ -60,7 +60,7 @@ let render_mode_of_document (doc : Document.t)
   match File_utils.format_of_file (Document.path doc) with
   | `PDF -> `Page_num_only
   | `Pandoc_supported_format -> `None
-  | `Text -> `Line_num_only
+  | `Text | `Other -> `Line_num_only
 
 module Vars = struct
   let quit = Lwd.var false

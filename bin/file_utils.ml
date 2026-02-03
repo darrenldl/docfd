@@ -5,7 +5,7 @@ let extension_of_file (s : string) =
   Filename.extension s
   |> String.lowercase_ascii
 
-type file_format = [ `PDF | `Pandoc_supported_format | `Text ] [@@deriving ord]
+type file_format = [ `PDF | `Pandoc_supported_format | `Text | `Other ] [@@deriving ord]
 
 module File_format_set = CCSet.Make (struct
     type t = file_format
@@ -19,7 +19,7 @@ let format_of_file (s : string) : file_format =
     `PDF
   ) else if List.mem ext Params.pandoc_supported_exts then (
     `Pandoc_supported_format
-  ) else if List.mem ext Params.common_text_exts then (
+  ) else if List.mem ext Params.common_text_file_exts then (
     `Text
   ) else (
     `Other

@@ -171,7 +171,7 @@ let files_satisfying_constraints
                 match File_utils.format_of_file s with
                 | `PDF -> not cons.no_pdftotext
                 | `Pandoc_supported_format -> not cons.no_pandoc
-                | `Text -> true
+                | `Text | `Other -> true
              )
              s
          ) else (

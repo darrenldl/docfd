@@ -26,7 +26,7 @@ let pandoc_supported_exts =
   ; ".htm"
   ]
 
-let common_text_exts =
+let common_text_file_exts =
   [ ".txt"
   ; ".md"
   ; ".markdown"

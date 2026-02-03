@@ -269,7 +269,7 @@ module Ir1 = struct
     | `Pandoc_supported_format -> (
         of_path_to_pandoc_supported_format ~env ~doc_id ~doc_hash search_mode last_scan path
       )
-    | `Text -> (
+    | `Text | `Other -> (
         of_path_to_text ~env ~doc_id ~doc_hash search_mode last_scan path
       )
 end

@@ -351,6 +351,9 @@ let main ~close_term ~path ~doc_id_and_search_result =
      | `Text -> (
          text_config_and_cmd ~path ~doc_id_and_search_result
        )
+     | `Other -> (
+         (Config.make ~path ~launch_mode:`Detached (), fallback_cmd)
+       )
     )
     |> (fun (config, cmd) ->
         match Hashtbl.find_opt specs ext with
