@@ -1235,6 +1235,21 @@ let run
                ));
             loop ()
           )
+        | Clear_command_history -> (
+            let init_state =
+              Session_manager.lock_with_view (fun view ->
+                  view.init_state
+                )
+            in
+            let snapshots = Dynarray.create () in
+            Dynarray.add_last
+              snapshots
+              (Session.Snapshot.make
+                 ~last_command:None
+                 init_state);
+            Session_manager.load_snapshots snapshots;
+            loop ()
+          )
         | Select_and_load_script -> (
             close_term ();
             let dir = Params.script_dir () in

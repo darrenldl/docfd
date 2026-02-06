@@ -35,6 +35,7 @@ type top_level_action =
   | Recompute_document_src
   | Open_file_and_search_result of Document.t * Search_result.t option
   | Open_link of (Document.t * Link.t)
+  | Clear_command_history
   | Edit_command_history
   | Select_and_load_script
   | Delete_script_select

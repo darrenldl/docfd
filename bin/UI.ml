@@ -850,6 +850,7 @@ module Bottom_pane = struct
           [
             { label = "/"; msg = "search field" };
             { label = "f"; msg = "filter field" };
+            { label = "h"; msg = "command history" };
           ];
           [
             { label = "Esc"; msg = "cancel" };
@@ -1465,6 +1466,11 @@ let keyboard_handler
         | (`ASCII 'f', []) -> (
             Lwd.set UI_base.Vars.filter_field UI_base.empty_text_field;
             update_filter ~commit:true ();
+            true
+          )
+        | (`ASCII 'h', []) -> (
+            Lwd.set UI_base.Vars.quit true;
+            UI_base.Vars.action := Some UI_base.Clear_command_history;
             true
           )
         | _ -> false
