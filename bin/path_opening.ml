@@ -391,16 +391,22 @@ let main ~close_term ~path ~doc_id_and_search_result =
 
 let open_link ~close_term ~doc link =
   let { Link.typ; link; _ } = link in
+  let doc_path = Document.path doc in
+  let doc_dir = Filename.dirname doc_path in
+  let doc_ext = Filename.extension doc_path in
   match typ with
-  | `Markdown | `Wiki -> (
+  | `Markdown -> (
       let path =
         if Filename.is_relative link then (
-          let dir = Filename.dirname (Document.path doc) in
-          Filename.concat dir link
+          Filename.concat doc_dir link
         ) else (
           link
         )
       in
+      main ~close_term ~path ~doc_id_and_search_result:None
+    )
+  | `Wiki -> (
+      let path = (Filename.concat doc_dir (link ^ doc_ext)) in
       main ~close_term ~path ~doc_id_and_search_result:None
     )
   | `URL -> (
