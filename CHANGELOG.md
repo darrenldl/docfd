@@ -8,11 +8,12 @@
     - Added `;` prefix for system comments, which are not preserved after editing of command history
     - `#` now denotes user comment and is preserved after editing of command history
     - Ordering of `#` is also preserved during saving a session as script
-- Link opening
+- Added link opening support
     - This will **only** work after recreating the index DB
     - `l` opens LINKS mode with the same navigation keybinds
         - `Enter` to open link
         - Links which are closest to the selected search result will be prioritized first
+- Added key binding `xh` to clear command history quickly
 
 ## 12.2.0
 
