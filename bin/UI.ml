@@ -986,14 +986,13 @@ module Bottom_pane = struct
         [
           [
             { label = "Enter"; msg = "open" };
+            { label = "o"; msg = "open and remain in LINKS" };
             { label = "↑/↓/j/k"; msg = "select" };
-          ];
-          [
-            { label = "Ctrl+Enter"; msg = "open and remain in LINKS" };
           ];
           [
             { label = "Esc"; msg = "exit" };
           ];
+          empty_row;
         ]
       in
       [
@@ -1759,7 +1758,7 @@ let keyboard_handler
              set_action_to_open_link ();
              true
            )
-         | (`Enter, [`Ctrl]) -> (
+         | (`ASCII 'o', []) -> (
              set_action_to_open_link ();
              false
            )
