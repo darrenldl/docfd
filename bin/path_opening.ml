@@ -394,25 +394,108 @@ let open_link ~close_term ~doc link =
   let doc_path = Document.path doc in
   let doc_dir = Filename.dirname doc_path in
   let doc_ext = Filename.extension doc_path in
-  match typ with
-  | `Markdown -> (
-      let path =
-        if Filename.is_relative link then (
-          Filename.concat doc_dir link
-        ) else (
-          link
-        )
+  let resolve_wiki_link link =
+    let rec find_wiki_root arr =
+      let cur = CCString.concat_seq ~sep:Filename.dir_sep (Dynarray.to_seq arr) in
+      if Dynarray.length arr = 0 then (
+        None
+      ) else if Dynarray.length arr = 3
+             && Dynarray.get arr 0 = "home"
+      then (
+        Some cur
+      ) else (
+        let candidates =
+          try
+            Some (Sys.readdir cur)
+          with
+          | _ -> None
+        in
+        match candidates with
+        | None -> (
+            None
+          )
+        | Some candidates -> (
+            let root_indicator_exists =
+              Array.exists (fun name ->
+                  List.mem name
+                    [ ".git"
+                    ; ".hg"
+                    ; ".svn"
+                    ; ".obsidian"
+                    ; ".logseq"
+                    ; ".tangent"
+                    ]
+                )
+                candidates
+            in
+            if root_indicator_exists then (
+              Some cur
+            ) else (
+              Dynarray.pop_last arr |> ignore;
+              find_wiki_root arr
+            )
+          )
+      )
+    in
+    let link =
+      Option.value ~default:link
+        (CCString.chop_prefix ~pre:"/" link)
+    in
+    let link_with_ext = link ^ doc_ext in
+    let arr = Dynarray.of_list (CCString.split ~by:Filename.dir_sep doc_dir) in
+    if link.[0] = '.' then (
+      Filename.concat doc_dir link_with_ext
+    ) else (
+      let wiki_root =
+        Option.value ~default:doc_dir (find_wiki_root arr)
       in
-      main ~close_term ~path ~doc_id_and_search_result:None
+      let candidates = File_utils.list_files_recursive
+          ~report_progress:(fun () -> ())
+          ~filter:(fun _depth path ->
+              let path_no_ext =
+                try
+                  Filename.chop_extension path
+                with
+                | _ -> path
+              in
+              CCString.suffix ~suf:link path_no_ext
+            )
+          wiki_root
+      in
+      match
+        String_set.find_first_opt (fun path ->
+            CCString.suffix ~suf:link_with_ext path
+          ) candidates
+      with
+      | Some x -> x
+      | None -> (
+          match String_set.min_elt_opt candidates with
+          | Some x -> x
+          | None -> Filename.concat wiki_root link_with_ext
+        )
     )
-  | `Wiki -> (
-      let path = (Filename.concat doc_dir (link ^ doc_ext)) in
-      main ~close_term ~path ~doc_id_and_search_result:None
-    )
-  | `URL -> (
-      let config = Config.make ~path:link ~launch_mode:`Detached () in
-      resolve_cmd config fallback_cmd
-      |> Result.get_ok
-      |> Proc_utils.run_in_background
-      |> ignore
-    )
+  in
+  if String.length link > 0 then (
+    match typ with
+    | `Markdown -> (
+        let path =
+          if Filename.is_relative link then (
+            Filename.concat doc_dir link
+          ) else (
+            link
+          )
+        in
+        main ~close_term ~path ~doc_id_and_search_result:None
+      )
+    | `Wiki -> (
+        let path = resolve_wiki_link link in
+        main ~close_term ~path ~doc_id_and_search_result:None
+      )
+    | `URL -> (
+        let config = Config.make ~path:link ~launch_mode:`Detached () in
+        resolve_cmd config fallback_cmd
+        |> Result.get_ok
+        |> Proc_utils.run_in_background
+        |> ignore
+      )
+  )
