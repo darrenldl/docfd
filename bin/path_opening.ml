@@ -389,7 +389,7 @@ let main ~close_term ~path ~doc_id_and_search_result =
       Proc_utils.run_in_background cmd |> ignore
     )
 
-let find_project_root arr =
+let find_project_root path =
   let rec aux arr =
     let cur = CCString.concat_seq ~sep:Filename.dir_sep (Dynarray.to_seq arr) in
     if Dynarray.length arr = 0 then (
@@ -432,6 +432,7 @@ let find_project_root arr =
         )
     )
   in
+  let arr = Dynarray.of_list (CCString.split ~by:Filename.dir_sep path) in
   aux arr
 
 let open_link ~close_term ~doc link =
@@ -445,12 +446,11 @@ let open_link ~close_term ~doc link =
         (CCString.chop_prefix ~pre:"/" link)
     in
     let link_with_ext = link ^ doc_ext in
-    let arr = Dynarray.of_list (CCString.split ~by:Filename.dir_sep doc_dir) in
     if link.[0] = '.' then (
       Filename.concat doc_dir link_with_ext
     ) else (
       let wiki_root =
-        Option.value ~default:doc_dir (find_project_root arr)
+        Option.value ~default:doc_dir (find_project_root doc_dir)
       in
       let candidates = File_utils.list_files_recursive
           ~report_progress:(fun () -> ())
@@ -485,7 +485,10 @@ let open_link ~close_term ~doc link =
           if Filename.is_relative link then (
             Filename.concat doc_dir link
           ) else (
-            link
+            let project_root =
+              Option.value ~default:doc_dir (find_project_root doc_dir)
+            in
+            Filename.concat project_root link
           )
         in
         main ~close_term ~path ~doc_id_and_search_result:None
