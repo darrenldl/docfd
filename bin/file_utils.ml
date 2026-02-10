@@ -19,7 +19,9 @@ let format_of_file (s : string) : file_format =
     `PDF
   ) else if List.mem ext Params.pandoc_supported_exts then (
     `Pandoc_supported_format
-  ) else if List.mem ext Params.common_text_file_exts then (
+  ) else if String_set.mem ext Params.common_text_file_exts
+         || String_set.mem ext Params.common_code_file_exts
+  then (
     `Text
   ) else (
     `Other
