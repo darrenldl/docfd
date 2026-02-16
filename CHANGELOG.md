@@ -2,9 +2,9 @@
 
 ## 12.3.0
 
-**Note**: This update contains a feature that require removing existing index DB to take effect.
+**Note**: This update contains a feature that requires removing the existing index DB to take effect.
 
-- Comment support improvement
+- Docfd script comment support improvement
     - Added `;` prefix for system comments, which are not preserved after editing of command history
     - `#` now denotes user comment and is preserved after editing of command history
     - Ordering of `#` is also preserved during saving a session as script
