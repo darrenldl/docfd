@@ -769,7 +769,7 @@ module Bottom_pane = struct
           ];
           [
             { label = "Ctrl+C"; msg = "exit" };
-            { label = "x"; msg = "clear mode" };
+            { label = "x"; msg = "CLEAR" };
             { label = "-/="; msg = "scroll content view" };
             { label = "l"; msg = "LINKS" };
             { label = ""; msg = "" };
