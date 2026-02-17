@@ -759,7 +759,7 @@ module Bottom_pane = struct
             { label = "?"; msg = "rotate key binding info" };
             { label = "f"; msg = "FILTER" };
             { label = "Shift+↑/↓/j/k"; msg = "select search result" };
-            { label = "Shift+S"; msg = "sort desc mode" };
+            { label = "Shift+S"; msg = "SORT-DESC" };
             { label = "Shift+Tab"; msg = "expand left pane" };
             { label = "Shift+Y"; msg = "COPY-PATHS" };
             { label = "d"; msg = "DROP" };
@@ -771,7 +771,7 @@ module Bottom_pane = struct
             { label = "Ctrl+C"; msg = "exit" };
             { label = "x"; msg = "clear mode" };
             { label = "-/="; msg = "scroll content view" };
-            { label = ""; msg = "" };
+            { label = "l"; msg = "LINKS" };
             { label = ""; msg = "" };
             { label = ""; msg = "" };
             { label = "r"; msg = "RELOAD" };

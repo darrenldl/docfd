@@ -1,5 +1,11 @@
 # Changelog
 
+## 12.3.1
+
+- Fixing key binding info grid
+    - Added the missing `l` key binding info
+    - Fixed some other key binding labels
+
 ## 12.3.0
 
 **Note**: This update contains a feature that requires removing the existing index DB to take effect.
