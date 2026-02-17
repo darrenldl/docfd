@@ -2,7 +2,7 @@
 
 ## 12.3.1
 
-- Fixing key binding info grid
+- Fixed key binding info grid
     - Added the missing `l` key binding info
     - Fixed some other key binding labels
 
