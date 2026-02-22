@@ -10,7 +10,11 @@ let db_pool =
         Unix.time () -. !last_used <= 30.0
       )
     ~dispose:(fun (_last_used, db) ->
-        while not (db_close db) do Unix.sleepf 0.01 done
+        let try_count = ref 0 in
+        while !try_count < 10 && not (db_close db) do
+          Unix.sleepf 0.01;
+          incr try_count;
+        done
       )
     Task_pool.size
     (fun () ->
@@ -25,7 +29,7 @@ let with_db : type a. ?db:db -> (db -> a) -> a =
   fun ?db f ->
   match db with
   | None -> (
-      Eio.Pool.use db_pool (fun (last_used, db) ->
+      Eio.Pool.use db_pool ~never_block:true (fun (last_used, db) ->
           last_used := Unix.time ();
           f db
         )
