@@ -43,6 +43,7 @@ val link_index_of_start_pos : t -> int Int_map.t
 
 val satisfies_filter_exp :
   Task_pool.t ->
+  Stop_signal.t ->
   global_first_word_candidates_lookup:Int_set.t Search_phrase.Enriched_token.Data_map.t ->
   Filter_exp.t ->
   t ->

@@ -1,5 +1,11 @@
 # Changelog
 
+## 12.3.2
+
+- Fixed missing stop signal passing for `content:"..."` filter expression handling
+    - Previously, filter expressions with `content:"..."` were not
+      cancelled properly
+
 ## 12.3.1
 
 - Fixed key binding info grid

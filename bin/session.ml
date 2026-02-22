@@ -209,6 +209,7 @@ module State = struct
                        Eio.Fiber.yield ();
                        Document.satisfies_filter_exp
                          pool
+                         stop_signal
                          ~global_first_word_candidates_lookup
                          filter_exp
                          s
@@ -261,7 +262,7 @@ module State = struct
           )
           Search_phrase.Enriched_token.Data_map.empty
       in
-      if Document.satisfies_filter_exp pool ~global_first_word_candidates_lookup t.filter_exp doc
+      if Document.satisfies_filter_exp pool (Stop_signal.make ()) ~global_first_word_candidates_lookup t.filter_exp doc
       then
         String_set.add path t.documents_passing_filter
       else

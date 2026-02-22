@@ -599,7 +599,7 @@ let of_path
     res
   )
 
-let satisfies_filter_exp pool ~global_first_word_candidates_lookup (exp : Filter_exp.t) (t : t) : bool =
+let satisfies_filter_exp pool stop_signal ~global_first_word_candidates_lookup (exp : Filter_exp.t) (t : t) : bool =
   let open Filter_exp in
   let date_f (op : Filter_exp.compare_op) =
     match op with
@@ -644,7 +644,7 @@ let satisfies_filter_exp pool ~global_first_word_candidates_lookup (exp : Filter
         try
           Index.search
             pool
-            (Stop_signal.make ())
+            stop_signal
             ~terminate_on_result_found:true
             ~doc_id:t.doc_id
             ~doc_word_ids:(word_ids t)
