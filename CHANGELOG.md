@@ -5,7 +5,8 @@
 - Fixed missing stop signal passing for `content:"..."` filter expression handling
     - Previously, filter expressions with `content:"..."` were not
       cancelled properly
-- Added additional guards against potential freezing due to DB pool exhaustion
+- Added additional guards against potential freezing due to DB pool
+  exhaustion or other DB connection issues
 
 ## 12.3.1
 
