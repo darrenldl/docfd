@@ -10,11 +10,15 @@ let db_pool =
         Unix.time () -. !last_used <= 30.0
       )
     ~dispose:(fun (_last_used, db) ->
-        let try_count = ref 0 in
-        while !try_count < 10 && not (db_close db) do
-          Unix.sleepf 0.01;
-          incr try_count;
-        done
+        (* Best-effort closing. *)
+        try
+          let try_count = ref 0 in
+          while !try_count < 10 && not (db_close db) do
+            Unix.sleepf 0.01;
+            incr try_count;
+          done
+        with
+        | SqliteError _ -> ()
       )
     Task_pool.size
     (fun () ->
