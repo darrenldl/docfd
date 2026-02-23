@@ -18,7 +18,7 @@ let db_pool =
             incr try_count;
           done
         with
-        | SqliteError _ -> ()
+        | _ -> ()
       )
     Task_pool.size
     (fun () ->
