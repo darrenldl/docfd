@@ -45,13 +45,51 @@ Non-interactive use
 
 - You want to script your search
 
-## Deciding if Docfd is really for you
+## Why Docfd might not be for you
 
-Of course, nothing beats actually using the tool yourself,
-but it would be handy to have a summary of Docfd's design choices
-so you can tell if Docfd is really not for you before even downloading.
+- Docfd is not all-encompassing
 
-See [here](https://github.com/darrenldl/docfd/wiki/Deciding-if-Docfd-is-for-you) for said info.
+<details>
+
+Docfd does not try to be a full blown document management system such as Paperless-ngx.
+While there may be significant overlaps in terms of the search functionality, Docfd will fall short for almost any other kind of features, such as storage management, tagging, web interface, OCR, email ingestion.
+
+## Docfd is not a "proper" search engine
+
+Docfd is a search engine in the sense that it uses the same fundamental principles, i.e. inverted indices, but it lacks features that you would expect from a "proper" search engine solution, e.g. [Apache Lucene](https://lucene.apache.org/), [Tantivy](https://github.com/quickwit-oss/tantivy), [Lnx](https://github.com/lnx-search/lnx).
+
+Here are some of the fundamental features which I think are crucial to a proper search engine, but Docfd lacks:
+- You cannot customize what are indexed by Docfd
+- You cannot add a new type of ranking
+- Docfd lacks support for languages other than English
+- Docfd does not scale very well to very large quantity of documents
+    - Search should still be serviceable when you reach beyond, say, 10k documents, but it will be noticeably more sluggish
+
+Some of these shortcomings are fundamental to the goals of Docfd. For instance,
+Docfd is primarily a standalone desktop TUI tool with quick startup and should not impact other desktop applications.
+As such, some performance related engineering choices typical for a proper search engine
+are difficult to accommodate as they require longer startup and significantly more memory usage.
+
+Other shortcomings are due to limited time and limited return on efforts - if one is to push Docfd so much to reach the feature parity
+and performance of a proper search engine, then one might as well just use an existing search engine to begin with.
+
+</details>
+
+- If your notes are consistently very short, and you only want to do simple searches, then there are better options
+
+<details>
+
+If you follow note taking methodologies such as Zettelkasten, where each note consists of very few lines, then using a combination of grep and file preview tool can yield a much faster search experience by skipping out on indexing and consideration of word proximity.
+
+## Docfd does not "stream" its search results
+
+One user feedback received was that searching felt slow when Docfd is still conducting the search as UI is not updated result by result. By comparison, fzf felt faster as results start to immediately pop into the screen.
+
+It is fundamentally more difficult to implement this streaming behavior nicely in Docfd, as Docfd operates with snapshots in mind (e.g. allowing you to undo/redo commands), while fzf does not. More specifically, it is much easier to wait for all search results to be ready, and finalize as a snapshot before presenting onto Docfd UI.
+
+So while possible to implement in Docfd, it is unclear if the effort is worthwhile with the additional system complexity in mind.
+
+</details>
 
 ## Installation
 
