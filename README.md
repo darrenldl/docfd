@@ -37,13 +37,47 @@ Non-interactive use
 
 ## Why Docfd might be for you
 
-- You are interested in ad hoc searches and just want to run a command to get going
+<details>
+<summary>
+You want a standalone TUI search tool that
+allows you to immediately start searching without any complicated setup.
 
-- You don't want to move everything into a central storage, and want to just keep your current folder structure
+No need to spin up a server and is also completely offline.
+You are interested in ad hoc searches and just want to run a command to get going
+</summary>
 
-- You want a standalone TUI search tool that does not need to spin up a server and is also completely offline
+Docfd 
+Docfd only starts indexing the current directory or
+specified directories/files upon start.
+Files are hashed to check whether they have been indexed yet.
+There is no need to wait for a background indexer to refresh
+before you get up-to-date results.
+</details>
 
-- You want to script your search
+<details>
+<summary>
+You don't want to move everything into a central storage, and want to just keep your current folder structure
+</summary>
+
+There are no strings attached with using Docfd.
+Docfd does not require you to import your files into
+any special storage system, so you can continue mix and match
+tools to best handle your files.
+</details>
+
+<details>
+<summary>
+You want a standalone TUI search tool that does not need to spin up a server and is also completely offline
+</summary>
+</details>
+
+<details>
+<summary>
+You want to script your search
+</summary>
+
+Your actions Docfd has its own scripting language
+</details>
 
 ## Why Docfd might not be for you
 
