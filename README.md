@@ -70,7 +70,8 @@ You want to script or record your search
 Docfd comes with a simple scripting language,
 which is already used to capture your actions in the TUI.
 
-Finally found what you need after many steps? Save it as a script with `Ctrl`+`S`!
+Finally found what you need after many steps?
+Save the session as a script with `Ctrl`+`S`!
 Then open it next time with `Ctrl`+`O`.
 </details>
 
