@@ -39,17 +39,14 @@ Non-interactive use
 
 <details>
 <summary>
-You want a standalone TUI search tool that
+You want a standalone, offline TUI search tool that
 allows you to immediately start searching without any complicated setup.
-
-No need to spin up a server and is also completely offline.
-You are interested in ad hoc searches and just want to run a command to get going
 </summary>
 
-Docfd 
-Docfd only starts indexing the current directory or
+Docfd only starts processing the current directory or
 specified directories/files upon start.
-Files are hashed to check whether they have been indexed yet.
+Hashing is used to pick out files that have not been indexed yet.
+
 There is no need to wait for a background indexer to refresh
 before you get up-to-date results.
 </details>
@@ -67,16 +64,14 @@ tools to best handle your files.
 
 <details>
 <summary>
-You want a standalone TUI search tool that does not need to spin up a server and is also completely offline
-</summary>
-</details>
-
-<details>
-<summary>
-You want to script your search
+You want to script or record your search
 </summary>
 
-Your actions Docfd has its own scripting language
+Docfd comes with a simple scripting language,
+which is already used to capture your actions in the TUI.
+
+Finally found what you need after many steps? Save it as a script with `Ctrl`+`S`!
+Then open it next time with `Ctrl`+`O`.
 </details>
 
 ## Why Docfd might not be for you
