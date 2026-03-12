@@ -8,8 +8,6 @@ module Vars = struct
 
   let script_files : string Dynarray.t Lwd.var = Lwd.var (Dynarray.create ())
 
-  let script_selected = Lwd.var 0
-
   let usable_script_files : string Dynarray.t Lwd.t =
     let$* arr = Lwd.get script_files in
     let$ script_name_specified, _ = Lwd.get save_script_field in
