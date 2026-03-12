@@ -22,6 +22,17 @@ module Vars = struct
     acc
 end
 
+let refresh_script_files () =
+  File_utils.list_files_recursive_filter_by_exts
+    ~max_depth:1
+    ~report_progress:(fun () -> ())
+    ~exts:[ Params.docfd_script_ext ]
+    (Seq.return (Params.script_dir ()))
+  |> String_set.to_seq
+  |> Seq.map Filename.basename
+  |> Dynarray.of_seq
+  |> Lwd.set Vars.script_files
+
 let reload_document (doc : Document.t) =
   let pool = UI_base.task_pool () in
   let path = Document.path doc in
@@ -1297,15 +1308,7 @@ let keyboard_handler
         )
       | (`ASCII 'S', [`Ctrl]) -> (
           UI_base.set_input_mode Save_script;
-          File_utils.list_files_recursive_filter_by_exts
-            ~max_depth:1
-            ~report_progress:(fun () -> ())
-            ~exts:[ Params.docfd_script_ext ]
-            (Seq.return (Params.script_dir ()))
-          |> String_set.to_seq
-          |> Seq.map Filename.basename
-          |> Dynarray.of_seq
-          |> Lwd.set Vars.script_files;
+          refresh_script_files ();
           Nottui.Focus.request Vars.save_script_field_focus_handle;
           `Handled
         )
