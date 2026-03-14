@@ -240,7 +240,14 @@ let vpane
     crop b_height y;
   ]
 
-let wrapped_edit_field ~focus ~on_change ~on_submit ~on_tab x =
+let wrapped_edit_field
+    ~focus
+    ~on_change
+    ~on_submit
+    ?(on_tab : ((string * int) -> unit) option)
+    ?(on_up_down : ([ `Up | `Down ] -> (string * int) -> unit) option)
+    x
+  =
   let$ field =
     Nottui_widgets.edit_field (Lwd.get x)
       ~focus
@@ -250,8 +257,21 @@ let wrapped_edit_field ~focus ~on_change ~on_submit ~on_tab x =
   Nottui.Ui.keyboard_area (fun key ->
       match key with
       | (`Tab, []) -> (
-          on_tab (Lwd.peek x);
-          `Handled
+          match on_tab with
+          | None -> `Unhandled
+          | Some on_tab -> (
+              on_tab (Lwd.peek x);
+              `Handled
+            )
+        )
+      | (`Arrow (`Up as ud), [])
+      | (`Arrow (`Down as ud), []) -> (
+          match on_up_down with
+          | None -> `Unhandled
+          | Some on_up_down -> (
+              on_up_down ud (Lwd.peek x);
+              `Handled
+            )
         )
       | _ -> `Unhandled)
     field
