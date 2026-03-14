@@ -27,7 +27,7 @@ type egress_payload =
   | Searching
   | Search_cancelled
   | Search_done of int * Session.Snapshot.t
-  | Filter_glob_parse_error
+  | Filter_parse_error
   | Filtering
   | Filtering_cancelled
   | Filtering_done of int * Session.Snapshot.t
@@ -211,7 +211,7 @@ let manager_fiber () =
          update_snapshot ver snapshot;
          Lwd.set UI_base.Vars.search_ui_status `Idle
        )
-     | Filter_glob_parse_error -> (
+     | Filter_parse_error -> (
          Lwd.set UI_base.Vars.filter_ui_status `Parse_error
        )
      | Filtering_cancelled -> (
@@ -338,7 +338,7 @@ let worker_fiber pool =
           )
       )
     | None -> (
-        send_to_manager Filter_glob_parse_error
+        send_to_manager Filter_parse_error
       )
   in
   while true do
