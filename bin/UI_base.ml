@@ -18,6 +18,7 @@ type input_mode =
   | Save_script_overwrite
   | Save_script_no_name
   | Save_script_edit
+  | Open_script
   | Delete_script_confirm of string * string
   | Links
 [@@deriving ord]
@@ -37,7 +38,7 @@ type top_level_action =
   | Open_link of (Document.t * Link.t)
   | Clear_command_history
   | Edit_command_history
-  | Select_and_load_script
+  | Open_script of string
   | Delete_script_select
   | Edit_script of string
   | Sort_by_fzf
@@ -103,6 +104,8 @@ module Vars = struct
   let index_of_search_result_selected = Lwd.var 0
 
   let index_of_link_selected = Lwd.var 0
+
+  let index_of_script_selected = Lwd.var 0
 end
 
 let reset_content_view_offset () =
@@ -146,6 +149,13 @@ let set_link_selected ~choice_count n =
     reset_content_view_offset ();
     let n = Misc_utils.bound_selection ~choice_count n in
     Lwd.set Vars.index_of_link_selected n
+  )
+
+let set_script_selected ~choice_count n =
+  let old = Lwd.peek Vars.index_of_script_selected in
+  if old <> n then (
+    let n = Misc_utils.bound_selection ~choice_count n in
+    Lwd.set Vars.index_of_script_selected n
   )
 
 let task_pool () =
@@ -385,6 +395,7 @@ module Status_bar = struct
       ; (Save_script_overwrite, "SAVE-SCRIPT")
       ; (Save_script_no_name, "SAVE-SCRIPT")
       ; (Save_script_edit, "SAVE-SCRIPT")
+      ; (Open_script, "OPEN-SCRIPT")
       ; (Delete_script_confirm ("", ""), "DELETE-SCRIPT")
       ; (Links, "LINKS")
       ]

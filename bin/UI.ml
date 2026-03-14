@@ -2,25 +2,120 @@ open Docfd_lib
 open Lwd_infix
 
 module Vars = struct
-  let save_script_field = Lwd.var UI_base.empty_text_field
+  let script_name_field = Lwd.var UI_base.empty_text_field
 
-  let save_script_field_focus_handle = Nottui.Focus.make ()
+  let script_name_field_focus_handle = Nottui.Focus.make ()
 
   let script_files : string Dynarray.t Lwd.var = Lwd.var (Dynarray.create ())
 
   let usable_script_files : string Dynarray.t Lwd.t =
     let$* arr = Lwd.get script_files in
-    let$ script_name_specified, _ = Lwd.get save_script_field in
-    let acc = Dynarray.create () in
-    Dynarray.iter (fun s ->
-        if CCString.starts_with ~prefix:script_name_specified s then (
-          Dynarray.add_last acc s;
-        )
-      ) arr;
-    acc
+    let$* input_mode = Lwd.get UI_base.Vars.input_mode in
+    let$ script_name_specified, _ = Lwd.get script_name_field in
+    match input_mode with
+    | Save_script -> (
+        Dynarray.filter
+          (CCString.starts_with ~prefix:script_name_specified)
+          arr
+      )
+    | Open_script -> (
+        match Search_exp.parse script_name_specified with
+        | None -> (
+            Dynarray.filter
+              (CCString.starts_with ~prefix:script_name_specified)
+              arr
+          )
+        | Some exp -> (
+            if Search_exp.is_empty exp then (
+              arr
+            ) else (
+              let acc = ref [] in
+              Dynarray.iter
+                (fun s ->
+                   let parts = Tokenization.tokenize ~drop_spaces:false s
+                     |> List.of_seq
+                   in
+                   let search_results =
+                     List.filter_map (fun phrase ->
+                         let words =
+                           List.map (fun token ->
+                               CCList.foldi
+                                 (fun first_match i part ->
+                                    match first_match with
+                                    | Some x -> Some x
+                                    | None -> (
+                                        if
+                                          Search_phrase.Enriched_token.compatible_with_word token part
+                                        then (
+                                          Some (i, part, String.lowercase_ascii part)
+                                        ) else (
+                                          None
+                                        )
+                                      )
+                                 )
+                                 None
+                                 parts
+                             )
+                             (Search_phrase.enriched_tokens phrase)
+                         in
+                         if List.for_all Option.is_some words then (
+                           let found_phrase =
+                             List.map Option.get words
+                             |> List.map (fun (i, part, part_ci) ->
+                                 Search_result.{
+                                   found_word_pos = i;
+                                   found_word_ci = part_ci;
+                                   found_word = part;
+                                 }
+                               )
+                           in
+                           Some (Search_result.make phrase
+                                   ~found_phrase
+                                   ~found_phrase_opening_closing_symbol_match_count:0)
+                         ) else (
+                           None
+                         )
+                       )
+                       (Search_exp.flattened exp)
+                   in
+                   let best_search_result =
+                     List.fold_left (fun best x ->
+                         match best with
+                         | None -> Some x
+                         | Some best -> (
+                             if Search_result.score x > Search_result.score best then (
+                               Some x
+                             ) else (
+                               Some best
+                             )
+                           )
+                       )
+                       None
+                       search_results
+                   in
+                   match best_search_result with
+                   | None -> ()
+                   | Some best -> (
+                       acc := (s, best) :: !acc
+                     )
+                )
+                arr;
+              !acc
+              |> List.sort (fun (_s0, r0) (_s1, r1) ->
+                  Search_result.compare_relevance r0 r1
+                )
+              |> List.map fst
+              |> Dynarray.of_list
+            )
+          )
+      )
+    | _ -> (
+        Dynarray.create ()
+      )
 end
 
 let refresh_script_files () =
+  Lwd.set UI_base.Vars.index_of_script_selected 0;
   File_utils.list_files_recursive_filter_by_exts
     ~max_depth:1
     ~report_progress:(fun () -> ())
@@ -210,7 +305,7 @@ let update_search ~commit () =
   Session_manager.submit_search_req ~commit s
 
 let compute_save_script_path () =
-  let base_name, _ = Lwd.peek Vars.save_script_field in
+  let base_name, _ = Lwd.peek Vars.script_name_field in
   let dir = Params.script_dir () in
   File_utils.mkdir_recursive dir;
   Filename.concat
@@ -495,8 +590,13 @@ module Top_pane = struct
       ~width
       ~height
     : Nottui.ui Lwd.t =
+    let$* script_selected = Lwd.get UI_base.Vars.index_of_script_selected in
     let$ scripts = Vars.usable_script_files in
-    Dynarray.to_seq scripts
+    let arr = Dynarray.create () in
+    Seq.iter (fun i ->
+        Dynarray.add_last arr (Dynarray.get scripts i)
+      ) OSeq.(script_selected --^ Dynarray.length scripts);
+    Dynarray.to_seq arr
     |> Seq.map (fun s ->
         let open Notty in
         let attr =
@@ -519,6 +619,9 @@ module Top_pane = struct
     let$* input_mode = Lwd.get UI_base.Vars.input_mode in
     match input_mode with
     | Save_script -> (
+        script_list ~width ~height
+      )
+    | Open_script -> (
         script_list ~width ~height
       )
     | _ -> (
@@ -555,7 +658,7 @@ module Bottom_pane = struct
       UI_base.Input_mode_map.find input_mode UI_base.Status_bar.input_mode_images
     in
     let attr = UI_base.Status_bar.attr in
-    let edit_field = Vars.save_script_field in
+    let edit_field = Vars.script_name_field in
     let$* usable_script_files = Vars.usable_script_files in
     match input_mode with
     | Save_script -> (
@@ -571,13 +674,13 @@ module Bottom_pane = struct
                         Notty.I.strf ~attr "Save as: [ ";
                       ]));
               UI_base.wrapped_edit_field edit_field
-                ~focus:Vars.save_script_field_focus_handle
+                ~focus:Vars.script_name_field_focus_handle
                 ~on_change:(fun (text, x) ->
                     Lwd.set edit_field (text, x);
                   )
                 ~on_submit:(fun (text, x) ->
                     Lwd.set edit_field (text, x);
-                    Nottui.Focus.release Vars.save_script_field_focus_handle;
+                    Nottui.Focus.release Vars.script_name_field_focus_handle;
                     Lwd.set UI_base.Vars.input_mode
                       (if String.length text = 0 then
                          Save_script_no_name
@@ -653,6 +756,51 @@ module Bottom_pane = struct
                     UI_base.Status_bar.element_spacer;
                     Notty.I.strf ~attr "Do you want to edit %s to add comments etc?" (Filename.basename path);
                   ]))
+        in
+        let$ bar = UI_base.Status_bar.background_bar in
+        Nottui.Ui.join_z bar content
+      )
+    | Open_script -> (
+        let$* script_selected = Lwd.get UI_base.Vars.index_of_script_selected in
+        let usable_script_count = Dynarray.length usable_script_files in
+        let$* content =
+          Nottui_widgets.hbox
+            [
+              Lwd.return
+                (Nottui.Ui.atom
+                   (Notty.I.hcat
+                      [
+                        input_mode_image;
+                        UI_base.Status_bar.element_spacer;
+                        Notty.I.strf ~attr "Open: [ ";
+                      ]));
+              UI_base.wrapped_edit_field edit_field
+                ~focus:Vars.script_name_field_focus_handle
+                ~on_change:(fun (text, x) ->
+                    Lwd.set edit_field (text, x);
+                  )
+                ~on_submit:(fun (text, x) ->
+                    Lwd.set edit_field (text, x);
+                    if usable_script_count > 0 then (
+                      Nottui.Focus.release Vars.script_name_field_focus_handle;
+                      Lwd.set UI_base.Vars.quit true;
+                      let dir = Params.script_dir () in
+                      let file = Dynarray.get usable_script_files script_selected in
+                      let path = Filename.concat dir file in
+                      UI_base.Vars.action := Some (Open_script path);
+                    );
+                    Lwd.set UI_base.Vars.input_mode Navigate;
+                  )
+                ~on_up_down:(fun up_down _ ->
+                    UI_base.set_script_selected
+                      ~choice_count:usable_script_count
+                      (script_selected +
+                       (match up_down with
+                        | `Up -> (-1)
+                        | `Down -> 1)
+                      ));
+              Lwd.return (Nottui.Ui.atom (Notty.I.strf ~attr " ] + %s. Confirm with empty field to cancel opening." Params.docfd_script_ext));
+            ]
         in
         let$ bar = UI_base.Status_bar.background_bar in
         Nottui.Ui.join_z bar content
@@ -774,7 +922,7 @@ module Bottom_pane = struct
             { label = "d"; msg = "DROP" };
             { label = "m"; msg = "MARK" };
             { label = ""; msg = "" };
-            { label = "Ctrl+O"; msg = "load script" };
+            { label = "Ctrl+O"; msg = "open script" };
           ];
           [
             { label = "Ctrl+C"; msg = "exit" };
@@ -839,6 +987,16 @@ module Bottom_pane = struct
           [
             { label = "y"; msg = "open in editor" };
             { label = "Esc/n"; msg = "skip" };
+          ];
+          empty_row;
+          empty_row;
+        ]
+      in
+      let open_script_grid =
+        [
+          [
+            { label = "Enter"; msg = "confirm answer" };
+            { label = "↑/↓"; msg = "select script" };
           ];
           empty_row;
           empty_row;
@@ -1022,6 +1180,7 @@ module Bottom_pane = struct
         (Save_script_overwrite, save_script_confirm_grid);
         (Save_script_no_name, save_script_cancel_grid);
         (Save_script_edit, save_script_edit_grid);
+        (Open_script, open_script_grid);
         (Delete_script_confirm ("", ""), delete_script_confirm_grid);
         (Links, links_grid);
       ]
@@ -1307,12 +1466,13 @@ let keyboard_handler
       | (`ASCII 'S', [`Ctrl]) -> (
           UI_base.set_input_mode Save_script;
           refresh_script_files ();
-          Nottui.Focus.request Vars.save_script_field_focus_handle;
+          Nottui.Focus.request Vars.script_name_field_focus_handle;
           `Handled
         )
       | (`ASCII 'O', [`Ctrl]) -> (
-          Lwd.set UI_base.Vars.quit true;
-          UI_base.Vars.action := Some UI_base.Select_and_load_script;
+          UI_base.set_input_mode Open_script;
+          refresh_script_files ();
+          Nottui.Focus.request Vars.script_name_field_focus_handle;
           `Handled
         )
       | (`ASCII 'D', [`Ctrl]) -> (

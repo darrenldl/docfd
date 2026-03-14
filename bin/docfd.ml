@@ -1250,45 +1250,21 @@ let run
             Session_manager.load_snapshots snapshots;
             loop ()
           )
-        | Select_and_load_script -> (
-            close_term ();
-            let dir = Params.script_dir () in
-            let choices =
-              File_utils.list_files_recursive_filter_by_exts
-                ~max_depth:1
-                ~report_progress:(fun () -> ())
-                ~exts:[ Params.docfd_script_ext ]
-                (Seq.return dir)
+        | Open_script path -> (
+            let init_state =
+              Session_manager.lock_with_view (fun view ->
+                  view.init_state
+                )
             in
-            let selection =
-              choices
-              |> String_set.to_seq
-              |> Seq.map Filename.basename
-              |> Proc_utils.pipe_to_fzf_for_selection
-                ~preview_cmd:(Fmt.str "cat %s/{}" dir)
-            in
-            match selection with
-            | `Selection (_, [ file ]) -> (
-                let path = Filename.concat dir file in
-                let init_state =
-                  Session_manager.lock_with_view (fun view ->
-                      view.init_state
-                    )
-                in
-                match
-                  Script.run
-                    pool
-                    ~init_state
-                    ~path
-                with
-                | Error msg -> exit_with_error_msg msg
-                | Ok snapshots -> (
-                    Session_manager.load_snapshots snapshots;
-                    loop ()
-                  )
-              )
-            | `Selection (_, _) -> failwith "unexpected case"
-            | `Cancelled _ -> (
+            match
+              Script.run
+                pool
+                ~init_state
+                ~path
+            with
+            | Error msg -> exit_with_error_msg msg
+            | Ok snapshots -> (
+                Session_manager.load_snapshots snapshots;
                 loop ()
               )
           )
