@@ -658,7 +658,7 @@ module Bottom_pane = struct
       UI_base.Input_mode_map.find input_mode UI_base.Status_bar.input_mode_images
     in
     let attr = UI_base.Status_bar.attr in
-    let edit_field = Vars.script_name_field in
+    let text_field = Vars.script_name_field in
     let$* usable_script_files = Vars.usable_script_files in
     let$* script_selected = Lwd.get UI_base.Vars.index_of_script_selected in
     let usable_script_count = Dynarray.length usable_script_files in
@@ -687,7 +687,7 @@ module Bottom_pane = struct
                       |> String_utils.longest_common_prefix
                     )
                   in
-                  Lwd.set edit_field (best_fit, String.length best_fit)
+                  Lwd.set text_field (best_fit, String.length best_fit)
                 )
             )
           | _ -> None
@@ -696,7 +696,7 @@ module Bottom_pane = struct
           match input_mode with
           | Save_script -> (
               (fun (text, x) ->
-                 Lwd.set edit_field (text, x);
+                 Lwd.set text_field (text, x);
                  Nottui.Focus.release Vars.script_name_field_focus_handle;
                  Lwd.set UI_base.Vars.input_mode
                    (if String.length text = 0 then
@@ -708,7 +708,7 @@ module Bottom_pane = struct
             )
           | Open_script -> (
               (fun (text, x) ->
-                 Lwd.set edit_field (text, x);
+                 Lwd.set text_field (text, x);
                  Nottui.Focus.release Vars.script_name_field_focus_handle;
                  if usable_script_count > 0 then (
                    Lwd.set UI_base.Vars.quit true;
@@ -722,7 +722,7 @@ module Bottom_pane = struct
             )
           | Delete_script -> (
               (fun (text, x) ->
-                 Lwd.set edit_field (text, x);
+                 Lwd.set text_field (text, x);
                  Nottui.Focus.release Vars.script_name_field_focus_handle;
                  if usable_script_count > 0 then (
                    let dir = Params.script_dir () in
@@ -762,10 +762,13 @@ module Bottom_pane = struct
                         UI_base.Status_bar.element_spacer;
                         Notty.I.strf ~attr "%s: [ " prompt;
                       ]));
-              UI_base.wrapped_edit_field edit_field
+              UI_base.edit_field text_field
                 ~focus:Vars.script_name_field_focus_handle
+                ~on_cancel:(fun (_, _) ->
+                    Lwd.set UI_base.Vars.input_mode Navigate
+                  )
                 ~on_change:(fun (text, x) ->
-                    Lwd.set edit_field (text, x);
+                    Lwd.set text_field (text, x);
                   )
                 ~on_submit
                 ?on_tab
@@ -1264,14 +1267,14 @@ module Bottom_pane = struct
 
   let filter_bar =
     UI_base.Filter_bar.main
-      ~edit_field:UI_base.Vars.filter_field
+      ~text_field:UI_base.Vars.filter_field
       ~focus_handle:UI_base.Vars.filter_field_focus_handle
       ~on_change:(update_filter ~commit:false)
       ~on_submit:(update_filter ~commit:true)
 
   let search_bar ~input_mode =
     UI_base.Search_bar.main ~input_mode
-      ~edit_field:UI_base.Vars.search_field
+      ~text_field:UI_base.Vars.search_field
       ~focus_handle:UI_base.Vars.search_field_focus_handle
       ~on_change:(update_search ~commit:false)
       ~on_submit:(update_search ~commit:true)

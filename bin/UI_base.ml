@@ -250,41 +250,121 @@ let vpane
     crop b_height y;
   ]
 
-let wrapped_edit_field
+let (mini, maxi, clampi) = Lwd_utils.(mini, maxi, clampi)
+
+(* Modified from upstream Nottui source code. *)
+let edit_field
     ~focus
     ~on_change
     ~on_submit
+    ~on_cancel
     ?(on_tab : ((string * int) -> unit) option)
     ?(on_up_down : ([ `Up | `Down ] -> (string * int) -> unit) option)
-    x
+    state
   =
-  let$ field =
-    Nottui_widgets.edit_field (Lwd.get x)
-      ~focus
-      ~on_change
-      ~on_submit
-  in
-  Nottui.Ui.keyboard_area (fun key ->
-      match key with
-      | (`Tab, []) -> (
-          match on_tab with
-          | None -> `Unhandled
-          | Some on_tab -> (
-              on_tab (Lwd.peek x);
-              `Handled
+  let update _focus_h focus (text, pos) =
+    let pos = clampi pos ~min:0 ~max:(String.length text) in
+    let content =
+      Nottui.Ui.atom @@ Notty.I.hcat @@
+      if Nottui.Focus.has_focus focus then (
+        let attr = Notty.A.(bg lightblue) in
+        let len = String.length text in
+        (if pos >= len
+         then [Notty.I.string attr text]
+         else [Notty.I.string attr (String.sub text 0 pos)])
+        @
+        (if pos < String.length text then
+           [Notty.I.string Notty.A.(bg lightred) (String.sub text pos 1);
+            Notty.I.string attr (String.sub text (pos + 1) (len - pos - 1))]
+         else [Notty.I.string Notty.A.(bg lightred) " "]);
+      ) else
+        [Notty.I.string Notty.A.(st underline) (if text = "" then " " else text)]
+    in
+    let handler = function
+      | `Escape, [] -> (
+          on_cancel (text, pos);
+          `Handled
+        )
+      | `ASCII k, [] -> (
+          let text =
+            if pos < String.length text then (
+              String.sub text 0 pos ^ String.make 1 k ^
+              String.sub text pos (String.length text - pos)
+            ) else (
+              text ^ String.make 1 k
             )
+          in
+          on_change (text, (pos + 1));
+          `Handled
+        )
+      | `Backspace, _ -> (
+          let text =
+            if pos > 0 then (
+              if pos < String.length text then (
+                String.sub text 0 (pos - 1) ^
+                String.sub text pos (String.length text - pos)
+              ) else if String.length text > 0 then (
+                String.sub text 0 (String.length text - 1)
+              ) else text
+            ) else text
+          in
+          let pos = maxi 0 (pos - 1) in
+          on_change (text, pos);
+          `Handled
+        )
+      | `Enter, _ -> (
+          on_submit (text, pos);
+          `Handled
+        )
+      | `Arrow `Left, [] -> (
+          let pos = mini (String.length text) pos in
+          if pos > 0 then (
+            on_change (text, pos - 1);
+            `Handled
+          )
+          else `Unhandled
+        )
+      | `Arrow `Right, [] -> (
+          let pos = pos + 1 in
+          if pos <= String.length text
+          then (on_change (text, pos); `Handled)
+          else `Unhandled
         )
       | (`Arrow (`Up as ud), [])
       | (`Arrow (`Down as ud), []) -> (
           match on_up_down with
           | None -> `Unhandled
           | Some on_up_down -> (
-              on_up_down ud (Lwd.peek x);
+              on_up_down ud (text, pos);
               `Handled
             )
         )
-      | _ -> `Unhandled)
-    field
+      | (`Tab, []) -> (
+          match on_tab with
+          | None -> `Unhandled
+          | Some on_tab -> (
+              on_tab (text, pos);
+              `Handled
+            )
+        )
+      | _ -> `Unhandled
+    in
+    Nottui.Ui.keyboard_area ~focus handler content
+  in
+  let state = Lwd.get state in
+  let node =
+    Lwd.map2 ~f:(update focus) (Nottui.Focus.status focus) state
+  in
+  let mouse_grab (text, pos) ~x ~y:_ = function
+    | `Left ->
+      if x <> pos then on_change (text, x);
+      Nottui.Focus.request focus;
+      `Handled
+    | _ -> `Unhandled
+  in
+  Lwd.map2 state node ~f:(fun state content ->
+      Nottui.Ui.mouse_area (mouse_grab state) content
+    )
 
 let mouse_handler
     ~(f : [ `Up | `Down ] -> unit)
@@ -703,7 +783,7 @@ module Filter_bar = struct
 
   let main
       ~input_mode
-      ~(edit_field : (string * int) Lwd.var)
+      ~(text_field : (string * int) Lwd.var)
       ~focus_handle
       ~on_change
       ~on_submit
@@ -713,14 +793,15 @@ module Filter_bar = struct
         label ~input_mode;
         status;
         Lwd.return (Nottui.Ui.atom (Notty.I.strf ": "));
-        wrapped_edit_field edit_field
+        edit_field text_field
           ~focus:focus_handle
+          ~on_cancel:(fun (_text, _x) -> ())
           ~on_change:(fun (text, x) ->
-              Lwd.set edit_field (text, x);
+              Lwd.set text_field (text, x);
               on_change ();
             )
           ~on_submit:(fun (text, x) ->
-              Lwd.set edit_field (text, x);
+              Lwd.set text_field (text, x);
               on_submit ();
               Lwd.set Vars.autocomplete_choices [];
               Nottui.Focus.release focus_handle;
@@ -730,7 +811,7 @@ module Filter_bar = struct
               let (text, pos) =
                 autocomplete ~choices:autocomplete_choices (text, pos)
               in
-              Lwd.set edit_field (text, pos)
+              Lwd.set text_field (text, pos)
             );
       ]
 end
@@ -769,7 +850,7 @@ module Search_bar = struct
 
   let main
       ~input_mode
-      ~(edit_field : (string * int) Lwd.var)
+      ~(text_field : (string * int) Lwd.var)
       ~focus_handle
       ~on_change
       ~on_submit
@@ -779,14 +860,15 @@ module Search_bar = struct
         label ~input_mode;
         status;
         Lwd.return (Nottui.Ui.atom (Notty.I.strf ": "));
-        wrapped_edit_field edit_field
+        edit_field text_field
           ~focus:focus_handle
+          ~on_cancel:(fun (_text, _x) -> ())
           ~on_change:(fun (text, x) ->
-              Lwd.set edit_field (text, x);
+              Lwd.set text_field (text, x);
               on_change ();
             )
           ~on_submit:(fun (text, x) ->
-              Lwd.set edit_field (text, x);
+              Lwd.set text_field (text, x);
               on_submit ();
               Lwd.set Vars.autocomplete_choices [];
               Nottui.Focus.release focus_handle;
