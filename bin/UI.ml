@@ -660,8 +660,97 @@ module Bottom_pane = struct
     let attr = UI_base.Status_bar.attr in
     let edit_field = Vars.script_name_field in
     let$* usable_script_files = Vars.usable_script_files in
+    let$* script_selected = Lwd.get UI_base.Vars.index_of_script_selected in
+    let usable_script_count = Dynarray.length usable_script_files in
     match input_mode with
-    | Save_script -> (
+    | Save_script | Open_script | Delete_script -> (
+        let prompt =
+          match input_mode with
+          | Save_script -> "Save as"
+          | Open_script -> "Open"
+          | Delete_script -> "Delete"
+          | _ -> failwith "unexpected case"
+        in
+        let on_tab =
+          match input_mode with
+          | Save_script -> (
+              Some (fun (text, _) ->
+                  let best_fit =
+                    let usable_script_count = Dynarray.length usable_script_files in
+                    if usable_script_count = 0 then (
+                      text
+                    ) else if usable_script_count = 1 then (
+                      Filename.chop_extension (Dynarray.get usable_script_files 0)
+                    ) else (
+                      usable_script_files
+                      |> Dynarray.to_seq
+                      |> String_utils.longest_common_prefix
+                    )
+                  in
+                  Lwd.set edit_field (best_fit, String.length best_fit)
+                )
+            )
+          | _ -> None
+        in
+        let on_submit =
+          match input_mode with
+          | Save_script -> (
+              (fun (text, x) ->
+                 Lwd.set edit_field (text, x);
+                 Nottui.Focus.release Vars.script_name_field_focus_handle;
+                 Lwd.set UI_base.Vars.input_mode
+                   (if String.length text = 0 then
+                      Save_script_no_name
+                    else
+                      Save_script_overwrite
+                   );
+              )
+            )
+          | Open_script -> (
+              (fun (text, x) ->
+                 Lwd.set edit_field (text, x);
+                 Nottui.Focus.release Vars.script_name_field_focus_handle;
+                 if usable_script_count > 0 then (
+                   Lwd.set UI_base.Vars.quit true;
+                   let dir = Params.script_dir () in
+                   let file = Dynarray.get usable_script_files script_selected in
+                   let path = Filename.concat dir file in
+                   UI_base.Vars.action := Some (Open_script path);
+                 );
+                 Lwd.set UI_base.Vars.input_mode Navigate;
+              )
+            )
+          | Delete_script -> (
+              (fun (text, x) ->
+                 Lwd.set edit_field (text, x);
+                 Nottui.Focus.release Vars.script_name_field_focus_handle;
+                 if usable_script_count > 0 then (
+                   let dir = Params.script_dir () in
+                   let file = Dynarray.get usable_script_files script_selected in
+                   let path = Filename.concat dir file in
+                   Lwd.set UI_base.Vars.input_mode (Delete_script_confirm (file, path))
+                 ) else (
+                   Lwd.set UI_base.Vars.input_mode Navigate
+                 )
+              )
+            )
+          | _ -> failwith "unexpected case"
+        in
+        let on_up_down =
+          match input_mode with
+          | Save_script -> None
+          | Open_script | Delete_script -> (
+              Some (fun up_down _ ->
+                  UI_base.set_script_selected
+                    ~choice_count:usable_script_count
+                    (script_selected +
+                     (match up_down with
+                      | `Up -> (-1)
+                      | `Down -> 1)
+                    ))
+            )
+          | _ -> failwith "unexpected case"
+        in
         let$* content =
           Nottui_widgets.hbox
             [
@@ -671,39 +760,17 @@ module Bottom_pane = struct
                       [
                         input_mode_image;
                         UI_base.Status_bar.element_spacer;
-                        Notty.I.strf ~attr "Save as: [ ";
+                        Notty.I.strf ~attr "%s: [ " prompt;
                       ]));
               UI_base.wrapped_edit_field edit_field
                 ~focus:Vars.script_name_field_focus_handle
                 ~on_change:(fun (text, x) ->
                     Lwd.set edit_field (text, x);
                   )
-                ~on_submit:(fun (text, x) ->
-                    Lwd.set edit_field (text, x);
-                    Nottui.Focus.release Vars.script_name_field_focus_handle;
-                    Lwd.set UI_base.Vars.input_mode
-                      (if String.length text = 0 then
-                         Save_script_no_name
-                       else
-                         Save_script_overwrite
-                      );
-                  )
-                ~on_tab:(fun (text, _) ->
-                    let best_fit =
-                      let usable_script_count = Dynarray.length usable_script_files in
-                      if usable_script_count = 0 then (
-                        text
-                      ) else if usable_script_count = 1 then (
-                        Filename.chop_extension (Dynarray.get usable_script_files 0)
-                      ) else (
-                        usable_script_files
-                        |> Dynarray.to_seq
-                        |> String_utils.longest_common_prefix
-                      )
-                    in
-                    Lwd.set edit_field (best_fit, String.length best_fit)
-                  );
-              Lwd.return (Nottui.Ui.atom (Notty.I.strf ~attr " ] + %s. Confirm with empty field to cancel saving." Params.docfd_script_ext));
+                ~on_submit
+                ?on_tab
+                ?on_up_down;
+              Lwd.return (Nottui.Ui.atom (Notty.I.strf ~attr " ] + %s. Confirm with empty field to cancel." Params.docfd_script_ext));
             ]
         in
         let$ bar = UI_base.Status_bar.background_bar in
@@ -756,51 +823,6 @@ module Bottom_pane = struct
                     UI_base.Status_bar.element_spacer;
                     Notty.I.strf ~attr "Do you want to edit %s to add comments etc?" (Filename.basename path);
                   ]))
-        in
-        let$ bar = UI_base.Status_bar.background_bar in
-        Nottui.Ui.join_z bar content
-      )
-    | Open_script -> (
-        let$* script_selected = Lwd.get UI_base.Vars.index_of_script_selected in
-        let usable_script_count = Dynarray.length usable_script_files in
-        let$* content =
-          Nottui_widgets.hbox
-            [
-              Lwd.return
-                (Nottui.Ui.atom
-                   (Notty.I.hcat
-                      [
-                        input_mode_image;
-                        UI_base.Status_bar.element_spacer;
-                        Notty.I.strf ~attr "Open: [ ";
-                      ]));
-              UI_base.wrapped_edit_field edit_field
-                ~focus:Vars.script_name_field_focus_handle
-                ~on_change:(fun (text, x) ->
-                    Lwd.set edit_field (text, x);
-                  )
-                ~on_submit:(fun (text, x) ->
-                    Lwd.set edit_field (text, x);
-                    if usable_script_count > 0 then (
-                      Nottui.Focus.release Vars.script_name_field_focus_handle;
-                      Lwd.set UI_base.Vars.quit true;
-                      let dir = Params.script_dir () in
-                      let file = Dynarray.get usable_script_files script_selected in
-                      let path = Filename.concat dir file in
-                      UI_base.Vars.action := Some (Open_script path);
-                    );
-                    Lwd.set UI_base.Vars.input_mode Navigate;
-                  )
-                ~on_up_down:(fun up_down _ ->
-                    UI_base.set_script_selected
-                      ~choice_count:usable_script_count
-                      (script_selected +
-                       (match up_down with
-                        | `Up -> (-1)
-                        | `Down -> 1)
-                      ));
-              Lwd.return (Nottui.Ui.atom (Notty.I.strf ~attr " ] + %s. Confirm with empty field to cancel opening." Params.docfd_script_ext));
-            ]
         in
         let$ bar = UI_base.Status_bar.background_bar in
         Nottui.Ui.join_z bar content
@@ -1002,6 +1024,16 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
+      let delete_script_grid =
+        [
+          [
+            { label = "Enter"; msg = "confirm answer" };
+            { label = "↑/↓"; msg = "select script" };
+          ];
+          empty_row;
+          empty_row;
+        ]
+      in
       let delete_script_confirm_grid =
         [
           [
@@ -1181,6 +1213,7 @@ module Bottom_pane = struct
         (Save_script_no_name, save_script_cancel_grid);
         (Save_script_edit, save_script_edit_grid);
         (Open_script, open_script_grid);
+        (Delete_script, delete_script_grid);
         (Delete_script_confirm ("", ""), delete_script_confirm_grid);
         (Links, links_grid);
       ]
@@ -1476,8 +1509,9 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'D', [`Ctrl]) -> (
-          Lwd.set UI_base.Vars.quit true;
-          UI_base.Vars.action := Some UI_base.Delete_script_select;
+          UI_base.set_input_mode Delete_script;
+          refresh_script_files ();
+          Nottui.Focus.request Vars.script_name_field_focus_handle;
           `Handled
         )
       | (`ASCII 'x', []) -> (
