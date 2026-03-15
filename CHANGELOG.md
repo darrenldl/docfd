@@ -1,6 +1,6 @@
 # Changelog
 
-## 12.3.3
+## 12.4.0
 
 - Switched from fzf to a built-in implementation for fuzzy selection
   menu for OPEN-SCRIPT and DELETE-SCRIPT
