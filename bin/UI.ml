@@ -804,7 +804,7 @@ module Bottom_pane = struct
                 ~on_submit
                 ?on_tab
                 ?on_up_down;
-              Lwd.return (Nottui.Ui.atom (Notty.I.strf ~attr " ] + %s. Confirm with empty field to cancel." Params.docfd_script_ext));
+              Lwd.return (Nottui.Ui.atom (Notty.I.strf ~attr " ] + %s" Params.docfd_script_ext));
             ]
         in
         let$ bar = UI_base.Status_bar.background_bar in
@@ -820,7 +820,7 @@ module Bottom_pane = struct
                     [
                       input_mode_image;
                       UI_base.Status_bar.element_spacer;
-                      Notty.I.strf ~attr "%s already exists, overwrite? Existing comments will be moved to the top of the file."
+                      Notty.I.strf ~attr "%s already exists, overwrite?"
                         (Filename.basename path);
                     ]))
           in
@@ -1053,6 +1053,7 @@ module Bottom_pane = struct
           [
             { label = "Enter"; msg = "confirm answer" };
             { label = "↑/↓"; msg = "select script" };
+            { label = "Esc"; msg = "cancel" };
           ];
           empty_row;
           empty_row;
@@ -1063,6 +1064,7 @@ module Bottom_pane = struct
           [
             { label = "Enter"; msg = "confirm answer" };
             { label = "↑/↓"; msg = "select script" };
+            { label = "Esc"; msg = "cancel" };
           ];
           empty_row;
           empty_row;
