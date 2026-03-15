@@ -636,13 +636,13 @@ module Top_pane = struct
             match file with
             | None -> []
             | Some file -> (
-              let dir = Params.script_dir () in
-            CCIO.with_in (Filename.concat dir file) (fun ic ->
-                CCIO.read_lines_seq ic
-                |> OSeq.take height
-                |> List.of_seq
+                let dir = Params.script_dir () in
+                CCIO.with_in (Filename.concat dir file) (fun ic ->
+                    CCIO.read_lines_seq ic
+                    |> OSeq.take height
+                    |> List.of_seq
+                  )
               )
-            )
           with
           | Sys_error _ -> []
         in
