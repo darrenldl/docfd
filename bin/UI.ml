@@ -29,9 +29,8 @@ module Vars = struct
             if Search_exp.is_empty exp then (
               arr
             ) else (
-              let acc = ref [] in
-              Dynarray.iter
-                (fun s ->
+              Dynarray.fold_left
+                (fun acc s ->
                    let parts = Tokenization.tokenize ~drop_spaces:false s
                      |> List.of_seq
                    in
@@ -94,13 +93,13 @@ module Vars = struct
                        search_results
                    in
                    match best_search_result with
-                   | None -> ()
+                   | None -> acc
                    | Some best -> (
-                       acc := (s, best) :: !acc
+                       (s, best) :: acc
                      )
                 )
-                arr;
-              !acc
+                []
+                arr
               |> List.sort (fun (_s0, r0) (_s1, r1) ->
                   Search_result.compare_relevance r0 r1
                 )
