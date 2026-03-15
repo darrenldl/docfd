@@ -18,7 +18,7 @@ module Vars = struct
           (CCString.starts_with ~prefix:script_name_specified)
           arr
       )
-    | Open_script -> (
+    | Open_script | Delete_script -> (
         match Search_exp.parse script_name_specified with
         | None -> (
             Dynarray.filter
@@ -617,12 +617,43 @@ module Top_pane = struct
       ~(search_result_groups : Session.search_result_group array)
     : Nottui.ui Lwd.t =
     let$* input_mode = Lwd.get UI_base.Vars.input_mode in
+    let$* script_selected = Lwd.get UI_base.Vars.index_of_script_selected in
+    let$* usable_script_files = Vars.usable_script_files in
+    let file =
+      if script_selected < Dynarray.length usable_script_files then (
+        Some (Dynarray.get usable_script_files script_selected)
+      ) else (
+        None
+      )
+    in
     match input_mode with
     | Save_script -> (
         script_list ~width ~height
       )
-    | Open_script -> (
-        script_list ~width ~height
+    | Open_script | Delete_script -> (
+        let lines =
+          try
+            match file with
+            | None -> []
+            | Some file -> (
+              let dir = Params.script_dir () in
+            CCIO.with_in (Filename.concat dir file) (fun ic ->
+                CCIO.read_lines_seq ic
+                |> OSeq.take height
+                |> List.of_seq
+              )
+            )
+          with
+          | Sys_error _ -> []
+        in
+        UI_base.hpane ~l_ratio:0.5 ~width ~height
+          (script_list ~height)
+          (fun ~width ->
+             List.map (fun s -> Nottui.Ui.atom (Notty.I.strf "%s" s)) lines
+             |> Nottui.Ui.vcat
+             |> Nottui.Ui.resize ~w:width ~h:height
+             |> Lwd.return
+          )
       )
     | _ -> (
         let$* document_selected = Lwd.get UI_base.Vars.index_of_document_selected in
