@@ -5,6 +5,9 @@
 - Switched from fzf to a built-in implementation for fuzzy selection
   menu for OPEN-SCRIPT and DELETE-SCRIPT
     - This makes fzf dependency completely optional
+- Made the UX of various input fields slightly more polished
+    - This includes adding `Esc` for cancelling during SAVE-SCRIPT
+- Minor UI fixes
 
 ## 12.3.2
 
