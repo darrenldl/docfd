@@ -1,5 +1,11 @@
 # Changelog
 
+## 12.3.3
+
+- Switched from fzf to a built-in implementation for fuzzy selection
+  menu for OPEN-SCRIPT and DELETE-SCRIPT
+    - This makes fzf dependency completely optional
+
 ## 12.3.2
 
 - Fixed missing stop signal passing for `content:"..."` filter expression handling

@@ -154,7 +154,7 @@ The only way to use Docfd on Windows right now is via WSL.
 packaging from source), Docfd also requires the following
 external tools at run time for full functionality:
 
-- `fzf` for some selection menus
+- `fzf` (optional for version >= 12.3.3)
 - `pdftotext` from `poppler-utils` for PDF support
 - `pandoc` for support of `.epub`, `.odt`, `.docx`, `.fb2`, `.ipynb`, `.html`, and `.htm` files
 - `wl-clibpard` for clipboard support on Wayland
