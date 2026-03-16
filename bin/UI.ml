@@ -1024,7 +1024,15 @@ module Bottom_pane = struct
             { label = "p"; msg = "path" };
             { label = "d"; msg = "path date" };
             { label = "m"; msg = "mod time" };
-            { label = "f"; msg = "fzf" };
+            { label = "f";
+              msg = (
+                if Proc_utils.command_exists "fzf" then (
+                  "fzf"
+                ) else (
+                  "fzf (unavailable)"
+                )
+              )
+            };
           ];
           [
             { label = "Esc"; msg = "cancel" };
@@ -1594,10 +1602,14 @@ let keyboard_handler
         | (`ASCII 'f', []) -> (
             match order with
             | `Asc -> (
-                UI_base.reset_document_selected ();
-                Lwd.set UI_base.Vars.quit true;
-                UI_base.Vars.action := Some UI_base.Sort_by_fzf;
-                true
+                if Proc_utils.command_exists "fzf" then (
+                  UI_base.reset_document_selected ();
+                  Lwd.set UI_base.Vars.quit true;
+                  UI_base.Vars.action := Some UI_base.Sort_by_fzf;
+                  true
+                ) else (
+                  false
+                )
               )
             | `Desc -> false
           )
