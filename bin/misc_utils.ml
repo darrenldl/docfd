@@ -1,3 +1,4 @@
+open Docfd_lib
 include Docfd_lib.Misc_utils'
 
 let bound_selection ~choice_count (x : int) : int =
@@ -105,3 +106,83 @@ let ranking_of_ranked_document_list (l : string list) : int String_map.t =
   CCList.foldi (fun acc i path ->
       String_map.add path i acc
     ) String_map.empty l
+
+let line_based_fuzzy_find
+    (lines : string Seq.t)
+    (exp : Search_exp.t)
+  : string Dynarray.t =
+  lines
+  |> Seq.fold_left (fun acc line ->
+      let parts = Tokenization.tokenize ~drop_spaces:false line
+        |> List.of_seq
+      in
+      let search_results =
+        List.filter_map (fun phrase ->
+            let words =
+              List.map (fun token ->
+                  CCList.foldi
+                    (fun first_match i part ->
+                       match first_match with
+                       | Some x -> Some x
+                       | None -> (
+                           if
+                             Search_phrase.Enriched_token.compatible_with_word token part
+                           then (
+                             Some (i, part, String.lowercase_ascii part)
+                           ) else (
+                             None
+                           )
+                         )
+                    )
+                    None
+                    parts
+                )
+                (Search_phrase.enriched_tokens phrase)
+            in
+            if List.for_all Option.is_some words then (
+              let found_phrase =
+                List.map Option.get words
+                |> List.map (fun (i, part, part_ci) ->
+                    Search_result.{
+                      found_word_pos = i;
+                      found_word_ci = part_ci;
+                      found_word = part;
+                    }
+                  )
+              in
+              Some (Search_result.make phrase
+                      ~found_phrase
+                      ~found_phrase_opening_closing_symbol_match_count:0)
+            ) else (
+              None
+            )
+          )
+          (Search_exp.flattened exp)
+      in
+      let best_search_result =
+        List.fold_left (fun best x ->
+            match best with
+            | None -> Some x
+            | Some best -> (
+                if Search_result.score x > Search_result.score best then (
+                  Some x
+                ) else (
+                  Some best
+                )
+              )
+          )
+          None
+          search_results
+      in
+      match best_search_result with
+      | None -> acc
+      | Some best -> (
+          (line, best) :: acc
+        )
+    )
+    []
+  |> List.sort (fun (_s0, r0) (_s1, r1) ->
+      Search_result.compare_relevance r0 r1
+    )
+  |> List.map fst
+  |> Dynarray.of_list
