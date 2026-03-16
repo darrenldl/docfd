@@ -107,10 +107,10 @@ let ranking_of_ranked_document_list (l : string list) : int String_map.t =
       String_map.add path i acc
     ) String_map.empty l
 
-let line_based_fuzzy_find
-    (lines : string Seq.t)
+let fuzzy_find_assoc
+    (items : (string * 'a) Seq.t)
     (exp : Search_exp.t)
-  : string Dynarray.t =
+  : (string * 'a) Dynarray.t =
   let pick_best_search_result (s : Search_result.t Seq.t) : Search_result.t option =
     Seq.fold_left (fun best x ->
         match best with
@@ -169,16 +169,16 @@ let line_based_fuzzy_find
       )
     |> pick_best_search_result
   in
-  lines
-  |> Seq.fold_left (fun acc line ->
+  items
+  |> Seq.fold_left (fun acc (line, data) ->
       match search_in_line line exp with
       | None -> acc
       | Some best -> (
-          (line, best) :: acc
+          ((line, data), best) :: acc
         )
     )
     []
-  |> List.sort (fun (_s0, r0) (_s1, r1) ->
+  |> List.sort (fun (_x0, r0) (_x1, r1) ->
       Search_result.compare_relevance r0 r1
     )
   |> List.map fst

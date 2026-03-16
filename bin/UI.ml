@@ -29,7 +29,10 @@ module Vars = struct
             if Search_exp.is_empty exp then (
               arr
             ) else (
-              Misc_utils.line_based_fuzzy_find (Dynarray.to_seq arr) exp
+              Misc_utils.fuzzy_find_assoc
+                (arr |> Dynarray.to_seq |> Seq.map (fun s -> (s, ())))
+                exp
+              |> Dynarray.map fst
             )
           )
       )
