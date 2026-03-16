@@ -111,70 +111,67 @@ let line_based_fuzzy_find
     (lines : string Seq.t)
     (exp : Search_exp.t)
   : string Dynarray.t =
-  lines
-  |> Seq.fold_left (fun acc line ->
-      let parts = Tokenization.tokenize ~drop_spaces:false line
-        |> List.of_seq
-      in
-      let search_results =
-        List.filter_map (fun phrase ->
-            let words =
-              List.map (fun token ->
-                  CCList.foldi
-                    (fun first_match i part ->
-                       match first_match with
-                       | Some x -> Some x
-                       | None -> (
-                           if
-                             Search_phrase.Enriched_token.compatible_with_word token part
-                           then (
-                             Some (i, part, String.lowercase_ascii part)
-                           ) else (
-                             None
-                           )
-                         )
-                    )
-                    None
-                    parts
-                )
-                (Search_phrase.enriched_tokens phrase)
-            in
-            if List.for_all Option.is_some words then (
-              let found_phrase =
-                List.map Option.get words
-                |> List.map (fun (i, part, part_ci) ->
-                    Search_result.{
-                      found_word_pos = i;
-                      found_word_ci = part_ci;
-                      found_word = part;
-                    }
-                  )
-              in
-              Some (Search_result.make phrase
-                      ~found_phrase
-                      ~found_phrase_opening_closing_symbol_match_count:0)
+  let pick_best_search_result (s : Search_result.t Seq.t) : Search_result.t option =
+    Seq.fold_left (fun best x ->
+        match best with
+        | None -> Some x
+        | Some best -> (
+            if Search_result.score x > Search_result.score best then (
+              Some x
             ) else (
-              None
+              Some best
             )
           )
-          (Search_exp.flattened exp)
-      in
-      let best_search_result =
-        List.fold_left (fun best x ->
-            match best with
-            | None -> Some x
-            | Some best -> (
-                if Search_result.score x > Search_result.score best then (
-                  Some x
+      )
+      None
+      s
+  in
+  let search_in_line (line : string) (exp : Search_exp.t) : Search_result.t option =
+    let parts = Tokenization.tokenize ~drop_spaces:false line
+      |> List.of_seq
+    in
+    Search_exp.flattened exp
+    |> List.to_seq
+    |> Seq.flat_map (fun phrase ->
+        Search_phrase.enriched_tokens phrase
+        |> List.to_seq
+        |> Seq.map (fun token ->
+            List.to_seq parts
+            |> Seq.mapi (fun i part ->
+                (i, part)
+              )
+            |> Seq.filter_map (fun (i, part) ->
+                if
+                  Search_phrase.Enriched_token.compatible_with_word token part
+                then (
+                  Some (i, part, String.lowercase_ascii part)
                 ) else (
-                  Some best
+                  None
                 )
               )
           )
-          None
-          search_results
-      in
-      match best_search_result with
+        |> OSeq.cartesian_product
+        |> Seq.map (fun l ->
+            let found_phrase =
+              List.map (fun (i, part, part_ci) ->
+                  Search_result.{
+                    found_word_pos = i;
+                    found_word_ci = part_ci;
+                    found_word = part;
+                  }
+                )
+                l
+            in
+            Search_result.make phrase
+              ~found_phrase
+              ~found_phrase_opening_closing_symbol_match_count:0
+          )
+      )
+    |> pick_best_search_result
+  in
+  lines
+  |> Seq.fold_left (fun acc line ->
+      match search_in_line line exp with
       | None -> acc
       | Some best -> (
           (line, best) :: acc
