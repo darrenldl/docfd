@@ -30,7 +30,10 @@ module Vars = struct
               arr
             ) else (
               Misc_utils.fuzzy_find_assoc
-                (arr |> Dynarray.to_seq |> Seq.map (fun s -> (s, ())))
+                (Stop_signal.make ())
+                (arr
+                 |> Dynarray.to_seq
+                 |> Seq.map (fun s -> (s, ())))
                 exp
               |> Dynarray.map fst
             )

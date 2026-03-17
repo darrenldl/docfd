@@ -108,6 +108,7 @@ let ranking_of_ranked_document_list (l : string list) : int String_map.t =
     ) String_map.empty l
 
 let fuzzy_find_assoc
+    (stop_signal : Stop_signal.t)
     (items : (string * 'a) Seq.t)
     (exp : Search_exp.t)
   : (string * 'a) Dynarray.t =
@@ -169,17 +170,24 @@ let fuzzy_find_assoc
       )
     |> pick_best_search_result
   in
-  items
-  |> Seq.fold_left (fun acc (line, data) ->
-      match search_in_line line exp with
-      | None -> acc
-      | Some best -> (
-          ((line, data), best) :: acc
-        )
+  Eio.Fiber.first
+    (fun () ->
+       Stop_signal.await stop_signal;
+       Dynarray.create ()
     )
-    []
-  |> List.sort (fun (_x0, r0) (_x1, r1) ->
-      Search_result.compare_relevance r0 r1
+    (fun () ->
+       items
+       |> Seq.fold_left (fun acc (line, data) ->
+           match search_in_line line exp with
+           | None -> acc
+           | Some best -> (
+               ((line, data), best) :: acc
+             )
+         )
+         []
+       |> List.sort (fun (_x0, r0) (_x1, r1) ->
+           Search_result.compare_relevance r0 r1
+         )
+       |> List.map fst
+       |> Dynarray.of_list
     )
-  |> List.map fst
-  |> Dynarray.of_list
