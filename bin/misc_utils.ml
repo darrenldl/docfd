@@ -109,9 +109,10 @@ let ranking_of_ranked_document_list (l : string list) : int String_map.t =
 
 let fuzzy_find_assoc
     (stop_signal : Stop_signal.t)
-    (items : (string * 'a) Seq.t)
+    ~(get_key : 'a -> string)
+    (items : 'a Seq.t)
     (exp : Search_exp.t)
-  : (string * 'a) Dynarray.t =
+  : 'a Dynarray.t =
   let pick_best_search_result (s : Search_result.t Seq.t) : Search_result.t option =
     Seq.fold_left (fun best x ->
         match best with
@@ -177,11 +178,12 @@ let fuzzy_find_assoc
     )
     (fun () ->
        items
-       |> Seq.fold_left (fun acc (line, data) ->
+       |> Seq.fold_left (fun acc item ->
+           let line = get_key item in
            match search_in_line line exp with
            | None -> acc
-           | Some best -> (
-               ((line, data), best) :: acc
+           | Some best_result -> (
+               (item, best_result) :: acc
              )
          )
          []

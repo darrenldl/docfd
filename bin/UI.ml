@@ -31,11 +31,9 @@ module Vars = struct
             ) else (
               Misc_utils.fuzzy_find_assoc
                 (Stop_signal.make ())
-                (arr
-                 |> Dynarray.to_seq
-                 |> Seq.map (fun s -> (s, ())))
+                ~get_key:Fun.id
+                (Dynarray.to_seq arr)
                 exp
-              |> Dynarray.map fst
             )
           )
       )
