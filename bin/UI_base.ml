@@ -629,13 +629,13 @@ module Key_binding_info = struct
                              [ I.(string label_attr label
                                   </>
                                   (string label_attr (String.make max_label_len ' ')))
-                             ; I.string A.empty "  "
+                             ; I.string A.empty " "
                              ; I.string msg_attr msg
                              ]
                           )
       in
       let full_background =
-        Notty.I.void (max_label_len + 2 + max_msg_len + 2) 1
+        Notty.I.void (max_label_len + 1 + max_msg_len + 3) 1
       in
       Notty.I.(content </> full_background)
       |> Nottui.Ui.atom

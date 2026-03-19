@@ -560,10 +560,10 @@ module Top_pane = struct
     match input_mode with
     | Save_script -> (
         item_list
-        ~width
-        ~height
-        ~selected
-        scripts
+          ~width
+          ~height
+          ~selected
+          scripts
       )
     | Open_script | Delete_script -> (
         let lines =
@@ -949,6 +949,7 @@ module Bottom_pane = struct
           [
             { label = "Enter"; msg = "confirm answer" };
             { label = "Tab"; msg = "autocomplete" };
+            { label = "Esc"; msg = "cancel" };
           ];
           empty_row;
           empty_row;
