@@ -514,16 +514,16 @@ module Top_pane = struct
       )
   end
 
-  let script_list
+  let item_list
       ~width
       ~height
+      ~selected
+      items
     : Nottui.ui Lwd.t =
-    let$* script_selected = Lwd.get UI_base.Vars.index_of_script_selected in
-    let$ scripts = Vars.usable_script_files in
     let arr = Dynarray.create () in
     Seq.iter (fun i ->
-        Dynarray.add_last arr (Dynarray.get scripts i)
-      ) OSeq.(script_selected --^ Dynarray.length scripts);
+        Dynarray.add_last arr (Dynarray.get items i)
+      ) OSeq.(selected --^ Dynarray.length items);
     Dynarray.to_seq arr
     |> Seq.map (fun s ->
         let open Notty in
@@ -536,6 +536,7 @@ module Top_pane = struct
     |> List.of_seq
     |> Nottui.Ui.vcat
     |> Nottui.Ui.resize ~w:width ~h:height
+    |> Lwd.return
 
   let main
       ~width
@@ -554,9 +555,15 @@ module Top_pane = struct
         None
       )
     in
+    let$* selected = Lwd.get UI_base.Vars.index_of_script_selected in
+    let$* scripts = Vars.usable_script_files in
     match input_mode with
     | Save_script -> (
-        script_list ~width ~height
+        item_list
+        ~width
+        ~height
+        ~selected
+        scripts
       )
     | Open_script | Delete_script -> (
         let lines =
@@ -575,7 +582,7 @@ module Top_pane = struct
           | Sys_error _ -> []
         in
         UI_base.hpane ~l_ratio:0.5 ~width ~height
-          (script_list ~height)
+          (item_list ~height ~selected scripts)
           (fun ~width ->
              List.map (fun s -> Nottui.Ui.atom (Notty.I.strf "%s" s)) lines
              |> Nottui.Ui.vcat
@@ -1606,14 +1613,9 @@ let keyboard_handler
         | (`ASCII 'f', []) -> (
             match order with
             | `Asc -> (
-                if Proc_utils.command_exists "fzf" then (
-                  UI_base.reset_document_selected ();
-                  Lwd.set UI_base.Vars.quit true;
-                  UI_base.Vars.action := Some UI_base.Sort_by_fzf;
-                  true
-                ) else (
-                  false
-                )
+                UI_base.reset_document_selected ();
+                UI_base.set_input_mode Sort_by_fuzzy_find;
+                false
               )
             | `Desc -> false
           )

@@ -1280,7 +1280,7 @@ let run
             |> ignore;
             loop ()
           )
-        | Sort_by_fzf -> (
+        (*| Sort_by_fzf -> (
             close_term ();
             let snapshots =
               Session_manager.lock_with_view (fun view ->
@@ -1331,7 +1331,7 @@ let run
                )
              | `Cancelled _ -> ());
             loop ()
-          )
+          )*)
       )
   in
   Eio.Fiber.any [
