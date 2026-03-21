@@ -22,7 +22,7 @@ type input_mode =
   | Delete_script
   | Delete_script_confirm of string * string
   | Links
-  | Sort_by_fuzzy_find
+  | Path_fuzzy_rank
 [@@deriving ord]
 
 module Input_mode_map = Map.Make (struct
@@ -479,7 +479,7 @@ module Status_bar = struct
       ; (Delete_script, "DELETE-SCRIPT")
       ; (Delete_script_confirm ("", ""), "DELETE-SCRIPT")
       ; (Links, "LINKS")
-      ; (Sort_by_fuzzy_find, "SORT-BY-FUZZY-FIND")
+      ; (Path_fuzzy_rank, "PATH-FUZZY-RANK")
       ]
     in
     let max_input_mode_string_len =

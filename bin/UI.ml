@@ -6,6 +6,10 @@ module Vars = struct
 
   let script_name_field_focus_handle = Nottui.Focus.make ()
 
+  let path_fuzzy_rank_field = Lwd.var UI_base.empty_text_field
+
+  let path_fuzzy_rank_field_focus_handle = Nottui.Focus.make ()
+
   let script_files : string Dynarray.t Lwd.var = Lwd.var (Dynarray.create ())
 
   let usable_script_files : string Dynarray.t Lwd.t =
@@ -590,6 +594,17 @@ module Top_pane = struct
              |> Lwd.return
           )
       )
+    | Path_fuzzy_rank -> (
+        Array.to_seq search_result_groups
+        |> Seq.map (fun (doc, _) ->
+            Document.path doc
+          )
+        |> Dynarray.of_seq
+        |> item_list
+          ~width
+          ~height
+          ~selected
+      )
     | _ -> (
         let$* document_selected = Lwd.get UI_base.Vars.index_of_document_selected in
         let l_ratio =
@@ -624,12 +639,12 @@ module Bottom_pane = struct
       UI_base.Input_mode_map.find input_mode UI_base.Status_bar.input_mode_images
     in
     let attr = UI_base.Status_bar.attr in
-    let text_field = Vars.script_name_field in
     let$* usable_script_files = Vars.usable_script_files in
     let$* script_selected = Lwd.get UI_base.Vars.index_of_script_selected in
     let usable_script_count = Dynarray.length usable_script_files in
     match input_mode with
     | Save_script | Open_script | Delete_script -> (
+        let text_field = Vars.script_name_field in
         let prompt =
           match input_mode with
           | Save_script -> "Save as"
@@ -806,6 +821,35 @@ module Bottom_pane = struct
                     UI_base.Status_bar.element_spacer;
                     Notty.I.strf ~attr "Confirm deletion of %s?" script;
                   ]))
+        in
+        let$ bar = UI_base.Status_bar.background_bar in
+        Nottui.Ui.join_z bar content
+      )
+    | Path_fuzzy_rank -> (
+        let on_submit (text, x) =
+          Lwd.set UI_base.Vars.input_mode Navigate
+        in
+        let text_field = Vars.path_fuzzy_rank_field in
+        let$* content =
+          Nottui_widgets.hbox
+            [
+              Lwd.return
+                (Nottui.Ui.atom
+                   (Notty.I.hcat
+                      [
+                        input_mode_image;
+                        UI_base.Status_bar.element_spacer;
+                      ]));
+              UI_base.edit_field text_field
+                ~focus:Vars.path_fuzzy_rank_field_focus_handle
+                ~on_cancel:(fun (_, _) ->
+                    Lwd.set UI_base.Vars.input_mode Navigate
+                  )
+                ~on_change:(fun (text, x) ->
+                    Lwd.set text_field (text, x);
+                  )
+                ~on_submit;
+            ]
         in
         let$ bar = UI_base.Status_bar.background_bar in
         Nottui.Ui.join_z bar content
@@ -1036,15 +1080,6 @@ module Bottom_pane = struct
             { label = "p"; msg = "path" };
             { label = "d"; msg = "path date" };
             { label = "m"; msg = "mod time" };
-            { label = "f";
-              msg = (
-                if Proc_utils.command_exists "fzf" then (
-                  "fzf"
-                ) else (
-                  "fzf (unavailable)"
-                )
-              )
-            };
           ];
           [
             { label = "Esc"; msg = "cancel" };
@@ -1174,6 +1209,18 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
+      let path_fuzzy_rank_grid =
+        [
+          [
+            { label = "Enter"; msg = "pin to top" };
+            { label = "↑/↓"; msg = "select" };
+          ];
+          [
+            { label = "Esc"; msg = "exit" };
+          ];
+          empty_row;
+        ]
+      in
       [
         (Navigate, navigate_grid);
         (Search, search_grid);
@@ -1196,6 +1243,7 @@ module Bottom_pane = struct
         (Delete_script, delete_script_grid);
         (Delete_script_confirm ("", ""), delete_script_confirm_grid);
         (Links, links_grid);
+        (Path_fuzzy_rank, path_fuzzy_rank_grid);
       ]
 
     let grid_lookup = UI_base.Key_binding_info.make_grid_lookup grid_contents
@@ -1466,6 +1514,12 @@ let keyboard_handler
           UI_base.set_input_mode Filter;
           `Handled
         )
+      | (`ASCII 'F', []) -> (
+          Nottui.Focus.request Vars.path_fuzzy_rank_field_focus_handle;
+          Lwd.set Vars.path_fuzzy_rank_field UI_base.empty_text_field;
+          UI_base.set_input_mode Path_fuzzy_rank;
+          `Handled
+        )
       | (`ASCII '/', []) -> (
           Nottui.Focus.request UI_base.Vars.search_field_focus_handle;
           UI_base.set_input_mode Search;
@@ -1610,15 +1664,6 @@ let keyboard_handler
         | (`ASCII 'm', []) -> (
             sort (`Mod_time, order);
             true
-          )
-        | (`ASCII 'f', []) -> (
-            match order with
-            | `Asc -> (
-                UI_base.reset_document_selected ();
-                UI_base.set_input_mode Sort_by_fuzzy_find;
-                false
-              )
-            | `Desc -> false
           )
         | _ -> false
       in
