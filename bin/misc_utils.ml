@@ -110,8 +110,8 @@ let ranking_of_ranked_document_list (l : string list) : int String_map.t =
 let fuzzy_rank_assoc
     (stop_signal : Stop_signal.t)
     ~(get_key : 'a -> string)
-    (items : 'a Seq.t)
     (exp : Search_exp.t)
+    (items : 'a Seq.t)
   : 'a Dynarray.t =
   let pick_best_search_result (s : Search_result.t Seq.t) : Search_result.t option =
     Seq.fold_left (fun best x ->

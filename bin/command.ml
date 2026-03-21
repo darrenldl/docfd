@@ -1,3 +1,5 @@
+open Docfd_lib
+
 module Sort_by = struct
   type typ = [
     | `Path_date
@@ -106,7 +108,7 @@ type t = [
   | `Drop_unlisted
   | `Narrow_level of int
   | `Sort of Sort_by.t * Sort_by.t
-  | `Sort_by_fzf of string * int String_map.t option
+  | `Path_fuzzy_rank of Search_exp.t * int String_map.t option
   | `Split_screen of screen_split
   | `Comment of string
   | `Focus of string
@@ -135,11 +137,11 @@ let pp fmt (t : t) =
         Sort_by.pp
         y
     )
-  | `Sort_by_fzf (query, _ranking) -> (
-      if String.length (String.trim query) = 0 then (
-        Fmt.pf fmt "sort by fzf"
+  | `Path_fuzzy_rank (exp, _ranking) -> (
+      if Search_exp.is_empty exp then (
+        Fmt.pf fmt "path fuzzy rank"
       ) else (
-        Fmt.pf fmt "sort by fzf: %s" query
+        Fmt.pf fmt "path fuzzy rank: @[<h>%a@]" Search_exp.pp exp
       )
     )
   | `Split_screen s -> (
@@ -226,15 +228,18 @@ module Parsers = struct
           string "filter" *> skip_spaces *> return (`Filter "");
         ]
       );
-      string "sort" *> skip_spaces *>
-      string "by" *> skip_spaces *>
-      string "fzf" *> skip_spaces *>
+      string "path" *> skip_spaces *>
+      string "fuzzy" *> skip_spaces *>
+      string "rank" *> skip_spaces *>
       char ':' *> skip_spaces *>
-      any_string_trimmed >>| (fun s -> (`Sort_by_fzf (s, None)));
-      string "sort" *> skip_spaces *>
-      string "by" *> skip_spaces *>
-      string "fzf" *> skip_spaces *>
-      (return (`Sort_by_fzf ("", None)));
+      any_string_trimmed >>=
+      (fun s -> match Search_exp.parse s with
+         | None -> fail "invalid search exp"
+         | Some exp -> return (`Path_fuzzy_rank (exp, None)));
+      string "path" *> skip_spaces *>
+      string "fuzzy" *> skip_spaces *>
+      string "rank" *> skip_spaces *>
+      (return (`Path_fuzzy_rank (Search_exp.empty, None)));
       (string "sort" *> skip_spaces *>
        string "by" *> skip_spaces *>
        char ':' *> skip_spaces *>

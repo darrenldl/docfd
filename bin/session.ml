@@ -9,7 +9,7 @@ module State = struct
       | `Path
       | `Score
       | `Mod_time
-      | `Fzf_ranking of int String_map.t
+      | `Ranking of int String_map.t
     ]
 
     type t = typ * Document.Compare.order
@@ -316,18 +316,18 @@ module State = struct
     let path order (d0, _s0) (d1, _s1) =
       Document.Compare.path order d0 d1
 
-    let fzf_ranking ranking order (d0, _s0) (d1, _s1) =
+    let ranking ranking order (d0, _s0) (d1, _s1) =
       match
         String_map.find_opt (Document.path d0) ranking,
         String_map.find_opt (Document.path d1) ranking
       with
       | None, None -> Document.Compare.path order d0 d1
       | None, Some _ -> (
-          (* Always shuffle document with no fzf matches to the back. *)
+          (* Always shuffle document with no ranking to the back. *)
           1
         )
       | Some _, None -> (
-          (* Always shuffle document with no fzf matches to the back. *)
+          (* Always shuffle document with no ranking to the back. *)
           -1
         )
       | Some x0, Some x1 -> (
@@ -389,8 +389,8 @@ module State = struct
             Compare_search_result_group.score sort_by_order
           )
         )
-      | `Fzf_ranking ranking -> (
-          Compare_search_result_group.fzf_ranking ranking sort_by_order
+      | `Ranking ranking -> (
+          Compare_search_result_group.ranking ranking sort_by_order
         )
     in
     Array.sort (f t.sort_by) arr;
@@ -697,7 +697,7 @@ let run_command pool (command : Command.t) (st : State.t) : (Command.t * State.t
       in
       Some (command, { st with sort_by; sort_by_no_score })
     )
-  | `Sort_by_fzf (query, ranking) -> (
+  | `Path_fuzzy_rank (exp, ranking) -> (
       let st = reset_focus_list st in
       let ranking =
         match ranking with
@@ -705,14 +705,18 @@ let run_command pool (command : Command.t) (st : State.t) : (Command.t * State.t
             usable_document_paths st
             |> String_set.to_seq
             |> Seq.map File_utils.remove_cwd_from_path
-            |> Proc_utils.filter_via_fzf query
+            |> Misc_utils.fuzzy_rank_assoc
+              (Stop_signal.make ())
+              ~get_key:Fun.id
+              exp
+            |> Dynarray.to_list
             |> List.map Misc_utils.normalize_path_to_absolute
             |> Misc_utils.ranking_of_ranked_document_list
           )
         | Some x -> x
       in
-      let sort_by = (`Fzf_ranking ranking, `Asc) in
-      let command = `Sort_by_fzf (query, Some ranking) in
+      let sort_by = (`Ranking ranking, `Asc) in
+      let command = `Path_fuzzy_rank (exp, Some ranking) in
       Some (command, { st with sort_by; sort_by_no_score = sort_by })
     )
   | `Split_screen screen_split -> (

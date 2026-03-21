@@ -36,8 +36,8 @@ module Vars = struct
               Misc_utils.fuzzy_rank_assoc
                 (Stop_signal.make ())
                 ~get_key:Fun.id
-                (Dynarray.to_seq arr)
                 exp
+                (Dynarray.to_seq arr)
             )
           )
       )
