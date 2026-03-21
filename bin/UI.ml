@@ -236,6 +236,10 @@ let update_search ~commit () =
   let s = fst @@ Lwd.peek UI_base.Vars.search_field in
   Session_manager.submit_search_req ~commit s
 
+let update_path_fuzzy_rank ~commit () =
+  let s = fst @@ Lwd.peek Vars.path_fuzzy_rank_field in
+  Session_manager.submit_path_fuzzy_rank_req ~commit s
+
 let compute_save_script_path () =
   let base_name, _ = Lwd.peek Vars.script_name_field in
   let dir = Params.script_dir () in
@@ -826,9 +830,6 @@ module Bottom_pane = struct
         Nottui.Ui.join_z bar content
       )
     | Path_fuzzy_rank -> (
-        let on_submit (text, x) =
-          Lwd.set UI_base.Vars.input_mode Navigate
-        in
         let text_field = Vars.path_fuzzy_rank_field in
         let$* content =
           Nottui_widgets.hbox
@@ -847,8 +848,13 @@ module Bottom_pane = struct
                   )
                 ~on_change:(fun (text, x) ->
                     Lwd.set text_field (text, x);
+                    update_path_fuzzy_rank ~commit:true ();
                   )
-                ~on_submit;
+                ~on_submit:(fun (text, x) ->
+                    Lwd.set text_field (text, x);
+                    update_path_fuzzy_rank ~commit:true ();
+                    Lwd.set UI_base.Vars.input_mode Navigate
+                  );
             ]
         in
         let$ bar = UI_base.Status_bar.background_bar in

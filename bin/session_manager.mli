@@ -26,4 +26,6 @@ val submit_filter_req : commit:bool -> string -> unit
 
 val submit_search_req : commit:bool -> string -> unit
 
+val submit_path_fuzzy_rank_req : commit:bool -> string -> unit
+
 val stop_filter_and_search_and_restore_input_fields : unit -> unit

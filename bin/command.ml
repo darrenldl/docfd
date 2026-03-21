@@ -108,7 +108,7 @@ type t = [
   | `Drop_unlisted
   | `Narrow_level of int
   | `Sort of Sort_by.t * Sort_by.t
-  | `Path_fuzzy_rank of Search_exp.t * int String_map.t option
+  | `Path_fuzzy_rank of string * int String_map.t option
   | `Split_screen of screen_split
   | `Comment of string
   | `Focus of string
@@ -137,12 +137,8 @@ let pp fmt (t : t) =
         Sort_by.pp
         y
     )
-  | `Path_fuzzy_rank (exp, _ranking) -> (
-      if Search_exp.is_empty exp then (
-        Fmt.pf fmt "path fuzzy rank"
-      ) else (
-        Fmt.pf fmt "path fuzzy rank: @[<h>%a@]" Search_exp.pp exp
-      )
+  | `Path_fuzzy_rank (s, _ranking) -> (
+      Fmt.pf fmt "path fuzzy rank: %s" s
     )
   | `Split_screen s -> (
       Fmt.pf fmt "split screen: %s"
@@ -232,14 +228,8 @@ module Parsers = struct
       string "fuzzy" *> skip_spaces *>
       string "rank" *> skip_spaces *>
       char ':' *> skip_spaces *>
-      any_string_trimmed >>=
-      (fun s -> match Search_exp.parse s with
-         | None -> fail "invalid search exp"
-         | Some exp -> return (`Path_fuzzy_rank (exp, None)));
-      string "path" *> skip_spaces *>
-      string "fuzzy" *> skip_spaces *>
-      string "rank" *> skip_spaces *>
-      (return (`Path_fuzzy_rank (Search_exp.empty, None)));
+      any_string_trimmed >>|
+      (fun s -> `Path_fuzzy_rank (s, None));
       (string "sort" *> skip_spaces *>
        string "by" *> skip_spaces *>
        char ':' *> skip_spaces *>

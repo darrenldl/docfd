@@ -9,6 +9,9 @@ let filter_request : (bool * string) Lock_protected_cell.t =
 let version_shift_request : int Lock_protected_cell.t =
   Lock_protected_cell.make ()
 
+let path_fuzzy_rank_request : (bool * string) Lock_protected_cell.t =
+  Lock_protected_cell.make ()
+
 let worker_ping : Ping.t = Ping.make ()
 
 let _requester_lock = Eio.Mutex.create ()
@@ -28,6 +31,7 @@ type egress_payload =
   | Filtering
   | Filtering_cancelled
   | Filtering_done of int * Session.Snapshot.t
+  | Path_fuzzy_rank of int * Session.Snapshot.t
 
 let egress : egress_payload Eio.Stream.t =
   Eio.Stream.create 0
@@ -39,12 +43,18 @@ let stop_filter_signal = Atomic.make (Stop_signal.make ())
 
 let stop_search_signal = Atomic.make (Stop_signal.make ())
 
+let stop_path_fuzzy_rank_signal = Atomic.make (Stop_signal.make ())
+
 let stop_filter () =
   let x = Atomic.exchange stop_filter_signal (Stop_signal.make ()) in
   Stop_signal.broadcast x
 
 let stop_search () =
   let x = Atomic.exchange stop_search_signal (Stop_signal.make ()) in
+  Stop_signal.broadcast x
+
+let stop_path_fuzzy_rank () =
+  let x = Atomic.exchange stop_path_fuzzy_rank_signal (Stop_signal.make ()) in
   Stop_signal.broadcast x
 
 let _worker_state_lock = Eio.Mutex.create ()
@@ -217,6 +227,9 @@ let manager_fiber () =
          update_snapshot ver snapshot;
          Lwd.set UI_base.Vars.filter_ui_status `Idle
        )
+     | Path_fuzzy_rank (ver, snapshot) -> (
+         update_snapshot ver snapshot;
+       )
     );
     Eio.Stream.add egress_ack ();
   done
@@ -338,6 +351,44 @@ let worker_fiber pool =
         send_to_manager Filter_parse_error
       )
   in
+  let process_path_fuzzy_rank_req stop_signal ~commit (s : string) =
+    match Search_exp.parse s with
+    | None -> ()
+    | Some exp -> (
+        let state =
+          get_cur_snapshot ()
+          |> Session.Snapshot.state
+          |> Session.State.update_path_fuzzy_ranking
+            stop_signal
+            s
+            exp
+        in
+        match state with
+        | None -> (
+          )
+        | Some state -> (
+            let command = Some (`Path_fuzzy_rank (s, None)) in
+            let snapshot =
+              Session.Snapshot.make
+                ~committed:commit
+                ~last_command:command
+                state
+            in
+            add_snapshot
+              ~overwrite_if_last_snapshot_satisfies:(fun snapshot ->
+                  match Session.Snapshot.last_command snapshot with
+                  | Some (`Path_fuzzy_rank (s', _)) -> (
+                      not (Session.Snapshot.committed snapshot)
+                      ||
+                      s' = s
+                    )
+                  | _ -> false
+                )
+              snapshot;
+            send_to_manager (Filtering_done (!cur_ver, snapshot))
+          )
+      )
+  in
   while true do
     Ping.wait worker_ping;
     lock_worker_state (fun () ->
@@ -354,6 +405,10 @@ let worker_fiber pool =
         |> Option.iter (fun (commit, s) ->
             process_search_req (Atomic.get stop_search_signal) ~commit s
           );
+        Lock_protected_cell.get path_fuzzy_rank_request
+        |> Option.iter (fun (commit, s) ->
+            process_path_fuzzy_rank_req (Atomic.get stop_path_fuzzy_rank_signal) ~commit s
+          );
       )
   done
 
@@ -369,5 +424,12 @@ let submit_search_req ~commit (s : string) =
   lock_as_requester (fun () ->
       stop_search ();
       Lock_protected_cell.set search_request (commit, s);
+      Ping.ping worker_ping
+    )
+
+let submit_path_fuzzy_rank_req ~commit (s : string) =
+  lock_as_requester (fun () ->
+      stop_path_fuzzy_rank ();
+      Lock_protected_cell.set path_fuzzy_rank_request (commit, s);
       Ping.ping worker_ping
     )
