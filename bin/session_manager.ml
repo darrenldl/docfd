@@ -360,7 +360,6 @@ let worker_fiber pool =
           |> Session.Snapshot.state
           |> Session.State.update_path_fuzzy_ranking
             stop_signal
-            s
             exp
         in
         match state with

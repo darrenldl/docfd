@@ -588,7 +588,7 @@ module State = struct
         aux ~keep
       )
 
-  let update_path_fuzzy_ranking stop_signal s exp (t : t) : t option =
+  let update_path_fuzzy_ranking stop_signal exp (t : t) : t option =
     let cancellation_notifier = Atomic.make false in
     let ranking =
       Eio.Fiber.first
@@ -614,7 +614,6 @@ module State = struct
       None
     ) else (
       let sort_by = (`Ranking ranking, `Asc) in
-      let command = `Path_fuzzy_rank (exp, Some ranking) in
       Some { t with sort_by; sort_by_no_score = sort_by }
     )
 
@@ -734,7 +733,6 @@ let run_command pool (command : Command.t) (st : State.t) : (Command.t * State.t
       | Some exp -> (
           update_path_fuzzy_ranking
             (Stop_signal.make ())
-            s
             exp
             st
           |> Option.map (fun state ->
