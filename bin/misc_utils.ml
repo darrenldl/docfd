@@ -107,7 +107,7 @@ let ranking_of_ranked_document_list (l : string list) : int String_map.t =
       String_map.add path i acc
     ) String_map.empty l
 
-let fuzzy_find_assoc
+let fuzzy_rank_assoc
     (stop_signal : Stop_signal.t)
     ~(get_key : 'a -> string)
     (items : 'a Seq.t)

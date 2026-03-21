@@ -29,7 +29,7 @@ module Vars = struct
             if Search_exp.is_empty exp then (
               arr
             ) else (
-              Misc_utils.fuzzy_find_assoc
+              Misc_utils.fuzzy_rank_assoc
                 (Stop_signal.make ())
                 ~get_key:Fun.id
                 (Dynarray.to_seq arr)
