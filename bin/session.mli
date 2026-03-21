@@ -57,6 +57,8 @@ module State : sig
 
   val drop : [ `Path of string | `All_except of string | `Marked | `Unmarked | `Usable | `Unusable ] -> t -> t
 
+  val update_path_fuzzy_ranking : Stop_signal.t -> string -> Search_exp.t -> t -> t option
+
   val narrow_search_scope_to_level : level:int -> t -> t
 
   val screen_split : t -> Command.screen_split

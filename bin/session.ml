@@ -588,6 +588,36 @@ module State = struct
         aux ~keep
       )
 
+  let update_path_fuzzy_ranking stop_signal s exp (t : t) : t option =
+    let cancellation_notifier = Atomic.make false in
+    let ranking =
+      Eio.Fiber.first
+        (fun () ->
+           Stop_signal.await stop_signal;
+           Atomic.set cancellation_notifier true;
+           String_map.empty
+        )
+        (fun () ->
+           usable_document_paths t
+           |> String_set.to_seq
+           |> Seq.map File_utils.remove_cwd_from_path
+           |> Misc_utils.fuzzy_rank_assoc
+             (Stop_signal.make ())
+             ~get_key:Fun.id
+             exp
+           |> Dynarray.to_list
+           |> List.map Misc_utils.normalize_path_to_absolute
+           |> Misc_utils.ranking_of_ranked_document_list
+        )
+    in
+    if Atomic.get cancellation_notifier then (
+      None
+    ) else (
+      let sort_by = (`Ranking ranking, `Asc) in
+      let command = `Path_fuzzy_rank (exp, Some ranking) in
+      Some { t with sort_by; sort_by_no_score = sort_by }
+    )
+
   let narrow_search_scope_to_level ~level (t : t) : t =
     let all_documents =
       if level = 0 then (
@@ -697,27 +727,21 @@ let run_command pool (command : Command.t) (st : State.t) : (Command.t * State.t
       in
       Some (command, { st with sort_by; sort_by_no_score })
     )
-  | `Path_fuzzy_rank (exp, ranking) -> (
+  | `Path_fuzzy_rank (s, ranking) -> (
       let st = reset_focus_list st in
-      let ranking =
-        match ranking with
-        | None -> (
-            usable_document_paths st
-            |> String_set.to_seq
-            |> Seq.map File_utils.remove_cwd_from_path
-            |> Misc_utils.fuzzy_rank_assoc
-              (Stop_signal.make ())
-              ~get_key:Fun.id
-              exp
-            |> Dynarray.to_list
-            |> List.map Misc_utils.normalize_path_to_absolute
-            |> Misc_utils.ranking_of_ranked_document_list
-          )
-        | Some x -> x
-      in
-      let sort_by = (`Ranking ranking, `Asc) in
-      let command = `Path_fuzzy_rank (exp, Some ranking) in
-      Some (command, { st with sort_by; sort_by_no_score = sort_by })
+      match Search_exp.parse s with
+      | None -> None
+      | Some exp -> (
+          update_path_fuzzy_ranking
+            (Stop_signal.make ())
+            s
+            exp
+            st
+          |> Option.map (fun state ->
+              let command = `Path_fuzzy_rank (s, ranking) in
+              (command, state)
+            )
+        )
     )
   | `Split_screen screen_split -> (
       Some (command, { st with screen_split })
