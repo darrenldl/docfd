@@ -1,8 +1,5 @@
 open Docfd_lib
 
-let single_file_view_search_request : string Lock_protected_cell.t =
-  Lock_protected_cell.make ()
-
 let search_request : (bool * string) Lock_protected_cell.t =
   Lock_protected_cell.make ()
 
