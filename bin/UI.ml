@@ -275,6 +275,7 @@ let save_script ~path =
 module Top_pane = struct
   module Document_list = struct
     let render_document_entry
+        ~input_mode
         ~width
         ~documents_marked
         ~(search_result_group : Session.search_result_group)
@@ -297,44 +298,46 @@ module Top_pane = struct
       in
       let sub_item_base_left_padding = I.string A.empty "    " in
       let sub_item_width = width - I.width sub_item_base_left_padding - 2 in
-      let preview_left_padding_per_line =
-        I.string A.(bg lightgreen) " "
-        <|>
-        I.string A.empty " "
-      in
-      let preview_line_images =
-        let line_count =
-          min Params.preview_line_count (Index.global_line_count ~doc_id:(Document.doc_id doc))
-        in
-        OSeq.(0 --^ line_count)
-        |> Seq.map (fun global_line_num ->
-            Index.words_of_global_line_num ~doc_id:(Document.doc_id doc) global_line_num
-            |> Dynarray.to_list
-            |> Content_and_search_result_rendering.Text_block_rendering.of_words ~width:sub_item_width
-          )
-        |> Seq.map (fun img ->
-            let left_padding =
-              OSeq.(0 --^ I.height img)
-              |> Seq.map (fun _ -> preview_left_padding_per_line)
-              |> List.of_seq
-              |> I.vcat
-            in
-            left_padding <|> img
-          )
-        |> List.of_seq
-      in
       let preview_image =
+        let preview_left_padding_per_line =
+          I.string A.(bg lightgreen) " "
+          <|>
+          I.string A.empty " "
+        in
+        let preview_line_images =
+          let line_count =
+            min Params.preview_line_count (Index.global_line_count ~doc_id:(Document.doc_id doc))
+          in
+          OSeq.(0 --^ line_count)
+          |> Seq.map (fun global_line_num ->
+              Index.words_of_global_line_num ~doc_id:(Document.doc_id doc) global_line_num
+              |> Dynarray.to_list
+              |> Content_and_search_result_rendering.Text_block_rendering.of_words ~width:sub_item_width
+            )
+          |> Seq.map (fun img ->
+              let left_padding =
+                OSeq.(0 --^ I.height img)
+                |> Seq.map (fun _ -> preview_left_padding_per_line)
+                |> List.of_seq
+                |> I.vcat
+              in
+              left_padding <|> img
+            )
+          |> List.of_seq
+        in
         I.vcat preview_line_images
       in
       let path_image =
+        Document.path doc
+        |> File_utils.remove_cwd_from_path
+        |> Tokenization.tokenize ~drop_spaces:false
+        |> List.of_seq
+        |> Content_and_search_result_rendering.Text_block_rendering.of_words ~width:sub_item_width
+      in
+      let path_image_with_prefix =
         (I.string A.(fg lightgreen) "@ ")
         <|>
-        (Document.path doc
-         |> File_utils.remove_cwd_from_path
-         |> Tokenization.tokenize ~drop_spaces:false
-         |> List.of_seq
-         |> Content_and_search_result_rendering.Text_block_rendering.of_words ~width:sub_item_width
-        )
+        path_image
       in
       let path_date_image =
         (match Document.path_date doc with
@@ -372,23 +375,29 @@ module Top_pane = struct
             |> Content_and_search_result_rendering.Text_block_rendering.of_words ~attr ~width
           )
       in
-      (
-        (if marked then I.strf "> " else I.void 0 1)
-        <|>
-        title
-      )
-      <->
-      (
-        sub_item_base_left_padding
-        <|>
-        I.vcat
-          [ search_result_score_image;
-            path_image;
-            path_date_image;
-            preview_image;
-            last_modified_image;
-          ]
-      )
+      match input_mode with
+      | UI_base.Path_fuzzy_rank -> (
+          path_image
+        )
+      | _ -> (
+          (
+            (if marked then I.strf "> " else I.void 0 1)
+            <|>
+            title
+          )
+          <->
+          (
+            sub_item_base_left_padding
+            <|>
+            I.vcat
+              [ search_result_score_image;
+                path_image_with_prefix;
+                path_date_image;
+                preview_image;
+                last_modified_image;
+              ]
+          )
+        )
 
     let main
         ~width
@@ -398,13 +407,21 @@ module Top_pane = struct
         ~(document_selected : int)
       : Nottui.ui Lwd.t =
       let document_count = Array.length search_result_groups in
+      let$* input_mode = Lwd.get UI_base.Vars.input_mode in
       let render_pane () =
         let rec aux index height_filled acc =
           if index < document_count
           && height_filled < height
           then (
             let selected = Int.equal document_selected index in
-            let img = render_document_entry ~width ~documents_marked ~search_result_group:search_result_groups.(index) ~selected in
+            let img =
+              render_document_entry
+                ~input_mode
+                ~width
+                ~documents_marked
+                ~search_result_group:search_result_groups.(index)
+                ~selected
+            in
             aux (index + 1) (height_filled + Notty.I.height img) (img :: acc)
           ) else (
             List.rev acc
