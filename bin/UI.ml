@@ -598,17 +598,6 @@ module Top_pane = struct
              |> Lwd.return
           )
       )
-    | Path_fuzzy_rank -> (
-        Array.to_seq search_result_groups
-        |> Seq.map (fun (doc, _) ->
-            Document.path doc
-          )
-        |> Dynarray.of_seq
-        |> item_list
-          ~width
-          ~height
-          ~selected
-      )
     | _ -> (
         let$* document_selected = Lwd.get UI_base.Vars.index_of_document_selected in
         let l_ratio =
@@ -848,7 +837,7 @@ module Bottom_pane = struct
                   )
                 ~on_change:(fun (text, x) ->
                     Lwd.set text_field (text, x);
-                    update_path_fuzzy_rank ~commit:true ();
+                    update_path_fuzzy_rank ~commit:false ();
                   )
                 ~on_submit:(fun (text, x) ->
                     Lwd.set text_field (text, x);
