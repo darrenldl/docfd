@@ -1,10 +1,11 @@
 # Changelog
 
-## 12.4.0
+## 13.0.0
 
-- Switched from fzf to a built-in implementation for fuzzy selection
-  menu for OPEN-SCRIPT and DELETE-SCRIPT
-    - This makes fzf dependency completely optional
+- Removed fzf dependency entirely
+    - Switched from fzf to a built-in implementation for fuzzy selection
+      menu for OPEN-SCRIPT and DELETE-SCRIPT
+    - Replaced "sort by fzf" functionality with built-in PATH-FUZZY-RANK mode
 - Made the UX of various input fields slightly more polished
     - This includes adding `Esc` for cancelling during SAVE-SCRIPT
 - Minor UI fixes
