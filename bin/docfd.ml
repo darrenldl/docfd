@@ -1279,58 +1279,6 @@ let run
             |> ignore;
             loop ()
           )
-        (*| Sort_by_fzf -> (
-            close_term ();
-            let snapshots =
-              Session_manager.lock_with_view (fun view ->
-                  view.snapshots
-                )
-            in
-            let state = Dynarray.get_last snapshots
-              |> Session.Snapshot.state
-            in
-            let ranking =
-              Session.State.usable_document_paths state
-              |> String_set.to_seq
-              |> Seq.map File_utils.remove_cwd_from_path
-              |> Proc_utils.pipe_to_fzf_for_ranking
-            in
-            (match ranking with
-             | `Ranking (query, selection, ranked_document_list) -> (
-                 let selection =
-                   selection
-                   |> List.map Misc_utils.normalize_path_to_absolute
-                 in
-                 let ranking =
-                   ranked_document_list
-                   |> List.map Misc_utils.normalize_path_to_absolute
-                   |> Misc_utils.ranking_of_ranked_document_list
-                 in
-                 let commands =
-                   (`Sort_by_fzf (query, Some ranking))
-                   ::
-                   (List.map (fun path -> `Focus path) selection)
-                 in
-                 let state = ref state in
-                 List.iter (fun command ->
-                     let command, new_state =
-                       Session.run_command
-                         pool
-                         command
-                         !state
-                       |> Option.get
-                     in
-                     Dynarray.add_last snapshots
-                       (Session.Snapshot.make
-                          ~last_command:(Some command)
-                          new_state);
-                     state := new_state;
-                   ) commands;
-                 Session_manager.load_snapshots snapshots
-               )
-             | `Cancelled _ -> ());
-            loop ()
-          )*)
       )
   in
   Eio.Fiber.any [
