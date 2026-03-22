@@ -31,7 +31,7 @@ type egress_payload =
   | Filtering
   | Filtering_cancelled
   | Filtering_done of int * Session.Snapshot.t
-  | Path_fuzzy_rank of int * Session.Snapshot.t
+  | Path_fuzzy_rank_done of int * Session.Snapshot.t
 
 let egress : egress_payload Eio.Stream.t =
   Eio.Stream.create 0
@@ -196,8 +196,10 @@ let manager_fiber () =
   (* This fiber handles updates of Lwd.var which are not thread-safe,
      and thus cannot be done by worker_fiber directly
   *)
-  let update_snapshot ver snapshot =
-    UI_base.reset_document_selected ();
+  let update_snapshot ?(reset_document_selected = true) ver snapshot =
+    if reset_document_selected then (
+      UI_base.reset_document_selected ();
+    );
     Lwd.set cur_snapshot_var (ver, snapshot);
   in
   while true do
@@ -227,8 +229,8 @@ let manager_fiber () =
          update_snapshot ver snapshot;
          Lwd.set UI_base.Vars.filter_ui_status `Idle
        )
-     | Path_fuzzy_rank (ver, snapshot) -> (
-         update_snapshot ver snapshot;
+     | Path_fuzzy_rank_done (ver, snapshot) -> (
+         update_snapshot ~reset_document_selected:false ver snapshot;
        )
     );
     Eio.Stream.add egress_ack ();
@@ -384,7 +386,7 @@ let worker_fiber pool =
                   | _ -> false
                 )
               snapshot;
-            send_to_manager (Filtering_done (!cur_ver, snapshot))
+            send_to_manager (Path_fuzzy_rank_done (!cur_ver, snapshot))
           )
       )
   in

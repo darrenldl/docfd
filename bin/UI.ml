@@ -837,6 +837,8 @@ module Bottom_pane = struct
       )
     | Path_fuzzy_rank -> (
         let text_field = Vars.path_fuzzy_rank_field in
+        let document_count = Array.length search_result_groups in
+        let$* document_current_choice = Lwd.get UI_base.Vars.index_of_document_selected in
         let$* content =
           Nottui_widgets.hbox
             [
@@ -860,7 +862,18 @@ module Bottom_pane = struct
                     Lwd.set text_field (text, x);
                     update_path_fuzzy_rank ~commit:true ();
                     Lwd.set UI_base.Vars.input_mode Navigate
-                  );
+                  )
+                ~on_up_down:(fun ud _ ->
+                    let offset =
+                      match ud with
+                      | `Up -> -1
+                      | `Down -> 1
+                    in
+                    UI_base.set_document_selected
+                      ~choice_count:document_count
+                      (document_current_choice + offset);
+                  )
+              ;
             ]
         in
         let$ bar = UI_base.Status_bar.background_bar in
