@@ -104,8 +104,20 @@ module Text_block_rendering = struct
     in
     (img, !rendered_lines_with_search_result_words)
 
-  let of_words ?attr ~width ?underline (words : string list) : Notty.image =
-    of_cells ?attr ~width ?underline (List.map (fun word -> { word; typ = `Plain }) words)
+  let of_words ?attr ~width ?underline ?(highlights = Int_set.empty) (words : string list) : Notty.image =
+    of_cells
+      ?attr
+      ~width
+      ?underline
+      (List.mapi
+         (fun i word ->
+            if Int_set.mem i highlights then (
+              { word; typ = `Search_result }
+            ) else (
+              { word; typ = `Plain }
+            )
+         )
+         words)
     |> fst
 end
 

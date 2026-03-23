@@ -38,6 +38,7 @@ module Vars = struct
                 ~get_key:Fun.id
                 exp
                 (Dynarray.to_seq arr)
+              |> Dynarray.map fst
             )
           )
       )
@@ -279,6 +280,7 @@ module Top_pane = struct
         ~width
         ~documents_marked
         ~(search_result_group : Session.search_result_group)
+        ~path_highlights
         ~selected
       : Notty.image =
       let open Notty in
@@ -327,12 +329,17 @@ module Top_pane = struct
         in
         I.vcat preview_line_images
       in
+      let path_highlights =
+        String_map.find_opt (Document.path doc) path_highlights
+      in
       let path_image =
         Document.path doc
         |> File_utils.remove_cwd_from_path
         |> Tokenization.tokenize ~drop_spaces:false
         |> List.of_seq
-        |> Content_and_search_result_rendering.Text_block_rendering.of_words ~width:sub_item_width
+        |> Content_and_search_result_rendering.Text_block_rendering.of_words
+          ~width:sub_item_width
+          ?highlights:path_highlights
       in
       let path_image_with_prefix =
         (I.string A.(fg lightgreen) "@ ")
@@ -408,6 +415,8 @@ module Top_pane = struct
       : Nottui.ui Lwd.t =
       let document_count = Array.length search_result_groups in
       let$* input_mode = Lwd.get UI_base.Vars.input_mode in
+      let$* (_cur_ver, snapshot) = Session_manager.cur_snapshot in
+      let state = Session.Snapshot.state snapshot in
       let render_pane () =
         let rec aux index height_filled acc =
           if index < document_count
@@ -420,6 +429,7 @@ module Top_pane = struct
                 ~width
                 ~documents_marked
                 ~search_result_group:search_result_groups.(index)
+                ~path_highlights:(Session.State.path_highlights state)
                 ~selected
             in
             aux (index + 1) (height_filled + Notty.I.height img) (img :: acc)

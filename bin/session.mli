@@ -35,6 +35,8 @@ module State : sig
 
   val search_exp_string : t -> string
 
+  val path_highlights : t -> Int_set.t String_map.t
+
   val add_document : Task_pool.t -> Document.t -> t -> t
 
   val of_seq : Task_pool.t -> Document.t Seq.t -> t

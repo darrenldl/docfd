@@ -28,6 +28,7 @@ module State = struct
     sort_by_no_score : Sort_by.t;
     screen_split : Command.screen_split;
     focus_list : string list;
+    path_highlights : Int_set.t String_map.t;
   }
 
   let equal (x : t) (y : t) =
@@ -65,6 +66,7 @@ module State = struct
         |> (fun (typ, order) -> ((typ :> Sort_by.typ), order));
       screen_split = `Even;
       focus_list = [];
+      path_highlights = String_map.empty;
     }
 
   let filter_exp (t : t) = t.filter_exp
@@ -74,6 +76,8 @@ module State = struct
   let search_exp (t : t) = t.search_exp
 
   let search_exp_string (t : t) = t.search_exp_string
+
+  let path_highlights (t : t) = t.path_highlights
 
   let screen_split (t : t) = t.screen_split
 
@@ -536,6 +540,7 @@ module State = struct
         sort_by_no_score = t.sort_by_no_score;
         screen_split = t.screen_split;
         focus_list = t.focus_list;
+        path_highlights = t.path_highlights;
       }
     in
     match choice with
@@ -552,6 +557,7 @@ module State = struct
           sort_by_no_score = t.sort_by_no_score;
           screen_split = t.screen_split;
           focus_list = t.focus_list;
+          path_highlights = t.path_highlights;
         }
       )
     | `All_except path -> (
@@ -590,31 +596,58 @@ module State = struct
 
   let update_path_fuzzy_ranking stop_signal exp (t : t) : t option =
     let cancellation_notifier = Atomic.make false in
-    let ranking =
+    let ranking, path_highlights =
       Eio.Fiber.first
         (fun () ->
            Stop_signal.await stop_signal;
            Atomic.set cancellation_notifier true;
-           String_map.empty
+           (String_map.empty, String_map.empty)
         )
         (fun () ->
-           usable_document_paths t
-           |> String_set.to_seq
-           |> Seq.map File_utils.remove_cwd_from_path
-           |> Misc_utils.fuzzy_rank_assoc
-             (Stop_signal.make ())
-             ~get_key:Fun.id
-             exp
-           |> Dynarray.to_list
-           |> List.map Misc_utils.normalize_path_to_absolute
-           |> Misc_utils.ranking_of_ranked_document_list
+           let l =
+             usable_document_paths t
+             |> String_set.to_seq
+             |> Seq.map File_utils.remove_cwd_from_path
+             |> Misc_utils.fuzzy_rank_assoc
+               (Stop_signal.make ())
+               ~get_key:Fun.id
+               exp
+             |> Dynarray.to_list
+             |> List.map (fun (path, x) ->
+                 (Misc_utils.normalize_path_to_absolute path, x))
+           in
+           let ranking =
+             List.map fst l
+             |> Misc_utils.ranking_of_ranked_document_list
+           in
+           let highlights =
+             List.fold_left (fun acc (path, search_result) ->
+                 String_map.add
+                   path
+                   (List.fold_left
+                      (fun acc (x : Search_result.indexed_found_word) ->
+                         Int_set.add x.found_word_pos acc
+                      )
+                      Int_set.empty
+                      (Search_result.found_phrase search_result)
+                   )
+                   acc
+               )
+               String_map.empty
+               l
+           in
+           (ranking, highlights)
         )
     in
     if Atomic.get cancellation_notifier then (
       None
     ) else (
       let sort_by = (`Ranking ranking, `Asc) in
-      Some { t with sort_by; sort_by_no_score = sort_by }
+      Some {
+        t with sort_by;
+               sort_by_no_score = sort_by;
+               path_highlights;
+      }
     )
 
   let narrow_search_scope_to_level ~level (t : t) : t =

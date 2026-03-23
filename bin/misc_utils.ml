@@ -112,7 +112,7 @@ let fuzzy_rank_assoc
     ~(get_key : 'a -> string)
     (exp : Search_exp.t)
     (items : 'a Seq.t)
-  : 'a Dynarray.t =
+  : ('a * Search_result.t) Dynarray.t =
   let pick_best_search_result (s : Search_result.t Seq.t) : Search_result.t option =
     Seq.fold_left (fun best x ->
         match best with
@@ -190,6 +190,5 @@ let fuzzy_rank_assoc
        |> List.sort (fun (_x0, r0) (_x1, r1) ->
            Search_result.compare_relevance r0 r1
          )
-       |> List.map fst
        |> Dynarray.of_list
     )
