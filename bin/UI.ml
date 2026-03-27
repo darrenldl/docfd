@@ -330,7 +330,13 @@ module Top_pane = struct
         I.vcat preview_line_images
       in
       let path_highlights =
-        String_map.find_opt (Document.path doc) path_highlights
+        match input_mode with
+        | UI_base.Path_fuzzy_rank -> (
+            String_map.find_opt (Document.path doc) path_highlights
+          )
+        | _ -> (
+            None
+          )
       in
       let path_image =
         Document.path doc

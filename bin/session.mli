@@ -37,6 +37,8 @@ module State : sig
 
   val path_highlights : t -> Int_set.t String_map.t
 
+  val clear_path_highlights : t -> t
+
   val add_document : Task_pool.t -> Document.t -> t -> t
 
   val of_seq : Task_pool.t -> Document.t Seq.t -> t

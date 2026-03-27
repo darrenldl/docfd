@@ -31,7 +31,7 @@ type egress_payload =
   | Filtering
   | Filtering_cancelled
   | Filtering_done of int * Session.Snapshot.t
-  | Path_fuzzy_rank_done of int * Session.Snapshot.t
+  | Path_fuzzy_rank_done of int * Session.Snapshot.t * bool
 
 let egress : egress_payload Eio.Stream.t =
   Eio.Stream.create 0
@@ -229,7 +229,18 @@ let manager_fiber () =
          update_snapshot ver snapshot;
          Lwd.set UI_base.Vars.filter_ui_status `Idle
        )
-     | Path_fuzzy_rank_done (ver, snapshot) -> (
+     | Path_fuzzy_rank_done (ver, snapshot, commit) -> (
+         let snapshot =
+           if commit then (
+             let state =
+               Session.Snapshot.state snapshot
+               |> Session.State.clear_path_highlights
+             in
+             Session.Snapshot.update_state state snapshot
+           ) else (
+             snapshot
+           )
+         in
          update_snapshot ~reset_document_selected:false ver snapshot;
        )
     );
@@ -386,7 +397,7 @@ let worker_fiber pool =
                   | _ -> false
                 )
               snapshot;
-            send_to_manager (Path_fuzzy_rank_done (!cur_ver, snapshot))
+            send_to_manager (Path_fuzzy_rank_done (!cur_ver, snapshot, commit))
           )
       )
   in

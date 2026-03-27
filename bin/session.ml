@@ -79,6 +79,9 @@ module State = struct
 
   let path_highlights (t : t) = t.path_highlights
 
+  let clear_path_highlights (t : t) =
+    { t with path_highlights = String_map.empty }
+
   let screen_split (t : t) = t.screen_split
 
   let refresh_search_results pool stop_signal (t : t) : t option =
