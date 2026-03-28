@@ -627,13 +627,7 @@ module State = struct
              List.fold_left (fun acc (path, search_result) ->
                  String_map.add
                    path
-                   (List.fold_left
-                      (fun acc (x : Search_result.indexed_found_word) ->
-                         Int_set.add x.found_word_pos acc
-                      )
-                      Int_set.empty
-                      (Search_result.found_phrase search_result)
-                   )
+                   (Misc_utils.highlights_of_search_result search_result)
                    acc
                )
                String_map.empty

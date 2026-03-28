@@ -12,7 +12,7 @@ module Vars = struct
 
   let script_files : string Dynarray.t Lwd.var = Lwd.var (Dynarray.create ())
 
-  let usable_script_files : string Dynarray.t Lwd.t =
+  let usable_script_files : (string * Int_set.t) Dynarray.t Lwd.t =
     let$* arr = Lwd.get script_files in
     let$* input_mode = Lwd.get UI_base.Vars.input_mode in
     let$ script_name_specified, _ = Lwd.get script_name_field in

@@ -192,3 +192,11 @@ let fuzzy_rank_assoc
          )
        |> Dynarray.of_list
     )
+
+let highlights_of_search_result (search_result : Search_result.t) =
+  List.fold_left
+    (fun acc (x : Search_result.indexed_found_word) ->
+       Int_set.add x.found_word_pos acc
+    )
+    Int_set.empty
+    (Search_result.found_phrase search_result)
