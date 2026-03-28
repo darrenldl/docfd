@@ -12,38 +12,48 @@ module Vars = struct
 
   let script_files : string Dynarray.t Lwd.var = Lwd.var (Dynarray.create ())
 
-  let usable_script_files : (string * Int_set.t) Dynarray.t Lwd.t =
+  let usable_script_files : (string Dynarray.t * Int_set.t Dynarray.t option) Lwd.t =
     let$* arr = Lwd.get script_files in
     let$* input_mode = Lwd.get UI_base.Vars.input_mode in
     let$ script_name_specified, _ = Lwd.get script_name_field in
     match input_mode with
     | Save_script -> (
-        Dynarray.filter
-          (CCString.starts_with ~prefix:script_name_specified)
-          arr
+        (Dynarray.filter
+           (CCString.starts_with ~prefix:script_name_specified)
+           arr,
+         None)
       )
     | Open_script | Delete_script -> (
         match Search_exp.parse script_name_specified with
         | None -> (
-            Dynarray.filter
-              (CCString.starts_with ~prefix:script_name_specified)
-              arr
+            (Dynarray.filter
+               (CCString.starts_with ~prefix:script_name_specified)
+               arr,
+             None)
           )
         | Some exp -> (
             if Search_exp.is_empty exp then (
-              arr
+              (arr, None)
             ) else (
-              Misc_utils.fuzzy_rank_assoc
-                (Stop_signal.make ())
-                ~get_key:Fun.id
-                exp
-                (Dynarray.to_seq arr)
-              |> Dynarray.map fst
+              let ranking =
+                Misc_utils.fuzzy_rank_assoc
+                  (Stop_signal.make ())
+                  ~get_key:Fun.id
+                  exp
+                  (Dynarray.to_seq arr)
+              in
+              Dynarray.to_seq ranking
+              |> Seq.map (fun (path, search_result) ->
+                  (path, Misc_utils.highlights_of_search_result search_result)
+                )
+              |> Seq.split
+              |> (fun (s0, s1) ->
+                  (Dynarray.of_seq s0, Some (Dynarray.of_seq s1)))
             )
           )
       )
     | _ -> (
-        Dynarray.create ()
+        (Dynarray.create (), None)
       )
 end
 
@@ -559,6 +569,7 @@ module Top_pane = struct
       ~width
       ~height
       ~selected
+      ?highlights
       items
     : Nottui.ui Lwd.t =
     let arr = Dynarray.create () in
@@ -566,13 +577,20 @@ module Top_pane = struct
         Dynarray.add_last arr (Dynarray.get items i)
       ) OSeq.(selected --^ Dynarray.length items);
     Dynarray.to_seq arr
-    |> Seq.map (fun s ->
-        let open Notty in
-        let attr =
-          A.(fg lightblue)
+    |> Seq.mapi (fun i s ->
+        let highlights =
+          Option.map (fun highlights ->
+              Dynarray.get highlights i
+            )
+            highlights
         in
-        let img = I.strf ~attr "%s" s in
-        Nottui.Ui.atom img
+        s
+        |> Tokenization.tokenize ~drop_spaces:false
+        |> List.of_seq
+        |> Content_and_search_result_rendering.Text_block_rendering.of_words
+          ~width
+          ?highlights
+        |> Nottui.Ui.atom
       )
     |> List.of_seq
     |> Nottui.Ui.vcat
@@ -588,23 +606,24 @@ module Top_pane = struct
     : Nottui.ui Lwd.t =
     let$* input_mode = Lwd.get UI_base.Vars.input_mode in
     let$* script_selected = Lwd.get UI_base.Vars.index_of_script_selected in
-    let$* usable_script_files = Vars.usable_script_files in
+    let$* usable_scripts, usable_script_highlights =
+      Vars.usable_script_files
+    in
     let file =
-      if script_selected < Dynarray.length usable_script_files then (
-        Some (Dynarray.get usable_script_files script_selected)
+      if script_selected < Dynarray.length usable_scripts then (
+        Some (Dynarray.get usable_scripts script_selected)
       ) else (
         None
       )
     in
     let$* selected = Lwd.get UI_base.Vars.index_of_script_selected in
-    let$* scripts = Vars.usable_script_files in
     match input_mode with
     | Save_script -> (
         item_list
           ~width
           ~height
           ~selected
-          scripts
+          usable_scripts
       )
     | Open_script | Delete_script -> (
         let lines =
@@ -623,7 +642,11 @@ module Top_pane = struct
           | Sys_error _ -> []
         in
         UI_base.hpane ~l_ratio:0.5 ~width ~height
-          (item_list ~height ~selected scripts)
+          (item_list
+             ~height
+             ~selected
+             ?highlights:usable_script_highlights
+             usable_scripts)
           (fun ~width ->
              List.map (fun s -> Nottui.Ui.atom (Notty.I.strf "%s" s)) lines
              |> Nottui.Ui.vcat
@@ -665,9 +688,9 @@ module Bottom_pane = struct
       UI_base.Input_mode_map.find input_mode UI_base.Status_bar.input_mode_images
     in
     let attr = UI_base.Status_bar.attr in
-    let$* usable_script_files = Vars.usable_script_files in
+    let$* usable_scripts, _usable_script_highlights = Vars.usable_script_files in
     let$* script_selected = Lwd.get UI_base.Vars.index_of_script_selected in
-    let usable_script_count = Dynarray.length usable_script_files in
+    let usable_script_count = Dynarray.length usable_scripts in
     match input_mode with
     | Save_script | Open_script | Delete_script -> (
         let text_field = Vars.script_name_field in
@@ -683,13 +706,13 @@ module Bottom_pane = struct
           | Save_script -> (
               Some (fun (text, _) ->
                   let best_fit =
-                    let usable_script_count = Dynarray.length usable_script_files in
+                    let usable_script_count = Dynarray.length usable_scripts in
                     if usable_script_count = 0 then (
                       text
                     ) else if usable_script_count = 1 then (
-                      Filename.chop_extension (Dynarray.get usable_script_files 0)
+                      Filename.chop_extension (Dynarray.get usable_scripts 0)
                     ) else (
-                      usable_script_files
+                      usable_scripts
                       |> Dynarray.to_seq
                       |> String_utils.longest_common_prefix
                     )
@@ -720,7 +743,7 @@ module Bottom_pane = struct
                  if usable_script_count > 0 then (
                    Lwd.set UI_base.Vars.quit true;
                    let dir = Params.script_dir () in
-                   let file = Dynarray.get usable_script_files script_selected in
+                   let file = Dynarray.get usable_scripts script_selected in
                    let path = Filename.concat dir file in
                    UI_base.Vars.action := Some (Open_script path);
                  );
@@ -733,7 +756,7 @@ module Bottom_pane = struct
                  Nottui.Focus.release Vars.script_name_field_focus_handle;
                  if usable_script_count > 0 then (
                    let dir = Params.script_dir () in
-                   let file = Dynarray.get usable_script_files script_selected in
+                   let file = Dynarray.get usable_scripts script_selected in
                    let path = Filename.concat dir file in
                    Lwd.set UI_base.Vars.input_mode (Delete_script_confirm (file, path))
                  ) else (
