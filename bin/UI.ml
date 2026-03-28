@@ -251,8 +251,7 @@ let update_path_fuzzy_rank ~commit () =
   let s = fst @@ Lwd.peek Vars.path_fuzzy_rank_field in
   Session_manager.submit_path_fuzzy_rank_req ~commit s
 
-let compute_save_script_path () =
-  let base_name, _ = Lwd.peek Vars.script_name_field in
+let compute_save_script_path base_name =
   let dir = Params.script_dir () in
   File_utils.mkdir_recursive dir;
   Filename.concat
@@ -725,20 +724,20 @@ module Bottom_pane = struct
         let on_submit =
           match input_mode with
           | Save_script -> (
-              (fun (text, x) ->
-                 Lwd.set text_field (text, x);
+              (fun (text, _x) ->
+                 Lwd.set text_field UI_base.empty_text_field;
                  Nottui.Focus.release Vars.script_name_field_focus_handle;
                  Lwd.set UI_base.Vars.input_mode
                    (if String.length text = 0 then
                       Save_script_no_name
                     else
-                      Save_script_overwrite
+                      Save_script_overwrite text
                    );
               )
             )
           | Open_script -> (
-              (fun (text, x) ->
-                 Lwd.set text_field (text, x);
+              (fun (_text, _x) ->
+                 Lwd.set text_field UI_base.empty_text_field;
                  Nottui.Focus.release Vars.script_name_field_focus_handle;
                  if usable_script_count > 0 then (
                    Lwd.set UI_base.Vars.quit true;
@@ -751,8 +750,8 @@ module Bottom_pane = struct
               )
             )
           | Delete_script -> (
-              (fun (text, x) ->
-                 Lwd.set text_field (text, x);
+              (fun (_text, _x) ->
+                 Lwd.set text_field UI_base.empty_text_field;
                  Nottui.Focus.release Vars.script_name_field_focus_handle;
                  if usable_script_count > 0 then (
                    let dir = Params.script_dir () in
@@ -809,8 +808,8 @@ module Bottom_pane = struct
         let$ bar = UI_base.Status_bar.background_bar in
         Nottui.Ui.join_z bar content
       )
-    | Save_script_overwrite -> (
-        let path = compute_save_script_path () in
+    | Save_script_overwrite script_name -> (
+        let path = compute_save_script_path script_name in
         if Sys.file_exists path then (
           let$* content =
             Lwd.return
@@ -827,7 +826,7 @@ module Bottom_pane = struct
           Nottui.Ui.join_z bar content
         ) else (
           save_script ~path;
-          Lwd.set UI_base.Vars.input_mode Save_script_edit;
+          Lwd.set UI_base.Vars.input_mode (Save_script_edit script_name);
           UI_base.Status_bar.background_bar
         )
       )
@@ -845,8 +844,8 @@ module Bottom_pane = struct
         let$ bar = UI_base.Status_bar.background_bar in
         Nottui.Ui.join_z bar content
       )
-    | Save_script_edit -> (
-        let path = compute_save_script_path () in
+    | Save_script_edit script_name -> (
+        let path = compute_save_script_path script_name in
         let$* content =
           Lwd.return
             (Nottui.Ui.atom
@@ -1300,9 +1299,9 @@ module Bottom_pane = struct
         (Copy_paths, copy_paths_grid);
         (Reload, reload_grid);
         (Save_script, save_script_grid);
-        (Save_script_overwrite, save_script_confirm_grid);
+        (Save_script_overwrite "", save_script_confirm_grid);
         (Save_script_no_name, save_script_cancel_grid);
-        (Save_script_edit, save_script_edit_grid);
+        (Save_script_edit "", save_script_edit_grid);
         (Open_script, open_script_grid);
         (Delete_script, delete_script_grid);
         (Delete_script_confirm ("", ""), delete_script_confirm_grid);
@@ -2069,16 +2068,16 @@ let keyboard_handler
       );
       `Handled
     )
-  | Save_script_overwrite -> (
+  | Save_script_overwrite script_name -> (
       (match key with
        | (`Escape, [])
        | (`ASCII 'n', []) -> (
            UI_base.set_input_mode Navigate;
          )
        | (`ASCII 'y', []) -> (
-           let path = compute_save_script_path () in
+           let path = compute_save_script_path script_name in
            save_script ~path;
-           UI_base.set_input_mode Save_script_edit;
+           UI_base.set_input_mode (Save_script_edit script_name);
          )
        | _ -> ()
       );
@@ -2096,13 +2095,13 @@ let keyboard_handler
       );
       `Handled
     )
-  | Save_script_edit -> (
+  | Save_script_edit script_name -> (
       let exit =
         (match key with
          | (`Escape, [])
          | (`ASCII 'n', []) -> true
          | (`ASCII 'y', []) -> (
-             let path = compute_save_script_path () in
+             let path = compute_save_script_path script_name in
              Lwd.set UI_base.Vars.quit true;
              UI_base.Vars.action := Some (UI_base.Edit_script path);
              true

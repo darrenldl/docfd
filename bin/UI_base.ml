@@ -15,9 +15,9 @@ type input_mode =
   | Copy_paths
   | Reload
   | Save_script
-  | Save_script_overwrite
+  | Save_script_overwrite of string
   | Save_script_no_name
-  | Save_script_edit
+  | Save_script_edit of string
   | Open_script
   | Delete_script
   | Delete_script_confirm of string * string
@@ -30,6 +30,8 @@ module Input_mode_map = Map.Make (struct
 
     let compare x y =
       match x, y with
+      | Save_script_overwrite _, Save_script_overwrite _ -> 0
+      | Save_script_edit _, Save_script_edit _ -> 0
       | Delete_script_confirm _, Delete_script_confirm _ -> 0
       | _, _ -> compare_input_mode x y
   end)
@@ -472,9 +474,9 @@ module Status_bar = struct
       ; (Copy_paths, "COPY-PATHS")
       ; (Reload, "RELOAD")
       ; (Save_script, "SAVE-SCRIPT")
-      ; (Save_script_overwrite, "SAVE-SCRIPT")
+      ; (Save_script_overwrite "", "SAVE-SCRIPT")
       ; (Save_script_no_name, "SAVE-SCRIPT")
-      ; (Save_script_edit, "SAVE-SCRIPT")
+      ; (Save_script_edit "", "SAVE-SCRIPT")
       ; (Open_script, "OPEN-SCRIPT")
       ; (Delete_script, "DELETE-SCRIPT")
       ; (Delete_script_confirm ("", ""), "DELETE-SCRIPT")
