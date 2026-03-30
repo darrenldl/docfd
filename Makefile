@@ -11,11 +11,11 @@ all :
 
 .PHONY: podman-build
 podman-build:
-	podman build --format docker -t localhost/docfd -f containers/docfd/Containerfile .
+	podman build --format docker -t localhost/docfd -f containers/Containerfile.docfd .
 
 .PHONY: podman-build-demo-vhs
 podman-build-demo-vhs:
-	podman build --format docker -t localhost/docfd-demo-vhs -f containers/demo-vhs/Containerfile .
+	podman build --format docker -t localhost/docfd-demo-vhs -f containers/Containerfile.demo-vhs .
 
 .PHONY: lock
 lock:
