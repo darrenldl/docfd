@@ -46,8 +46,8 @@ Features:
    (containers (>= "3.12"))
    oseq
    spelll
-   notty
-   (nottui (= "0.3"))
+   notty-community
+   (nottui (>= "0.4"))
    lwd
    (cmdliner (>= "2.0.0"))
    (eio (>= "0.14"))

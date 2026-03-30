@@ -38,8 +38,8 @@ depends: [
   "containers" {>= "3.12"}
   "oseq"
   "spelll"
-  "notty"
-  "nottui" {= "0.3"}
+  "notty-community"
+  "nottui" {>= "0.4"}
   "lwd"
   "cmdliner" {>= "2.0.0"}
   "eio" {>= "0.14"}
@@ -73,8 +73,4 @@ build: [
     "@install"
     "@doc" {with-doc}
   ]
-]
-pin-depends: [
-  [ "nottui.0.3" "git+https://github.com/let-def/lwd.git#a337a778001e6c1dbaed7e758c9e05f300abd388" ]
-  [ "notty.0.2.3" "git+https://github.com/ocaml-dune/notty.git#b6e1036c61521be3b1f4d585895ac598bdf4ab8d" ]
 ]
