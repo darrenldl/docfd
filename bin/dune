@@ -47,6 +47,7 @@
             notty
             notty.unix
             nottui
+            nottui-unix
             lwd
             oseq
             eio

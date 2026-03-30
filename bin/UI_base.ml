@@ -904,7 +904,7 @@ let ui_loop ~quit ~term root =
       if term_width <> prev_term_width || term_height <> prev_term_height then (
         Lwd.set Vars.term_width_height (term_width, term_height)
       );
-      Nottui.Ui_loop.step
+      Nottui_unix.step
         ~process_event:true
         ~timeout:0.05
         ~renderer

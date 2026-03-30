@@ -60,7 +60,6 @@ depends: [
   "qcheck" {with-test}
   "odoc" {with-doc}
 ]
-dev-repo: "git+https://github.com/darrenldl/docfd.git"
 build: [
   ["dune" "subst"] {dev}
   [
@@ -71,6 +70,8 @@ build: [
     "-j"
     jobs
     "@install"
+    "@runtest" {with-test}
     "@doc" {with-doc}
   ]
 ]
+dev-repo: "git+https://github.com/darrenldl/docfd.git"
