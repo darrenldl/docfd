@@ -42,25 +42,45 @@ let with_db : type a. ?db:db -> (db -> a) -> a =
       f db
     )
 
+let retry_if_busy (f : unit -> Sqlite3.Rc.t) =
+  let rec aux tries_left =
+    let r = f () in
+    if tries_left > 0 then (
+      match r with
+      | BUSY -> (
+          Unix.sleepf 0.1;
+          aux (tries_left - 1)
+        )
+      | _ -> r
+    ) else (
+      r
+    )
+  in
+  aux 50
+
 let exec db s =
-  Sqlite3.Rc.check (Sqlite3.exec db s)
+  retry_if_busy (fun () -> Sqlite3.exec db s)
+  |> Sqlite3.Rc.check
 
 let prepare db s =
   Sqlite3.prepare db s
 
 let bind_names stmt l =
-  Sqlite3.Rc.check (Sqlite3.bind_names stmt l)
+  retry_if_busy (fun () -> Sqlite3.bind_names stmt l)
+  |> Sqlite3.Rc.check
 
 let reset stmt =
-  Sqlite3.Rc.check (Sqlite3.reset stmt)
+  retry_if_busy (fun () -> Sqlite3.reset stmt)
+  |> Sqlite3.Rc.check
 
 let step stmt =
-  match Sqlite3.step stmt with
+  match retry_if_busy (fun () -> Sqlite3.step stmt) with
   | OK | DONE | ROW -> ()
   | x -> Sqlite3.Rc.check x
 
 let finalize stmt =
-  Sqlite3.Rc.check (Sqlite3.finalize stmt)
+  retry_if_busy (fun () -> Sqlite3.finalize stmt)
+  |> Sqlite3.Rc.check
 
 let with_stmt : type a. ?db:db -> string -> ?names:((string * Sqlite3.Data.t) list) -> (Sqlite3.stmt -> a) -> a =
   fun ?db s ?names f ->
