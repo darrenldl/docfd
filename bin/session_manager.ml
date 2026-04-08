@@ -1,5 +1,8 @@
 open Docfd_lib
 
+let last_request_timestamp : Mtime.t Atomic.t =
+  Atomic.make (Mtime_clock.now ())
+
 let search_request : (bool * string) Lock_protected_cell.t =
   Lock_protected_cell.make ()
 
@@ -403,25 +406,48 @@ let worker_fiber pool =
   in
   while true do
     Ping.wait worker_ping;
-    lock_worker_state (fun () ->
-        (match Lock_protected_cell.get filter_request with
-         | None -> ()
-         | Some (commit, s) -> (
-             process_filter_req (Atomic.get stop_filter_signal) ~commit s
-           )
-        );
-        (match Lock_protected_cell.get search_request with
-         | None -> !cancelled_search_request
-         | Some (commit, s) -> Some (commit, s)
+    let time_since_last_request =
+      Mtime.span
+        (Atomic.get last_request_timestamp)
+        (Mtime_clock.now ())
+    in
+    if
+      Mtime.Span.is_shorter
+        time_since_last_request
+        ~than:Params.session_manager_request_debounce_interval
+    then (
+      let clock = Eio.Stdenv.mono_clock (UI_base.eio_env ()) in
+      let sleep_duration =
+        Mtime.Span.abs_diff
+          time_since_last_request
+          Params.session_manager_request_debounce_interval
+        |> Mtime.Span.add Params.session_manager_request_debounce_wait_buffer
+        |> Mtime.Span.to_float_ns
+        |> (fun x -> x /. 1_000_000.0)
+      in
+      Eio.Time.Mono.sleep clock sleep_duration;
+      Ping.ping worker_ping
+    ) else (
+      lock_worker_state (fun () ->
+          (match Lock_protected_cell.get filter_request with
+           | None -> ()
+           | Some (commit, s) -> (
+               process_filter_req (Atomic.get stop_filter_signal) ~commit s
+             )
+          );
+          (match Lock_protected_cell.get search_request with
+           | None -> !cancelled_search_request
+           | Some (commit, s) -> Some (commit, s)
+          )
+          |> Option.iter (fun (commit, s) ->
+              process_search_req (Atomic.get stop_search_signal) ~commit s
+            );
+          Lock_protected_cell.get path_fuzzy_rank_request
+          |> Option.iter (fun (commit, s) ->
+              process_path_fuzzy_rank_req (Atomic.get stop_path_fuzzy_rank_signal) ~commit s
+            );
         )
-        |> Option.iter (fun (commit, s) ->
-            process_search_req (Atomic.get stop_search_signal) ~commit s
-          );
-        Lock_protected_cell.get path_fuzzy_rank_request
-        |> Option.iter (fun (commit, s) ->
-            process_path_fuzzy_rank_req (Atomic.get stop_path_fuzzy_rank_signal) ~commit s
-          );
-      )
+    )
   done
 
 let submit_filter_req ~commit (s : string) =

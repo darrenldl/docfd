@@ -277,6 +277,10 @@ let last_modified_format_string =
 
 let blink_on_duration : Mtime.span = Mtime.Span.(140 * ms)
 
+let session_manager_request_debounce_interval = Mtime.Span.(200 * ms)
+
+let session_manager_request_debounce_wait_buffer = Mtime.Span.(5 * ms)
+
 let os_typ : [ `Darwin | `Linux ] =
   let s = CCUnix.call_stdout "uname"
     |> String.trim
