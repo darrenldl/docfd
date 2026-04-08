@@ -417,15 +417,15 @@ let worker_fiber pool =
         ~than:Params.session_manager_request_debounce_interval
     then (
       let clock = Eio.Stdenv.mono_clock (UI_base.eio_env ()) in
-      let sleep_duration =
+      let sleep_duration_s =
         Mtime.Span.abs_diff
           time_since_last_request
           Params.session_manager_request_debounce_interval
         |> Mtime.Span.add Params.session_manager_request_debounce_wait_buffer
         |> Mtime.Span.to_float_ns
-        |> (fun x -> x /. 1_000_000.0)
+        |> (fun x -> x /. 1_000_000_000.0)
       in
-      Eio.Time.Mono.sleep clock sleep_duration;
+      Eio.Time.Mono.sleep clock sleep_duration_s;
       Ping.ping worker_ping
     ) else (
       lock_worker_state (fun () ->
