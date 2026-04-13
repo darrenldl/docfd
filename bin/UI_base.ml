@@ -18,7 +18,7 @@ type input_mode =
   | Save_script_overwrite of string
   | Save_script_no_name
   | Save_script_edit of string
-  | Open_scripts
+  | Scripts
   | Delete_script_confirm of string * string
   | Links
   | Path_fuzzy_rank
@@ -484,7 +484,7 @@ module Status_bar = struct
       ; (Save_script_overwrite "", "SAVE-SCRIPT")
       ; (Save_script_no_name, "SAVE-SCRIPT")
       ; (Save_script_edit "", "SAVE-SCRIPT")
-      ; (Open_scripts, "OPEN-SCRIPTS")
+      ; (Scripts, "SCRIPTS")
       ; (Delete_script_confirm ("", ""), "DELETE-SCRIPT")
       ; (Links, "LINKS")
       ; (Path_fuzzy_rank, "PATH-FUZZY-RANK")

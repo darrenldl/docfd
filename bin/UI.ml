@@ -23,7 +23,7 @@ module Vars = struct
            arr,
          None)
       )
-    | Open_scripts -> (
+    | Scripts -> (
         match Search_exp.parse script_name_specified with
         | None -> (
             (Dynarray.filter
@@ -624,7 +624,7 @@ module Top_pane = struct
           ~selected
           usable_scripts
       )
-    | Open_scripts -> (
+    | Scripts -> (
         let lines =
           try
             match file with
@@ -691,12 +691,12 @@ module Bottom_pane = struct
     let$* script_selected = Lwd.get UI_base.Vars.index_of_script_selected in
     let usable_script_count = Dynarray.length usable_scripts in
     match input_mode with
-    | Save_script | Open_scripts -> (
+    | Save_script | Scripts -> (
         let text_field = Vars.script_name_field in
         let prompt =
           match input_mode with
-          | Save_script -> Some "Save as"
-          | Open_scripts -> None
+          | Save_script -> "Save as"
+          | Scripts -> "Filter"
           | _ -> failwith "unexpected case"
         in
         let on_tab =
@@ -734,7 +734,7 @@ module Bottom_pane = struct
                    );
               )
             )
-          | Open_scripts -> (
+          | Scripts -> (
               (fun (_text, _x) ->
                  Lwd.set text_field UI_base.empty_text_field;
                  Nottui.Focus.release Vars.script_name_field_focus_handle;
@@ -753,7 +753,7 @@ module Bottom_pane = struct
         let on_up_down =
           match input_mode with
           | Save_script -> None
-          | Open_scripts -> (
+          | Scripts -> (
               Some (fun up_down _ ->
                   UI_base.set_script_selected
                     ~choice_count:usable_script_count
@@ -767,7 +767,7 @@ module Bottom_pane = struct
         in
         let on_ctrl_prefixed =
           match input_mode with
-          | Open_scripts -> (
+          | Scripts -> (
               Some (fun key (_text, _x) ->
                   match key with
                   | (`ASCII 'X', [`Ctrl]) -> (
@@ -797,11 +797,7 @@ module Bottom_pane = struct
                       [
                         input_mode_image;
                         UI_base.Status_bar.element_spacer;
-                        Notty.I.strf ~attr "%s[ "
-                          (match prompt with
-                           | None -> ""
-                           | Some x -> Fmt.str "%s: " x
-                          );
+                        Notty.I.strf ~attr "%s: [ " prompt;
                       ]));
               UI_base.edit_field text_field
                 ~focus:Vars.script_name_field_focus_handle
@@ -1033,7 +1029,7 @@ module Bottom_pane = struct
             { label = "d"; msg = "DROP" };
             { label = "m"; msg = "MARK" };
             { label = ""; msg = "" };
-            { label = "Ctrl+O"; msg = "open script" };
+            { label = "Ctrl+O"; msg = "SCRIPTS" };
           ];
           [
             { label = "Ctrl+C"; msg = "exit" };
@@ -1119,7 +1115,7 @@ module Bottom_pane = struct
       let delete_script_confirm_grid =
         [
           [
-            { label = "y"; msg = "confirm delete" };
+            { label = "y"; msg = "confirm deletion" };
             { label = "Esc/n"; msg = "cancel" };
           ];
           empty_row;
@@ -1305,7 +1301,7 @@ module Bottom_pane = struct
         (Save_script_overwrite "", save_script_confirm_grid);
         (Save_script_no_name, save_script_cancel_grid);
         (Save_script_edit "", save_script_edit_grid);
-        (Open_scripts, open_scripts_grid);
+        (Scripts, open_scripts_grid);
         (Delete_script_confirm ("", ""), delete_script_confirm_grid);
         (Links, links_grid);
         (Path_fuzzy_rank, path_fuzzy_rank_grid);
@@ -1602,7 +1598,7 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'O', [`Ctrl]) -> (
-          UI_base.set_input_mode Open_scripts;
+          UI_base.set_input_mode Scripts;
           refresh_script_files ();
           Nottui.Focus.request Vars.script_name_field_focus_handle;
           `Handled
