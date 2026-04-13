@@ -4,8 +4,10 @@
 
 - Removed fzf dependency entirely
     - Switched from fzf to a built-in implementation for fuzzy selection
-      menu for OPEN-SCRIPT and DELETE-SCRIPT
+      menus
     - Replaced "sort by fzf" functionality with built-in PATH-FUZZY-RANK mode
+- Renamed OPEN-SCRIPT to SCRIPTS
+- Moved DELETE-SCRIPT functionality to `Ctrl`+`X` under SCRIPTS
 - Made the UX of various input fields slightly more polished
     - This includes adding `Esc` for cancelling during SAVE-SCRIPT
 - Added request handling debouncing to reduce pointless workload triggered during
