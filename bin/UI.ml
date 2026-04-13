@@ -745,13 +745,13 @@ module Bottom_pane = struct
             )
           | Scripts -> (
               (fun (_text, _x) ->
-                 Lwd.set text_field UI_base.empty_text_field;
-                 Nottui.Focus.release Vars.script_name_field_focus_handle;
                  Option.iter (fun (_file, path) ->
+                     Lwd.set text_field UI_base.empty_text_field;
+                     Nottui.Focus.release Vars.script_name_field_focus_handle;
                      Lwd.set UI_base.Vars.quit true;
                      UI_base.Vars.action := Some (Open_script path);
+                     Lwd.set UI_base.Vars.input_mode Navigate;
                    ) selected_script_file_and_path;
-                 Lwd.set UI_base.Vars.input_mode Navigate;
               )
             )
           | _ -> failwith "unexpected case"
@@ -777,14 +777,9 @@ module Bottom_pane = struct
               Some (fun key (_text, _x) ->
                   match key with
                   | (`ASCII 'X', [`Ctrl]) -> (
-                      (match selected_script_file_and_path with
-                       | Some (file, path) -> (
-                           Lwd.set UI_base.Vars.input_mode (Delete_script_confirm (file, path))
-                         )
-                       | None -> (
-                           Lwd.set UI_base.Vars.input_mode Navigate
-                         )
-                      );
+                      Option.iter (fun (file, path) ->
+                          Lwd.set UI_base.Vars.input_mode (Delete_script_confirm (file, path))
+                        ) selected_script_file_and_path;
                       `Handled
                     )
                   | _ -> (
