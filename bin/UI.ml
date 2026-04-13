@@ -23,7 +23,7 @@ module Vars = struct
            arr,
          None)
       )
-    | Scripts -> (
+    | Scripts | Delete_script_confirm (_, _) -> (
         match Search_exp.parse script_name_specified with
         | None -> (
             (Dynarray.filter
@@ -624,7 +624,7 @@ module Top_pane = struct
           ~selected
           usable_scripts
       )
-    | Scripts -> (
+    | Scripts | Delete_script_confirm (_, _) -> (
         let lines =
           try
             match file with
