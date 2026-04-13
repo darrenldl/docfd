@@ -690,6 +690,15 @@ module Bottom_pane = struct
     let$* usable_scripts, _usable_script_highlights = Vars.usable_script_files in
     let$* script_selected = Lwd.get UI_base.Vars.index_of_script_selected in
     let usable_script_count = Dynarray.length usable_scripts in
+    let selected_script_file_and_path =
+      if usable_script_count > 0 then (
+        let dir = Params.script_dir () in
+        let file = Dynarray.get usable_scripts script_selected in
+        Some (file, Filename.concat dir file)
+      ) else (
+        None
+      )
+    in
     match input_mode with
     | Save_script | Scripts -> (
         let text_field = Vars.script_name_field in
@@ -738,13 +747,10 @@ module Bottom_pane = struct
               (fun (_text, _x) ->
                  Lwd.set text_field UI_base.empty_text_field;
                  Nottui.Focus.release Vars.script_name_field_focus_handle;
-                 if usable_script_count > 0 then (
-                   Lwd.set UI_base.Vars.quit true;
-                   let dir = Params.script_dir () in
-                   let file = Dynarray.get usable_scripts script_selected in
-                   let path = Filename.concat dir file in
-                   UI_base.Vars.action := Some (Open_script path);
-                 );
+                 Option.iter (fun (_file, path) ->
+                     Lwd.set UI_base.Vars.quit true;
+                     UI_base.Vars.action := Some (Open_script path);
+                   ) selected_script_file_and_path;
                  Lwd.set UI_base.Vars.input_mode Navigate;
               )
             )
@@ -771,13 +777,13 @@ module Bottom_pane = struct
               Some (fun key (_text, _x) ->
                   match key with
                   | (`ASCII 'X', [`Ctrl]) -> (
-                      if usable_script_count > 0 then (
-                        let dir = Params.script_dir () in
-                        let file = Dynarray.get usable_scripts script_selected in
-                        let path = Filename.concat dir file in
-                        Lwd.set UI_base.Vars.input_mode (Delete_script_confirm (file, path))
-                      ) else (
-                        Lwd.set UI_base.Vars.input_mode Navigate
+                      (match selected_script_file_and_path with
+                       | Some (file, path) -> (
+                           Lwd.set UI_base.Vars.input_mode (Delete_script_confirm (file, path))
+                         )
+                       | None -> (
+                           Lwd.set UI_base.Vars.input_mode Navigate
+                         )
                       );
                       `Handled
                     )
