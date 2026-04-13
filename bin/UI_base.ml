@@ -18,8 +18,7 @@ type input_mode =
   | Save_script_overwrite of string
   | Save_script_no_name
   | Save_script_edit of string
-  | Open_script
-  | Delete_script
+  | Open_scripts
   | Delete_script_confirm of string * string
   | Links
   | Path_fuzzy_rank
@@ -262,6 +261,7 @@ let edit_field
     ~on_cancel
     ?(on_tab : ((string * int) -> unit) option)
     ?(on_up_down : ([ `Up | `Down ] -> (string * int) -> unit) option)
+    ?(on_ctrl_prefixed : (Nottui.Ui.key -> (string * int) -> [ `Handled | `Unhandled ]) option)
     state
   =
   let update _focus_h focus (text, pos) =
@@ -347,6 +347,13 @@ let edit_field
           | Some on_tab -> (
               on_tab (text, pos);
               `Handled
+            )
+        )
+      | (_, [`Ctrl]) as x -> (
+          match on_ctrl_prefixed with
+          | None -> `Unhandled
+          | Some f -> (
+              f x (text, pos)
             )
         )
       | _ -> `Unhandled
@@ -477,8 +484,7 @@ module Status_bar = struct
       ; (Save_script_overwrite "", "SAVE-SCRIPT")
       ; (Save_script_no_name, "SAVE-SCRIPT")
       ; (Save_script_edit "", "SAVE-SCRIPT")
-      ; (Open_script, "OPEN-SCRIPT")
-      ; (Delete_script, "DELETE-SCRIPT")
+      ; (Open_scripts, "OPEN-SCRIPTS")
       ; (Delete_script_confirm ("", ""), "DELETE-SCRIPT")
       ; (Links, "LINKS")
       ; (Path_fuzzy_rank, "PATH-FUZZY-RANK")

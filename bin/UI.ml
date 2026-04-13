@@ -23,7 +23,7 @@ module Vars = struct
            arr,
          None)
       )
-    | Open_script | Delete_script -> (
+    | Open_scripts -> (
         match Search_exp.parse script_name_specified with
         | None -> (
             (Dynarray.filter
@@ -624,7 +624,7 @@ module Top_pane = struct
           ~selected
           usable_scripts
       )
-    | Open_script | Delete_script -> (
+    | Open_scripts -> (
         let lines =
           try
             match file with
@@ -691,13 +691,12 @@ module Bottom_pane = struct
     let$* script_selected = Lwd.get UI_base.Vars.index_of_script_selected in
     let usable_script_count = Dynarray.length usable_scripts in
     match input_mode with
-    | Save_script | Open_script | Delete_script -> (
+    | Save_script | Open_scripts -> (
         let text_field = Vars.script_name_field in
         let prompt =
           match input_mode with
-          | Save_script -> "Save as"
-          | Open_script -> "Open"
-          | Delete_script -> "Delete"
+          | Save_script -> Some "Save as"
+          | Open_scripts -> None
           | _ -> failwith "unexpected case"
         in
         let on_tab =
@@ -735,7 +734,7 @@ module Bottom_pane = struct
                    );
               )
             )
-          | Open_script -> (
+          | Open_scripts -> (
               (fun (_text, _x) ->
                  Lwd.set text_field UI_base.empty_text_field;
                  Nottui.Focus.release Vars.script_name_field_focus_handle;
@@ -749,26 +748,12 @@ module Bottom_pane = struct
                  Lwd.set UI_base.Vars.input_mode Navigate;
               )
             )
-          | Delete_script -> (
-              (fun (_text, _x) ->
-                 Lwd.set text_field UI_base.empty_text_field;
-                 Nottui.Focus.release Vars.script_name_field_focus_handle;
-                 if usable_script_count > 0 then (
-                   let dir = Params.script_dir () in
-                   let file = Dynarray.get usable_scripts script_selected in
-                   let path = Filename.concat dir file in
-                   Lwd.set UI_base.Vars.input_mode (Delete_script_confirm (file, path))
-                 ) else (
-                   Lwd.set UI_base.Vars.input_mode Navigate
-                 )
-              )
-            )
           | _ -> failwith "unexpected case"
         in
         let on_up_down =
           match input_mode with
           | Save_script -> None
-          | Open_script | Delete_script -> (
+          | Open_scripts -> (
               Some (fun up_down _ ->
                   UI_base.set_script_selected
                     ~choice_count:usable_script_count
@@ -780,6 +765,29 @@ module Bottom_pane = struct
             )
           | _ -> failwith "unexpected case"
         in
+        let on_ctrl_prefixed =
+          match input_mode with
+          | Open_scripts -> (
+              Some (fun key (_text, _x) ->
+                  match key with
+                  | (`ASCII 'X', [`Ctrl]) -> (
+                      if usable_script_count > 0 then (
+                        let dir = Params.script_dir () in
+                        let file = Dynarray.get usable_scripts script_selected in
+                        let path = Filename.concat dir file in
+                        Lwd.set UI_base.Vars.input_mode (Delete_script_confirm (file, path))
+                      ) else (
+                        Lwd.set UI_base.Vars.input_mode Navigate
+                      );
+                      `Handled
+                    )
+                  | _ -> (
+                      `Unhandled
+                    )
+                )
+            )
+          | _ -> None
+        in
         let$* content =
           Nottui_widgets.hbox
             [
@@ -789,7 +797,11 @@ module Bottom_pane = struct
                       [
                         input_mode_image;
                         UI_base.Status_bar.element_spacer;
-                        Notty.I.strf ~attr "%s: [ " prompt;
+                        Notty.I.strf ~attr "%s[ "
+                          (match prompt with
+                           | None -> ""
+                           | Some x -> Fmt.str "%s: " x
+                          );
                       ]));
               UI_base.edit_field text_field
                 ~focus:Vars.script_name_field_focus_handle
@@ -801,7 +813,8 @@ module Bottom_pane = struct
                   )
                 ~on_submit
                 ?on_tab
-                ?on_up_down;
+                ?on_up_down
+                ?on_ctrl_prefixed;
               Lwd.return (Nottui.Ui.atom (Notty.I.strf ~attr " ] + %s" Params.docfd_script_ext));
             ]
         in
@@ -1032,7 +1045,7 @@ module Bottom_pane = struct
             { label = "r"; msg = "RELOAD" };
             { label = "Shift+M"; msg = "UNMARK" };
             { label = ""; msg = "" };
-            { label = "Ctrl+D"; msg = "delete script" };
+            { label = ""; msg = "" };
           ];
         ]
       in
@@ -1091,22 +1104,12 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
-      let open_script_grid =
+      let open_scripts_grid =
         [
           [
-            { label = "Enter"; msg = "confirm answer" };
-            { label = "↑/↓"; msg = "select script" };
-            { label = "Esc"; msg = "cancel" };
-          ];
-          empty_row;
-          empty_row;
-        ]
-      in
-      let delete_script_grid =
-        [
-          [
-            { label = "Enter"; msg = "confirm answer" };
-            { label = "↑/↓"; msg = "select script" };
+            { label = "Enter"; msg = "open" };
+            { label = "↑/↓"; msg = "select" };
+            { label = "Ctrl+X"; msg = "delete" };
             { label = "Esc"; msg = "cancel" };
           ];
           empty_row;
@@ -1302,8 +1305,7 @@ module Bottom_pane = struct
         (Save_script_overwrite "", save_script_confirm_grid);
         (Save_script_no_name, save_script_cancel_grid);
         (Save_script_edit "", save_script_edit_grid);
-        (Open_script, open_script_grid);
-        (Delete_script, delete_script_grid);
+        (Open_scripts, open_scripts_grid);
         (Delete_script_confirm ("", ""), delete_script_confirm_grid);
         (Links, links_grid);
         (Path_fuzzy_rank, path_fuzzy_rank_grid);
@@ -1600,13 +1602,7 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII 'O', [`Ctrl]) -> (
-          UI_base.set_input_mode Open_script;
-          refresh_script_files ();
-          Nottui.Focus.request Vars.script_name_field_focus_handle;
-          `Handled
-        )
-      | (`ASCII 'D', [`Ctrl]) -> (
-          UI_base.set_input_mode Delete_script;
+          UI_base.set_input_mode Open_scripts;
           refresh_script_files ();
           Nottui.Focus.request Vars.script_name_field_focus_handle;
           `Handled
