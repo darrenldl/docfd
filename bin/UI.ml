@@ -38,7 +38,7 @@ module Vars = struct
               let ranking =
                 Misc_utils.fuzzy_rank_assoc
                   (Stop_signal.make ())
-                  ~get_key:Fun.id
+                  ~get_key:Filename.chop_extension
                   exp
                   (Dynarray.to_seq arr)
               in
