@@ -8,6 +8,7 @@
     - Replaced "sort by fzf" functionality with built-in PATH-FUZZY-RANK mode
 - Renamed OPEN-SCRIPT to SCRIPTS
 - Moved DELETE-SCRIPT functionality to `Ctrl`+`X` under SCRIPTS
+- Added `y` key binding to copy in LINKS
 - Made the UX of various input fields slightly more polished
     - This includes adding `Esc` for cancelling during SAVE-SCRIPT
 - Added request handling debouncing to reduce pointless workload triggered during
