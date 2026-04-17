@@ -2111,11 +2111,12 @@ let keyboard_handler
       (match key with
        | (`Escape, [])
        | (`ASCII 'n', []) -> (
-           UI_base.set_input_mode Navigate;
+           UI_base.set_input_mode Scripts;
          )
        | (`ASCII 'y', []) -> (
            Sys.remove path;
-           UI_base.set_input_mode Navigate;
+           refresh_script_files ();
+           UI_base.set_input_mode Scripts;
          )
        | _ -> ()
       );
