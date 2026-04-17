@@ -1101,7 +1101,7 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
-      let open_scripts_grid =
+      let scripts_grid =
         [
           [
             { label = "Enter"; msg = "open" };
@@ -1302,7 +1302,7 @@ module Bottom_pane = struct
         (Save_script_overwrite "", save_script_confirm_grid);
         (Save_script_no_name, save_script_cancel_grid);
         (Save_script_edit "", save_script_edit_grid);
-        (Scripts, open_scripts_grid);
+        (Scripts, scripts_grid);
         (Delete_script_confirm ("", ""), delete_script_confirm_grid);
         (Links, links_grid);
         (Path_fuzzy_rank, path_fuzzy_rank_grid);
