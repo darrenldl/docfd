@@ -1265,6 +1265,7 @@ module Bottom_pane = struct
             { label = "Enter"; msg = "open" };
             { label = "o"; msg = "open and remain in LINKS" };
             { label = "↑/↓/j/k"; msg = "select" };
+            { label = "y"; msg = "copy" };
           ];
           [
             { label = "Esc"; msg = "exit" };
@@ -2052,6 +2053,14 @@ let keyboard_handler
                ~choice_count:link_choice_count
                (link_current_choice-1);
              false
+           )
+         | (`ASCII 'y', []) -> (
+             Option.iter (fun (_doc, link) ->
+                 Clipboard.pipe_to_clipboard (fun oc ->
+                     output_string oc link.Link.link
+                   );
+               ) doc_and_link;
+             true
            )
          | _ -> false
         );
