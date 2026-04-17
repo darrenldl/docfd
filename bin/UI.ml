@@ -579,7 +579,7 @@ module Top_pane = struct
     |> Seq.mapi (fun i s ->
         let highlights =
           Option.map (fun highlights ->
-              Dynarray.get highlights i
+              Dynarray.get highlights (selected + i)
             )
             highlights
         in
