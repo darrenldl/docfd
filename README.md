@@ -1,4 +1,7 @@
 # Docfd
+
+[Online Demo](https://demo.docfd.sh)
+
 TUI multiline fuzzy document finder
 
 Think interactive grep for text files, PDFs, DOCXs, etc,
