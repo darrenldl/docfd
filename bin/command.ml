@@ -163,10 +163,10 @@ let pp fmt (t : t) =
         )
     )
   | `Hide_pane pane -> (
-      Fmt.pf fmt "hide-pane %s" (string_of_pane pane)
+      Fmt.pf fmt "hide-pane: %s" (string_of_pane pane)
     )
   | `Show_pane pane -> (
-      Fmt.pf fmt "show-pane %s" (string_of_pane pane)
+      Fmt.pf fmt "show-pane: %s" (string_of_pane pane)
     )
   | `Comment s -> Fmt.pf fmt "#%s" s
   | `Focus s -> Fmt.pf fmt "focus: %s" s
