@@ -939,15 +939,15 @@ module Bottom_pane = struct
               (Session.Snapshot.state snapshot
                |> Session.State.size)
           in
-          let desc =
+          let hint =
             Notty.I.strf ~attr "Press ? to see more key binding info"
           in
-          let desc_len = Notty.I.width desc in
-          let desc_overlay =
+          let hint_len = Notty.I.width hint in
+          let hint_overlay =
             Notty.I.void
-              (width - desc_len) 1
+              (width - hint_len) 1
             <|>
-            desc
+            hint
           in
           let core =
             if document_count = 0 then (
@@ -976,7 +976,7 @@ module Bottom_pane = struct
                  UI_base.Status_bar.element_spacer
                  ::
                  core);
-              desc_overlay;
+              hint_overlay;
             ]
           |> Nottui.Ui.atom
         in
