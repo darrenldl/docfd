@@ -10,7 +10,7 @@
 - Moved DELETE-SCRIPT functionality to `Ctrl`+`X` under SCRIPTS
 - Added `y` key binding to copy in LINKS
 - Changed key binding for rotation of key binding info grid from `?` to `<` and `>`
-- Added bottom right pane toggle via `v`
+- Added "focus content" via `z` which hides the bottom right pane
 - Added key binding info pane toggle via `?`
 - Made the UX of various input fields slightly more polished
     - This includes adding `Esc` for cancelling during SAVE-SCRIPT
