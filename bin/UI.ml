@@ -537,6 +537,7 @@ module Top_pane = struct
         ~height
         ~(search_result_groups : Session.search_result_group array)
         ~(document_selected : int)
+        ~show_bottom_right_pane
       : Nottui.ui Lwd.t =
       if Array.length search_result_groups = 0 then (
         let blank ~height =
@@ -550,17 +551,27 @@ module Top_pane = struct
         let$* search_result_selected = Lwd.get UI_base.Vars.index_of_search_result_selected in
         let$* link_selected = Lwd.get UI_base.Vars.index_of_link_selected in
         let search_result_group = search_result_groups.(document_selected) in
-        UI_base.vpane ~width ~height
-          (UI_base.Content_view.main
-             ~input_mode
-             ~width
-             ~search_result_group
-             ~search_result_selected
-             ~link_selected)
-          (Search_result_list.main
-             ~width
-             ~search_result_group
-             ~index_of_search_result_selected:UI_base.Vars.index_of_search_result_selected)
+        if show_bottom_right_pane then (
+          UI_base.vpane ~width ~height
+            (UI_base.Content_view.main
+               ~input_mode
+               ~width
+               ~search_result_group
+               ~search_result_selected
+               ~link_selected)
+            (Search_result_list.main
+               ~width
+               ~search_result_group
+               ~index_of_search_result_selected:UI_base.Vars.index_of_search_result_selected)
+        ) else (
+          UI_base.Content_view.main
+            ~input_mode
+            ~width
+            ~height
+            ~search_result_group
+            ~search_result_selected
+            ~link_selected
+        )
       )
   end
 
@@ -601,6 +612,7 @@ module Top_pane = struct
       ~height
       ~documents_marked
       ~screen_split
+      ~show_bottom_right_pane
       ~(search_result_groups : Session.search_result_group array)
     : Nottui.ui Lwd.t =
     let$* input_mode = Lwd.get UI_base.Vars.input_mode in
@@ -672,7 +684,8 @@ module Top_pane = struct
           (Right_pane.main
              ~height
              ~search_result_groups
-             ~document_selected)
+             ~document_selected
+             ~show_bottom_right_pane)
       )
 end
 
@@ -940,7 +953,7 @@ module Bottom_pane = struct
                |> Session.State.size)
           in
           let hint =
-            Notty.I.strf ~attr "Press ? to see more key binding info"
+            Notty.I.strf ~attr "Press < and > to see more key binding info"
           in
           let hint_len = Notty.I.width hint in
           let hint_overlay =
@@ -1007,7 +1020,7 @@ module Bottom_pane = struct
             { label = "Ctrl+S"; msg = "save session as script" };
           ];
           [
-            { label = "?"; msg = "rotate key binding info" };
+            { label = "?"; msg = "toggle bottom right pane" };
             { label = "f"; msg = "FILTER" };
             { label = "Shift+↑/↓/j/k"; msg = "select search result" };
             { label = "Shift+S"; msg = "SORT-DESC" };
@@ -1407,7 +1420,11 @@ let keyboard_handler
           UI_base.Vars.action := None;
           `Handled
         )
-      | (`ASCII '?', []) -> (
+      | (`ASCII '<', []) -> (
+          UI_base.Key_binding_info.decr_rotation ();
+          `Handled
+        )
+      | (`ASCII '>', []) -> (
           UI_base.Key_binding_info.incr_rotation ();
           `Handled
         )
@@ -1480,6 +1497,29 @@ let keyboard_handler
                    (Command.int_of_screen_split cur + offset)
                in
                let command = `Split_screen next in
+               state
+               |> Session.run_command
+                 (UI_base.task_pool ())
+                 command
+               |> Option.get
+               |> (fun (command, state) ->
+                   Session.Snapshot.make
+                     ~last_command:(Some command)
+                     state)
+            );
+          `Handled
+        )
+      | (`ASCII '?', []) -> (
+          Session_manager.update_from_cur_snapshot
+            (fun cur_snapshot ->
+               let state = Session.Snapshot.state cur_snapshot in
+               let cur = Session.State.show_pane state `Bottom_right in
+               let command =
+                 if cur then (
+                   `Hide_pane `Bottom_right
+                 ) else (
+                   `Show_pane `Bottom_right
+                 ) in
                state
                |> Session.run_command
                  (UI_base.task_pool ())
@@ -1745,7 +1785,7 @@ let keyboard_handler
       let exit =
         match key with
         | (`Escape, []) -> true
-        | (`ASCII '?', []) -> (
+        | (`ASCII '>', []) -> (
             UI_base.Key_binding_info.incr_rotation ();
             false
           )
@@ -1788,7 +1828,7 @@ let keyboard_handler
       let exit =
         match key with
         | (`Escape, []) -> true
-        | (`ASCII '?', []) -> (
+        | (`ASCII '>', []) -> (
             UI_base.Key_binding_info.incr_rotation ();
             false
           )
@@ -1807,7 +1847,7 @@ let keyboard_handler
       let exit =
         match key with
         | (`Escape, []) -> true
-        | (`ASCII '?', []) -> (
+        | (`ASCII '>', []) -> (
             UI_base.Key_binding_info.incr_rotation ();
             false
           )
@@ -1830,7 +1870,7 @@ let keyboard_handler
       let exit =
         match key with
         | (`Escape, []) -> true
-        | (`ASCII '?', []) -> (
+        | (`ASCII '>', []) -> (
             UI_base.Key_binding_info.incr_rotation ();
             false
           )
@@ -1869,7 +1909,7 @@ let keyboard_handler
       let exit =
         match key with
         | (`Escape, []) -> true
-        | (`ASCII '?', []) -> (
+        | (`ASCII '>', []) -> (
             UI_base.Key_binding_info.incr_rotation ();
             false
           )
@@ -1925,7 +1965,7 @@ let keyboard_handler
       let exit =
         match key with
         | (`Escape, []) -> true
-        | (`ASCII '?', []) -> (
+        | (`ASCII '>', []) -> (
             UI_base.Key_binding_info.incr_rotation ();
             false
           )
@@ -1974,7 +2014,7 @@ let keyboard_handler
       let exit =
         (match key with
          | (`Escape, []) -> true
-         | (`ASCII '?', []) -> (
+         | (`ASCII '>', []) -> (
              UI_base.Key_binding_info.incr_rotation ();
              false
            )
@@ -2156,12 +2196,14 @@ let main : Nottui.ui Lwd.t =
   let bottom_pane_height = Nottui.Ui.layout_height bottom_pane in
   let top_pane_height = term_height - bottom_pane_height in
   let screen_split = Session.State.screen_split session_state in
+  let show_bottom_right_pane = Session.State.show_pane session_state `Bottom_right in
   let$* top_pane =
     Top_pane.main
       ~width:term_width
       ~height:top_pane_height
       ~documents_marked:(Session.State.marked_document_paths session_state)
       ~screen_split
+      ~show_bottom_right_pane
       ~search_result_groups
   in
   Nottui_widgets.vbox

@@ -27,6 +27,7 @@ module State = struct
     sort_by : Sort_by.t;
     sort_by_no_score : Sort_by.t;
     screen_split : Command.screen_split;
+    show_bottom_right_pane : bool;
     focus_list : string list;
     path_highlights : Int_set.t String_map.t;
   }
@@ -65,6 +66,7 @@ module State = struct
       sort_by_no_score = Command.Sort_by.default_no_score
         |> (fun (typ, order) -> ((typ :> Sort_by.typ), order));
       screen_split = `Even;
+      show_bottom_right_pane = true;
       focus_list = [];
       path_highlights = String_map.empty;
     }
@@ -83,6 +85,10 @@ module State = struct
     { t with path_highlights = String_map.empty }
 
   let screen_split (t : t) = t.screen_split
+
+  let show_pane (t : t) (pane : Command.pane) =
+    match pane with
+    | `Bottom_right -> t.show_bottom_right_pane
 
   let refresh_search_results pool stop_signal (t : t) : t option =
     let cancellation_notifier = Atomic.make false in
@@ -542,6 +548,7 @@ module State = struct
         sort_by = t.sort_by;
         sort_by_no_score = t.sort_by_no_score;
         screen_split = t.screen_split;
+        show_bottom_right_pane = t.show_bottom_right_pane;
         focus_list = t.focus_list;
         path_highlights = t.path_highlights;
       }
@@ -559,6 +566,7 @@ module State = struct
           sort_by = t.sort_by;
           sort_by_no_score = t.sort_by_no_score;
           screen_split = t.screen_split;
+          show_bottom_right_pane = t.show_bottom_right_pane;
           focus_list = t.focus_list;
           path_highlights = t.path_highlights;
         }
@@ -773,6 +781,20 @@ let run_command pool (command : Command.t) (st : State.t) : (Command.t * State.t
     )
   | `Split_screen screen_split -> (
       Some (command, { st with screen_split })
+    )
+  | `Hide_pane pane -> (
+      let st =
+        match pane with
+        | `Bottom_right -> { st with show_bottom_right_pane = false }
+      in
+      Some (command, st)
+    )
+  | `Show_pane pane -> (
+      let st =
+        match pane with
+        | `Bottom_right -> { st with show_bottom_right_pane = true }
+      in
+      Some (command, st)
     )
   | `Comment _ -> (
       Some (command, st)

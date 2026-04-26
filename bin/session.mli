@@ -66,6 +66,8 @@ module State : sig
   val narrow_search_scope_to_level : level:int -> t -> t
 
   val screen_split : t -> Command.screen_split
+
+  val show_pane : t -> Command.pane -> bool
 end
 
 val run_command : Task_pool.t -> Command.t -> State.t -> (Command.t * State.t) option

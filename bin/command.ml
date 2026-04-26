@@ -94,6 +94,14 @@ let int_of_screen_split (x : screen_split) =
   | `Wide_left -> 3
   | `Focus_left -> 4
 
+type pane = [
+  | `Bottom_right
+]
+
+let string_of_pane (x : pane) =
+  match x with
+  | `Bottom_right -> "bottom-right"
+
 type t = [
   | `Mark of string
   | `Mark_listed
@@ -110,6 +118,8 @@ type t = [
   | `Sort of Sort_by.t * Sort_by.t
   | `Path_fuzzy_rank of string * int String_map.t option
   | `Split_screen of screen_split
+  | `Hide_pane of pane
+  | `Show_pane of pane
   | `Comment of string
   | `Focus of string
   | `Search of string
@@ -149,6 +159,12 @@ let pp fmt (t : t) =
          | `Focus_right -> "focus-right"
          | `Wide_right -> "wide-right"
         )
+    )
+  | `Hide_pane pane -> (
+      Fmt.pf fmt "hide %s" (string_of_pane pane)
+    )
+  | `Show_pane pane -> (
+      Fmt.pf fmt "show %s" (string_of_pane pane)
     )
   | `Comment s -> Fmt.pf fmt "#%s" s
   | `Focus s -> Fmt.pf fmt "focus: %s" s

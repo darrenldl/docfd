@@ -514,6 +514,9 @@ module Key_binding_info = struct
   let incr_rotation () =
     Lwd.set rotation (Lwd.peek rotation + 1)
 
+  let decr_rotation () =
+    Lwd.set rotation (Lwd.peek rotation - 1)
+
   let reset_rotation () =
     Lwd.set rotation 0
 
@@ -673,7 +676,12 @@ module Key_binding_info = struct
           let$* rotation = Lwd.get rotation in
           grid_contents
           |> List.map (fun l ->
-              Misc_utils.rotate_list (rotation mod max_row_size) l
+              Misc_utils.rotate_list
+                (((rotation mod max_row_size) + max_row_size)
+                 mod
+                 max_row_size
+                )
+                l
             )
           |> Nottui_widgets.grid
             ~pad:(Nottui.Gravity.make ~h:`Negative ~v:`Negative)
