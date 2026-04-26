@@ -614,7 +614,7 @@ let centered_list ~height (selection : int) (l : Notty.image list) : Notty.image
   let focal_point_offset = !height_rendered_before_selection in
   let img_height = I.height img in
   let target_region_start =
-    focal_point_offset - (Misc_utils.div_round_to_closest height 2)
+    max 0 (focal_point_offset - (Misc_utils.div_round_to_closest height 2))
   in
   let target_region_end_exc =
     min
