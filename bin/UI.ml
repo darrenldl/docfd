@@ -939,28 +939,15 @@ module Bottom_pane = struct
               (Session.Snapshot.state snapshot
                |> Session.State.size)
           in
-          let version =
-            Notty.I.strf ~attr
-              "v%d "
-              cur_ver
-          in
           let desc =
-            Notty.I.strf ~attr
-              "Last command: %s"
-              (match Session.Snapshot.last_command snapshot with
-               | None -> "N/A"
-               | Some command -> Command.to_string command)
+            Notty.I.strf ~attr "Press ? to see more key binding info"
           in
-          let ver_len = Notty.I.width version in
           let desc_len = Notty.I.width desc in
           let desc_overlay =
             Notty.I.void
               (width - desc_len - UI_base.Status_bar.element_spacing - ver_len) 1
             <|>
             desc
-          in
-          let version_overlay =
-            Notty.I.void (width - ver_len) 1 <|> version
           in
           let core =
             if document_count = 0 then (
@@ -990,7 +977,6 @@ module Bottom_pane = struct
                  ::
                  core);
               desc_overlay;
-              version_overlay;
             ]
           |> Nottui.Ui.atom
         in

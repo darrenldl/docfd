@@ -13,7 +13,7 @@
     - This includes adding `Esc` for cancelling during SAVE-SCRIPT
 - Added request handling debouncing to reduce pointless workload triggered during
   fast typing
-- Minor UI fixes
+- Minor UI fixes and polishes
 
 ## 12.3.2
 
