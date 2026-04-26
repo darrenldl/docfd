@@ -1083,7 +1083,7 @@ module Bottom_pane = struct
             { label = "Ctrl+S"; msg = "save session as script" };
           ];
           [
-            { label = "z"; msg = "focus content" };
+            { label = "v"; msg = "focus content" };
             { label = "f"; msg = "FILTER" };
             { label = "Shift+↑/↓/j/k"; msg = "select search result" };
             { label = "Shift+S"; msg = "SORT-DESC" };
@@ -1577,11 +1577,11 @@ let keyboard_handler
           `Handled
         )
       | (`ASCII '?', [])
-      | (`ASCII 'z', []) -> (
+      | (`ASCII 'v', []) -> (
           let pane =
             match key with
             | (`ASCII '?', []) -> `Key_binding_info
-            | (`ASCII 'z', []) -> `Bottom_right
+            | (`ASCII 'v', []) -> `Bottom_right
             | _ -> failwith "unexpected case"
           in
           Session_manager.update_from_cur_snapshot
