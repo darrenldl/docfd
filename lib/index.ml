@@ -297,7 +297,18 @@ module Raw = struct
               let link_ended =
                 String.length word = 0
                 || Parser_components.is_space word.[0]
-                || List.mem word [ "]"; ")"; "|" ]
+                || List.mem word
+                  [ "]"
+                  ; ")"
+                  ; "|"
+                  ; "\""
+                  ; "<"
+                  ; ">"
+                  ; "{"
+                  ; "}"
+                  ; "^"
+                  ; "\\"
+                  ]
               in
               if link_ended then (
                 let acc, buf = flush_buf link_typ ~acc ~buf in
