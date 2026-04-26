@@ -548,23 +548,22 @@ module Top_pane = struct
         ) else (
           let start = max 0 (link_selected - height / 2) in
           let end_exc = min link_count (start + height) in
-          let images =
+          let render ~width s =
+            s
+            |> Tokenization.tokenize ~drop_spaces:false
+            |> List.of_seq
+            |> Content_and_search_result_rendering.Text_block_rendering.of_words
+              ~width
+          in
+          let pane =
             Misc_utils.array_sub_seq ~start ~end_exc
               links
             |> Seq.map (fun link -> link.Link.link)
-            |> Seq.map (fun s ->
-                s
-                |> Tokenization.tokenize ~drop_spaces:false
-                |> List.of_seq
-                |> Content_and_search_result_rendering.Text_block_rendering.of_words
-                  ~width
-              )
             |> List.of_seq
-          in
-          let pane =
-            images
             |> Content_and_search_result_rendering.centered_list
               ~height
+              ~width
+              ~render
               (link_selected - start)
             |> Nottui.Ui.atom
           in

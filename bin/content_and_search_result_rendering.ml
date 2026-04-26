@@ -589,17 +589,27 @@ let search_result
     img
   )
 
-let centered_list ~height (selection : int) (l : Notty.image list) : Notty.image =
+let centered_list
+    ~width
+    ~height
+    ~(render : width:int -> 'a -> Notty.image)
+    (selection : int)
+    (l : 'a list)
+  : Notty.image =
   let height_rendered_before_selection = ref 0 in
   let img =
     l
-    |> List.mapi (fun i img ->
+    |> List.mapi (fun i x ->
         let img =
           let x =
             if i = selection then (
-              Notty.I.(strf ~attr:A.(fg lightyellow) "> " <|> img)
+              let img = render ~width:(width - 2) x in
+              Notty.I.(strf ~attr:A.(fg lightyellow) "> "
+                       <|>
+                       img
+                      )
             ) else (
-              img
+              render ~width x
             )
           in
           Notty.I.(x <-> strf "")
