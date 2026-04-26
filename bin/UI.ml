@@ -930,7 +930,7 @@ module Bottom_pane = struct
     | _ -> (
         let$* index_of_document_selected = Lwd.get UI_base.Vars.index_of_document_selected in
         let document_count = Array.length search_result_groups in
-        let$* (cur_ver, snapshot) = Session_manager.cur_snapshot in
+        let$* (_cur_ver, snapshot) = Session_manager.cur_snapshot in
         let content =
           let file_shown_count =
             Notty.I.strf ~attr
@@ -945,7 +945,7 @@ module Bottom_pane = struct
           let desc_len = Notty.I.width desc in
           let desc_overlay =
             Notty.I.void
-              (width - desc_len - UI_base.Status_bar.element_spacing - ver_len) 1
+              (width - desc_len) 1
             <|>
             desc
           in
