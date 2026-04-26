@@ -96,11 +96,13 @@ let int_of_screen_split (x : screen_split) =
 
 type pane = [
   | `Bottom_right
+  | `Key_binding_info
 ]
 
 let string_of_pane (x : pane) =
   match x with
   | `Bottom_right -> "bottom-right"
+  | `Key_binding_info -> "key-binding-info"
 
 type t = [
   | `Mark of string
@@ -161,10 +163,10 @@ let pp fmt (t : t) =
         )
     )
   | `Hide_pane pane -> (
-      Fmt.pf fmt "hide %s" (string_of_pane pane)
+      Fmt.pf fmt "hide-pane %s" (string_of_pane pane)
     )
   | `Show_pane pane -> (
-      Fmt.pf fmt "show %s" (string_of_pane pane)
+      Fmt.pf fmt "show-pane %s" (string_of_pane pane)
     )
   | `Comment s -> Fmt.pf fmt "#%s" s
   | `Focus s -> Fmt.pf fmt "focus: %s" s
@@ -268,6 +270,20 @@ module Parsers = struct
           string "wide-left" *> skip_spaces *> return (`Split_screen `Wide_left);
           string "focus-right" *> skip_spaces *> return (`Split_screen `Focus_right);
           string "wide-right" *> skip_spaces *> return (`Split_screen `Wide_right);
+        ]
+      );
+      string "hide-pane" *> skip_spaces *>
+      char ':' *> skip_spaces *> (
+        choice [
+          string "bottom-right" *> skip_spaces *> return (`Hide_pane `Bottom_right);
+          string "key-binding-info" *> skip_spaces *> return (`Hide_pane `Key_binding_info);
+        ]
+      );
+      string "show-pane" *> skip_spaces *>
+      char ':' *> skip_spaces *> (
+        choice [
+          string "bottom-right" *> skip_spaces *> return (`Show_pane `Bottom_right);
+          string "key-binding-info" *> skip_spaces *> return (`Show_pane `Key_binding_info);
         ]
       );
       string "#" *> any_string >>| (fun s -> (`Comment s));

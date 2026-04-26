@@ -1016,7 +1016,7 @@ module Bottom_pane = struct
                |> Session.State.size)
           in
           let hint =
-            Notty.I.strf ~attr "Press < and > to see more key binding info"
+            Notty.I.strf ~attr "< and > to see more key binding info, ? to toggle hide"
           in
           let hint_len = Notty.I.width hint in
           let hint_overlay =
@@ -1083,7 +1083,7 @@ module Bottom_pane = struct
             { label = "Ctrl+S"; msg = "save session as script" };
           ];
           [
-            { label = "?"; msg = "toggle bottom right pane" };
+            { label = "v"; msg = "toggle bottom right pane" };
             { label = "f"; msg = "FILTER" };
             { label = "Shift+↑/↓/j/k"; msg = "select search result" };
             { label = "Shift+S"; msg = "SORT-DESC" };
@@ -1373,13 +1373,17 @@ module Bottom_pane = struct
 
     let grid_lookup = UI_base.Key_binding_info.make_grid_lookup grid_contents
 
-    let main ~input_mode =
-      UI_base.Key_binding_info.main ~grid_lookup ~input_mode
+    let main ~input_mode ~show_key_binding_info_pane =
+      if show_key_binding_info_pane then (
+        UI_base.Key_binding_info.main ~grid_lookup ~input_mode
+      ) else (
+        Lwd.return (Nottui.Ui.atom (Notty.I.void 0 0))
+      )
   end
 
   let autocomplete_grid ~input_mode ~width =
     match input_mode with
-    | UI_base.Filter | Search -> (
+    | UI_base.Filter -> (
         let$* l = Lwd.get UI_base.Vars.autocomplete_choices in
         let max_len =
           List.fold_left (fun n x ->
@@ -1429,12 +1433,12 @@ module Bottom_pane = struct
       ~on_change:(update_search ~commit:false)
       ~on_submit:(update_search ~commit:true)
 
-  let main ~width ~search_result_groups =
+  let main ~width ~show_key_binding_info_pane ~search_result_groups =
     let$* input_mode = Lwd.get UI_base.Vars.input_mode in
     Nottui_widgets.vbox
       [
         status_bar ~width ~search_result_groups ~input_mode;
-        Key_binding_info.main ~input_mode;
+        Key_binding_info.main ~input_mode ~show_key_binding_info_pane;
         autocomplete_grid ~input_mode ~width;
         filter_bar ~input_mode;
         search_bar ~input_mode;
@@ -1572,16 +1576,23 @@ let keyboard_handler
             );
           `Handled
         )
-      | (`ASCII '?', []) -> (
+      | (`ASCII '?', [])
+      | (`ASCII 'v', []) -> (
+          let pane =
+            match key with
+            | (`ASCII '?', []) -> `Key_binding_info
+            | (`ASCII 'v', []) -> `Bottom_right
+            | _ -> failwith "unexpected case"
+          in
           Session_manager.update_from_cur_snapshot
             (fun cur_snapshot ->
                let state = Session.Snapshot.state cur_snapshot in
-               let cur = Session.State.show_pane state `Bottom_right in
+               let cur = Session.State.show_pane state pane in
                let command =
                  if cur then (
-                   `Hide_pane `Bottom_right
+                   `Hide_pane pane
                  ) else (
-                   `Show_pane `Bottom_right
+                   `Show_pane pane
                  ) in
                state
                |> Session.run_command
@@ -2251,10 +2262,12 @@ let main : Nottui.ui Lwd.t =
       (Lwd.peek UI_base.Vars.index_of_link_selected)
   );
   let$* (term_width, term_height) = Lwd.get UI_base.Vars.term_width_height in
+  let show_key_binding_info_pane = Session.State.show_pane session_state `Key_binding_info in
   let$* bottom_pane =
     Bottom_pane.main
       ~width:term_width
       ~search_result_groups
+      ~show_key_binding_info_pane
   in
   let bottom_pane_height = Nottui.Ui.layout_height bottom_pane in
   let top_pane_height = term_height - bottom_pane_height in
