@@ -84,7 +84,18 @@ jobs:
 
       - name: Release
         if: ${{ github.ref_name != 'ci-test' }}
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
+          files: |
+            docfd-${{ env.GITHUB_TAG }}-${{ env.OS_SHORT_NAME }}.tar.gz
+
+      - name: Release preview
+        if: ${{ github.ref_name == 'ci-test' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: preview
+          name: "Preview Build"
+          body: "Automated preview build from commit ${{ github.sha }}. This release is updated on every push to ci-test."
+          prerelease: true
           files: |
             docfd-${{ env.GITHUB_TAG }}-${{ env.OS_SHORT_NAME }}.tar.gz
