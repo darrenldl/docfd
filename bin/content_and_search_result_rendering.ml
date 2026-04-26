@@ -588,3 +588,37 @@ let search_result
   ) else (
     img
   )
+
+let centered_list ~height (selection : int) (l : Notty.image list) : Notty.image =
+  let height_rendered_before_selection = ref 0 in
+  let img =
+    l
+    |> List.mapi (fun i img ->
+        let img =
+          let x =
+            if i = selection then (
+              Notty.I.(strf ~attr:A.(fg lightyellow) "> " <|> img)
+            ) else (
+              img
+            )
+          in
+          Notty.I.(x <-> strf "")
+        in
+        if i < selection then (
+          height_rendered_before_selection := !height_rendered_before_selection + Notty.I.height img;
+        );
+        img
+      )
+    |> Notty.I.vcat
+  in
+  let focal_point_offset = !height_rendered_before_selection in
+  let img_height = I.height img in
+  let target_region_start =
+    focal_point_offset - (Misc_utils.div_round_to_closest height 2)
+  in
+  let target_region_end_exc =
+    min
+      img_height
+      (target_region_start + height)
+  in
+  I.vcrop target_region_start (img_height - target_region_end_exc) img

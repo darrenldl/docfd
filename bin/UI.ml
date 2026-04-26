@@ -532,6 +532,61 @@ module Top_pane = struct
         )
     end
 
+    module Link_list = struct
+      let main
+          ~height
+          ~width
+          ~(search_result_group : Session.search_result_group)
+          ~(index_of_link_selected : int Lwd.var)
+        : Nottui.ui Lwd.t =
+        let (document, _search_results) = search_result_group in
+        let links = Document.links document in
+        let link_selected = Lwd.peek index_of_link_selected in
+        let link_count = Array.length links in
+        if link_count = 0 then (
+          Lwd.return Nottui.Ui.empty
+        ) else (
+          let start = max 0 (link_selected - height / 2) in
+          let end_exc = min link_count (start + height) in
+          let images =
+            Misc_utils.array_sub_seq ~start ~end_exc
+              links
+            |> Seq.map (fun link -> link.Link.link)
+            |> Seq.map (fun s ->
+                s
+                |> Tokenization.tokenize ~drop_spaces:false
+                |> List.of_seq
+                |> Content_and_search_result_rendering.Text_block_rendering.of_words
+                  ~width
+              )
+            |> List.of_seq
+          in
+          let pane =
+            images
+            |> Content_and_search_result_rendering.centered_list
+              ~height
+              (link_selected - start)
+            |> Nottui.Ui.atom
+          in
+          let$ background = UI_base.full_term_sized_background in
+          Nottui.Ui.join_z background pane
+          |> Nottui.Ui.mouse_area
+            (UI_base.mouse_handler
+               ~f:(fun direction ->
+                   let n = Lwd.peek index_of_link_selected in
+                   let offset =
+                     match direction with
+                     | `Up -> -1
+                     | `Down -> 1
+                   in
+                   UI_base.set_link_selected
+                     ~choice_count:link_count
+                     (n + offset)
+                 )
+            )
+        )
+    end
+
     let main
         ~width
         ~height
@@ -559,10 +614,19 @@ module Top_pane = struct
                ~search_result_group
                ~search_result_selected
                ~link_selected)
-            (Search_result_list.main
-               ~width
-               ~search_result_group
-               ~index_of_search_result_selected:UI_base.Vars.index_of_search_result_selected)
+            (match input_mode with
+             | Links -> (
+                 Link_list.main
+                   ~width
+                   ~search_result_group
+                   ~index_of_link_selected:UI_base.Vars.index_of_link_selected
+               )
+             | _ -> (
+                 Search_result_list.main
+                   ~width
+                   ~search_result_group
+                   ~index_of_search_result_selected:UI_base.Vars.index_of_search_result_selected
+               ))
         ) else (
           UI_base.Content_view.main
             ~input_mode
