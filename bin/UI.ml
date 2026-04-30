@@ -1478,759 +1478,762 @@ let keyboard_handler
   let link_current_choice =
     Lwd.peek UI_base.Vars.index_of_link_selected
   in
-  match Lwd.peek UI_base.Vars.input_mode with
-  | Navigate -> (
-      match key with
-      | (`ASCII 'C', [`Ctrl])
-      | (`ASCII 'Q', [`Ctrl]) -> (
-          Lwd.set UI_base.Vars.quit true;
-          UI_base.Vars.action := None;
-          `Handled
-        )
-      | (`ASCII '<', []) -> (
-          UI_base.Key_binding_info.decr_rotation ();
-          `Handled
-        )
-      | (`ASCII '>', []) -> (
-          UI_base.Key_binding_info.incr_rotation ();
-          `Handled
-        )
-      | (`ASCII ' ', []) -> (
-          let index = Lwd.peek UI_base.Vars.index_of_document_selected in
-          if index < Array.length search_result_groups then (
-            let doc, _ = search_result_groups.(index) in
-            toggle_mark ~path:(Document.path doc)
-          );
-          `Handled
-        )
-      | (`ASCII 'm', []) -> (
-          UI_base.set_input_mode Mark;
-          `Handled
-        )
-      | (`ASCII 'M', []) -> (
-          UI_base.set_input_mode Unmark;
-          `Handled
-        )
-      | (`ASCII 'd', []) -> (
-          UI_base.set_input_mode Drop;
-          `Handled
-        )
-      | (`ASCII 'n', []) -> (
-          UI_base.set_input_mode Narrow;
-          `Handled
-        )
-      | (`ASCII 'r', []) -> (
-          UI_base.set_input_mode Reload;
-          `Handled
-        )
-      | (`ASCII 'y', []) -> (
-          UI_base.set_input_mode Copy;
-          `Handled
-        )
-      | (`ASCII 'Y', []) -> (
-          UI_base.set_input_mode Copy_paths;
-          `Handled
-        )
-      | (`ASCII 'u', [])
-      | (`ASCII 'Z', [`Ctrl]) -> (
-          Session_manager.shift_ver ~offset:(-1);
-          `Handled
-        )
-      | (`ASCII 'R', [`Ctrl])
-      | (`ASCII 'Y', [`Ctrl]) -> (
-          Session_manager.shift_ver ~offset:1;
-          `Handled
-        )
-      | (`Arrow `Left, [])
-      | (`Arrow `Right, []) -> (
-          let direction =
-            match key with
-            | (`Arrow `Left, _) -> `Expand_right
-            | (`Arrow `Right, _) -> `Expand_left
-            | _ -> failwith "unexpected case"
-          in
-          Session_manager.update_from_cur_snapshot
-            (fun cur_snapshot ->
-               let state = Session.Snapshot.state cur_snapshot in
-               let cur = Session.State.screen_split state in
-               let offset =
-                 match direction with
-                 | `Expand_left -> 1
-                 | `Expand_right -> -1
-               in
-               let next =
-                 Command.screen_split_of_int
-                   (Command.int_of_screen_split cur + offset)
-               in
-               let command = `Split_screen next in
-               state
-               |> Session.run_command
-                 (UI_base.task_pool ())
-                 command
-               |> Option.get
-               |> (fun (command, state) ->
-                   Session.Snapshot.make
-                     ~last_command:(Some command)
-                     state)
-            );
-          `Handled
-        )
-      | (`ASCII '?', [])
-      | (`ASCII 'v', []) -> (
-          let pane =
-            match key with
-            | (`ASCII '?', []) -> `Key_binding_info
-            | (`ASCII 'v', []) -> `Bottom_right
-            | _ -> failwith "unexpected case"
-          in
-          Session_manager.update_from_cur_snapshot
-            (fun cur_snapshot ->
-               let state = Session.Snapshot.state cur_snapshot in
-               let cur = Session.State.show_pane state pane in
-               let command =
-                 if cur then (
-                   `Hide_pane pane
-                 ) else (
-                   `Show_pane pane
-                 ) in
-               state
-               |> Session.run_command
-                 (UI_base.task_pool ())
-                 command
-               |> Option.get
-               |> (fun (command, state) ->
-                   Session.Snapshot.make
-                     ~last_command:(Some command)
-                     state)
-            );
-          `Handled
-        )
-      | (`ASCII '=', []) -> (
-          UI_base.incr_content_view_offset ();
-          `Handled
-        )
-      | (`ASCII '-', []) -> (
-          UI_base.decr_content_view_offset ();
-          `Handled
-        )
-      | (`Page `Down, [`Shift])
-      | (`ASCII 'J', [])
-      | (`Arrow `Down, [`Shift]) -> (
-          UI_base.set_search_result_selected
-            ~choice_count:search_result_choice_count
-            (search_result_current_choice+1);
-          `Handled
-        )
-      | (`Page `Up, [`Shift])
-      | (`ASCII 'K', [])
-      | (`Arrow `Up, [`Shift]) -> (
-          UI_base.set_search_result_selected
-            ~choice_count:search_result_choice_count
-            (search_result_current_choice-1);
-          `Handled
-        )
-      | (`Page `Down, [])
-      | (`ASCII 'j', [])
-      | (`Arrow `Down, []) -> (
-          if document_count = 1 then (
-            UI_base.set_search_result_selected
-              ~choice_count:search_result_choice_count
-              (search_result_current_choice+1);
-            `Handled
-          ) else (
-            UI_base.set_document_selected
-              ~choice_count:document_count
-              (document_current_choice+1);
-            `Handled
-          )
-        )
-      | (`Page `Up, [])
-      | (`ASCII 'k', [])
-      | (`Arrow `Up, []) -> (
-          if document_count = 1 then (
-            UI_base.set_search_result_selected
-              ~choice_count:search_result_choice_count
-              (search_result_current_choice-1);
-            `Handled
-          ) else (
-            UI_base.set_document_selected
-              ~choice_count:document_count
-              (document_current_choice-1);
-            `Handled
-          )
-        )
-      | (`ASCII 'g', []) -> (
-          UI_base.set_document_selected
-            ~choice_count:document_count
-            0;
-          `Handled
-        )
-      | (`ASCII 'G', []) -> (
-          UI_base.set_document_selected
-            ~choice_count:document_count
-            (document_count - 1);
-          `Handled
-        )
-      | (`ASCII 'f', []) -> (
-          Nottui.Focus.request UI_base.Vars.filter_field_focus_handle;
-          UI_base.set_input_mode Filter;
-          `Handled
-        )
-      | (`ASCII 'F', []) -> (
-          Nottui.Focus.request Vars.path_fuzzy_rank_field_focus_handle;
-          Lwd.set Vars.path_fuzzy_rank_field UI_base.empty_text_field;
-          UI_base.set_input_mode Path_fuzzy_rank;
-          `Handled
-        )
-      | (`ASCII '/', []) -> (
-          Nottui.Focus.request UI_base.Vars.search_field_focus_handle;
-          UI_base.set_input_mode Search;
-          `Handled
-        )
-      | (`ASCII 'h', []) -> (
-          Lwd.set UI_base.Vars.quit true;
-          UI_base.Vars.action := Some UI_base.Edit_command_history;
-          `Handled
-        )
-      | (`ASCII 'S', [`Ctrl]) -> (
-          UI_base.set_input_mode Save_script;
-          refresh_script_files ();
-          Nottui.Focus.request Vars.script_name_field_focus_handle;
-          `Handled
-        )
-      | (`ASCII 'O', [`Ctrl]) -> (
-          UI_base.set_input_mode Scripts;
-          refresh_script_files ();
-          Nottui.Focus.request Vars.script_name_field_focus_handle;
-          `Handled
-        )
-      | (`ASCII 'x', []) -> (
-          UI_base.set_input_mode Clear;
-          `Handled
-        )
-      | (`ASCII 'l', []) -> (
-          UI_base.set_input_mode Links;
-          if search_result_choice_count > 0  then (
-            let (doc, search_results) = Option.get search_result_group in
-            let search_result = search_results.(search_result_current_choice) in
-            let links = Document.links doc in
-            let avg_pos =
-              List.fold_left (fun min_max_pos search_result ->
-                  let { Search_result.found_word_pos; _ } = search_result in
-                  match min_max_pos with
-                  | None -> Some (found_word_pos, found_word_pos)
-                  | Some (min_pos, max_pos) -> (
-                      Some (min found_word_pos min_pos,
-                            max found_word_pos max_pos)
-                    )
-                )
-                None
-                (Search_result.found_phrase search_result)
-              |> (fun x ->
-                  let (x, y) = Option.get x in
-                  (x + y) / 2)
-            in
-            let before, exact, after = Int_map.split avg_pos (Document.link_index_of_start_pos doc) in
-            let index =
-              match exact with
-              | Some index -> Some index
-              | None -> (
-                  match
-                    Int_map.max_binding_opt before,
-                    Int_map.min_binding_opt after
-                  with
-                  | Some (pos_x, index_x), Some (pos_y, index_y) -> (
-                      let diff_x = Int.to_float (Int.abs (pos_x - avg_pos)) in
-                      let diff_y = Int.to_float (Int.abs (pos_y - avg_pos)) in
-                      (* We prefer picking y (link after search result)
-                         over x (link before search result), as it usually feels more
-                         intuitive to jump forward than backward.
-
-                         But if distance to x is <= 50% the distance
-                         to y, then we resort to x.
-                      *)
-                      if diff_x /. diff_y <= 0.5 then (
-                        Some index_x
-                      ) else (
-                        let link_x = links.(index_x) in
-                        let end_inc_pos_x = link_x.Link.end_inc_pos in
-                        if pos_x <= avg_pos && avg_pos <= end_inc_pos_x then (
-                          Some index_x
-                        ) else (
-                          Some index_y
-                        )
-                      )
-                    )
-                  | Some (_pos, index), None
-                  | None, Some (_pos, index) -> Some index
-                  | None, None -> None
-                )
-            in
-            match index with
-            | None -> ()
-            | Some index -> (
-                UI_base.set_link_selected
-                  ~choice_count:link_choice_count
-                  index
-              )
-          );
-          `Handled
-        )
-      | (`ASCII 's', []) -> (
-          UI_base.set_input_mode (Sort `Asc);
-          `Handled
-        )
-      | (`ASCII 'S', []) -> (
-          UI_base.set_input_mode (Sort `Desc);
-          `Handled
-        )
-      | (`Enter, []) -> (
-          Option.iter (fun (doc, search_results) ->
-              let search_result =
-                if search_result_current_choice < Array.length search_results then
-                  Some search_results.(search_result_current_choice)
-                else
-                  None
-              in
+  match key with
+  | (`ASCII '=', []) -> (
+      UI_base.incr_content_view_offset ();
+      `Handled
+    )
+  | (`ASCII '-', []) -> (
+      UI_base.decr_content_view_offset ();
+      `Handled
+    )
+  | (`ASCII '?', [])
+  | (`ASCII 'v', []) -> (
+      let pane =
+        match key with
+        | (`ASCII '?', []) -> `Key_binding_info
+        | (`ASCII 'v', []) -> `Bottom_right
+        | _ -> failwith "unexpected case"
+      in
+      Session_manager.update_from_cur_snapshot
+        (fun cur_snapshot ->
+           let state = Session.Snapshot.state cur_snapshot in
+           let cur = Session.State.show_pane state pane in
+           let command =
+             if cur then (
+               `Hide_pane pane
+             ) else (
+               `Show_pane pane
+             ) in
+           state
+           |> Session.run_command
+             (UI_base.task_pool ())
+             command
+           |> Option.get
+           |> (fun (command, state) ->
+               Session.Snapshot.make
+                 ~last_command:(Some command)
+                 state)
+        );
+      `Handled
+    )
+  | (`Arrow `Left, [])
+  | (`Arrow `Right, []) -> (
+      let direction =
+        match key with
+        | (`Arrow `Left, _) -> `Expand_right
+        | (`Arrow `Right, _) -> `Expand_left
+        | _ -> failwith "unexpected case"
+      in
+      Session_manager.update_from_cur_snapshot
+        (fun cur_snapshot ->
+           let state = Session.Snapshot.state cur_snapshot in
+           let cur = Session.State.screen_split state in
+           let offset =
+             match direction with
+             | `Expand_left -> 1
+             | `Expand_right -> -1
+           in
+           let next =
+             Command.screen_split_of_int
+               (Command.int_of_screen_split cur + offset)
+           in
+           let command = `Split_screen next in
+           state
+           |> Session.run_command
+             (UI_base.task_pool ())
+             command
+           |> Option.get
+           |> (fun (command, state) ->
+               Session.Snapshot.make
+                 ~last_command:(Some command)
+                 state)
+        );
+      `Handled
+    )
+  | _ -> (
+      match Lwd.peek UI_base.Vars.input_mode with
+      | Navigate -> (
+          match key with
+          | (`ASCII 'C', [`Ctrl])
+          | (`ASCII 'Q', [`Ctrl]) -> (
               Lwd.set UI_base.Vars.quit true;
-              UI_base.Vars.action :=
-                Some (UI_base.Open_file_and_search_result (doc, search_result));
+              UI_base.Vars.action := None;
+              `Handled
             )
-            search_result_group;
+          | (`ASCII '<', []) -> (
+              UI_base.Key_binding_info.decr_rotation ();
+              `Handled
+            )
+          | (`ASCII '>', []) -> (
+              UI_base.Key_binding_info.incr_rotation ();
+              `Handled
+            )
+          | (`ASCII ' ', []) -> (
+              let index = Lwd.peek UI_base.Vars.index_of_document_selected in
+              if index < Array.length search_result_groups then (
+                let doc, _ = search_result_groups.(index) in
+                toggle_mark ~path:(Document.path doc)
+              );
+              `Handled
+            )
+          | (`ASCII 'm', []) -> (
+              UI_base.set_input_mode Mark;
+              `Handled
+            )
+          | (`ASCII 'M', []) -> (
+              UI_base.set_input_mode Unmark;
+              `Handled
+            )
+          | (`ASCII 'd', []) -> (
+              UI_base.set_input_mode Drop;
+              `Handled
+            )
+          | (`ASCII 'n', []) -> (
+              UI_base.set_input_mode Narrow;
+              `Handled
+            )
+          | (`ASCII 'r', []) -> (
+              UI_base.set_input_mode Reload;
+              `Handled
+            )
+          | (`ASCII 'y', []) -> (
+              UI_base.set_input_mode Copy;
+              `Handled
+            )
+          | (`ASCII 'Y', []) -> (
+              UI_base.set_input_mode Copy_paths;
+              `Handled
+            )
+          | (`ASCII 'u', [])
+          | (`ASCII 'Z', [`Ctrl]) -> (
+              Session_manager.shift_ver ~offset:(-1);
+              `Handled
+            )
+          | (`ASCII 'R', [`Ctrl])
+          | (`ASCII 'Y', [`Ctrl]) -> (
+              Session_manager.shift_ver ~offset:1;
+              `Handled
+            )
+          | (`Page `Down, [`Shift])
+          | (`ASCII 'J', [])
+          | (`Arrow `Down, [`Shift]) -> (
+              UI_base.set_search_result_selected
+                ~choice_count:search_result_choice_count
+                (search_result_current_choice+1);
+              `Handled
+            )
+          | (`Page `Up, [`Shift])
+          | (`ASCII 'K', [])
+          | (`Arrow `Up, [`Shift]) -> (
+              UI_base.set_search_result_selected
+                ~choice_count:search_result_choice_count
+                (search_result_current_choice-1);
+              `Handled
+            )
+          | (`Page `Down, [])
+          | (`ASCII 'j', [])
+          | (`Arrow `Down, []) -> (
+              if document_count = 1 then (
+                UI_base.set_search_result_selected
+                  ~choice_count:search_result_choice_count
+                  (search_result_current_choice+1);
+                `Handled
+              ) else (
+                UI_base.set_document_selected
+                  ~choice_count:document_count
+                  (document_current_choice+1);
+                `Handled
+              )
+            )
+          | (`Page `Up, [])
+          | (`ASCII 'k', [])
+          | (`Arrow `Up, []) -> (
+              if document_count = 1 then (
+                UI_base.set_search_result_selected
+                  ~choice_count:search_result_choice_count
+                  (search_result_current_choice-1);
+                `Handled
+              ) else (
+                UI_base.set_document_selected
+                  ~choice_count:document_count
+                  (document_current_choice-1);
+                `Handled
+              )
+            )
+          | (`ASCII 'g', []) -> (
+              UI_base.set_document_selected
+                ~choice_count:document_count
+                0;
+              `Handled
+            )
+          | (`ASCII 'G', []) -> (
+              UI_base.set_document_selected
+                ~choice_count:document_count
+                (document_count - 1);
+              `Handled
+            )
+          | (`ASCII 'f', []) -> (
+              Nottui.Focus.request UI_base.Vars.filter_field_focus_handle;
+              UI_base.set_input_mode Filter;
+              `Handled
+            )
+          | (`ASCII 'F', []) -> (
+              Nottui.Focus.request Vars.path_fuzzy_rank_field_focus_handle;
+              Lwd.set Vars.path_fuzzy_rank_field UI_base.empty_text_field;
+              UI_base.set_input_mode Path_fuzzy_rank;
+              `Handled
+            )
+          | (`ASCII '/', []) -> (
+              Nottui.Focus.request UI_base.Vars.search_field_focus_handle;
+              UI_base.set_input_mode Search;
+              `Handled
+            )
+          | (`ASCII 'h', []) -> (
+              Lwd.set UI_base.Vars.quit true;
+              UI_base.Vars.action := Some UI_base.Edit_command_history;
+              `Handled
+            )
+          | (`ASCII 'S', [`Ctrl]) -> (
+              UI_base.set_input_mode Save_script;
+              refresh_script_files ();
+              Nottui.Focus.request Vars.script_name_field_focus_handle;
+              `Handled
+            )
+          | (`ASCII 'O', [`Ctrl]) -> (
+              UI_base.set_input_mode Scripts;
+              refresh_script_files ();
+              Nottui.Focus.request Vars.script_name_field_focus_handle;
+              `Handled
+            )
+          | (`ASCII 'x', []) -> (
+              UI_base.set_input_mode Clear;
+              `Handled
+            )
+          | (`ASCII 'l', []) -> (
+              UI_base.set_input_mode Links;
+              if search_result_choice_count > 0  then (
+                let (doc, search_results) = Option.get search_result_group in
+                let search_result = search_results.(search_result_current_choice) in
+                let links = Document.links doc in
+                let avg_pos =
+                  List.fold_left (fun min_max_pos search_result ->
+                      let { Search_result.found_word_pos; _ } = search_result in
+                      match min_max_pos with
+                      | None -> Some (found_word_pos, found_word_pos)
+                      | Some (min_pos, max_pos) -> (
+                          Some (min found_word_pos min_pos,
+                                max found_word_pos max_pos)
+                        )
+                    )
+                    None
+                    (Search_result.found_phrase search_result)
+                  |> (fun x ->
+                      let (x, y) = Option.get x in
+                      (x + y) / 2)
+                in
+                let before, exact, after = Int_map.split avg_pos (Document.link_index_of_start_pos doc) in
+                let index =
+                  match exact with
+                  | Some index -> Some index
+                  | None -> (
+                      match
+                        Int_map.max_binding_opt before,
+                        Int_map.min_binding_opt after
+                      with
+                      | Some (pos_x, index_x), Some (pos_y, index_y) -> (
+                          let diff_x = Int.to_float (Int.abs (pos_x - avg_pos)) in
+                          let diff_y = Int.to_float (Int.abs (pos_y - avg_pos)) in
+                          (* We prefer picking y (link after search result)
+                             over x (link before search result), as it usually feels more
+                             intuitive to jump forward than backward.
+
+                             But if distance to x is <= 50% the distance
+                             to y, then we resort to x.
+                          *)
+                          if diff_x /. diff_y <= 0.5 then (
+                            Some index_x
+                          ) else (
+                            let link_x = links.(index_x) in
+                            let end_inc_pos_x = link_x.Link.end_inc_pos in
+                            if pos_x <= avg_pos && avg_pos <= end_inc_pos_x then (
+                              Some index_x
+                            ) else (
+                              Some index_y
+                            )
+                          )
+                        )
+                      | Some (_pos, index), None
+                      | None, Some (_pos, index) -> Some index
+                      | None, None -> None
+                    )
+                in
+                match index with
+                | None -> ()
+                | Some index -> (
+                    UI_base.set_link_selected
+                      ~choice_count:link_choice_count
+                      index
+                  )
+              );
+              `Handled
+            )
+          | (`ASCII 's', []) -> (
+              UI_base.set_input_mode (Sort `Asc);
+              `Handled
+            )
+          | (`ASCII 'S', []) -> (
+              UI_base.set_input_mode (Sort `Desc);
+              `Handled
+            )
+          | (`Enter, []) -> (
+              Option.iter (fun (doc, search_results) ->
+                  let search_result =
+                    if search_result_current_choice < Array.length search_results then
+                      Some search_results.(search_result_current_choice)
+                    else
+                      None
+                  in
+                  Lwd.set UI_base.Vars.quit true;
+                  UI_base.Vars.action :=
+                    Some (UI_base.Open_file_and_search_result (doc, search_result));
+                )
+                search_result_group;
+              `Handled
+            )
+          | _ -> `Handled
+        )
+      | Sort order -> (
+          let exit =
+            match key with
+            | (`Escape, []) -> true
+            | (`ASCII 's', []) -> (
+                sort (`Score, order);
+                true
+              )
+            | (`ASCII 'p', []) -> (
+                sort (`Path, order);
+                true
+              )
+            | (`ASCII 'd', []) -> (
+                sort (`Path_date, order);
+                true
+              )
+            | (`ASCII 'm', []) -> (
+                sort (`Mod_time, order);
+                true
+              )
+            | _ -> false
+          in
+          if exit then (
+            UI_base.set_input_mode Navigate;
+          );
           `Handled
         )
-      | _ -> `Handled
-    )
-  | Sort order -> (
-      let exit =
-        match key with
-        | (`Escape, []) -> true
-        | (`ASCII 's', []) -> (
-            sort (`Score, order);
-            true
-          )
-        | (`ASCII 'p', []) -> (
-            sort (`Path, order);
-            true
-          )
-        | (`ASCII 'd', []) -> (
-            sort (`Path_date, order);
-            true
-          )
-        | (`ASCII 'm', []) -> (
-            sort (`Mod_time, order);
-            true
-          )
-        | _ -> false
-      in
-      if exit then (
-        UI_base.set_input_mode Navigate;
-      );
-      `Handled
-    )
-  | Clear -> (
-      let exit =
-        match key with
-        | (`Escape, []) -> true
-        | (`ASCII '/', []) -> (
-            Lwd.set UI_base.Vars.search_field UI_base.empty_text_field;
-            update_search ~commit:true ();
-            true
-          )
-        | (`ASCII 'f', []) -> (
-            Lwd.set UI_base.Vars.filter_field UI_base.empty_text_field;
-            update_filter ~commit:true ();
-            true
-          )
-        | (`ASCII 'h', []) -> (
-            Lwd.set UI_base.Vars.quit true;
-            UI_base.Vars.action := Some UI_base.Clear_command_history;
-            true
-          )
-        | _ -> false
-      in
-      if exit then (
-        UI_base.set_input_mode Navigate;
-      );
-      `Handled
-    )
-  | Drop -> (
-      let exit =
-        match key with
-        | (`Escape, []) -> true
-        | (`ASCII '>', []) -> (
-            UI_base.Key_binding_info.incr_rotation ();
-            false
-          )
-        | (`ASCII 'd', []) -> (
-            Option.iter (fun (doc, _search_results) ->
-                drop ~document_count (`Path (Document.path doc))
-              ) search_result_group;
-            true
-          )
-        | (`ASCII 'D', []) -> (
-            Option.iter (fun (doc, _search_results) ->
-                drop ~document_count (`All_except (Document.path doc))
-              ) search_result_group;
-            true
-          )
-        | (`ASCII 'l', []) -> (
-            drop ~document_count `Listed;
-            true
-          )
-        | (`ASCII 'L', []) -> (
-            drop ~document_count `Unlisted;
-            true
-          )
-        | (`ASCII 'm', []) -> (
-            drop ~document_count `Marked;
-            true
-          )
-        | (`ASCII 'M', []) -> (
-            drop ~document_count `Unmarked;
-            true
-          )
-        | _ -> false
-      in
-      if exit then (
-        UI_base.set_input_mode Navigate;
-      );
-      `Handled
-    )
-  | Mark -> (
-      let exit =
-        match key with
-        | (`Escape, []) -> true
-        | (`ASCII '>', []) -> (
-            UI_base.Key_binding_info.incr_rotation ();
-            false
-          )
-        | (`ASCII 'l', []) -> (
-            mark `Listed;
-            true
-          )
-        | _ -> false
-      in
-      if exit then (
-        UI_base.set_input_mode Navigate;
-      );
-      `Handled
-    )
-  | Unmark -> (
-      let exit =
-        match key with
-        | (`Escape, []) -> true
-        | (`ASCII '>', []) -> (
-            UI_base.Key_binding_info.incr_rotation ();
-            false
-          )
-        | (`ASCII 'l', []) -> (
-            unmark `Listed;
-            true
-          )
-        | (`ASCII 'a', []) -> (
-            unmark `All;
-            true
-          )
-        | _ -> false
-      in
-      if exit then (
-        UI_base.set_input_mode Navigate;
-      );
-      `Handled
-    )
-  | Narrow -> (
-      let exit =
-        match key with
-        | (`Escape, []) -> true
-        | (`ASCII '>', []) -> (
-            UI_base.Key_binding_info.incr_rotation ();
-            false
-          )
-        | (`ASCII c, []) -> (
-            let code_0 = Char.code '0' in
-            let code_9 = Char.code '9' in
-            let code_c = Char.code c in
-            if code_0 <= code_c && code_c <= code_9 then (
-              let level = code_c - code_0 in
-              narrow_search_scope_to_level ~level;
-              true
-            ) else (
-              false
-            )
-          )
-        | _ -> false
-      in
-      if exit then (
-        UI_base.set_input_mode Navigate;
-      );
-      `Handled
-    )
-  | Copy -> (
-      let copy_search_result_groups (s : Session.search_result_group Seq.t) =
-        Clipboard.pipe_to_clipboard (fun oc ->
-            Printers.search_result_groups
-              ~color:false
-              ~underline:true
-              oc
-              s
-          )
-      in
-      let copy_search_result_group x =
-        copy_search_result_groups (Seq.return x)
-      in
-      let exit =
-        match key with
-        | (`Escape, []) -> true
-        | (`ASCII '>', []) -> (
-            UI_base.Key_binding_info.incr_rotation ();
-            false
-          )
-        | (`ASCII 'y', []) -> (
-            Option.iter (fun (doc, search_results) ->
-                copy_search_result_group
-                  (doc,
-                   (if search_result_current_choice < Array.length search_results then
-                      [|search_results.(search_result_current_choice)|]
-                    else
-                      [||])
-                  )
+      | Clear -> (
+          let exit =
+            match key with
+            | (`Escape, []) -> true
+            | (`ASCII '/', []) -> (
+                Lwd.set UI_base.Vars.search_field UI_base.empty_text_field;
+                update_search ~commit:true ();
+                true
               )
-              search_result_group;
-            true
-          )
-        | (`ASCII 'a', []) -> (
-            Option.iter
-              copy_search_result_group
-              search_result_group;
-            true
-          )
-        | (`ASCII 'm', []) -> (
-            let marked =
-              Session.State.marked_document_paths session_state
-            in
-            search_result_groups
-            |> Array.to_seq
-            |> Seq.filter (fun (doc, _) ->
-                String_set.mem (Document.path doc) marked)
-            |> copy_search_result_groups;
-            true
-          )
-        | (`ASCII 'l', []) -> (
-            search_result_groups
-            |> Array.to_seq
-            |> copy_search_result_groups;
-            true
-          )
-        | _ -> false
-      in
-      if exit then (
-        UI_base.set_input_mode Navigate;
-      );
-      `Handled
-    )
-  | Copy_paths -> (
-      let copy_paths s =
-        Clipboard.pipe_to_clipboard (fun oc ->
-            Seq.iter (Printers.path_image ~color:false oc) s
-          )
-      in
-      let exit =
-        match key with
-        | (`Escape, []) -> true
-        | (`ASCII '>', []) -> (
-            UI_base.Key_binding_info.incr_rotation ();
-            false
-          )
-        | (`ASCII 'y', []) -> (
-            Option.iter (fun (doc, _search_results) ->
-                copy_paths (Seq.return (Document.path doc))
+            | (`ASCII 'f', []) -> (
+                Lwd.set UI_base.Vars.filter_field UI_base.empty_text_field;
+                update_filter ~commit:true ();
+                true
               )
-              search_result_group;
-            true
-          )
-        | (`ASCII 'm', []) -> (
-            String_set.inter
-              (Session.State.usable_document_paths session_state)
-              (Session.State.marked_document_paths session_state)
-            |> String_set.to_seq
-            |> copy_paths;
-            true
-          )
-        | (`ASCII 'M', []) -> (
-            String_set.diff
-              (Session.State.usable_document_paths session_state)
-              (Session.State.marked_document_paths session_state)
-            |> String_set.to_seq
-            |> copy_paths;
-            true
-          )
-        | (`ASCII 'l', []) -> (
-            Session.State.usable_document_paths session_state
-            |> String_set.to_seq
-            |> copy_paths;
-            true
-          )
-        | (`ASCII 'L', []) -> (
-            Session.State.unusable_document_paths session_state
-            |> copy_paths;
-            true
-          )
-        | _ -> false
-      in
-      if exit then (
-        UI_base.set_input_mode Navigate;
-      );
-      `Handled
-    )
-  | Reload -> (
-      let exit =
-        (match key with
-         | (`Escape, []) -> true
-         | (`ASCII '>', []) -> (
-             UI_base.Key_binding_info.incr_rotation ();
-             false
-           )
-         | (`ASCII 'r', []) -> (
-             reload_document_selected ~search_result_groups;
-             true
-           )
-         | (`ASCII 'a', []) -> (
-             UI_base.reset_document_selected ();
-             Lwd.set UI_base.Vars.quit true;
-             UI_base.Vars.action := Some UI_base.Recompute_document_src;
-             true
-           )
-         | _ -> false
-        );
-      in
-      if exit then (
-        UI_base.set_input_mode Navigate;
-      );
-      `Handled
-    )
-  | Links -> (
-      let doc_and_link =
-        if link_choice_count > 0 then (
-          Option.map (fun (doc, _search_results) ->
-              (doc, (Document.links doc).(link_current_choice))
-            ) search_result_group
-        ) else (
-          None
+            | (`ASCII 'h', []) -> (
+                Lwd.set UI_base.Vars.quit true;
+                UI_base.Vars.action := Some UI_base.Clear_command_history;
+                true
+              )
+            | _ -> false
+          in
+          if exit then (
+            UI_base.set_input_mode Navigate;
+          );
+          `Handled
         )
-      in
-      let set_action_to_open_link () =
-        Option.iter (fun (doc, link) ->
-            Lwd.set UI_base.Vars.quit true;
-            UI_base.Vars.action :=
-              Some (UI_base.Open_link (doc, link))
-          ) doc_and_link
-      in
-      let exit =
-        (match key with
-         | (`Escape, []) -> true
-         | (`Enter, []) -> (
-             set_action_to_open_link ();
-             true
-           )
-         | (`ASCII 'o', []) -> (
-             set_action_to_open_link ();
-             false
-           )
-         | (`Page `Down, [])
-         | (`ASCII 'j', [])
-         | (`Arrow `Down, []) -> (
-             UI_base.set_link_selected
-               ~choice_count:link_choice_count
-               (link_current_choice+1);
-             false
-           )
-         | (`Page `Up, [])
-         | (`ASCII 'k', [])
-         | (`Arrow `Up, []) -> (
-             UI_base.set_link_selected
-               ~choice_count:link_choice_count
-               (link_current_choice-1);
-             false
-           )
-         | (`ASCII 'y', []) -> (
-             Option.iter (fun (_doc, link) ->
-                 Clipboard.pipe_to_clipboard (fun oc ->
-                     output_string oc link.Link.link
-                   );
-               ) doc_and_link;
-             true
-           )
-         | _ -> false
-        );
-      in
-      if exit then (
-        UI_base.set_input_mode Navigate;
-      );
-      `Handled
+      | Drop -> (
+          let exit =
+            match key with
+            | (`Escape, []) -> true
+            | (`ASCII '>', []) -> (
+                UI_base.Key_binding_info.incr_rotation ();
+                false
+              )
+            | (`ASCII 'd', []) -> (
+                Option.iter (fun (doc, _search_results) ->
+                    drop ~document_count (`Path (Document.path doc))
+                  ) search_result_group;
+                true
+              )
+            | (`ASCII 'D', []) -> (
+                Option.iter (fun (doc, _search_results) ->
+                    drop ~document_count (`All_except (Document.path doc))
+                  ) search_result_group;
+                true
+              )
+            | (`ASCII 'l', []) -> (
+                drop ~document_count `Listed;
+                true
+              )
+            | (`ASCII 'L', []) -> (
+                drop ~document_count `Unlisted;
+                true
+              )
+            | (`ASCII 'm', []) -> (
+                drop ~document_count `Marked;
+                true
+              )
+            | (`ASCII 'M', []) -> (
+                drop ~document_count `Unmarked;
+                true
+              )
+            | _ -> false
+          in
+          if exit then (
+            UI_base.set_input_mode Navigate;
+          );
+          `Handled
+        )
+      | Mark -> (
+          let exit =
+            match key with
+            | (`Escape, []) -> true
+            | (`ASCII '>', []) -> (
+                UI_base.Key_binding_info.incr_rotation ();
+                false
+              )
+            | (`ASCII 'l', []) -> (
+                mark `Listed;
+                true
+              )
+            | _ -> false
+          in
+          if exit then (
+            UI_base.set_input_mode Navigate;
+          );
+          `Handled
+        )
+      | Unmark -> (
+          let exit =
+            match key with
+            | (`Escape, []) -> true
+            | (`ASCII '>', []) -> (
+                UI_base.Key_binding_info.incr_rotation ();
+                false
+              )
+            | (`ASCII 'l', []) -> (
+                unmark `Listed;
+                true
+              )
+            | (`ASCII 'a', []) -> (
+                unmark `All;
+                true
+              )
+            | _ -> false
+          in
+          if exit then (
+            UI_base.set_input_mode Navigate;
+          );
+          `Handled
+        )
+      | Narrow -> (
+          let exit =
+            match key with
+            | (`Escape, []) -> true
+            | (`ASCII '>', []) -> (
+                UI_base.Key_binding_info.incr_rotation ();
+                false
+              )
+            | (`ASCII c, []) -> (
+                let code_0 = Char.code '0' in
+                let code_9 = Char.code '9' in
+                let code_c = Char.code c in
+                if code_0 <= code_c && code_c <= code_9 then (
+                  let level = code_c - code_0 in
+                  narrow_search_scope_to_level ~level;
+                  true
+                ) else (
+                  false
+                )
+              )
+            | _ -> false
+          in
+          if exit then (
+            UI_base.set_input_mode Navigate;
+          );
+          `Handled
+        )
+      | Copy -> (
+          let copy_search_result_groups (s : Session.search_result_group Seq.t) =
+            Clipboard.pipe_to_clipboard (fun oc ->
+                Printers.search_result_groups
+                  ~color:false
+                  ~underline:true
+                  oc
+                  s
+              )
+          in
+          let copy_search_result_group x =
+            copy_search_result_groups (Seq.return x)
+          in
+          let exit =
+            match key with
+            | (`Escape, []) -> true
+            | (`ASCII '>', []) -> (
+                UI_base.Key_binding_info.incr_rotation ();
+                false
+              )
+            | (`ASCII 'y', []) -> (
+                Option.iter (fun (doc, search_results) ->
+                    copy_search_result_group
+                      (doc,
+                       (if search_result_current_choice < Array.length search_results then
+                          [|search_results.(search_result_current_choice)|]
+                        else
+                          [||])
+                      )
+                  )
+                  search_result_group;
+                true
+              )
+            | (`ASCII 'a', []) -> (
+                Option.iter
+                  copy_search_result_group
+                  search_result_group;
+                true
+              )
+            | (`ASCII 'm', []) -> (
+                let marked =
+                  Session.State.marked_document_paths session_state
+                in
+                search_result_groups
+                |> Array.to_seq
+                |> Seq.filter (fun (doc, _) ->
+                    String_set.mem (Document.path doc) marked)
+                |> copy_search_result_groups;
+                true
+              )
+            | (`ASCII 'l', []) -> (
+                search_result_groups
+                |> Array.to_seq
+                |> copy_search_result_groups;
+                true
+              )
+            | _ -> false
+          in
+          if exit then (
+            UI_base.set_input_mode Navigate;
+          );
+          `Handled
+        )
+      | Copy_paths -> (
+          let copy_paths s =
+            Clipboard.pipe_to_clipboard (fun oc ->
+                Seq.iter (Printers.path_image ~color:false oc) s
+              )
+          in
+          let exit =
+            match key with
+            | (`Escape, []) -> true
+            | (`ASCII '>', []) -> (
+                UI_base.Key_binding_info.incr_rotation ();
+                false
+              )
+            | (`ASCII 'y', []) -> (
+                Option.iter (fun (doc, _search_results) ->
+                    copy_paths (Seq.return (Document.path doc))
+                  )
+                  search_result_group;
+                true
+              )
+            | (`ASCII 'm', []) -> (
+                String_set.inter
+                  (Session.State.usable_document_paths session_state)
+                  (Session.State.marked_document_paths session_state)
+                |> String_set.to_seq
+                |> copy_paths;
+                true
+              )
+            | (`ASCII 'M', []) -> (
+                String_set.diff
+                  (Session.State.usable_document_paths session_state)
+                  (Session.State.marked_document_paths session_state)
+                |> String_set.to_seq
+                |> copy_paths;
+                true
+              )
+            | (`ASCII 'l', []) -> (
+                Session.State.usable_document_paths session_state
+                |> String_set.to_seq
+                |> copy_paths;
+                true
+              )
+            | (`ASCII 'L', []) -> (
+                Session.State.unusable_document_paths session_state
+                |> copy_paths;
+                true
+              )
+            | _ -> false
+          in
+          if exit then (
+            UI_base.set_input_mode Navigate;
+          );
+          `Handled
+        )
+      | Reload -> (
+          let exit =
+            (match key with
+             | (`Escape, []) -> true
+             | (`ASCII '>', []) -> (
+                 UI_base.Key_binding_info.incr_rotation ();
+                 false
+               )
+             | (`ASCII 'r', []) -> (
+                 reload_document_selected ~search_result_groups;
+                 true
+               )
+             | (`ASCII 'a', []) -> (
+                 UI_base.reset_document_selected ();
+                 Lwd.set UI_base.Vars.quit true;
+                 UI_base.Vars.action := Some UI_base.Recompute_document_src;
+                 true
+               )
+             | _ -> false
+            );
+          in
+          if exit then (
+            UI_base.set_input_mode Navigate;
+          );
+          `Handled
+        )
+      | Links -> (
+          let doc_and_link =
+            if link_choice_count > 0 then (
+              Option.map (fun (doc, _search_results) ->
+                  (doc, (Document.links doc).(link_current_choice))
+                ) search_result_group
+            ) else (
+              None
+            )
+          in
+          let set_action_to_open_link () =
+            Option.iter (fun (doc, link) ->
+                Lwd.set UI_base.Vars.quit true;
+                UI_base.Vars.action :=
+                  Some (UI_base.Open_link (doc, link))
+              ) doc_and_link
+          in
+          let exit =
+            (match key with
+             | (`Escape, []) -> true
+             | (`Enter, []) -> (
+                 set_action_to_open_link ();
+                 true
+               )
+             | (`ASCII 'o', []) -> (
+                 set_action_to_open_link ();
+                 false
+               )
+             | (`Page `Down, [])
+             | (`ASCII 'j', [])
+             | (`Arrow `Down, []) -> (
+                 UI_base.set_link_selected
+                   ~choice_count:link_choice_count
+                   (link_current_choice+1);
+                 false
+               )
+             | (`Page `Up, [])
+             | (`ASCII 'k', [])
+             | (`Arrow `Up, []) -> (
+                 UI_base.set_link_selected
+                   ~choice_count:link_choice_count
+                   (link_current_choice-1);
+                 false
+               )
+             | (`ASCII 'y', []) -> (
+                 Option.iter (fun (_doc, link) ->
+                     Clipboard.pipe_to_clipboard (fun oc ->
+                         output_string oc link.Link.link
+                       );
+                   ) doc_and_link;
+                 true
+               )
+             | _ -> false
+            );
+          in
+          if exit then (
+            UI_base.set_input_mode Navigate;
+          );
+          `Handled
+        )
+      | Save_script_overwrite script_name -> (
+          (match key with
+           | (`Escape, [])
+           | (`ASCII 'n', []) -> (
+               UI_base.set_input_mode Navigate;
+             )
+           | (`ASCII 'y', []) -> (
+               let path = compute_save_script_path script_name in
+               save_script ~path;
+               UI_base.set_input_mode (Save_script_edit script_name);
+             )
+           | _ -> ()
+          );
+          `Handled
+        )
+      | Save_script_no_name -> (
+          let exit =
+            (match key with
+             | (`Enter, []) -> true
+             | _ -> false
+            );
+          in
+          if exit then (
+            UI_base.set_input_mode Navigate;
+          );
+          `Handled
+        )
+      | Save_script_edit script_name -> (
+          let exit =
+            (match key with
+             | (`Escape, [])
+             | (`ASCII 'n', []) -> true
+             | (`ASCII 'y', []) -> (
+                 let path = compute_save_script_path script_name in
+                 Lwd.set UI_base.Vars.quit true;
+                 UI_base.Vars.action := Some (UI_base.Edit_script path);
+                 true
+               )
+             | _ -> false
+            );
+          in
+          if exit then (
+            UI_base.set_input_mode Navigate;
+          );
+          `Handled
+        )
+      | Delete_script_confirm (_script, path) -> (
+          (match key with
+           | (`Escape, [])
+           | (`ASCII 'n', []) -> (
+               UI_base.set_input_mode Scripts;
+             )
+           | (`ASCII 'y', []) -> (
+               Sys.remove path;
+               refresh_script_files ();
+               UI_base.set_input_mode Scripts;
+             )
+           | _ -> ()
+          );
+          `Handled
+        )
+      | _ -> `Unhandled
     )
-  | Save_script_overwrite script_name -> (
-      (match key with
-       | (`Escape, [])
-       | (`ASCII 'n', []) -> (
-           UI_base.set_input_mode Navigate;
-         )
-       | (`ASCII 'y', []) -> (
-           let path = compute_save_script_path script_name in
-           save_script ~path;
-           UI_base.set_input_mode (Save_script_edit script_name);
-         )
-       | _ -> ()
-      );
-      `Handled
-    )
-  | Save_script_no_name -> (
-      let exit =
-        (match key with
-         | (`Enter, []) -> true
-         | _ -> false
-        );
-      in
-      if exit then (
-        UI_base.set_input_mode Navigate;
-      );
-      `Handled
-    )
-  | Save_script_edit script_name -> (
-      let exit =
-        (match key with
-         | (`Escape, [])
-         | (`ASCII 'n', []) -> true
-         | (`ASCII 'y', []) -> (
-             let path = compute_save_script_path script_name in
-             Lwd.set UI_base.Vars.quit true;
-             UI_base.Vars.action := Some (UI_base.Edit_script path);
-             true
-           )
-         | _ -> false
-        );
-      in
-      if exit then (
-        UI_base.set_input_mode Navigate;
-      );
-      `Handled
-    )
-  | Delete_script_confirm (_script, path) -> (
-      (match key with
-       | (`Escape, [])
-       | (`ASCII 'n', []) -> (
-           UI_base.set_input_mode Scripts;
-         )
-       | (`ASCII 'y', []) -> (
-           Sys.remove path;
-           refresh_script_files ();
-           UI_base.set_input_mode Scripts;
-         )
-       | _ -> ()
-      );
-      `Handled
-    )
-  | _ -> `Unhandled
 
 let main : Nottui.ui Lwd.t =
   let$* (_, snapshot) =
