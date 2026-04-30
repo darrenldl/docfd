@@ -15,6 +15,7 @@
     - `Tab`/`Shift`+`Tab` no longer control screen split
 - Added "focus content" via `z` which hides the bottom right pane
 - Added key binding info pane toggle via `?`
+- Added `Esc` as alternative to `Enter` to SEARCH and FILTER for confirming input
 - Made the UX of various input fields slightly more polished
     - This includes adding `Esc` for cancelling during SAVE-SCRIPT
 - Added request handling debouncing to reduce pointless workload triggered during

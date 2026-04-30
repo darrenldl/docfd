@@ -1111,14 +1111,16 @@ module Bottom_pane = struct
       let search_grid =
         [
           [
-            { label = "Enter"; msg = "exit SEARCH" };
+            { label = "Enter/Esc"; msg = "exit SEARCH" };
           ];
+          empty_row;
+          empty_row;
         ]
       in
       let filter_grid =
         [
           [
-            { label = "Enter"; msg = "exit FILTER" };
+            { label = "Enter/Esc"; msg = "exit FILTER" };
             { label = "Tab"; msg = "autocomplete" };
           ];
         ]

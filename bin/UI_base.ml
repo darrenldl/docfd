@@ -805,6 +805,13 @@ module Filter_bar = struct
       ~on_change
       ~on_submit
     : Nottui.ui Lwd.t =
+    let on_submit (text, x) =
+      Lwd.set text_field (text, x);
+      on_submit ();
+      Lwd.set Vars.autocomplete_choices [];
+      Nottui.Focus.release focus_handle;
+      Lwd.set Vars.input_mode Navigate
+    in
     Nottui_widgets.hbox
       [
         label ~input_mode;
@@ -812,18 +819,12 @@ module Filter_bar = struct
         Lwd.return (Nottui.Ui.atom (Notty.I.strf ": "));
         edit_field text_field
           ~focus:focus_handle
-          ~on_cancel:(fun (_text, _x) -> ())
+          ~on_cancel:on_submit
           ~on_change:(fun (text, x) ->
               Lwd.set text_field (text, x);
               on_change ();
             )
-          ~on_submit:(fun (text, x) ->
-              Lwd.set text_field (text, x);
-              on_submit ();
-              Lwd.set Vars.autocomplete_choices [];
-              Nottui.Focus.release focus_handle;
-              Lwd.set Vars.input_mode Navigate
-            )
+          ~on_submit
           ~on_tab:(fun (text, pos) ->
               let (text, pos) =
                 autocomplete ~choices:autocomplete_choices (text, pos)
@@ -872,6 +873,13 @@ module Search_bar = struct
       ~on_change
       ~on_submit
     : Nottui.ui Lwd.t =
+    let on_submit (text, x) =
+      Lwd.set text_field (text, x);
+      on_submit ();
+      Lwd.set Vars.autocomplete_choices [];
+      Nottui.Focus.release focus_handle;
+      Lwd.set Vars.input_mode Navigate
+    in
     Nottui_widgets.hbox
       [
         label ~input_mode;
@@ -879,18 +887,12 @@ module Search_bar = struct
         Lwd.return (Nottui.Ui.atom (Notty.I.strf ": "));
         edit_field text_field
           ~focus:focus_handle
-          ~on_cancel:(fun (_text, _x) -> ())
+          ~on_cancel:on_submit
           ~on_change:(fun (text, x) ->
               Lwd.set text_field (text, x);
               on_change ();
             )
-          ~on_submit:(fun (text, x) ->
-              Lwd.set text_field (text, x);
-              on_submit ();
-              Lwd.set Vars.autocomplete_choices [];
-              Nottui.Focus.release focus_handle;
-              Lwd.set Vars.input_mode Navigate
-            )
+          ~on_submit
           ~on_tab:(fun (_, _) -> ());
       ]
 end
