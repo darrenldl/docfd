@@ -1074,8 +1074,8 @@ module Bottom_pane = struct
             { label = "Enter"; msg = "open document" };
             { label = "/"; msg = "SEARCH" };
             { label = "↑/↓/j/k"; msg = "select document" };
+            { label = "←/→"; msg = "adjust screen split" };
             { label = "s"; msg = "SORT-ASC" };
-            { label = "Tab"; msg = "expand right pane" };
             { label = "y"; msg = "COPY" };
             { label = "n"; msg = "NARROW" };
             { label = "Space"; msg = "toggle mark" };
@@ -1083,11 +1083,11 @@ module Bottom_pane = struct
             { label = "Ctrl+S"; msg = "save session as script" };
           ];
           [
-            { label = "v"; msg = "focus content" };
+            { label = "Ctrl+C"; msg = "exit" };
             { label = "f"; msg = "FILTER" };
             { label = "Shift+↑/↓/j/k"; msg = "select search result" };
+            { label = "v"; msg = "focus content" };
             { label = "Shift+S"; msg = "SORT-DESC" };
-            { label = "Shift+Tab"; msg = "expand left pane" };
             { label = "Shift+Y"; msg = "COPY-PATHS" };
             { label = "d"; msg = "DROP" };
             { label = "m"; msg = "MARK" };
@@ -1095,11 +1095,11 @@ module Bottom_pane = struct
             { label = "Ctrl+O"; msg = "SCRIPTS" };
           ];
           [
-            { label = "Ctrl+C"; msg = "exit" };
+            { label = ""; msg = "" };
             { label = "x"; msg = "CLEAR" };
             { label = "-/="; msg = "scroll content view" };
-            { label = "l"; msg = "LINKS" };
             { label = ""; msg = "" };
+            { label = "l"; msg = "LINKS" };
             { label = ""; msg = "" };
             { label = "r"; msg = "RELOAD" };
             { label = "Shift+M"; msg = "UNMARK" };
@@ -1531,24 +1531,23 @@ let keyboard_handler
           UI_base.set_input_mode Copy_paths;
           `Handled
         )
-      | (`Arrow `Left, [])
       | (`ASCII 'u', [])
       | (`ASCII 'Z', [`Ctrl]) -> (
           Session_manager.shift_ver ~offset:(-1);
           `Handled
         )
-      | (`Arrow `Right, [])
       | (`ASCII 'R', [`Ctrl])
       | (`ASCII 'Y', [`Ctrl]) -> (
           Session_manager.shift_ver ~offset:1;
           `Handled
         )
-      | (`Tab, [])
-      | (`Tab, [`Shift]) -> (
+      | (`Arrow `Left, [])
+      | (`Arrow `Right, []) -> (
           let direction =
             match key with
-            | (_, [`Shift]) -> `Expand_left
-            | (_, _) -> `Expand_right
+            | (`Arrow `Left, _) -> `Expand_right
+            | (`Arrow `Right, _) -> `Expand_left
+            | _ -> failwith "unexpected case"
           in
           Session_manager.update_from_cur_snapshot
             (fun cur_snapshot ->
