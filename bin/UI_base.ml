@@ -201,10 +201,12 @@ let hpane
         ) else (
           x - 1
         ))
+    |> max 0
   in
   let r_width =
     (* Minus 1 here too just to be conservative. *)
     width - l_width - 1
+    |> max 0
   in
   let crop w x = Nottui.Ui.resize ~w ~h:height x in
   let x () =
@@ -237,10 +239,12 @@ let vpane
   : Nottui.ui Lwd.t =
   let t_height =
     (Misc_utils.div_round_up height 2)
+    |> max 0
   in
   let b_height =
     (* Minus 1 for pane separator bar. *)
     (height / 2) - 1
+    |> max 0
   in
   let$* x = x ~height:t_height in
   let$ y = y ~height:b_height in
