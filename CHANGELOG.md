@@ -13,7 +13,7 @@
 - Changed to using left right arrows to adjust screen split
     - Left right arrows no longer control undo/redo
     - `Tab`/`Shift`+`Tab` no longer control screen split
-- Added "focus content" via `z` which hides the bottom right pane
+- Added "focus content" via `v` which hides the bottom right pane
 - Added key binding info pane toggle via `?`
 - Added `Esc` as alternative to `Enter` to SEARCH and FILTER for confirming input
 - Made the UX of various input fields slightly more polished
