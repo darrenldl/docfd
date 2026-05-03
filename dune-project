@@ -49,7 +49,7 @@ Features:
    notty-community
    (nottui (>= "0.4"))
    (nottui-unix (>= "0.4"))
-   lwd
+   (lwd (>= "0.5"))
    (cmdliner (>= "2.0.0"))
    (eio (>= "0.14"))
    digestif
