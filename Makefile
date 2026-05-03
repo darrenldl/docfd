@@ -13,9 +13,17 @@ all :
 podman-build:
 	podman build --format docker -t localhost/docfd -f containers/Containerfile.docfd .
 
+.PHONY: podman-build-with-pull
+podman-build:
+	podman build --format docker --pull=newer -t localhost/docfd -f containers/Containerfile.docfd .
+
 .PHONY: podman-build-demo-vhs
 podman-build-demo-vhs:
 	podman build --format docker -t localhost/docfd-demo-vhs -f containers/Containerfile.demo-vhs .
+
+.PHONY: podman-build-demo-vhs-with-pull
+podman-build-demo-vhs:
+	podman build --format docker --pull=newer -t localhost/docfd-demo-vhs -f containers/Containerfile.demo-vhs .
 
 .PHONY: lock
 lock:
