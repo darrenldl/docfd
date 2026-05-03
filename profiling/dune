@@ -17,8 +17,8 @@
             containers
             cmdliner
             fmt
-            notty
-            notty.unix
+            notty-community
+            notty-community.unix
             nottui
             lwd
             oseq

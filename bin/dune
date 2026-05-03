@@ -44,8 +44,8 @@
             containers.unix
             cmdliner
             fmt
-            notty
-            notty.unix
+            notty-community
+            notty-community.unix
             nottui
             nottui-unix
             lwd
