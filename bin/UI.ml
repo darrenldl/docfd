@@ -1016,7 +1016,7 @@ module Bottom_pane = struct
                |> Session.State.size)
           in
           let hint =
-            Notty.I.strf ~attr "< > to see more key bindings, ? to show/hide"
+            Notty.I.strf ~attr "</> to see more key bindings, ? to show/hide"
           in
           let hint_len = Notty.I.width hint in
           let hint_overlay =
