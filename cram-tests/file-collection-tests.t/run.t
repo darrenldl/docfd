@@ -38,7 +38,6 @@ Setup:
   $ touch miXeD-CaSe/AbCd.md
   $ tree
   .
-  |-- dune -> ../../../../default/file-collection-tests.t/dune
   |-- empty-paths.txt
   |-- miXeD-CaSe
   |   `-- AbCd.md
@@ -72,7 +71,7 @@ Setup:
   |   `-- ijkl -> ../test1/ijkl
   `-- test3 -> test2
   
-  7 directories, 26 files
+  7 directories, 25 files
 
 Basic invocation for reference:
   $ docfd --debug-log - --cache-dir .cache --index-only . 2>&1 | grep '^Using .* search mode' | sort

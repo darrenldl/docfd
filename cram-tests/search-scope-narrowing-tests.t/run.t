@@ -9,11 +9,10 @@ Setup:
   $ echo "ijkl" >> test1.txt
   $ tree
   .
-  |-- dune -> ../../../../default/search-scope-narrowing-tests.t/dune
   |-- test0.txt
   `-- test1.txt
   
-  0 directories, 3 files
+  0 directories, 2 files
 
 Single restriction:
   $ # Case 0 for single restriction

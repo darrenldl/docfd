@@ -9,13 +9,12 @@ Setup:
   .
   |-- 0.docfd-script
   |-- 1.docfd-script
-  |-- dune -> ../../../../default/script-tests.t/dune
   |-- test0.txt
   |-- test1.txt
   |-- test2.txt
   `-- test3.txt
   
-  0 directories, 7 files
+  0 directories, 6 files
 
 Basic:
   $ docfd -l --script 0.docfd-script .
