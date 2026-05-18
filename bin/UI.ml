@@ -2226,7 +2226,10 @@ let keyboard_handler
                UI_base.set_input_mode Scripts;
              )
            | (`ASCII 'y', []) -> (
-               Sys.remove path;
+               (try
+                  Sys.remove path;
+                with
+                | Sys_error _ -> ());
                refresh_script_files ();
                UI_base.set_input_mode Scripts;
              )
