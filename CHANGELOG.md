@@ -20,6 +20,7 @@
     - This includes adding `Esc` for cancelling during SAVE-SCRIPT
 - Added request handling debouncing to reduce pointless workload triggered during
   fast typing
+- Fixed filter exp to not take the hidden cwd part of document path into account
 - Improved link extraction
 - Minor UI fixes and polishes
 
