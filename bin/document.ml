@@ -638,7 +638,9 @@ let satisfies_filter_exp pool stop_signal ~global_first_word_candidates_lookup (
           (Search_exp.flattened exp)
       )
     | Path_glob glob -> (
-        Glob.is_empty glob || Glob.match_ glob t.path
+        Glob.is_empty glob
+        ||
+        Glob.match_ glob (File_utils.remove_cwd_from_path t.path)
       )
     | Ext ext -> (
         File_utils.extension_of_file t.path = ext
