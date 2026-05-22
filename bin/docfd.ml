@@ -962,7 +962,7 @@ let run
   UI_base.Vars.eio_env := Some env;
   let root : Nottui.ui Lwd.t =
     let$* (term_width, term_height) = Lwd.get UI_base.Vars.term_width_height in
-    if term_width <= 40 || term_height <= 20 then (
+    if term_width <= 40 || term_height <= 10 then (
       let msg = Nottui.Ui.atom (Notty.I.strf "Terminal size too small") in
       let keyboard_handler (key : Nottui.Ui.key) =
         match key with
