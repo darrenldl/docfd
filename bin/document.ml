@@ -4,7 +4,7 @@ open Docfd_lib
 type t = {
   search_mode : Search_mode.t;
   path : string;
-  path_parts : string list;
+  search_path_parts : string list;
   path_date : Timedesc.Date.t option;
   mod_time : Timedesc.t;
   title : string option;
@@ -26,11 +26,14 @@ let equal (x : t) (y : t) =
   &&
   Option.equal Diet.Int.equal x.search_scope y.search_scope
 
-let compute_path_parts (path : string) =
-  let path_parts = Tokenization.tokenize ~drop_spaces:false path
+let compute_search_path_parts (path : string) =
+  let search_path_parts =
+    path
+    |> File_utils.remove_cwd_from_path
+    |> Tokenization.tokenize ~drop_spaces:false
     |> List.of_seq
   in
-  (path_parts)
+  search_path_parts
 
 let compute_link_index_of_start_pos links =
   CCArray.foldi (fun acc i link ->
@@ -43,7 +46,7 @@ let search_mode (t : t) = t.search_mode
 
 let path (t : t) = t.path
 
-let path_parts (t : t) = t.path_parts
+let search_path_parts (t : t) = t.search_path_parts
 
 let path_date (t : t) = t.path_date
 
@@ -426,7 +429,7 @@ module Ir2 = struct
     doc_id : int64;
     doc_hash : string;
     path : string;
-    path_parts : string list;
+    search_path_parts : string list;
     path_date : Timedesc.Date.t option;
     mod_time : Timedesc.t;
     title : string option;
@@ -481,7 +484,7 @@ module Ir2 = struct
 
   let of_ir1 pool (ir : Ir1.t) : t =
     let { Ir1.search_mode; doc_id; doc_hash; path; data; last_scan } = ir in
-    let path_parts = compute_path_parts path in
+    let search_path_parts = compute_search_path_parts path in
     let path_date = Date_extraction.extract path in
     let stats = Unix.stat path in
     let mod_time = Timedesc.of_timestamp_float_s_exn stats.Unix.st_mtime in
@@ -498,7 +501,7 @@ module Ir2 = struct
     {
       search_mode;
       path;
-      path_parts;
+      search_path_parts;
       path_date;
       mod_time;
       doc_id;
@@ -515,7 +518,7 @@ let of_ir2 db ~already_in_transaction (ir : Ir2.t) : t =
     {
       Ir2.search_mode;
       path;
-      path_parts;
+      search_path_parts;
       path_date;
       mod_time;
       title;
@@ -531,7 +534,7 @@ let of_ir2 db ~already_in_transaction (ir : Ir2.t) : t =
   {
     search_mode;
     path;
-    path_parts;
+    search_path_parts;
     path_date;
     mod_time;
     title;
@@ -566,7 +569,7 @@ let of_path
       else
         Some (Index.line_of_global_line_num ~doc_id 0)
     in
-    let path_parts = compute_path_parts path in
+    let search_path_parts = compute_search_path_parts path in
     let path_date = Date_extraction.extract path in
     let stats = Unix.stat path in
     let mod_time = Timedesc.of_timestamp_float_s_exn stats.Unix.st_mtime in
@@ -575,7 +578,7 @@ let of_path
       {
         search_mode;
         path;
-        path_parts;
+        search_path_parts;
         path_date;
         mod_time;
         title;
@@ -628,7 +631,7 @@ let satisfies_filter_exp pool stop_signal ~global_first_word_candidates_lookup (
                 List.exists (fun path_part ->
                     Search_phrase.Enriched_token.compatible_with_word token path_part
                   )
-                  t.path_parts
+                  t.search_path_parts
               )
               (Search_phrase.enriched_tokens phrase)
           )
