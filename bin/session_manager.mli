@@ -8,7 +8,8 @@ val cur_snapshot : (int * Session.Snapshot.t) Lwd.t
 
 type view = {
   init_state : Session.State.t;
-  snapshots : Session.Snapshot.t Dynarray.t;
+  commands : Command.t list;
+  cur_snapshot : Session.Snapshot.t;
   cur_ver : int;
 }
 

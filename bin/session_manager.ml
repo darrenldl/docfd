@@ -81,7 +81,8 @@ let cur_snapshot = Lwd.get cur_snapshot_var
 
 type view = {
   init_state : Session.State.t;
-  snapshots : Session.Snapshot.t Dynarray.t;
+  commands : Command.t list;
+  cur_snapshot : Session.Snapshot.t;
   cur_ver : int;
 }
 
@@ -124,10 +125,21 @@ let lock_for_external_editing ~clean_up f =
 let lock_with_view : type a. (view -> a) -> a =
   fun f ->
   lock_for_external_editing ~clean_up:false (fun () ->
+      let commands =
+        Dynarray.fold_left (fun acc snapshot ->
+            match Session.Snapshot.last_command snapshot with
+            | None -> acc
+            | Some command -> command :: acc
+          )
+          []
+          snapshots
+        |> List.rev
+      in
       f
         {
           init_state = !init_state;
-          snapshots = Dynarray.copy snapshots;
+          commands;
+          cur_snapshot = Dynarray.get snapshots !cur_ver;
           cur_ver = !cur_ver;
         }
     )
