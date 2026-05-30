@@ -197,8 +197,7 @@ let recompute_current_state_if_missing pool =
   | None -> (
       let last_preceding_ver_with_state =
         let ver = ref None in
-        for i=0 to !cur_ver do
-          let i = !cur_ver - i in
+        for i = !cur_ver downto 0 do
           if Option.is_some (Session.Snapshot.state (Dynarray.get snapshots i)) then (
             ver := Some i
           )
