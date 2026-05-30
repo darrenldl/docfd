@@ -6,6 +6,9 @@
     - Switched from fzf to a built-in implementation for fuzzy selection
       menus
     - Replaced "sort by fzf" functionality with built-in PATH-FUZZY-RANK mode
+- Command history memory optimisation
+    - Only checkpoint snapshots are stored
+    - Missing snapshots are recomputed when needed for undo/redo
 - Renamed OPEN-SCRIPT to SCRIPTS
 - Moved DELETE-SCRIPT functionality to `Ctrl`+`X` under SCRIPTS
 - Added `y` key binding to copy in LINKS
