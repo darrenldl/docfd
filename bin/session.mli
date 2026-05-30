@@ -79,7 +79,9 @@ module Snapshot : sig
 
   val last_command : t -> Command.t option
 
-  val state : t -> State.t
+  val state : t -> State.t option
+
+  val state_exn : t -> State.t
 
   val id : t -> int
 
@@ -90,4 +92,6 @@ module Snapshot : sig
   val make_empty : ?committed:bool -> unit -> t
 
   val update_state : State.t -> t -> t
+
+  val remove_state : t -> t
 end

@@ -88,7 +88,7 @@ type view = {
 let sync_input_fields_from_snapshot
     (x : Session.Snapshot.t)
   =
-  let state = Session.Snapshot.state x in
+  let state = Session.Snapshot.state_exn x in
   Session.State.filter_exp_string state
   |> (fun s ->
       Lwd.set UI_base.Vars.filter_field (s, String.length s));
@@ -144,7 +144,7 @@ let update_starting_state (starting_state : Session.State.t) =
       Dynarray.set snapshots 0 starting_snapshot;
       for i=1 to Dynarray.length snapshots - 1 do
         let prev = Dynarray.get snapshots (i - 1) in
-        let prev_state = Session.Snapshot.state prev in
+        let prev_state = Session.Snapshot.state_exn prev in
         let cur = Dynarray.get snapshots i in
         let state =
           match Session.Snapshot.last_command cur with
@@ -167,7 +167,7 @@ let load_snapshots snapshots' =
   lock_for_external_editing ~clean_up:true (fun () ->
       assert
         (Session.State.equal
-           (Session.Snapshot.state @@ Dynarray.get snapshots' 0)
+           (Session.Snapshot.state_exn @@ Dynarray.get snapshots' 0)
            !init_state);
       Dynarray.clear snapshots;
       Dynarray.append snapshots snapshots';
@@ -236,7 +236,7 @@ let manager_fiber () =
          let snapshot =
            if commit then (
              let state =
-               Session.Snapshot.state snapshot
+               Session.Snapshot.state_exn snapshot
                |> Session.State.clear_path_highlights
              in
              Session.Snapshot.update_state state snapshot
@@ -289,7 +289,7 @@ let worker_fiber pool =
         send_to_manager Searching;
         let state =
           get_cur_snapshot ()
-          |> Session.Snapshot.state
+          |> Session.Snapshot.state_exn
           |> Session.State.update_search_exp
             pool
             stop_signal
@@ -330,7 +330,7 @@ let worker_fiber pool =
         send_to_manager Filtering;
         let state =
           get_cur_snapshot ()
-          |> Session.Snapshot.state
+          |> Session.Snapshot.state_exn
           |> Session.State.update_filter_exp
             pool
             stop_signal
@@ -373,7 +373,7 @@ let worker_fiber pool =
     | Some exp -> (
         let state =
           get_cur_snapshot ()
-          |> Session.Snapshot.state
+          |> Session.Snapshot.state_exn
           |> Session.State.update_path_fuzzy_ranking
             stop_signal
             exp

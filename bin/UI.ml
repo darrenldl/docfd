@@ -114,7 +114,7 @@ let reload_document_selected
 let toggle_mark ~path =
   Session_manager.update_from_cur_snapshot
     (fun cur_snapshot ->
-       let state = Session.Snapshot.state cur_snapshot in
+       let state = Session.Snapshot.state_exn cur_snapshot in
        let new_command =
          if
            String_set.mem
@@ -167,7 +167,7 @@ let drop ~document_count (choice : [`Path of string | `All_except of string | `M
       )
   in
   Session_manager.update_from_cur_snapshot (fun cur_snapshot ->
-      Session.Snapshot.state cur_snapshot
+      Session.Snapshot.state_exn cur_snapshot
       |> Session.run_command
         (UI_base.task_pool ())
         new_command
@@ -185,7 +185,7 @@ let mark (choice : [`Path of string | `Listed]) =
     | `Listed -> `Mark_listed
   in
   Session_manager.update_from_cur_snapshot (fun cur_snapshot ->
-      Session.Snapshot.state cur_snapshot
+      Session.Snapshot.state_exn cur_snapshot
       |> Session.run_command
         (UI_base.task_pool ())
         new_command
@@ -204,7 +204,7 @@ let unmark (choice : [`Path of string | `Listed | `All]) =
     | `All -> `Unmark_all
   in
   Session_manager.update_from_cur_snapshot (fun cur_snapshot ->
-      Session.Snapshot.state cur_snapshot
+      Session.Snapshot.state_exn cur_snapshot
       |> Session.run_command
         (UI_base.task_pool ())
         new_command
@@ -219,7 +219,7 @@ let sort (sort_by : Command.Sort_by.t) =
   UI_base.reset_document_selected ();
   let new_command = `Sort (sort_by, Command.Sort_by.default_no_score) in
   Session_manager.update_from_cur_snapshot (fun cur_snapshot ->
-      Session.Snapshot.state cur_snapshot
+      Session.Snapshot.state_exn cur_snapshot
       |> Session.run_command
         (UI_base.task_pool ())
         new_command
@@ -236,7 +236,7 @@ let narrow_search_scope_to_level ~level =
         ~last_command:(Some (`Narrow_level level))
         (Session.State.narrow_search_scope_to_level
            ~level
-           (Session.Snapshot.state cur_snapshot))
+           (Session.Snapshot.state_exn cur_snapshot))
     )
 
 let update_filter ~commit () =
@@ -431,7 +431,7 @@ module Top_pane = struct
       let document_count = Array.length search_result_groups in
       let$* input_mode = Lwd.get UI_base.Vars.input_mode in
       let$* (_cur_ver, snapshot) = Session_manager.cur_snapshot in
-      let state = Session.Snapshot.state snapshot in
+      let state = Session.Snapshot.state_exn snapshot in
       let render_pane () =
         let rec aux index height_filled acc =
           if index < document_count
@@ -1012,7 +1012,7 @@ module Bottom_pane = struct
             Notty.I.strf ~attr
               "%5d/%d documents listed"
               document_count
-              (Session.Snapshot.state snapshot
+              (Session.Snapshot.state_exn snapshot
                |> Session.State.size)
           in
           let hint =
@@ -1499,7 +1499,7 @@ let keyboard_handler
       in
       Session_manager.update_from_cur_snapshot
         (fun cur_snapshot ->
-           let state = Session.Snapshot.state cur_snapshot in
+           let state = Session.Snapshot.state_exn cur_snapshot in
            let cur = Session.State.show_pane state pane in
            let command =
              if cur then (
@@ -1529,7 +1529,7 @@ let keyboard_handler
       in
       Session_manager.update_from_cur_snapshot
         (fun cur_snapshot ->
-           let state = Session.Snapshot.state cur_snapshot in
+           let state = Session.Snapshot.state_exn cur_snapshot in
            let cur = Session.State.screen_split state in
            let offset =
              match direction with
@@ -2245,7 +2245,7 @@ let main : Nottui.ui Lwd.t =
     Session_manager.cur_snapshot
   in
   let session_state =
-    Session.Snapshot.state snapshot
+    Session.Snapshot.state_exn snapshot
   in
   let search_result_groups =
     Session.State.search_result_groups session_state

@@ -838,7 +838,7 @@ module Snapshot = struct
 
   type t = {
     last_command : Command.t option;
-    state : State.t;
+    state : State.t option;
     committed : bool;
     id : int;
   }
@@ -849,6 +849,8 @@ module Snapshot = struct
 
   let state t = t.state
 
+  let state_exn t = Option.get t.state
+
   let id t = t.id
 
   let equal_id x y =
@@ -857,11 +859,14 @@ module Snapshot = struct
   let make ?(committed = true) ~last_command state : t =
     let id = !counter in
     counter := id + 1;
-    { last_command; state; id; committed }
+    { last_command; state = Some state; id; committed }
 
   let make_empty ?committed () =
     make ?committed ~last_command:None State.empty
 
   let update_state state t =
-    { t with state }
+    { t with state = Some state }
+
+  let remove_state t =
+    { t with state = None }
 end

@@ -893,8 +893,8 @@ let run
         )
       | Some _ -> (
           Session_manager.lock_with_view (fun view ->
-              Dynarray.get_last view.snapshots
-              |> Session.Snapshot.state
+              Dynarray.get view.snapshots view.cur_ver
+              |> Session.Snapshot.state_exn
             )
         )
     in
