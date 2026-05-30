@@ -86,6 +86,16 @@ type view = {
   cur_ver : int;
 }
 
+let commands_of_snapshots (snapshots : Session.Snapshot.t Dynarray.t) : Command.t list =
+  Dynarray.fold_left (fun acc snapshot ->
+      match Session.Snapshot.last_command snapshot with
+      | None -> acc
+      | Some command -> command :: acc
+    )
+    []
+    snapshots
+  |> List.rev
+
 let sync_input_fields_from_snapshot
     (x : Session.Snapshot.t)
   =
@@ -125,20 +135,10 @@ let lock_for_external_editing ~clean_up f =
 let lock_with_view : type a. (view -> a) -> a =
   fun f ->
   lock_for_external_editing ~clean_up:false (fun () ->
-      let commands =
-        Dynarray.fold_left (fun acc snapshot ->
-            match Session.Snapshot.last_command snapshot with
-            | None -> acc
-            | Some command -> command :: acc
-          )
-          []
-          snapshots
-        |> List.rev
-      in
       f
         {
           init_state = !init_state;
-          commands;
+          commands = commands_of_snapshots snapshots;
           cur_snapshot = Dynarray.get snapshots !cur_ver;
           cur_ver = !cur_ver;
         }
@@ -191,11 +191,57 @@ let stop_filter_and_search_and_restore_input_fields () =
       ()
     )
 
+let recompute_current_state_if_missing pool =
+  let snapshot = Dynarray.get snapshots !cur_ver in
+  match Session.Snapshot.state snapshot with
+  | None -> (
+      let last_preceding_ver_with_state =
+        let ver = ref None in
+        for i=0 to !cur_ver do
+          let i = !cur_ver - i in
+          if Option.is_some (Session.Snapshot.state (Dynarray.get snapshots i)) then (
+            ver := Some i
+          )
+        done;
+        Option.get !ver
+      in
+      let commands = List.drop last_preceding_ver_with_state (commands_of_snapshots snapshots) in
+      let snapshot =
+        List.fold_left (fun snapshot command ->
+            let state =
+              Option.get
+                (Session.run_command
+                   pool
+                   command
+                   (Session.Snapshot.state_exn snapshot))
+              |> snd
+            in
+            Session.Snapshot.update_state state snapshot
+          )
+          (Dynarray.get snapshots last_preceding_ver_with_state)
+          commands
+      in
+      Dynarray.set snapshots !cur_ver snapshot
+    )
+  | Some _ -> ()
+
+let prune_unused_snapshot_states () =
+  for i=0 to Dynarray.length snapshots - 1 do
+    if not (i = 0 || i = !cur_ver) then (
+      Dynarray.get snapshots i
+      |> Session.Snapshot.remove_state
+      |> Dynarray.set snapshots i
+    )
+  done
+
 let shift_ver ~offset =
   lock_for_external_editing ~clean_up:true (fun () ->
+      let pool = UI_base.task_pool () in
       let new_ver = !cur_ver + offset in
       if 0 <= new_ver && new_ver < Dynarray.length snapshots then (
         cur_ver := new_ver;
+        recompute_current_state_if_missing pool;
+        prune_unused_snapshot_states ();
       )
     )
 
@@ -285,6 +331,7 @@ let worker_fiber pool =
       Dynarray.add_last snapshots snapshot;
       incr cur_ver;
     );
+    prune_unused_snapshot_states ();
   in
   let send_to_manager x =
     Eio.Stream.add egress x;
