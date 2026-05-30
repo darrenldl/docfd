@@ -893,8 +893,7 @@ let run
         )
       | Some _ -> (
           Session_manager.lock_with_view (fun view ->
-              Dynarray.get view.snapshots view.cur_ver
-              |> Session.Snapshot.state_exn
+              Session.Snapshot.state_exn view.cur_snapshot
             )
         )
     in
@@ -1063,74 +1062,62 @@ let run
           )
         | Edit_command_history -> (
             let file = Filename.temp_file "" Params.docfd_script_ext in
-            let init_snapshots =
+            let init_commands =
               Session_manager.lock_with_view (fun view ->
-                  view.snapshots
+                  view.commands
                 )
             in
             let init_lines =
-              Seq.append
-                (
-                  init_snapshots
-                  |> Dynarray.to_seq
-                  |> Seq.filter_map  (fun (snapshot : Session.Snapshot.t) ->
-                      Option.map
-                        Command.to_string
-                        (Session.Snapshot.last_command snapshot)
-                    )
-                )
-                (
-                  List.to_seq
-                    [
-                      "";
-                      "; You are viewing/editing Docfd command history.";
-                      "; If any change is made to this file, Docfd will replay the commands from the start.";
-                      ";";
-                      "; There are two types of comments:";
-                      "; - System comments begin with `;`, and are not preserved after editing of command history.";
-                      ";   These are for communication of error message to user during command history editing.";
-                      "; - User comments begin with `#`, and are preserved after editing of command history.";
-                      ";";
-                      "; If a line is not blank and is not a comment,";
-                      "; then the line should contain exactly one command.";
-                      "; A command cannot be written across multiple lines.";
-                      ";";
-                      "; Starting point is v0, the state with the full set of documents.";
-                      "; Each command adds one to the version number.";
-                      "; Command at the top is oldest, command at bottom is the newest.";
-                      ";";
-                      "; Note that for commands that accept text, all text after `:` is trimmed and then used in full.";
-                      "; This means \" and ' are treated literally and are not used to delimit strings.";
-                      ";";
-                      "; Possible commands:";
-                      Fmt.str "; - %a" Command.pp (`Search "search phrase");
-                      Fmt.str "; - %a" Command.pp (`Search "");
-                      Fmt.str "; - %a" Command.pp (`Filter "path-fuzzy:\"file txt\"");
-                      Fmt.str "; - %a" Command.pp (`Filter "");
-                      Fmt.str "; - %a" Command.pp (`Sort (Command.Sort_by.default, Command.Sort_by.default_no_score));
-                      Fmt.str "; - %a" Command.pp (`Path_fuzzy_rank ("readme", None));
-                      Fmt.str "; - %a" Command.pp (`Narrow_level 1);
-                      Fmt.str "; - %a" Command.pp (`Mark "/path/to/document");
-                      Fmt.str "; - %a" Command.pp `Mark_listed;
-                      Fmt.str "; - %a" Command.pp (`Unmark "/path/to/document");
-                      Fmt.str "; - %a" Command.pp `Unmark_listed;
-                      Fmt.str "; - %a" Command.pp `Unmark_all;
-                      Fmt.str "; - %a" Command.pp (`Drop "/path/to/document");
-                      Fmt.str "; - %a" Command.pp (`Drop_all_except "/path/to/document");
-                      Fmt.str "; - %a" Command.pp `Drop_marked;
-                      Fmt.str "; - %a" Command.pp `Drop_unmarked;
-                      Fmt.str "; - %a" Command.pp `Drop_listed;
-                      Fmt.str "; - %a" Command.pp `Drop_unlisted;
-                    ]
-                )
-              |> List.of_seq
+              (List.map Command.to_string init_commands)
+              @
+              [
+                "";
+                "; You are viewing/editing Docfd command history.";
+                "; If any change is made to this file, Docfd will replay the commands from the start.";
+                ";";
+                "; There are two types of comments:";
+                "; - System comments begin with `;`, and are not preserved after editing of command history.";
+                ";   These are for communication of error message to user during command history editing.";
+                "; - User comments begin with `#`, and are preserved after editing of command history.";
+                ";";
+                "; If a line is not blank and is not a comment,";
+                "; then the line should contain exactly one command.";
+                "; A command cannot be written across multiple lines.";
+                ";";
+                "; Starting point is v0, the state with the full set of documents.";
+                "; Each command adds one to the version number.";
+                "; Command at the top is oldest, command at bottom is the newest.";
+                ";";
+                "; Note that for commands that accept text, all text after `:` is trimmed and then used in full.";
+                "; This means \" and ' are treated literally and are not used to delimit strings.";
+                ";";
+                "; Possible commands:";
+                Fmt.str "; - %a" Command.pp (`Search "search phrase");
+                Fmt.str "; - %a" Command.pp (`Search "");
+                Fmt.str "; - %a" Command.pp (`Filter "path-fuzzy:\"file txt\"");
+                Fmt.str "; - %a" Command.pp (`Filter "");
+                Fmt.str "; - %a" Command.pp (`Sort (Command.Sort_by.default, Command.Sort_by.default_no_score));
+                Fmt.str "; - %a" Command.pp (`Path_fuzzy_rank ("readme", None));
+                Fmt.str "; - %a" Command.pp (`Narrow_level 1);
+                Fmt.str "; - %a" Command.pp (`Mark "/path/to/document");
+                Fmt.str "; - %a" Command.pp `Mark_listed;
+                Fmt.str "; - %a" Command.pp (`Unmark "/path/to/document");
+                Fmt.str "; - %a" Command.pp `Unmark_listed;
+                Fmt.str "; - %a" Command.pp `Unmark_all;
+                Fmt.str "; - %a" Command.pp (`Drop "/path/to/document");
+                Fmt.str "; - %a" Command.pp (`Drop_all_except "/path/to/document");
+                Fmt.str "; - %a" Command.pp `Drop_marked;
+                Fmt.str "; - %a" Command.pp `Drop_unmarked;
+                Fmt.str "; - %a" Command.pp `Drop_listed;
+                Fmt.str "; - %a" Command.pp `Drop_unlisted;
+              ]
             in
             let init_state =
               Session_manager.lock_with_view (fun view ->
                   view.init_state
                 )
             in
-            let rec aux rerun snapshots lines : [ `No_changes | `Changes_made of Session.Snapshot.t Dynarray.t ] =
+            let rec aux ~rerun ~jump_to_line_num lines : [ `No_changes | `Changes_made of Session.Snapshot.t Dynarray.t ] =
               CCIO.with_out file (fun oc ->
                   CCIO.write_lines_l oc lines;
                 );
@@ -1138,7 +1125,7 @@ let run
               close_term ();
               Path_opening.config_and_cmd_to_open_text_file
                 ~path:file
-                ~line_num:(max 1 (Dynarray.length snapshots - 1))
+                ~line_num:jump_to_line_num
                 ()
               |> (fun (config, cmd) ->
                   Result.get_ok (Path_opening.resolve_cmd config cmd)
@@ -1204,7 +1191,7 @@ let run
                     )
                 in
                 if !rerun then (
-                  aux true snapshots lines
+                  aux ~rerun:true ~jump_to_line_num:(Dynarray.length snapshots) lines
                 ) else (
                   `Changes_made snapshots
                 )
@@ -1214,7 +1201,7 @@ let run
             in
             (try
                let res =
-                 aux false init_snapshots init_lines
+                 aux ~rerun:false ~jump_to_line_num:(List.length init_commands) init_lines
                in
                (try
                   Sys.remove file;

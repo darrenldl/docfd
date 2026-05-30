@@ -262,14 +262,7 @@ let save_script ~path =
   Session_manager.stop_filter_and_search_and_restore_input_fields ();
   let lines =
     Session_manager.lock_with_view (fun view ->
-        view.snapshots
-        |> Dynarray.to_seq
-        |> Seq.filter_map  (fun (snapshot : Session.Snapshot.t) ->
-            Option.map
-              Command.to_string
-              (Session.Snapshot.last_command snapshot)
-          )
-        |> List.of_seq
+        List.map Command.to_string view.commands
       )
   in
   try
