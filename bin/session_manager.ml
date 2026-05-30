@@ -232,7 +232,8 @@ let prune_unused_snapshot_states () =
       |> Session.Snapshot.remove_state
       |> Dynarray.set snapshots i
     )
-  done
+  done;
+  Gc.compact ()
 
 let shift_ver ~offset =
   lock_for_external_editing ~clean_up:true (fun () ->
