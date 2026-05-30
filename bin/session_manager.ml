@@ -227,7 +227,10 @@ let recompute_current_state_if_missing pool =
 
 let prune_unused_snapshot_states () =
   for i=0 to Dynarray.length snapshots - 1 do
-    if not (i = 0 || i = !cur_ver) then (
+    let keep =
+      i = 0 || i = !cur_ver || i mod 5 = 0
+    in
+    if not keep then (
       Dynarray.get snapshots i
       |> Session.Snapshot.remove_state
       |> Dynarray.set snapshots i
