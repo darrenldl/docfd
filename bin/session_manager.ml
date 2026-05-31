@@ -204,7 +204,7 @@ let recompute_current_state_if_missing pool =
         done;
         Option.get !ver
       in
-      let commands = List.drop last_preceding_ver_with_state (commands_of_snapshots snapshots) in
+      let commands = CCList.drop last_preceding_ver_with_state (commands_of_snapshots snapshots) in
       let snapshot =
         List.fold_left (fun snapshot command ->
             let state =
