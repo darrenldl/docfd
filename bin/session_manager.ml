@@ -86,15 +86,21 @@ type view = {
   cur_ver : int;
 }
 
-let commands_of_snapshots (snapshots : Session.Snapshot.t Dynarray.t) : Command.t list =
-  Dynarray.fold_left (fun acc snapshot ->
-      match Session.Snapshot.last_command snapshot with
-      | None -> acc
-      | Some command -> command :: acc
-    )
+let commands_between_snapshots ?(start = 0) ?end_inc (snapshots : Session.Snapshot.t Dynarray.t) : Command.t list =
+  if Dynarray.length snapshots = 0 then (
     []
-    snapshots
-  |> List.rev
+  ) else (
+    let end_inc = Option.value ~default:(Dynarray.length snapshots - 1) end_inc in
+    let acc = Dynarray.create () in
+    for i = start+1 to end_inc do
+      Dynarray.get snapshots i
+      |> Session.Snapshot.last_command
+      |> Option.iter (fun command ->
+          Dynarray.add_last acc command
+        )
+    done;
+    Dynarray.to_list acc
+  )
 
 let sync_input_fields_from_snapshot
     (x : Session.Snapshot.t)
@@ -138,7 +144,7 @@ let lock_with_view : type a. (view -> a) -> a =
       f
         {
           init_state = !init_state;
-          commands = commands_of_snapshots snapshots;
+          commands = commands_between_snapshots snapshots;
           cur_snapshot = Dynarray.get snapshots !cur_ver;
           cur_ver = !cur_ver;
         }
@@ -192,35 +198,47 @@ let stop_filter_and_search_and_restore_input_fields () =
     )
 
 let recompute_current_state_if_missing pool =
-  let snapshot = Dynarray.get snapshots !cur_ver in
+  let cur_ver = !cur_ver in
+  let snapshot = Dynarray.get snapshots cur_ver in
   match Session.Snapshot.state snapshot with
   | None -> (
       let last_preceding_ver_with_state =
         let ver = ref None in
-        for i = !cur_ver downto 0 do
+        for i = cur_ver downto 0 do
           if Option.is_some (Session.Snapshot.state (Dynarray.get snapshots i)) then (
-            ver := Some i
+            match !ver with
+            | None -> (
+                ver := Some i
+              )
+            | Some _ -> ()
           )
         done;
         Option.get !ver
       in
-      let commands = CCList.drop last_preceding_ver_with_state (commands_of_snapshots snapshots) in
-      let snapshot =
-        List.fold_left (fun snapshot command ->
-            let state =
-              Option.get
-                (Session.run_command
-                   pool
-                   command
-                   (Session.Snapshot.state_exn snapshot))
-              |> snd
-            in
-            Session.Snapshot.update_state state snapshot
+      let commands =
+        commands_between_snapshots
+          ~start:last_preceding_ver_with_state
+          ~end_inc:cur_ver
+          snapshots
+      in
+      let state =
+        List.fold_left (fun state command ->
+            Session.run_command
+              pool
+              command
+              state
+            |> Option.get
+            |> snd
           )
-          (Dynarray.get snapshots last_preceding_ver_with_state)
+          (Session.Snapshot.state_exn
+             (Dynarray.get snapshots last_preceding_ver_with_state))
           commands
       in
-      Dynarray.set snapshots !cur_ver snapshot
+      let snapshot = Dynarray.get snapshots cur_ver in
+      Dynarray.set
+        snapshots
+        cur_ver
+        (Session.Snapshot.update_state state snapshot)
     )
   | Some _ -> ()
 
