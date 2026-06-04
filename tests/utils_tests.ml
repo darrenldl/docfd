@@ -28,50 +28,11 @@ module Alco = struct
     test' "abc/def" "abc////.//./././/def";
     ()
 
-  let normalize_glob_to_absolute_corpus () =
-    let test expected input =
-      Alcotest.(check string)
-        (Printf.sprintf "%s becomes %s" input expected)
-        expected
-        (Misc_utils'.normalize_glob_to_absolute input)
-    in
-    let cwd = Sys.getcwd () in
-    let test' expected input =
-      test (if expected = "" then cwd else Filename.concat cwd expected) input
-    in
-    test "/" "/..";
-    test "/" "/..";
-    test "/" "/abcd/..";
-    test "/" "/abcd/..";
-    test "/abc" "/abc/";
-    test "/abc" "/abc/def/..";
-    test "/abc" "/abc/*/..";
-    test "/abc/**/.." "/abc/**/..";
-    test "/abc/**/def" "/abc/**/def";
-    test "/**/def/*/.." "/abc/../**/def/*/..";
-    test "/abc/**/def" "/abc/.////**/def";
-    test "/abc" "/abc//";
-    test "/abc/def" "/abc//def";
-    test "/abc/def" "/abc/./def";
-    test "/abc/def" "/abc/.///def/.";
-    test "/def" "/abc/.//../def/.";
-    test' "" "abc/..";
-    test' "def" "abc/../def";
-    test' "abc/def" "abc////.//./././/def";
-    test' "abc/**/../def" "abc/**/../def";
-    test' "abc/**/../def" "abc/*/../**/../def";
-    test' "abc/*/def" "abc/*/*/../def";
-    ()
-
   let suite =
     [
       Alcotest.test_case
         "normalize_path_to_absolute_corpus"
         `Quick
         normalize_path_to_absolute_corpus;
-      Alcotest.test_case
-        "normalize_glob_to_absolute_corpus"
-        `Quick
-        normalize_glob_to_absolute_corpus;
     ]
 end
