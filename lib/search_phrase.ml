@@ -9,12 +9,6 @@ type match_typ = [
 type match_typ_marker = [ `Exact | `Prefix | `Suffix ]
 [@@deriving show, ord]
 
-let char_of_match_typ_marker (x : match_typ_marker) =
-  match x with
-  | `Exact -> '\''
-  | `Prefix -> '^'
-  | `Suffix -> '$'
-
 let string_of_match_typ_marker (x : match_typ_marker) =
   match x with
   | `Exact -> "\'"

@@ -756,14 +756,6 @@ let page_count ~doc_id =
        column_int stmt 0
     )
 
-let ccvector_of_int_map
-  : 'a . 'a Int_map.t -> 'a CCVector.ro_vector =
-  fun m ->
-  Int_map.to_seq m
-  |> Seq.map snd
-  |> CCVector.of_seq
-  |> CCVector.freeze
-
 let is_indexed_sql =
   {|
     SELECT 1

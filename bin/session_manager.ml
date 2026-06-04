@@ -9,9 +9,6 @@ let search_request : (bool * string) Lock_protected_cell.t =
 let filter_request : (bool * string) Lock_protected_cell.t =
   Lock_protected_cell.make ()
 
-let version_shift_request : int Lock_protected_cell.t =
-  Lock_protected_cell.make ()
-
 let path_fuzzy_rank_request : (bool * string) Lock_protected_cell.t =
   Lock_protected_cell.make ()
 

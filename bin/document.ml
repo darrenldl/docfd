@@ -46,8 +46,6 @@ let search_mode (t : t) = t.search_mode
 
 let path (t : t) = t.path
 
-let search_path_parts (t : t) = t.search_path_parts
-
 let path_date (t : t) = t.path_date
 
 let mod_time (t : t) = t.mod_time
@@ -67,10 +65,6 @@ let last_scan (t : t) = t.last_scan
 let links (t : t) = t.links
 
 let link_index_of_start_pos (t : t) = t.link_index_of_start_pos
-
-let refresh_modification_time ~path =
-  let time = Unix.time () in
-  Unix.utimes path time time
 
 let reset_search_scope_to_full (t : t) : t =
   { t with search_scope = None }
