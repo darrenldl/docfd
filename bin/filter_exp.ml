@@ -139,7 +139,6 @@ module Parsers = struct
   let glob =
     maybe_quoted_string ()
     >>= fun s ->
-    let s = Misc_utils.normalize_filter_glob_if_not_empty s in
     match Glob.parse s with
     | None -> fail ""
     | Some x -> return x

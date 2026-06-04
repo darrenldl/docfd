@@ -91,13 +91,6 @@ let progress_with_reporter ~interactive bar f =
     f (fun _ -> ())
   )
 
-let normalize_filter_glob_if_not_empty (s : string) =
-  if String.length s = 0 then (
-    s
-  ) else (
-    normalize_glob_to_absolute s
-  )
-
 let trim_angstrom_error_msg (s : string) =
   CCString.chop_prefix ~pre:": " s
   |> Option.value ~default:s

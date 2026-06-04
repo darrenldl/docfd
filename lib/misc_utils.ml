@@ -110,39 +110,6 @@ let path_of_parts parts =
   | [ x ] -> x
   | l -> String.concat Filename.dir_sep l
 
-let normalize_glob_to_absolute glob =
-  let rec aux acc parts =
-    match parts with
-    | [] -> path_of_parts acc
-    | x :: xs -> (
-        match x with
-        | "" | "." -> aux acc xs
-        | ".." -> (
-            let acc =
-              match acc with
-              | [] -> []
-              | _ :: xs -> xs
-            in
-            aux acc xs
-          )
-        | "**" -> (
-            aux (List.rev parts @ acc) []
-          )
-        | _ -> (
-            aux (x :: acc) xs
-          )
-      )
-  in
-  let glob_parts = CCString.split ~by:Filename.dir_sep glob in
-  match glob_parts with
-  | "" :: l -> (
-      (* Absolute path on Unix-like systems *)
-      aux [ "" ] l
-    )
-  | _ -> (
-      aux (cwd_path_parts ()) glob_parts
-    )
-
 let normalize_path_to_absolute path =
   let rec aux acc path_parts =
     match path_parts with
