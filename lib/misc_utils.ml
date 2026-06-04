@@ -104,11 +104,6 @@ let opening_closing_symbol_pairs (l : string list) : (int * int) list =
   in
   pairs
 
-let cwd_path_parts () =
-  Sys.getcwd ()
-  |> CCString.split ~by:Filename.dir_sep
-  |> List.rev
-
 let path_of_parts parts =
   match List.rev parts with
   | [] | [ "" ] -> Filename.dir_sep
@@ -175,5 +170,5 @@ let normalize_path_to_absolute path =
       aux [ "" ] l
     )
   | _ -> (
-      aux (cwd_path_parts ()) path_parts
+      aux Params.cwd_path_parts path_parts
     )

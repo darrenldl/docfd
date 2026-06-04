@@ -54,11 +54,8 @@ let typ_of_path (path : string) : (typ * is_link) option =
   with
   | _ -> None
 
-let cwd_with_trailing_sep () = Sys.getcwd () ^ Filename.dir_sep
-
 let remove_cwd_from_path (s : string) =
-  let pre = cwd_with_trailing_sep () in
-  match CCString.chop_prefix ~pre s with
+  match CCString.chop_prefix ~pre:Params.cwd_with_trailing_sep s with
   | None -> s
   | Some s -> s
 
@@ -196,7 +193,7 @@ let list_files_recursive_filter_by_globs
           aux ~case_sensitive [ "" ] l
         )
       | _ -> (
-          aux ~case_sensitive (cwd_path_parts ()) glob_parts
+          aux ~case_sensitive Params.cwd_path_parts glob_parts
         )
     ) globs;
   !acc

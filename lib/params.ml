@@ -31,6 +31,15 @@ let default_max_fuzzy_edit_dist = 2
 
 let max_fuzzy_edit_dist = ref default_max_fuzzy_edit_dist
 
+let cwd_path_parts =
+  Sys.getcwd ()
+  |> CCString.split ~by:Filename.dir_sep
+  |> List.rev
+
+let cwd = Sys.getcwd ()
+
+let cwd_with_trailing_sep = Sys.getcwd () ^ Filename.dir_sep
+
 let db_schema =
   {|
 CREATE TABLE IF NOT EXISTS line_info (
