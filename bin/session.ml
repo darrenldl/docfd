@@ -625,7 +625,7 @@ module State = struct
              |> String_set.to_seq
              |> Seq.map File_utils.remove_cwd_from_path
              |> Misc_utils.fuzzy_rank_assoc
-               (Stop_signal.make ())
+               stop_signal
                ~get_key:Fun.id
                exp
              |> Dynarray.to_list

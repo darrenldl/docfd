@@ -172,6 +172,7 @@ let fuzzy_rank_assoc
     (fun () ->
        items
        |> Seq.fold_left (fun acc item ->
+           Eio.Fiber.yield ();
            let line = get_key item in
            match search_in_line line exp with
            | None -> acc
