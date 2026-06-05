@@ -1091,8 +1091,8 @@ module Bottom_pane = struct
             { label = ""; msg = "" };
             { label = "x"; msg = "CLEAR" };
             { label = "-/="; msg = "scroll content view" };
-            { label = ""; msg = "" };
             { label = "l"; msg = "LINKS" };
+            { label = "Shift+F"; msg = "PATH-FUZZY-RANK" };
             { label = ""; msg = "" };
             { label = "r"; msg = "RELOAD" };
             { label = "Shift+M"; msg = "UNMARK" };
