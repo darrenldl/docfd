@@ -93,7 +93,10 @@ let list_files_recursive
     let hidden =
       String.starts_with ~prefix:"." (Filename.basename path)
     in
-    if ((hidden && !Params.scan_hidden) || not hidden)
+    let proceed_even_if_hidden =
+      hidden && (!Params.scan_hidden || depth = 0)
+    in
+    if (not hidden || proceed_even_if_hidden)
     && depth <= max_depth then (
       match typ_of_path path with
       | Some (`Dir, _) -> (

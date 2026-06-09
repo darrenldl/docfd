@@ -25,6 +25,8 @@
   fast typing
 - Fixed filter exp to not take the hidden cwd part of document path into account
 - Improved link extraction
+- Fixed file scanning logic when hidden paths are directly specified or current working directory is a hidden path
+    - Previously, the file or directory would be ignored, unless `--hidden` is also specified, which was counterintuitive
 - Minor UI fixes and polishes
 
 ## 12.3.2
