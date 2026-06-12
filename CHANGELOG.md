@@ -27,6 +27,7 @@
 - Improved link extraction
 - Fixed file scanning logic when hidden paths are directly specified or current working directory is a hidden path
     - Previously, the file or directory would be ignored, unless `--hidden` is also specified, which was counterintuitive
+- Fixes [#20](https://github.com/darrenldl/docfd/issues/20) by requiring upstream dependency `timedesc >= 3.1.2`, which addresses the issue
 - Minor UI fixes and polishes
 
 ## 12.3.2
