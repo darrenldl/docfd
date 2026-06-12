@@ -55,7 +55,7 @@ Features:
    digestif
    (eio_main (>= "1.3"))
    containers-data
-   (timedesc (>= "3.1.0"))
+   (timedesc (>= "3.1.2"))
    (re (>= "1.11.0"))
    (ppx_deriving (>= "5.0"))
    decompress
