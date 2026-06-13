@@ -15,13 +15,17 @@ Features:
 
 - Multithreaded indexing and searching
 
-- Multiline fuzzy search of multiple files or a single file
-
-- Swap between multi-file view and single file view on the fly
+- Multiline fuzzy search of multiple files
 
 - Content view pane that shows the snippet surrounding the search result selected
 
 - Text editor and PDF viewer integration
+
+- Editable command history - rewrite/plan your actions in text editor
+
+- Search scope narrowing - limit scope of next search based on current search results
+
+- Clipboard integration
               """
 maintainer: ["Darren Li"]
 authors: ["Darren Li"]
@@ -47,7 +51,7 @@ depends: [
   "digestif"
   "eio_main" {>= "1.3"}
   "containers-data"
-  "timedesc" {>= "3.1.0"}
+  "timedesc" {>= "3.1.2"}
   "re" {>= "1.11.0"}
   "ppx_deriving" {>= "5.0"}
   "decompress"

@@ -29,13 +29,17 @@ Features:
 
 - Multithreaded indexing and searching
 
-- Multiline fuzzy search of multiple files or a single file
-
-- Swap between multi-file view and single file view on the fly
+- Multiline fuzzy search of multiple files
 
 - Content view pane that shows the snippet surrounding the search result selected
 
 - Text editor and PDF viewer integration
+
+- Editable command history - rewrite/plan your actions in text editor
+
+- Search scope narrowing - limit scope of next search based on current search results
+
+- Clipboard integration
               ")
  (documentation https://github.com/darrenldl/docfd)
  (depends
