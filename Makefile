@@ -29,8 +29,12 @@ podman-build-demo-vhs-with-refresh:
 lock:
 	opam lock .
 
+.PHONY: opam-file
+opam-file:
+	dune build docfd.opam
+
 .PHONY: release-build
-release-build :
+release-build : opam-file
 	python3 update-version-string.py
 	dune build --release bin/docfd.exe
 	mkdir -p release
@@ -38,7 +42,7 @@ release-build :
 	chmod 755 release/docfd
 
 .PHONY: release-static-build
-release-static-build :
+release-static-build : opam-file
 	python3 update-version-string.py
 	OCAMLPARAM='_,ccopt=-static' dune build --release bin/docfd.exe
 	mkdir -p release
