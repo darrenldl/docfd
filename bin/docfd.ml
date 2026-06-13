@@ -1091,25 +1091,29 @@ let run
                 "; Note that for commands that accept text, all text after `:` is trimmed and then used in full.";
                 "; This means \" and ' are treated literally and are not used to delimit strings.";
                 ";";
-                "; Possible commands:";
+                "; Example commands:";
                 Fmt.str "; - %a" Command.pp (`Search "search phrase");
                 Fmt.str "; - %a" Command.pp (`Search "");
                 Fmt.str "; - %a" Command.pp (`Filter "path-fuzzy:\"file txt\"");
                 Fmt.str "; - %a" Command.pp (`Filter "");
                 Fmt.str "; - %a" Command.pp (`Sort (Command.Sort_by.default, Command.Sort_by.default_no_score));
                 Fmt.str "; - %a" Command.pp (`Path_fuzzy_rank ("readme", None));
-                Fmt.str "; - %a" Command.pp (`Narrow_level 1);
-                Fmt.str "; - %a" Command.pp (`Mark "/path/to/document");
-                Fmt.str "; - %a" Command.pp `Mark_listed;
-                Fmt.str "; - %a" Command.pp (`Unmark "/path/to/document");
-                Fmt.str "; - %a" Command.pp `Unmark_listed;
-                Fmt.str "; - %a" Command.pp `Unmark_all;
+                Fmt.str "; - %a" Command.pp (`Split_screen `Wide_right);
+                Fmt.str "; - %a" Command.pp (`Split_screen `Even);
+                Fmt.str "; - %a" Command.pp (`Hide_pane `Key_binding_info);
+                Fmt.str "; - %a" Command.pp (`Show_pane `Key_binding_info);
                 Fmt.str "; - %a" Command.pp (`Drop "/path/to/document");
                 Fmt.str "; - %a" Command.pp (`Drop_all_except "/path/to/document");
                 Fmt.str "; - %a" Command.pp `Drop_marked;
                 Fmt.str "; - %a" Command.pp `Drop_unmarked;
                 Fmt.str "; - %a" Command.pp `Drop_listed;
                 Fmt.str "; - %a" Command.pp `Drop_unlisted;
+                Fmt.str "; - %a" Command.pp (`Narrow_level 1);
+                Fmt.str "; - %a" Command.pp (`Mark "/path/to/document");
+                Fmt.str "; - %a" Command.pp `Mark_listed;
+                Fmt.str "; - %a" Command.pp (`Unmark "/path/to/document");
+                Fmt.str "; - %a" Command.pp `Unmark_listed;
+                Fmt.str "; - %a" Command.pp `Unmark_all;
               ]
             in
             let init_state =
