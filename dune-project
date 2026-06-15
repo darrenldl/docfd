@@ -62,7 +62,7 @@ Features:
    (timedesc (>= "3.1.2"))
    (re (>= "1.11.0"))
    (ppx_deriving (>= "5.0"))
-   (decompress (>= "1.5.3"))
+   (decompress (>= "1.2.0"))
    (progress (>= "0.5.0"))
    diet
    sqlite3
