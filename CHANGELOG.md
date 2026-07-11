@@ -1,5 +1,9 @@
 # Changelog
 
+## 13.0.1
+
+- Minor UI fix for bottom right pane showing up when there are no search results after `v` has been used to hide it
+
 ## 13.0.0
 
 - Removed fzf dependency entirely

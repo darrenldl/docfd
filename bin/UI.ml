@@ -591,8 +591,11 @@ module Top_pane = struct
           let _ = height in
           Nottui_widgets.empty_lwd
         in
-        UI_base.vpane ~width ~height
-          blank blank
+        if show_bottom_right_pane then (
+          UI_base.vpane ~width ~height blank blank
+        ) else (
+          blank ~height
+        )
       ) else (
         let$* input_mode = Lwd.get UI_base.Vars.input_mode in
         let$* search_result_selected = Lwd.get UI_base.Vars.index_of_search_result_selected in
