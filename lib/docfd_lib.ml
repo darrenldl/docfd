@@ -47,5 +47,4 @@ let init ~db_path ~document_count_limit =
       None
     )
   in
-  close_db ();
   res

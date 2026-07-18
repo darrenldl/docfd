@@ -855,8 +855,8 @@ let words_of_global_line_num : doc_id:int64 -> int -> string Dynarray.t =
             if x >= global_line_count ~doc_id then (
               invalid_arg "Index.words_of_global_line_num: global_line_num out of range"
             ) else (
-              with_db (fun db ->
-                  let start, end_inc =
+              let start, end_inc =
+                with_db (fun db ->
                     step_stmt db
                       {|
         SELECT start_pos, end_inc_pos
@@ -870,9 +870,9 @@ let words_of_global_line_num : doc_id:int64 -> int -> string Dynarray.t =
                       (fun stmt ->
                          (Stmt.column_int stmt 0, Stmt.column_int stmt 1)
                       )
-                  in
-                  words_between_start_and_end_inc ~doc_id (start, end_inc)
-                )
+                  )
+              in
+              words_between_start_and_end_inc ~doc_id (start, end_inc)
             )
           )
           (doc_id, x)

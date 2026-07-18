@@ -734,14 +734,15 @@ let run
     compute_if_hide_document_list_initially_and_document_src ()
   in
   let clean_up () =
-    match init_document_src with
-    | Stdin tmp_file -> (
-        try
-          Sys.remove tmp_file
-        with
-        | Sys_error _ -> ()
-      )
-    | Files _ -> ()
+    (match init_document_src with
+     | Stdin tmp_file -> (
+         try
+           Sys.remove tmp_file
+         with
+         | Sys_error _ -> ()
+       )
+     | Files _ -> ());
+    Sqlite3_manager.close_db ();
   in
   do_if_debug (fun oc ->
       Printf.fprintf oc "Scanning completed\n"
