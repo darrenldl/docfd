@@ -23,13 +23,13 @@ module Stmt : sig
 
   val finalize : Sqlite3.stmt -> unit
 
-val column_int64 : Sqlite3.stmt -> int -> int64
+  val column_int64 : Sqlite3.stmt -> int -> int64
 
-val column_int : Sqlite3.stmt -> int -> int
+  val column_int : Sqlite3.stmt -> int -> int
 
-val column_text : Sqlite3.stmt -> int -> string
+  val column_text : Sqlite3.stmt -> int -> string
 
-val data_count : Sqlite3.stmt -> int
+  val data_count : Sqlite3.stmt -> int
 end
 
 module Data = Sqlite3.Data

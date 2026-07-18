@@ -33,8 +33,8 @@ let init ~db_path ~document_count_limit =
   Params.db_path := Some db_path;
   let db_res =
     with_db (fun db ->
-      Sqlite3.exec db Params.db_schema
-    )
+        Sqlite3.exec db Params.db_schema
+      )
   in
   let res =
     if not (Rc.is_success db_res) then (
