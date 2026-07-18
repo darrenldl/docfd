@@ -481,10 +481,10 @@ end = struct
       )
 
   let read_from_db () : unit =
-    let open Sqlite3_utils in
+    let open Sqlite3_manager in
     lock (fun () ->
         with_db (fun db ->
-            iter_stmt ~db
+            iter_stmt db
               {|
   SELECT word_id, doc_id
   FROM word_id_doc_id_link
@@ -505,12 +505,12 @@ let now_int64 () =
   |> Timedesc.Timestamp.get_s
 
 let refresh_last_used_batch (doc_ids : int64 list) : unit =
-  let open Sqlite3_utils in
+  let open Sqlite3_manager in
   let now = now_int64 () in
   with_db (fun db ->
-      step_stmt ~db "BEGIN IMMEDIATE" ignore;
+      step_stmt db "BEGIN IMMEDIATE" ignore;
       List.iter (fun doc_id ->
-          step_stmt ~db
+          step_stmt db
             {|
   UPDATE doc_info
   SET last_used = @now
@@ -522,25 +522,25 @@ let refresh_last_used_batch (doc_ids : int64 list) : unit =
             ignore;
         )
         doc_ids;
-      step_stmt ~db "COMMIT" ignore;
+      step_stmt db "COMMIT" ignore;
     )
 
 let document_count () : int =
-  let open Sqlite3_utils in
+  let open Sqlite3_manager in
   with_db (fun db ->
-      step_stmt ~db "SELECT COUNT(1) FROM doc_info"
+      step_stmt db "SELECT COUNT(1) FROM doc_info"
         (fun stmt ->
-           Int64.to_int (column_int64 stmt 0)
+           Int64.to_int (Stmt.column_int64 stmt 0)
         )
     )
 
 let prune_old_documents ~keep_n_latest : unit =
-  let open Sqlite3_utils in
+  let open Sqlite3_manager in
   with_db (fun db ->
-      step_stmt ~db "BEGIN IMMEDIATE" ignore;
-      step_stmt ~db "DROP TABLE IF EXISTS temp.docs_to_drop" ignore;
-      step_stmt ~db "CREATE TEMP TABLE docs_to_drop (hash TEXT, id INTEGER)" ignore;
-      step_stmt ~db
+      step_stmt db "BEGIN IMMEDIATE" ignore;
+      step_stmt db "DROP TABLE IF EXISTS temp.docs_to_drop" ignore;
+      step_stmt db "CREATE TEMP TABLE docs_to_drop (hash TEXT, id INTEGER)" ignore;
+      step_stmt db
         {|
     INSERT INTO temp.docs_to_drop
     SELECT hash, id
@@ -552,7 +552,7 @@ let prune_old_documents ~keep_n_latest : unit =
         ~names:[("@offset", INT (Int64.of_int keep_n_latest))]
         ignore;
       let drop_based_on_doc_id ?(id_column = "doc_id") table =
-        step_stmt ~db
+        step_stmt db
           (Fmt.str
              {|
       DELETE FROM %s
@@ -571,15 +571,14 @@ let prune_old_documents ~keep_n_latest : unit =
       drop_based_on_doc_id "page_info";
       drop_based_on_doc_id "position";
       drop_based_on_doc_id "word_id_doc_id_link";
-      step_stmt ~db "DROP TABLE temp.docs_to_drop" ignore;
-      step_stmt ~db "COMMIT" ignore;
+      step_stmt db "DROP TABLE temp.docs_to_drop" ignore;
+      step_stmt db "COMMIT" ignore;
     )
 
 let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
-  let open Sqlite3_utils in
+  let open Sqlite3_manager in
   let now = now_int64 () in
-  with_db ~db (fun db ->
-      step_stmt ~db
+      step_stmt db
         {|
   UPDATE doc_info
   SET page_count = @page_count,
@@ -598,9 +597,9 @@ let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
                ]
         ignore;
       if not already_in_transaction then (
-        step_stmt ~db "BEGIN IMMEDIATE" ignore;
+        step_stmt db "BEGIN IMMEDIATE" ignore;
       );
-      with_stmt ~db
+      with_stmt db
         {|
   INSERT INTO page_info
   (doc_id, page_num, line_count, start_pos, end_inc_pos)
@@ -613,18 +612,19 @@ let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
                let (start_pos, end_inc_pos) =
                  Int_map.find page_num x.start_end_inc_pos_of_page_num
                in
-               bind_names stmt [ ("@doc_id", INT doc_id)
+               Stmt.bind_names stmt
+               [ ("@doc_id", INT doc_id)
                                ; ("@page_num", INT (Int64.of_int page_num))
                                ; ("@line_count", INT (Int64.of_int line_count))
                                ; ("@start_pos", INT (Int64.of_int start_pos))
                                ; ("@end_inc_pos", INT (Int64.of_int end_inc_pos))
                                ];
-               step stmt;
-               reset stmt;
+               Stmt.step stmt;
+               Stmt.reset stmt;
              )
              x.line_count_of_page_num
         );
-      with_stmt ~db
+      with_stmt db
         {|
   INSERT INTO line_info
   (doc_id, global_line_num, start_pos, end_inc_pos, page_num, line_num_in_page)
@@ -639,19 +639,20 @@ let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
                in
                let page_num = line_loc.Line_loc.page_num in
                let line_num_in_page = line_loc.Line_loc.line_num_in_page in
-               bind_names stmt [ ("@doc_id", INT doc_id)
+               Stmt.bind_names stmt
+               [ ("@doc_id", INT doc_id)
                                ; ("@global_line_num", INT (Int64.of_int line_num))
                                ; ("@start_pos", INT (Int64.of_int start_pos))
                                ; ("@end_inc_pos", INT (Int64.of_int end_inc_pos))
                                ; ("@page_num", INT (Int64.of_int page_num))
                                ; ("@line_num_in_page", INT (Int64.of_int line_num_in_page))
                                ];
-               step stmt;
-               reset stmt;
+               Stmt.step stmt;
+               Stmt.reset stmt;
              )
              x.line_loc_of_global_line_num;
         );
-      with_stmt ~db
+      with_stmt db
         {|
   INSERT INTO position
   (doc_id, pos, word_id)
@@ -662,19 +663,19 @@ let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
         (fun stmt ->
            Int_map.iter (fun word_id pos_s ->
                Int_set.iter (fun pos ->
-                   bind_names stmt
+                   Stmt.bind_names stmt
                      [ ("@doc_id", INT doc_id)
                      ; ("@pos", INT (Int64.of_int pos))
                      ; ("@word_id", INT (Int64.of_int word_id))
                      ];
-                   step stmt;
-                   reset stmt;
+                   Stmt.step stmt;
+                   Stmt.reset stmt;
                  )
                  pos_s
              )
              x.pos_s_of_word
         );
-      with_stmt ~db
+      with_stmt db
         {|
   INSERT INTO link
   (doc_id, start_pos, end_inc_pos, typ, link)
@@ -686,19 +687,19 @@ let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
            Array.iter (fun link ->
                let { Link.start_pos; end_inc_pos; typ; link } = link in
                let typ = Link.string_of_typ typ in
-               bind_names stmt
+               Stmt.bind_names stmt
                  [ ("@doc_id", INT doc_id)
                  ; ("@start_pos", INT (Int64.of_int start_pos))
                  ; ("@end_inc_pos", INT (Int64.of_int end_inc_pos))
                  ; ("@typ", TEXT typ)
                  ; ("@link", TEXT link)
                  ];
-               step stmt;
-               reset stmt;
+               Stmt.step stmt;
+               Stmt.reset stmt;
              )
              x.links
         );
-      with_stmt ~db
+      with_stmt db
         {|
   INSERT INTO word_id_doc_id_link
   (word_id, doc_id)
@@ -709,16 +710,16 @@ let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
         (fun stmt ->
            Int_map.iter (fun word_id _pos_s ->
                State.add_word_id_doc_id_link ~word_id ~doc_id;
-               bind_names stmt
+               Stmt.bind_names stmt
                  [ ("@word_id", INT (Int64.of_int word_id))
                  ; ("@doc_id", INT doc_id)
                  ];
-               step stmt;
-               reset stmt;
+               Stmt.step stmt;
+               Stmt.reset stmt;
              )
              x.pos_s_of_word
         );
-      step_stmt ~db
+      step_stmt db
         {|
       UPDATE doc_info
       SET status = 'COMPLETED'
@@ -727,34 +728,37 @@ let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
         ~names:[ ("@doc_id", INT doc_id) ]
         ignore;
       if not already_in_transaction then (
-        step_stmt ~db "COMMIT" ignore;
-      );
-    )
+        step_stmt db "COMMIT" ignore;
+      )
 
 let global_line_count =
-  let open Sqlite3_utils in
+  let open Sqlite3_manager in
   fun ~doc_id ->
-    step_stmt
+    with_db (fun db ->
+    step_stmt db
       {|
     SELECT global_line_count FROM doc_info
     WHERE id = @doc_id
     |}
       ~names:[ ("@doc_id", INT doc_id) ]
       (fun stmt ->
-         column_int stmt 0
+         Stmt.column_int stmt 0
       )
+    )
 
 let page_count ~doc_id =
-  let open Sqlite3_utils in
-  step_stmt
+  let open Sqlite3_manager in
+  with_db (fun db ->
+  step_stmt db
     {|
     SELECT page_count FROM doc_info
     WHERE id = @doc_id
     |}
     ~names:[("@doc_id", INT doc_id)]
     (fun stmt ->
-       column_int stmt 0
+       Stmt.column_int stmt 0
     )
+  )
 
 let is_indexed_sql =
   {|
@@ -765,17 +769,20 @@ let is_indexed_sql =
     |}
 
 let is_indexed ~doc_hash =
-  let open Sqlite3_utils in
-  step_stmt
+  let open Sqlite3_manager in
+  with_db (fun db ->
+  step_stmt db
     is_indexed_sql
     ~names:[ ("@doc_hash", TEXT doc_hash) ]
     (fun stmt ->
        data_count stmt > 0
     )
+  )
 
 let word_of_pos ~doc_id pos : string =
-  let open Sqlite3_utils in
-  step_stmt
+  let open Sqlite3_manager in
+  with_db (fun db ->
+  step_stmt db
     {|
     SELECT word.word
     FROM position p
@@ -787,8 +794,9 @@ let word_of_pos ~doc_id pos : string =
     ~names:[ ("@doc_id", INT doc_id)
            ; ("@pos", INT (Int64.of_int pos)) ]
     (fun stmt ->
-       column_text stmt 0
+       Stmt.column_text stmt 0
     )
+  )
 
 let word_ci_of_pos ~doc_id pos : string =
   word_of_pos ~doc_id pos
@@ -807,9 +815,10 @@ let words_between_start_and_end_inc : doc_id:int64 -> int * int -> string Dynarr
   fun ~doc_id (start, end_inc) ->
     Eio.Mutex.use_rw ~protect:false lock (fun () ->
         CCCache.with_cache cache (fun (doc_id, start, end_inc) ->
-            let open Sqlite3_utils in
+            let open Sqlite3_manager in
             let acc = Dynarray.create () in
-            iter_stmt
+            with_db (fun db ->
+            iter_stmt db
               {|
     SELECT word.word
     FROM position p
@@ -826,6 +835,7 @@ let words_between_start_and_end_inc : doc_id:int64 -> int * int -> string Dynarr
               (fun data ->
                  Dynarray.add_last acc (Data.to_string_exn data.(0))
               );
+            );
             acc
           )
           (doc_id, start, end_inc)
@@ -841,12 +851,13 @@ let words_of_global_line_num : doc_id:int64 -> int -> string Dynarray.t =
   fun ~doc_id x ->
     Eio.Mutex.use_rw ~protect:false lock (fun () ->
         CCCache.with_cache cache (fun (doc_id, x) ->
-            let open Sqlite3_utils in
+            let open Sqlite3_manager in
             if x >= global_line_count ~doc_id then (
               invalid_arg "Index.words_of_global_line_num: global_line_num out of range"
             ) else (
+              with_db (fun db ->
               let start, end_inc =
-                step_stmt
+                step_stmt db
                   {|
         SELECT start_pos, end_inc_pos
         FROM line_info
@@ -857,22 +868,24 @@ let words_of_global_line_num : doc_id:int64 -> int -> string Dynarray.t =
                          ; ("@x", INT (Int64.of_int x))
                          ]
                   (fun stmt ->
-                     (column_int stmt 0, column_int stmt 1)
+                     (Stmt.column_int stmt 0, Stmt.column_int stmt 1)
                   )
               in
               words_between_start_and_end_inc ~doc_id (start, end_inc)
+              )
             )
           )
           (doc_id, x)
       )
 
 let words_of_page_num ~doc_id x : string Dynarray.t =
-  let open Sqlite3_utils in
+  let open Sqlite3_manager in
   if x >= page_count ~doc_id then (
     invalid_arg "Index.words_of_page_num: page_num out of range"
   ) else (
     let start, end_inc =
-      step_stmt
+    with_db (fun db ->
+      step_stmt db
         {|
         SELECT start_pos, end_inc_pos
         FROM page_info
@@ -883,8 +896,9 @@ let words_of_page_num ~doc_id x : string Dynarray.t =
                ; ("@x", INT (Int64.of_int x))
                ]
         (fun stmt ->
-           (column_int stmt 0, column_int stmt 1)
+           (Stmt.column_int stmt 0, Stmt.column_int stmt 1)
         )
+    )
     in
     words_between_start_and_end_inc ~doc_id (start, end_inc)
   )
@@ -899,12 +913,13 @@ let line_of_global_line_num ~doc_id x =
   )
 
 let line_loc_of_global_line_num ~doc_id global_line_num : Line_loc.t =
-  let open Sqlite3_utils in
+  let open Sqlite3_manager in
   if global_line_num >= global_line_count ~doc_id then (
     invalid_arg "Index.line_loc_of_global_line_num: global_line_num out of range"
   ) else (
     let page_num, line_num_in_page =
-      step_stmt
+    with_db (fun db ->
+      step_stmt db
         {|
         SELECT page_num, line_num_in_page
         FROM line_info
@@ -914,16 +929,18 @@ let line_loc_of_global_line_num ~doc_id global_line_num : Line_loc.t =
         ~names:[ ("@doc_id", INT doc_id)
                ; ("@global_line_num", INT (Int64.of_int global_line_num)) ]
         (fun stmt ->
-           (column_int stmt 0, column_int stmt 1)
+           (Stmt.column_int stmt 0, Stmt.column_int stmt 1)
         )
+    )
     in
     { Line_loc.page_num; line_num_in_page; global_line_num }
   )
 
 let loc_of_pos ~doc_id pos : Loc.t =
-  let open Sqlite3_utils in
+  let open Sqlite3_manager in
   let pos_in_line, global_line_num =
-    step_stmt
+  with_db (fun db ->
+    step_stmt db
       {|
       SELECT @pos - start_pos, global_line_num
       FROM line_info
@@ -933,15 +950,17 @@ let loc_of_pos ~doc_id pos : Loc.t =
       ~names:[ ("@doc_id", INT doc_id)
              ; ("@pos", INT (Int64.of_int pos)) ]
       (fun stmt ->
-         (column_int stmt 0, column_int stmt 1)
+         (Stmt.column_int stmt 0, Stmt.column_int stmt 1)
       )
+  )
   in
   let line_loc = line_loc_of_global_line_num ~doc_id global_line_num in
   { line_loc; pos_in_line }
 
 let max_pos ~doc_id =
-  let open Sqlite3_utils in
-  step_stmt
+  let open Sqlite3_manager in
+  with_db (fun db ->
+  step_stmt db
     {|
     SELECT max_pos
     FROM doc_info
@@ -949,12 +968,14 @@ let max_pos ~doc_id =
     |}
     ~names:[ ("@doc_id", INT doc_id) ]
     (fun stmt ->
-       column_int stmt 0
+       Stmt.column_int stmt 0
     )
+  )
 
 let line_count_of_page_num ~doc_id page : int =
-  let open Sqlite3_utils in
-  step_stmt
+  let open Sqlite3_manager in
+  with_db (fun db ->
+  step_stmt db
     {|
     SELECT line_count
     FROM page_info
@@ -964,15 +985,17 @@ let line_count_of_page_num ~doc_id page : int =
     ~names:[ ("@doc_id", INT doc_id)
            ; ("@page", INT (Int64.of_int page)) ]
     (fun stmt ->
-       column_int stmt 0
+       Stmt.column_int stmt 0
     )
+  )
 
 let start_end_inc_pos_of_global_line_num ~doc_id global_line_num =
-  let open Sqlite3_utils in
+  let open Sqlite3_manager in
   if global_line_num >= global_line_count ~doc_id then (
     invalid_arg "Index.start_end_inc_pos_of_global_line_num: global_line_num out of range"
   ) else (
-    step_stmt
+    with_db (fun db ->
+    step_stmt db
       {|
       SELECT start_pos, end_inc_pos
       FROM line_info
@@ -982,8 +1005,9 @@ let start_end_inc_pos_of_global_line_num ~doc_id global_line_num =
       ~names:[ ("@doc_id", INT doc_id)
              ; ("@global_line_num", INT (Int64.of_int global_line_num)) ]
       (fun stmt ->
-         (column_int stmt 0, column_int stmt 1)
+         (Stmt.column_int stmt 0, Stmt.column_int stmt 1)
       )
+    )
   )
 
 module Search = struct
@@ -993,12 +1017,13 @@ module Search = struct
       ~doc_id
       (words : int Seq.t)
     : int Dynarray.t =
-    let open Sqlite3_utils in
+    let open Sqlite3_manager in
     let acc = Dynarray.create () in
     let f data =
       Dynarray.add_last acc (Data.to_int_exn data.(0))
     in
-    with_stmt
+    with_db (fun db ->
+    with_stmt db
       {|
     SELECT
       p.pos
@@ -1009,14 +1034,16 @@ module Search = struct
     |}
       (fun stmt ->
          Seq.iter (fun word_id ->
-             bind_names stmt [ ("@doc_id", INT doc_id)
+             Stmt.bind_names stmt
+             [ ("@doc_id", INT doc_id)
                              ; ("@word_id", INT (Int64.of_int word_id))
                              ];
-             Rc.check (iter stmt ~f);
-             reset stmt;
+             Stmt.iter stmt f;
+             Stmt.reset stmt;
            )
            words
       );
+    );
     acc
 
   let usable_positions
@@ -1025,7 +1052,7 @@ module Search = struct
       ~around_pos
       (token : Search_phrase.Enriched_token.t)
     : int Seq.t =
-    let open Sqlite3_utils in
+    let open Sqlite3_manager in
     Eio.Fiber.yield ();
     let match_typ = ET.match_typ token in
     let start, end_inc =
@@ -1102,7 +1129,8 @@ module Search = struct
                 )
             )
         in
-        iter_stmt
+        with_db (fun db ->
+        iter_stmt db
           (Fmt.str
              {|
               SELECT
@@ -1121,6 +1149,7 @@ module Search = struct
                  ; ("@end_inc", INT (Int64.of_int end_inc))
                  ]
           f
+        )
       );
       acc
     in
@@ -1577,9 +1606,9 @@ let generate_global_first_word_candidates_lookup
     acc
 
 let word_ids ~doc_id =
-  let open Sqlite3_utils in
+  let open Sqlite3_manager in
   with_db (fun db ->
-      fold_stmt ~db
+      fold_stmt db
         {|
     SELECT word_id_doc_id_link.word_id
     FROM word_id_doc_id_link
@@ -1593,10 +1622,10 @@ let word_ids ~doc_id =
     )
 
 let links ~doc_id : Link.t array =
-  let open Sqlite3_utils in
+  let open Sqlite3_manager in
   let acc = Dynarray.create () in
   with_db (fun db ->
-      iter_stmt ~db
+      iter_stmt db
         {|
     SELECT start_pos, end_inc_pos, typ, link
     FROM link
