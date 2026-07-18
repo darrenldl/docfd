@@ -321,19 +321,21 @@ let init_session_state_of_document_src ~env ~interactive pool (document_src : Do
              |> Doc_id_db.allocate_bulk
           );
         let indexed_files, unindexed_files =
-          let open Sqlite3_utils in
-          with_stmt
+          let open Sqlite3_manager in
+          with_db (fun db ->
+          with_stmt db
             Index.is_indexed_sql
             (fun stmt ->
                List.partition (fun (_, _, doc_hash) ->
-                   bind_names stmt [ ("@doc_hash", TEXT doc_hash) ];
-                   step stmt;
-                   let indexed = data_count stmt > 0 in
-                   reset stmt;
+                   Stmt.bind_names stmt [ ("@doc_hash", TEXT doc_hash) ];
+                   Stmt.step stmt;
+                   let indexed = Stmt.data_count stmt > 0 in
+                   Stmt.reset stmt;
                    indexed
                  )
                  file_and_hash_list
             )
+          )
         in
         indexed_files
         |> List.map (fun (_, _, doc_hash) ->

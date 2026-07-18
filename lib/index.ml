@@ -775,7 +775,7 @@ let is_indexed ~doc_hash =
     is_indexed_sql
     ~names:[ ("@doc_hash", TEXT doc_hash) ]
     (fun stmt ->
-       data_count stmt > 0
+       Stmt.data_count stmt > 0
     )
   )
 

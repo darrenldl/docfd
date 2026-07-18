@@ -85,12 +85,12 @@ let id_of_word s : int option =
     )
 
 let read_from_db () : unit =
-  let open Sqlite3_utils in
+  let open Sqlite3_manager in
   lock (fun () ->
       with_db (fun db ->
           t.word_of_id <- Int_map.empty;
           Hashtbl.clear t.id_of_word;
-          iter_stmt ~db
+          iter_stmt db
             {|
   SELECT id, word
   FROM word
@@ -109,25 +109,25 @@ let read_from_db () : unit =
     )
 
 let write_to_db db ~already_in_transaction : unit =
-  let open Sqlite3_utils in
+  let open Sqlite3_manager in
   lock (fun () ->
       if not already_in_transaction then (
-        step_stmt ~db "BEGIN IMMEDIATE" ignore;
+        step_stmt db "BEGIN IMMEDIATE" ignore;
       );
       let word_table_size =
-        step_stmt ~db
+        step_stmt db
           {|
       SELECT COUNT(1) FROM word
       |}
           (fun stmt ->
-             Int64.to_int (column_int64 stmt 0)
+             Int64.to_int (Stmt.column_int64 stmt 0)
           )
       in
       if word_table_size <> t.size_written_to_db then (
         Misc_utils.exit_with_error_msg
           "unexpected change in word table, likely due to indexing from another Docfd instance";
       );
-      with_stmt ~db
+      with_stmt db
         {|
   INSERT INTO word
   (id, word)
@@ -138,17 +138,17 @@ let write_to_db db ~already_in_transaction : unit =
         (fun stmt ->
            for id = t.size_written_to_db to t.size-1 do
              let word = Int_map.find id t.word_of_id in
-             bind_names
+             Stmt.bind_names
                stmt
                [ ("@id", INT (Int64.of_int id))
                ; ("@word", TEXT word)
                ];
-             step stmt;
-             reset stmt;
+             Stmt.step stmt;
+             Stmt.reset stmt;
            done
         );
       if not already_in_transaction then (
-        step_stmt ~db "COMMIT" ignore;
+        step_stmt db "COMMIT" ignore;
       );
       t.size_written_to_db <- t.size;
     )

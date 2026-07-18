@@ -61,14 +61,14 @@ let ir2_of_ir1_worker (t : t) =
   done
 
 let document_of_ir2_worker (t : t) =
-  let open Sqlite3_utils in
+  let open Sqlite3_manager in
   let run = ref true in
   let counter = ref 0 in
   let outstanding_transaction = ref false in
   with_db (fun db ->
       while !run do
         if !counter = 0 then (
-          step_stmt ~db "BEGIN IMMEDIATE" ignore;
+          step_stmt db "BEGIN IMMEDIATE" ignore;
           outstanding_transaction := true;
         );
         (match Eio.Stream.take t.ir2_queue with
@@ -83,7 +83,7 @@ let document_of_ir2_worker (t : t) =
                );
            ));
         if !counter >= 100 then (
-          step_stmt ~db "COMMIT" ignore;
+          step_stmt db "COMMIT" ignore;
           outstanding_transaction := false;
           counter := 0;
         ) else (
@@ -91,7 +91,7 @@ let document_of_ir2_worker (t : t) =
         );
       done;
       if !outstanding_transaction then (
-        step_stmt ~db "COMMIT" ignore;
+        step_stmt db "COMMIT" ignore;
       )
     )
 

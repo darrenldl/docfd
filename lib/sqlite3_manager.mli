@@ -1,4 +1,4 @@
-val close : unit -> unit
+val close_db : unit -> unit
 
 val with_db : (Sqlite3.db -> 'a) -> 'a
 
@@ -28,8 +28,10 @@ val column_int64 : Sqlite3.stmt -> int -> int64
 val column_int : Sqlite3.stmt -> int -> int
 
 val column_text : Sqlite3.stmt -> int -> string
+
+val data_count : Sqlite3.stmt -> int
 end
 
 module Data = Sqlite3.Data
 
-val data_count : Sqlite3.stmt -> int
+module Rc = Sqlite3.Rc

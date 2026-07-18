@@ -26,25 +26,26 @@ module Parser_components = Parser_components
 
 module Misc_utils' = Misc_utils
 
-module Sqlite3_utils = Sqlite3_utils
+module Sqlite3_manager = Sqlite3_manager
 
 let init ~db_path ~document_count_limit =
-  let open Sqlite3_utils in
-  let db = db_open db_path in
+  let open Sqlite3_manager in
+  Params.db_path := Some db_path;
   let db_res =
-    Sqlite3.exec db Params.db_schema
+    with_db (fun db ->
+      Sqlite3.exec db Params.db_schema
+    )
   in
   let res =
     if not (Rc.is_success db_res) then (
       Some (Fmt.str
               "failed to initialize index DB: %s" (Rc.to_string db_res))
     ) else (
-      Params.db_path := Some db_path;
       if Index.document_count () >= document_count_limit then (
         Index.prune_old_documents ~keep_n_latest:document_count_limit
       );
       None
     )
   in
-  while not (db_close db) do Unix.sleepf 0.1 done;
+  close_db ();
   res

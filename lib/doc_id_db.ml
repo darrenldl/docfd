@@ -14,10 +14,10 @@ let lock : type a. (unit -> a) -> a =
   Eio.Mutex.use_rw ~protect:true t.lock f
 
 let allocate_bulk (doc_hashes : string Seq.t) : unit =
-  let open Sqlite3_utils in
+  let open Sqlite3_manager in
   lock (fun () ->
       with_db (fun db ->
-          with_stmt ~db
+          with_stmt db
             {|
   INSERT INTO doc_info
   (id, hash, status)
@@ -51,13 +51,13 @@ let allocate_bulk (doc_hashes : string Seq.t) : unit =
   |}
             (fun stmt ->
                Seq.iter (fun doc_hash ->
-                   bind_names stmt [ ("@doc_hash", TEXT doc_hash) ];
-                   step stmt;
-                   reset stmt;
+                   Stmt.bind_names stmt [ ("@doc_hash", TEXT doc_hash) ];
+                   Stmt.step stmt;
+                   Stmt.reset stmt;
                  )
                  doc_hashes
             );
-          with_stmt ~db
+          with_stmt db
             {|
     SELECT id
     FROM doc_info
@@ -65,10 +65,10 @@ let allocate_bulk (doc_hashes : string Seq.t) : unit =
     |}
             (fun stmt ->
                Seq.iter (fun doc_hash ->
-                   bind_names stmt [ ("@doc_hash", TEXT doc_hash) ];
-                   step stmt;
-                   Hashtbl.add t.doc_id_of_doc_hash doc_hash (column_int64 stmt 0);
-                   reset stmt;
+                   Stmt.bind_names stmt [ ("@doc_hash", TEXT doc_hash) ];
+                   Stmt.step stmt;
+                   Hashtbl.add t.doc_id_of_doc_hash doc_hash (Stmt.column_int64 stmt 0);
+                   Stmt.reset stmt;
                  )
                  doc_hashes
             )

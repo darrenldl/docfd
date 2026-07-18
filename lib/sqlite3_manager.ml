@@ -10,7 +10,7 @@ let ctx : ctx = {
   lock = Eio.Mutex.create ();
 }
 
-let close () =
+let close_db () =
   Eio.Mutex.use_rw ~protect:true ctx.lock (fun () ->
     Option.iter (fun db ->
           let try_count = ref 0 in
@@ -77,6 +77,8 @@ let column_int64 = Sqlite3.column_int64
 let column_int = Sqlite3.column_int
 
 let column_text = Sqlite3.column_text
+
+let data_count = Sqlite3.data_count
 end
 
 let exec db s =
