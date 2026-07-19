@@ -41,20 +41,16 @@ let with_db : type a. (db -> a) -> a =
   res
 
 let retry_if_busy (f : unit -> Sqlite3.Rc.t) =
-  let rec aux tries_left =
+  let rec aux () =
     let r = f () in
-    if tries_left > 0 then (
       match r with
       | BUSY -> (
-          Unix.sleepf 0.1;
-          aux (tries_left - 1)
+          Unix.sleepf (0.1 +. Random.float 0.1);
+          aux ()
         )
       | _ -> r
-    ) else (
-      r
-    )
   in
-  aux 50
+  aux ()
 
 module Stmt = struct
   let bind_names stmt l =
