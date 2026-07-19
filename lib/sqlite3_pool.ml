@@ -15,7 +15,7 @@ let close_db () =
       Dynarray.iter (fun db ->
           let try_count = ref 0 in
           while !try_count < 10 && not (db_close db) do
-            Unix.sleepf 0.01;
+            Unix.sleepf 0.1;
             incr try_count;
           done
         ) t.free
