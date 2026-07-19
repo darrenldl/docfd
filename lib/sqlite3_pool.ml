@@ -1,39 +1,44 @@
 include Sqlite3
 
-type ctx = {
-  mutable db : Sqlite3.db option;
+type t = {
+  free : Sqlite3.db Dynarray.t;
   lock : Eio.Mutex.t;
 }
 
-let ctx : ctx = {
-  db = None;
+let t : t = {
+  free = Dynarray.create ();
   lock = Eio.Mutex.create ();
 }
 
 let close_db () =
-  Eio.Mutex.use_rw ~protect:true ctx.lock (fun () ->
-      Option.iter (fun db ->
+  Eio.Mutex.use_rw ~protect:true t.lock (fun () ->
+      Dynarray.iter (fun db ->
           let try_count = ref 0 in
           while !try_count < 10 && not (db_close db) do
             Unix.sleepf 0.01;
             incr try_count;
           done
-        ) ctx.db
+        ) t.free
     )
 
 let with_db : type a. (db -> a) -> a =
   fun f ->
-  Eio.Mutex.use_rw ~protect:true ctx.lock (fun () ->
-      ctx.db <- Some
-          (match ctx.db with
-           | None -> (
+    let db =
+  Eio.Mutex.use_rw ~protect:true t.lock (fun () ->
+    match Dynarray.pop_last_opt t.free with
+    | None -> (
                db_open
                  ~mutex:`FULL
                  (CCOption.get_exn_or "Docfd_lib.Params.db_path uninitialized" !Params.db_path)
-             )
-           | Some db -> db);
-      f (Option.get ctx.db)
     )
+    | Some db -> db
+  )
+    in
+    let res = f db in
+  Eio.Mutex.use_rw ~protect:true t.lock (fun () ->
+    Dynarray.add_last t.free db
+  );
+  res
 
 let retry_if_busy (f : unit -> Sqlite3.Rc.t) =
   let rec aux tries_left =
