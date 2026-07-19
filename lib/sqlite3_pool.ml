@@ -43,12 +43,12 @@ let with_db : type a. (db -> a) -> a =
 let retry_if_busy (f : unit -> Sqlite3.Rc.t) =
   let rec aux () =
     let r = f () in
-      match r with
-      | BUSY -> (
-          Unix.sleepf (0.1 +. Random.float 0.1);
-          aux ()
-        )
-      | _ -> r
+    match r with
+    | BUSY -> (
+        Unix.sleepf (0.1 +. Random.float 0.1);
+        aux ()
+      )
+    | _ -> r
   in
   aux ()
 
