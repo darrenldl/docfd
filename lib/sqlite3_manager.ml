@@ -1,39 +1,48 @@
 include Sqlite3
 
-type ctx = {
-  mutable db : Sqlite3.db option;
-  lock : Eio.Mutex.t;
-}
+let requests : (db -> unit) option Eio.Stream.t =
+  Eio.Stream.create Int.max_int
 
-let ctx : ctx = {
-  db = None;
-  lock = Eio.Mutex.create ();
-}
-
-let close_db () =
-  Eio.Mutex.use_rw ~protect:true ctx.lock (fun () ->
+let fiber () =
+  let db = ref None in
+  while true do
+    match Eio.Stream.take requests with
+    | None -> (
       Option.iter (fun db ->
           let try_count = ref 0 in
           while !try_count < 10 && not (db_close db) do
             Unix.sleepf 0.01;
             incr try_count;
           done
-        ) ctx.db
+        ) !db
     )
-
-let with_db : type a. (db -> a) -> a =
-  fun f ->
-  Eio.Mutex.use_rw ~protect:true ctx.lock (fun () ->
-      ctx.db <- Some
-          (match ctx.db with
+    | Some f -> (
+  failwith "test 0";
+      db := Some
+          (match !db with
            | None -> (
                db_open
                  ~mutex:`FULL
                  (CCOption.get_exn_or "Docfd_lib.Params.db_path uninitialized" !Params.db_path)
              )
            | Some db -> db);
-      f (Option.get ctx.db)
+  failwith "test";
+      f (Option.get !db)
     )
+  done
+
+let close_db () =
+  Eio.Stream.add requests None
+
+let with_db : type a. (db -> a) -> a =
+  fun f ->
+    let waiter, resolver = Eio.Promise.create () in
+    let f db =
+      let x = f db in
+      Eio.Promise.resolve resolver x
+    in
+    Eio.Stream.add requests (Some f);
+    Eio.Promise.await waiter
 
 let retry_if_busy (f : unit -> Sqlite3.Rc.t) =
   let rec aux tries_left =

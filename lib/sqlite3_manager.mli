@@ -1,3 +1,5 @@
+val fiber : unit -> unit
+
 val close_db : unit -> unit
 
 val with_db : (Sqlite3.db -> 'a) -> 'a

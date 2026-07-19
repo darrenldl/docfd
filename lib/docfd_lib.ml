@@ -28,9 +28,11 @@ module Misc_utils' = Misc_utils
 
 module Sqlite3_manager = Sqlite3_manager
 
-let init ~db_path ~document_count_limit =
+let init ~env ~db_path ~document_count_limit =
   let open Sqlite3_manager in
   Params.db_path := Some db_path;
+  Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env)
+    Sqlite3_manager.fiber;
   let db_res =
     with_db (fun db ->
         Sqlite3.exec db Params.db_schema

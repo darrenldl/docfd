@@ -597,7 +597,7 @@ let run
         )
     ) path_open_specs;
   let db_path = Filename.concat cache_dir Params.db_file_name in
-  (match Docfd_lib.init ~db_path ~document_count_limit:cache_limit with
+  (match Docfd_lib.init ~env ~db_path ~document_count_limit:cache_limit with
    | None -> ()
    | Some msg -> exit_with_error_msg msg
   );
