@@ -321,7 +321,7 @@ let init_session_state_of_document_src ~env ~interactive pool (document_src : Do
              |> Doc_id_db.allocate_bulk
           );
         let indexed_files, unindexed_files =
-          let open Sqlite3_manager in
+          let open Sqlite3_conn in
           with_db (fun db ->
               with_stmt db
                 Index.is_indexed_sql
@@ -742,7 +742,7 @@ let run
          | Sys_error _ -> ()
        )
      | Files _ -> ());
-    Sqlite3_manager.close_db ();
+    Sqlite3_conn.close_db ();
   in
   do_if_debug (fun oc ->
       Printf.fprintf oc "Scanning completed\n"

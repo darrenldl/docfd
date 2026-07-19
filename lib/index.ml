@@ -481,7 +481,7 @@ end = struct
       )
 
   let read_from_db () : unit =
-    let open Sqlite3_manager in
+    let open Sqlite3_conn in
     lock (fun () ->
         with_db (fun db ->
             iter_stmt db
@@ -505,7 +505,7 @@ let now_int64 () =
   |> Timedesc.Timestamp.get_s
 
 let refresh_last_used_batch (doc_ids : int64 list) : unit =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   let now = now_int64 () in
   with_db (fun db ->
       step_stmt db "BEGIN IMMEDIATE" ignore;
@@ -526,7 +526,7 @@ let refresh_last_used_batch (doc_ids : int64 list) : unit =
     )
 
 let document_count () : int =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   with_db (fun db ->
       step_stmt db "SELECT COUNT(1) FROM doc_info"
         (fun stmt ->
@@ -535,7 +535,7 @@ let document_count () : int =
     )
 
 let prune_old_documents ~keep_n_latest : unit =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   with_db (fun db ->
       step_stmt db "BEGIN IMMEDIATE" ignore;
       step_stmt db "DROP TABLE IF EXISTS temp.docs_to_drop" ignore;
@@ -576,7 +576,7 @@ let prune_old_documents ~keep_n_latest : unit =
     )
 
 let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   let now = now_int64 () in
   step_stmt db
     {|
@@ -732,7 +732,7 @@ let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
   )
 
 let global_line_count =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   fun ~doc_id ->
     with_db (fun db ->
         step_stmt db
@@ -747,7 +747,7 @@ let global_line_count =
       )
 
 let page_count ~doc_id =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   with_db (fun db ->
       step_stmt db
         {|
@@ -769,7 +769,7 @@ let is_indexed_sql =
     |}
 
 let is_indexed ~doc_hash =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   with_db (fun db ->
       step_stmt db
         is_indexed_sql
@@ -780,7 +780,7 @@ let is_indexed ~doc_hash =
     )
 
 let word_of_pos ~doc_id pos : string =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   with_db (fun db ->
       step_stmt db
         {|
@@ -815,7 +815,7 @@ let words_between_start_and_end_inc : doc_id:int64 -> int * int -> string Dynarr
   fun ~doc_id (start, end_inc) ->
     Eio.Mutex.use_rw ~protect:false lock (fun () ->
         CCCache.with_cache cache (fun (doc_id, start, end_inc) ->
-            let open Sqlite3_manager in
+            let open Sqlite3_conn in
             let acc = Dynarray.create () in
             with_db (fun db ->
                 iter_stmt db
@@ -851,7 +851,7 @@ let words_of_global_line_num : doc_id:int64 -> int -> string Dynarray.t =
   fun ~doc_id x ->
     Eio.Mutex.use_rw ~protect:false lock (fun () ->
         CCCache.with_cache cache (fun (doc_id, x) ->
-            let open Sqlite3_manager in
+            let open Sqlite3_conn in
             if x >= global_line_count ~doc_id then (
               invalid_arg "Index.words_of_global_line_num: global_line_num out of range"
             ) else (
@@ -879,7 +879,7 @@ let words_of_global_line_num : doc_id:int64 -> int -> string Dynarray.t =
       )
 
 let words_of_page_num ~doc_id x : string Dynarray.t =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   if x >= page_count ~doc_id then (
     invalid_arg "Index.words_of_page_num: page_num out of range"
   ) else (
@@ -913,7 +913,7 @@ let line_of_global_line_num ~doc_id x =
   )
 
 let line_loc_of_global_line_num ~doc_id global_line_num : Line_loc.t =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   if global_line_num >= global_line_count ~doc_id then (
     invalid_arg "Index.line_loc_of_global_line_num: global_line_num out of range"
   ) else (
@@ -937,7 +937,7 @@ let line_loc_of_global_line_num ~doc_id global_line_num : Line_loc.t =
   )
 
 let loc_of_pos ~doc_id pos : Loc.t =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   let pos_in_line, global_line_num =
     with_db (fun db ->
         step_stmt db
@@ -958,7 +958,7 @@ let loc_of_pos ~doc_id pos : Loc.t =
   { line_loc; pos_in_line }
 
 let max_pos ~doc_id =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   with_db (fun db ->
       step_stmt db
         {|
@@ -973,7 +973,7 @@ let max_pos ~doc_id =
     )
 
 let line_count_of_page_num ~doc_id page : int =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   with_db (fun db ->
       step_stmt db
         {|
@@ -990,7 +990,7 @@ let line_count_of_page_num ~doc_id page : int =
     )
 
 let start_end_inc_pos_of_global_line_num ~doc_id global_line_num =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   if global_line_num >= global_line_count ~doc_id then (
     invalid_arg "Index.start_end_inc_pos_of_global_line_num: global_line_num out of range"
   ) else (
@@ -1017,7 +1017,7 @@ module Search = struct
       ~doc_id
       (words : int Seq.t)
     : int Dynarray.t =
-    let open Sqlite3_manager in
+    let open Sqlite3_conn in
     let acc = Dynarray.create () in
     let f data =
       Dynarray.add_last acc (Data.to_int_exn data.(0))
@@ -1052,7 +1052,7 @@ module Search = struct
       ~around_pos
       (token : Search_phrase.Enriched_token.t)
     : int Seq.t =
-    let open Sqlite3_manager in
+    let open Sqlite3_conn in
     Eio.Fiber.yield ();
     let match_typ = ET.match_typ token in
     let start, end_inc =
@@ -1606,7 +1606,7 @@ let generate_global_first_word_candidates_lookup
     acc
 
 let word_ids ~doc_id =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   with_db (fun db ->
       fold_stmt db
         {|
@@ -1622,7 +1622,7 @@ let word_ids ~doc_id =
     )
 
 let links ~doc_id : Link.t array =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   let acc = Dynarray.create () in
   with_db (fun db ->
       iter_stmt db

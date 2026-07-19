@@ -85,7 +85,7 @@ let id_of_word s : int option =
     )
 
 let read_from_db () : unit =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   lock (fun () ->
       with_db (fun db ->
           t.word_of_id <- Int_map.empty;
@@ -109,7 +109,7 @@ let read_from_db () : unit =
     )
 
 let write_to_db db ~already_in_transaction : unit =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   lock (fun () ->
       if not already_in_transaction then (
         step_stmt db "BEGIN IMMEDIATE" ignore;

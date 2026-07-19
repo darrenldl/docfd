@@ -549,7 +549,7 @@ let of_path
     ?doc_hash
     path
   : (t, string) result =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   let* doc_hash =
     match doc_hash with
     | Some x -> Ok x

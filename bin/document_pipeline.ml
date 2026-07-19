@@ -61,7 +61,7 @@ let ir2_of_ir1_worker (t : t) =
   done
 
 let document_of_ir2_worker (t : t) =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   let run = ref true in
   let counter = ref 0 in
   let outstanding_transaction = ref false in

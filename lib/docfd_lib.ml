@@ -26,10 +26,10 @@ module Parser_components = Parser_components
 
 module Misc_utils' = Misc_utils
 
-module Sqlite3_manager = Sqlite3_manager
+module Sqlite3_conn = Sqlite3_conn
 
 let init ~db_path ~document_count_limit =
-  let open Sqlite3_manager in
+  let open Sqlite3_conn in
   Params.db_path := Some db_path;
   let db_res =
     with_db (fun db ->
