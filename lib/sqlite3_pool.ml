@@ -23,21 +23,21 @@ let close_db () =
 
 let with_db : type a. (db -> a) -> a =
   fun f ->
-    let db =
+  let db =
+    Eio.Mutex.use_rw ~protect:true t.lock (fun () ->
+        match Dynarray.pop_last_opt t.free with
+        | None -> (
+            db_open
+              ~mutex:`FULL
+              (CCOption.get_exn_or "Docfd_lib.Params.db_path uninitialized" !Params.db_path)
+          )
+        | Some db -> db
+      )
+  in
+  let res = f db in
   Eio.Mutex.use_rw ~protect:true t.lock (fun () ->
-    match Dynarray.pop_last_opt t.free with
-    | None -> (
-               db_open
-                 ~mutex:`FULL
-                 (CCOption.get_exn_or "Docfd_lib.Params.db_path uninitialized" !Params.db_path)
-    )
-    | Some db -> db
-  )
-    in
-    let res = f db in
-  Eio.Mutex.use_rw ~protect:true t.lock (fun () ->
-    Dynarray.add_last t.free db
-  );
+      Dynarray.add_last t.free db
+    );
   res
 
 let retry_if_busy (f : unit -> Sqlite3.Rc.t) =
