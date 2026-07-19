@@ -14,7 +14,7 @@ let lock : type a. (unit -> a) -> a =
   Eio.Mutex.use_rw ~protect:true t.lock f
 
 let allocate_bulk (doc_hashes : string Seq.t) : unit =
-  let open Sqlite3_conn in
+  let open Sqlite3_pool in
   lock (fun () ->
       with_db (fun db ->
           with_stmt db
