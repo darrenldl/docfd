@@ -1082,7 +1082,6 @@ module Search = struct
       in
       let cache : (string, bool) Hashtbl.t = Hashtbl.create 100 in
       let f data =
-        Eio.Fiber.yield ();
         let indexed_word = Data.to_string_exn data.(0) in
         let pos = Data.to_int_exn data.(1) in
         let compatible =
