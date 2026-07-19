@@ -2,8 +2,8 @@
 
 ## 13.0.1
 
-- Swapped to using a single SQLite connection manager
-    - Ideally this cleanup will eliminate the random crashes and freezes
+- SQLite connection code cleanup
+    - Ideally this will further reduce the random crashes and freezes
 - Minor UI fix for bottom right pane showing up when there are no search results after `v` has been used to hide it
 
 ## 13.0.0
