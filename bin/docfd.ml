@@ -1290,7 +1290,7 @@ let run
                 let backtrace = Printexc.get_raw_backtrace () in
                 let log oc =
                   Printf.fprintf oc
-                    "Session worker crashed: %s\n%s\n"
+                    "Session worker crashed: %s\n%s\n%!"
                     (Printexc.to_string exn)
                     (Printexc.raw_backtrace_to_string backtrace)
                 in
