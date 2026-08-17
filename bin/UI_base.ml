@@ -555,7 +555,7 @@ module Key_binding_info = struct
            let ts_now = Eio.Time.Mono.now clock in
            Eio.Mutex.use_rw lock ~protect:false (fun () ->
                match Hashtbl.find_opt grid_lights label with
-               | None -> failwith "unexpected case"
+               | None -> ()
                | Some (ts, l) -> (
                    ts := ts_now;
                    List.iter (fun x -> Lwd.set x true) l;
@@ -572,7 +572,7 @@ module Key_binding_info = struct
            Eio.Time.Mono.sleep_until clock ts_target_time;
            Eio.Mutex.use_rw lock ~protect:false (fun () ->
                match Hashtbl.find_opt grid_lights label with
-               | None -> failwith "unexpected case"
+               | None -> ()
                | Some (ts_last_update, l) -> (
                    if Mtime.equal !ts_last_update ts_req_time then (
                      List.iter (fun x -> Lwd.set x false) l;
