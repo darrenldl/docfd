@@ -489,13 +489,11 @@ let worker_fiber pool =
   in
   while true do
     Ping.wait worker_ping;
-    let mtime_now = Mtime_clock.now () in
     let time_since_last_request =
       Mtime.span
         (Atomic.get last_request_timestamp)
-        mtime_now
+        (Mtime_clock.now ())
     in
-    Atomic.set last_request_timestamp mtime_now;
     if
       Mtime.Span.is_shorter
         time_since_last_request
@@ -540,6 +538,7 @@ let submit_filter_req ~commit (s : string) =
       stop_filter ();
       stop_search ();
       Lock_protected_cell.set filter_request (commit, s);
+      Atomic.set last_request_timestamp (Mtime_clock.now ());
       Ping.ping worker_ping
     )
 
@@ -547,6 +546,7 @@ let submit_search_req ~commit (s : string) =
   lock_as_requester (fun () ->
       stop_search ();
       Lock_protected_cell.set search_request (commit, s);
+      Atomic.set last_request_timestamp (Mtime_clock.now ());
       Ping.ping worker_ping
     )
 
@@ -554,5 +554,6 @@ let submit_path_fuzzy_rank_req ~commit (s : string) =
   lock_as_requester (fun () ->
       stop_path_fuzzy_rank ();
       Lock_protected_cell.set path_fuzzy_rank_request (commit, s);
+      Atomic.set last_request_timestamp (Mtime_clock.now ());
       Ping.ping worker_ping
     )
