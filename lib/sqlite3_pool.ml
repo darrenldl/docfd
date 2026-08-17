@@ -34,11 +34,12 @@ let with_db : type a. (db -> a) -> a =
         | Some db -> db
       )
   in
-  let res = f db in
-  Eio.Mutex.use_rw ~protect:true t.lock (fun () ->
-      Dynarray.add_last t.free db
-    );
-  res
+  Fun.protect ~finally:(fun () ->
+      Eio.Mutex.use_rw ~protect:true t.lock (fun () ->
+          Dynarray.add_last t.free db
+        )
+    )
+    (fun () -> f db)
 
 let retry_if_busy (f : unit -> Sqlite3.Rc.t) =
   let rec aux () =
@@ -92,9 +93,10 @@ let with_stmt : type a. db -> string -> ?names:((string * Sqlite3.Data.t) list) 
   Option.iter
     (fun names -> Stmt.bind_names stmt names)
     names;
-  let res = f stmt in
-  Stmt.finalize stmt;
-  res
+  Fun.protect ~finally:(fun () ->
+      Stmt.finalize stmt;
+    )
+    (fun () -> f stmt)
 
 let step_stmt : type a. db -> string -> ?names:((string * Data.t) list) -> (stmt -> a) -> a =
   fun db s ?names f ->
