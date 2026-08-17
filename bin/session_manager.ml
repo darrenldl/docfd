@@ -489,11 +489,13 @@ let worker_fiber pool =
   in
   while true do
     Ping.wait worker_ping;
+    let mtime_now = Mtime_clock.now () in
     let time_since_last_request =
       Mtime.span
         (Atomic.get last_request_timestamp)
-        (Mtime_clock.now ())
+        mtime_now
     in
+    Atomic.set last_request_timestamp mtime_now;
     if
       Mtime.Span.is_shorter
         time_since_last_request
