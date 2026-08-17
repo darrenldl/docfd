@@ -1,5 +1,10 @@
 # Changelog
 
+## 13.0.2
+
+- Request handling debouncing fix
+- Other minor fixes aiming to further reduce crashes
+
 ## 13.0.1
 
 - SQLite connection code cleanup
