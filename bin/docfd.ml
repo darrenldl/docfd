@@ -1335,7 +1335,7 @@ let run
               ));
            loop ()
          )
-       );
+    );
   ];
   close_term ();
   clean_up ();
