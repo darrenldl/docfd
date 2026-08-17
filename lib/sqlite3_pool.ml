@@ -90,13 +90,15 @@ let exec db s =
 let with_stmt : type a. db -> string -> ?names:((string * Sqlite3.Data.t) list) -> (Sqlite3.stmt -> a) -> a =
   fun db s ?names f ->
   let stmt = prepare db s in
-  Option.iter
-    (fun names -> Stmt.bind_names stmt names)
-    names;
   Fun.protect ~finally:(fun () ->
       Stmt.finalize stmt;
     )
-    (fun () -> f stmt)
+    (fun () ->
+       Option.iter
+         (fun names -> Stmt.bind_names stmt names)
+         names;
+       f stmt
+    )
 
 let step_stmt : type a. db -> string -> ?names:((string * Data.t) list) -> (stmt -> a) -> a =
   fun db s ?names f ->
