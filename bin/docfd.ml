@@ -1283,26 +1283,26 @@ let run
               Session_manager.worker_fiber pool
             with
             | exn -> (
-              let backtrace = Printexc.get_raw_backtrace () in
-              let log oc =
-                Printf.fprintf oc
-                  "Session worker crashed: %s\n%s\n%"
-                  (Printexc.to_string exn)
-                  (Printexc.raw_backtrace_to_string backtrace)
-              in
-              (try
-                 match !Params.debug_output with
-                 | None -> log stderr
-                 | Some oc -> log oc
-               with
-               | _ -> (
-                 try
-                   log stderr
-              with
-              | _ -> ()
-               ));
-              Printexc.raise_with_backtrace exn backtrace
-            )));
+                let backtrace = Printexc.get_raw_backtrace () in
+                let log oc =
+                  Printf.fprintf oc
+                    "Session worker crashed: %s\n%s\n"
+                    (Printexc.to_string exn)
+                    (Printexc.raw_backtrace_to_string backtrace)
+                in
+                (try
+                   match !Params.debug_output with
+                   | None -> log stderr
+                   | Some oc -> log oc
+                 with
+                 | _ -> (
+                     try
+                       log stderr
+                     with
+                     | _ -> ()
+                   ));
+                Printexc.raise_with_backtrace exn backtrace
+              )));
     Session_manager.manager_fiber;
     UI_base.Key_binding_info.grid_light_fiber;
     (fun () ->
