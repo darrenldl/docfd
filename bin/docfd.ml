@@ -1306,7 +1306,7 @@ let run
         Printexc.raise_with_backtrace exn backtrace
       )
   in
-  Eio.Fiber.any [
+  (match Eio.Fiber.any [
     long_running_fiber "Session worker" (fun () ->
         Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env)
           (fun () -> Session_manager.worker_fiber pool)
@@ -1332,9 +1332,20 @@ let run
            ));
         loop ()
       );
-  ];
-  close_term ();
-  clean_up ();
+   ]
+   with
+   | () -> (
+       close_term ();
+       clean_up ()
+     )
+   | exception exn -> (
+       let backtrace = Printexc.get_raw_backtrace () in
+       (* Neither cleanup failure should hide the exception that terminated a
+          long-running fiber. *)
+       (try close_term () with _ -> ());
+       (try clean_up () with _ -> ());
+       Printexc.raise_with_backtrace exn backtrace
+     ));
   (match debug_log with
    | Some "-" -> ()
    | _ -> (
