@@ -34,12 +34,26 @@ let with_db : type a. (db -> a) -> a =
         | Some db -> db
       )
   in
-  Fun.protect ~finally:(fun () ->
+  let return_to_pool () =
       Eio.Mutex.use_rw ~protect:true t.lock (fun () ->
           Dynarray.add_last t.free db
         )
+  in
+  match f db with
+  | res -> (
+      return_to_pool ();
+      res
     )
-    (fun () -> f db)
+  | exception exn -> (
+      let backtrace = Printexc.get_raw_backtrace () in
+      (* The callback may have left a transaction open. Do not make that
+         connection available to another caller. Roll back and close it on a
+         best-effort basis while preserving the callback's exception.
+         *)
+      (try ignore (Sqlite3.exec db "ROLLBACK") with _ -> ());
+      (try ignore (Sqlite3.db_close db) with _ -> ());
+      Printexc.raise_with_backtrace exn backtrace
+    )
 
 let retry_if_busy (f : unit -> Sqlite3.Rc.t) =
   let rec aux () =
@@ -90,14 +104,23 @@ let exec db s =
 let with_stmt : type a. db -> string -> ?names:((string * Sqlite3.Data.t) list) -> (Sqlite3.stmt -> a) -> a =
   fun db s ?names f ->
   let stmt = prepare db s in
-  Fun.protect ~finally:(fun () ->
+  match
+    Option.iter
+      (fun names -> Stmt.bind_names stmt names)
+      names;
+    f stmt
+  with
+  | res -> (
       Stmt.finalize stmt;
+      res
     )
-    (fun () ->
-       Option.iter
-         (fun names -> Stmt.bind_names stmt names)
-         names;
-       f stmt
+  | exception exn -> (
+      let backtrace = Printexc.get_raw_backtrace () in
+      (* A cleanup failure should not hide the exception raised while binding or
+         using the statement.
+         *)
+      (try Stmt.finalize stmt with _ -> ());
+      Printexc.raise_with_backtrace exn backtrace
     )
 
 let step_stmt : type a. db -> string -> ?names:((string * Data.t) list) -> (stmt -> a) -> a =
