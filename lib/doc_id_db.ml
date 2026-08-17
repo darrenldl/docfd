@@ -17,6 +17,7 @@ let allocate_bulk (doc_hashes : string Seq.t) : unit =
   let open Sqlite3_pool in
   lock (fun () ->
       with_db (fun db ->
+          step_stmt db "BEGIN IMMEDIATE" ignore;
           with_stmt db
             {|
   INSERT INTO doc_info
@@ -57,6 +58,7 @@ let allocate_bulk (doc_hashes : string Seq.t) : unit =
                  )
                  doc_hashes
             );
+          step_stmt db "COMMIT" ignore;
           with_stmt db
             {|
     SELECT id
