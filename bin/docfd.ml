@@ -1308,7 +1308,6 @@ let run
   in
   Eio.Fiber.any [
     (fun () ->
-    UI_base.Key_binding_info.grid_light_fiber;
        run_fiber "Session worker" (fun () ->
            Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env)
              (fun () -> Session_manager.worker_fiber pool)
@@ -1331,6 +1330,9 @@ let run
           ));
        loop ();
     );
+       run_fiber
+         "Key-binding light worker"
+         UI_base.Key_binding_info.grid_light_fiber);
   ];
   close_term ();
   clean_up ();
