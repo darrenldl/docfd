@@ -1275,6 +1275,37 @@ let run
           )
       )
   in
+  let run_fiber name f =
+    try
+      f ()
+    with
+    | Eio.Cancel.Cancelled _ as exn -> (
+        let backtrace = Printexc.get_raw_backtrace () in
+        Printexc.raise_with_backtrace exn backtrace
+      )
+    | exn -> (
+        let backtrace = Printexc.get_raw_backtrace () in
+        let log oc =
+          Printf.fprintf oc
+            "%s crashed: %s\n%s\n%!"
+            name
+            (Printexc.to_string exn)
+            (Printexc.raw_backtrace_to_string backtrace)
+        in
+        (try
+           match !Params.debug_output with
+           | None -> log stderr
+           | Some oc -> log oc
+         with
+         | _ -> (
+             try
+               log stderr
+             with
+             | _ -> ()
+           ));
+        Printexc.raise_with_backtrace exn backtrace
+      )
+  in
   Eio.Fiber.any [
     (fun () ->
        Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env)
