@@ -980,10 +980,10 @@ let line_count_of_page_num ~doc_id page : int =
     SELECT line_count
     FROM page_info
     WHERE doc_id = @doc_id
-    AND page = @page
+    AND page_num = @page_num
     |}
         ~names:[ ("@doc_id", INT doc_id)
-               ; ("@page", INT (Int64.of_int page)) ]
+               ; ("@page_num", INT (Int64.of_int page)) ]
         (fun stmt ->
            Stmt.column_int stmt 0
         )
