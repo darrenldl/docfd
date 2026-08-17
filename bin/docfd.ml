@@ -1308,12 +1308,12 @@ let run
   in
   Eio.Fiber.any [
     (fun () ->
-    Session_manager.manager_fiber;
     UI_base.Key_binding_info.grid_light_fiber;
        run_fiber "Session worker" (fun () ->
            Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env)
              (fun () -> Session_manager.worker_fiber pool)
          ));
+    (fun () -> run_fiber "Session manager" Session_manager.manager_fiber);
     (fun () ->
        (match start_with_filter with
         | None -> ()
