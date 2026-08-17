@@ -1282,6 +1282,10 @@ let run
             try
               Session_manager.worker_fiber pool
             with
+            | Eio.Cancel.Cancelled _ as exn -> (
+                let backtrace = Printexc.get_raw_backtrace () in
+                Printexc.raise_with_backtrace exn backtrace
+              )
             | exn -> (
                 let backtrace = Printexc.get_raw_backtrace () in
                 let log oc =
