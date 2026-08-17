@@ -20,28 +20,28 @@ let lock : type a. (unit -> a) -> a =
   Eio.Mutex.use_rw ~protect:true t.lock f
 
 let filter pool (f : string -> bool) : (int * string) Dynarray.t =
-  let word_of_id =
+  let size, word_of_id =
     lock (fun () ->
-        t.word_of_id
+        t.size, t.word_of_id
       )
   in
   let max_end_exc_seen = ref 0 in
   let chunk_size = !Params.index_chunk_size * 10 in
   let chunk_start_end_exc_ranges =
-    OSeq.(0 -- (t.size - 1) / chunk_size)
+    OSeq.(0 -- (size - 1) / chunk_size)
     |> Seq.map (fun chunk_index ->
         let start = chunk_index * chunk_size in
         let end_exc =
           min
             ((chunk_index + 1) * chunk_size)
-            t.size
+            size
         in
         max_end_exc_seen := max !max_end_exc_seen end_exc;
         (start, end_exc)
       )
     |> List.of_seq
   in
-  assert (!max_end_exc_seen = t.size);
+  assert (!max_end_exc_seen = size);
   let batches =
     chunk_start_end_exc_ranges
     |> Task_pool.map_list pool (fun (start, end_exc) ->
