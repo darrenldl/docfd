@@ -490,20 +490,24 @@ let worker_fiber pool =
   while true do
     Ping.wait worker_ping;
     (* Note that this is a best-effort implementation of trailing-edge
-       debouncing.
+       debouncing, where the objective is workload reduction (worker is
+       allowed to idle during noisy period) rather than strict request
+       timing requirement (request is only processed at earliest after
+       the debouncing period since arrival).
 
-       There is technically a narrow time-of-check time-of-use race
-       condition here, which may allow the worker to begin processing
-       the newest request before the debounce period has ended.
+       Specifically, there is a narrow time-of-check time-of-use race
+       condition here that would fail the request timing requirement
+       strictly speaking, which may allow the worker to begin
+         processing the newest request before the debounce period has
+         ended.
 
-       Suppose there are two requests (submit_*_req), r0, r1,
-       r0 may wake up worker here via worker_ping,
-       but then r1 arrives.
+       Suppose there are two requests (submit_*_req), r0, r1, r0 may
+       wake up worker here via worker_ping, but then r1 arrives.
 
        But worker has already started the cycle (intended for r0) and
        proceed to process r1, even though there has not actually been
-       enough time passed since arrival of r1 that satisfies
-       the debounce interval.
+       enough time passed since arrival of r1 that satisfies the
+       debounce interval.
      *)
     let time_since_last_request =
       Mtime.span
