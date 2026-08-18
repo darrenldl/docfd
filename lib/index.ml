@@ -537,7 +537,7 @@ let document_count () : int =
 let prune_old_documents ~keep_n_latest : unit =
   let open Sqlite3_pool in
   with_db (fun db ->
-      step_stmt db "BEGIN IMMEDIATE" ignore;
+      with_transaction db (fun () ->
       step_stmt db "DROP TABLE IF EXISTS temp.docs_to_drop" ignore;
       step_stmt db "CREATE TEMP TABLE docs_to_drop (hash TEXT, id INTEGER)" ignore;
       step_stmt db
@@ -571,8 +571,8 @@ let prune_old_documents ~keep_n_latest : unit =
       drop_based_on_doc_id "page_info";
       drop_based_on_doc_id "position";
       drop_based_on_doc_id "word_id_doc_id_link";
-      step_stmt db "DROP TABLE temp.docs_to_drop" ignore;
-      step_stmt db "COMMIT" ignore;
+      step_stmt db "DROP TABLE temp.docs_to_drop" ignore
+      )
     )
 
 let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
