@@ -111,9 +111,7 @@ let read_from_db () : unit =
 let write_to_db db ~already_in_transaction : unit =
   let open Sqlite3_pool in
   lock (fun () ->
-      if not already_in_transaction then (
-        step_stmt db "BEGIN IMMEDIATE" ignore;
-      );
+      with_transaction_if_needed db ~already_in_transaction (fun () ->
       let word_table_size =
         step_stmt db
           {|
@@ -146,9 +144,7 @@ let write_to_db db ~already_in_transaction : unit =
              Stmt.step stmt;
              Stmt.reset stmt;
            done
-        );
-      if not already_in_transaction then (
-        step_stmt db "COMMIT" ignore;
+        )
       );
       t.size_written_to_db <- t.size;
     )
