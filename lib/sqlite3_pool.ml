@@ -69,11 +69,11 @@ let retry_if_busy (f : unit -> Sqlite3.Rc.t) =
 
 module Stmt = struct
   let bind_names stmt l =
-    retry_if_busy (fun () -> Sqlite3.bind_names stmt l)
+    Sqlite3.bind_names stmt l
     |> Sqlite3.Rc.check
 
   let reset stmt =
-    retry_if_busy (fun () -> Sqlite3.reset stmt)
+    Sqlite3.reset stmt
     |> Sqlite3.Rc.check
 
   let step stmt =
