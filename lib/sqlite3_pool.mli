@@ -4,6 +4,10 @@ val with_db : (Sqlite3.db -> 'a) -> 'a
 
 val exec : Sqlite3.db -> string -> unit
 
+val with_transaction : Sqlite3.db -> (unit -> 'a) -> 'a
+
+val with_transaction_if_needed : Sqlite3.db -> already_in_transaction:bool -> (unit -> 'a) -> 'a
+
 val with_stmt : Sqlite3.db -> string -> ?names:((string * Sqlite3.Data.t) list) -> (Sqlite3.stmt -> 'a) -> 'a
 
 val step_stmt : Sqlite3.db -> string -> ?names:((string * Sqlite3.Data.t) list) -> (Sqlite3.stmt -> 'a) -> 'a

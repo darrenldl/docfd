@@ -113,6 +113,37 @@ let exec db s =
   retry_if_busy ~operation:"sqlite3_exec" (fun () -> Sqlite3.exec db s)
   |> Sqlite3.Rc.check
 
+let rollback_and_reraise db exn backtrace =
+  (* Rollback is best-effort here (ignoring further exceptions) to
+     avoid replacing the exception that made the transaction fail.
+     [with_db] will subsequently discard the connection.
+     *)
+  (try Sqlite3.exec db "ROLLBACK" |> Sqlite3.Rc.check with _ -> ());
+  Printexc.raise_with_backtrace exn backtrace
+
+let with_transaction : type a. db -> (unit -> a) -> a =
+  fun db f ->
+  exec db "BEGIN IMMEDIATE";
+  match f () with
+  | res -> (
+      match exec db "COMMIT" with
+      | () -> res
+      | exception exn -> (
+          let backtrace = Printexc.get_raw_backtrace () in
+          rollback_and_reraise db exn backtrace
+        )
+    )
+  | exception exn -> (
+      let backtrace = Printexc.get_raw_backtrace () in
+      rollback_and_reraise db exn backtrace
+    )
+
+let with_transaction_if_needed db ~already_in_transaction f =
+  if already_in_transaction then
+    f ()
+  else
+    with_transaction db f
+
 let with_stmt : type a. db -> string -> ?names:((string * Sqlite3.Data.t) list) -> (Sqlite3.stmt -> a) -> a =
   fun db s ?names f ->
   let stmt = prepare db s in
