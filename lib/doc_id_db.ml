@@ -17,9 +17,9 @@ let allocate_bulk (doc_hashes : string Seq.t) : unit =
   let open Sqlite3_pool in
   lock (fun () ->
       with_db (fun db ->
-          step_stmt db "BEGIN IMMEDIATE" ignore;
-          with_stmt db
-            {|
+          with_transaction db (fun () ->
+              with_stmt db
+                {|
   INSERT INTO doc_info
   (id, hash, status)
   VALUES
@@ -50,15 +50,15 @@ let allocate_bulk (doc_hashes : string Seq.t) : unit =
   )
   ON CONFLICT(hash) DO NOTHING
   |}
-            (fun stmt ->
-               Seq.iter (fun doc_hash ->
-                   Stmt.bind_names stmt [ ("@doc_hash", TEXT doc_hash) ];
-                   Stmt.step stmt;
-                   Stmt.reset stmt;
-                 )
-                 doc_hashes
+                (fun stmt ->
+                   Seq.iter (fun doc_hash ->
+                       Stmt.bind_names stmt [ ("@doc_hash", TEXT doc_hash) ];
+                       Stmt.step stmt;
+                       Stmt.reset stmt;
+                     )
+                     doc_hashes
+                )
             );
-          step_stmt db "COMMIT" ignore;
           with_stmt db
             {|
     SELECT id
