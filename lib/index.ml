@@ -596,9 +596,7 @@ let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
            ; ("@now", INT now)
            ]
     ignore;
-  if not already_in_transaction then (
-    step_stmt db "BEGIN IMMEDIATE" ignore;
-  );
+  with_transaction_if_needed db ~already_in_transaction (fun () ->
   with_stmt db
     {|
   INSERT INTO page_info
@@ -726,9 +724,7 @@ let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
       WHERE id = @doc_id
     |}
     ~names:[ ("@doc_id", INT doc_id) ]
-    ignore;
-  if not already_in_transaction then (
-    step_stmt db "COMMIT" ignore;
+    ignore
   )
 
 let global_line_count =
