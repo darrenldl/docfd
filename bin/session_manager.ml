@@ -498,16 +498,20 @@ let worker_fiber pool =
        Specifically, there is a narrow time-of-check time-of-use race
        condition here that would fail the request timing requirement
        strictly speaking, which may allow the worker to begin
-         processing the newest request before the debounce period has
-         ended.
+       processing the newest request before the debounce period has
+       ended.
 
-       Suppose there are two requests (submit_*_req), r0, r1, r0 may
-       wake up worker here via worker_ping, but then r1 arrives.
+       Suppose there are two requests (submit_*_req), r0, r1, with the following sequencing of events:
+       - r0 arrives
+       - worker wakes up
+       - worker retrieves time_since_last_request
+       - worker begins cycle as the time_since_last_request >= session_manager_request_debounce_interval
+       - r1 arrives, and overwrites r0's request contents
+       - worker begins reading request contents from cells
 
-       But worker has already started the cycle (intended for r0) and
-       proceed to process r1, even though there has not actually been
-       enough time passed since arrival of r1 that satisfies the
-       debounce interval.
+       So worker now begins processing request contents from r1, but
+       there has not actually been enough time passed since arrival of
+       r1 that satisfies the debounce interval for r1.
      *)
     let time_since_last_request =
       Mtime.span
