@@ -85,7 +85,7 @@ module Stmt = struct
     Rc.check (Sqlite3.iter stmt ~f)
 
   let finalize stmt =
-    retry_if_busy (fun () -> Sqlite3.finalize stmt)
+    Sqlite3.finalize stmt
     |> Sqlite3.Rc.check
 
   let column_int64 = Sqlite3.column_int64
