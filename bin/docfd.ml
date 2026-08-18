@@ -1307,32 +1307,32 @@ let run
       )
   in
   (match Eio.Fiber.any [
-    long_running_fiber "Session worker" (fun () ->
-        Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env)
-          (fun () -> Session_manager.worker_fiber pool)
-      );
-    long_running_fiber "Session manager" Session_manager.manager_fiber;
-    long_running_fiber
-      "Key-binding light worker"
-      UI_base.Key_binding_info.grid_light_fiber;
-    long_running_fiber "UI" (fun () ->
-        (match start_with_filter with
-         | None -> ()
-         | Some start_with_filter -> (
-             let start_with_filter_len = String.length start_with_filter in
-             Lwd.set UI_base.Vars.filter_field (start_with_filter, start_with_filter_len);
-             UI.update_filter ~commit:true ();
-           ));
-        (match start_with_search with
-         | None -> ()
-         | Some start_with_search -> (
-             let start_with_search_len = String.length start_with_search in
-             Lwd.set UI_base.Vars.search_field (start_with_search, start_with_search_len);
-             UI.update_search ~commit:true ();
-           ));
-        loop ()
-      );
-   ]
+       long_running_fiber "Session worker" (fun () ->
+           Eio.Domain_manager.run (Eio.Stdenv.domain_mgr env)
+             (fun () -> Session_manager.worker_fiber pool)
+         );
+       long_running_fiber "Session manager" Session_manager.manager_fiber;
+       long_running_fiber
+         "Key-binding light worker"
+         UI_base.Key_binding_info.grid_light_fiber;
+       long_running_fiber "UI" (fun () ->
+           (match start_with_filter with
+            | None -> ()
+            | Some start_with_filter -> (
+                let start_with_filter_len = String.length start_with_filter in
+                Lwd.set UI_base.Vars.filter_field (start_with_filter, start_with_filter_len);
+                UI.update_filter ~commit:true ();
+              ));
+           (match start_with_search with
+            | None -> ()
+            | Some start_with_search -> (
+                let start_with_search_len = String.length start_with_search in
+                Lwd.set UI_base.Vars.search_field (start_with_search, start_with_search_len);
+                UI.update_search ~commit:true ();
+              ));
+           loop ()
+         );
+     ]
    with
    | () -> (
        close_term ();

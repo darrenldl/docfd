@@ -512,7 +512,7 @@ let worker_fiber pool =
        So worker now begins processing request contents from r1, but
        there has not actually been enough time passed since arrival of
        r1 that satisfies the debounce interval for r1.
-     *)
+    *)
     let time_since_last_request =
       Mtime.span
         (Atomic.get last_request_timestamp)
