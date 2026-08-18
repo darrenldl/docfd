@@ -112,39 +112,39 @@ let write_to_db db ~already_in_transaction : unit =
   let open Sqlite3_pool in
   lock (fun () ->
       with_transaction_if_needed db ~already_in_transaction (fun () ->
-      let word_table_size =
-        step_stmt db
-          {|
+          let word_table_size =
+            step_stmt db
+              {|
       SELECT COUNT(1) FROM word
       |}
-          (fun stmt ->
-             Int64.to_int (Stmt.column_int64 stmt 0)
-          )
-      in
-      if word_table_size <> t.size_written_to_db then (
-        Misc_utils.exit_with_error_msg
-          "unexpected change in word table, likely due to indexing from another Docfd instance";
-      );
-      with_stmt db
-        {|
+              (fun stmt ->
+                 Int64.to_int (Stmt.column_int64 stmt 0)
+              )
+          in
+          if word_table_size <> t.size_written_to_db then (
+            Misc_utils.exit_with_error_msg
+              "unexpected change in word table, likely due to indexing from another Docfd instance";
+          );
+          with_stmt db
+            {|
   INSERT INTO word
   (id, word)
   VALUES
   (@id, @word)
   ON CONFLICT(id) DO NOTHING
   |}
-        (fun stmt ->
-           for id = t.size_written_to_db to t.size-1 do
-             let word = Int_map.find id t.word_of_id in
-             Stmt.bind_names
-               stmt
-               [ ("@id", INT (Int64.of_int id))
-               ; ("@word", TEXT word)
-               ];
-             Stmt.step stmt;
-             Stmt.reset stmt;
-           done
-        )
-      );
+            (fun stmt ->
+               for id = t.size_written_to_db to t.size-1 do
+                 let word = Int_map.find id t.word_of_id in
+                 Stmt.bind_names
+                   stmt
+                   [ ("@id", INT (Int64.of_int id))
+                   ; ("@word", TEXT word)
+                   ];
+                 Stmt.step stmt;
+                 Stmt.reset stmt;
+               done
+            )
+        );
       t.size_written_to_db <- t.size;
     )

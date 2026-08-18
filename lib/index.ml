@@ -538,10 +538,10 @@ let prune_old_documents ~keep_n_latest : unit =
   let open Sqlite3_pool in
   with_db (fun db ->
       with_transaction db (fun () ->
-      step_stmt db "DROP TABLE IF EXISTS temp.docs_to_drop" ignore;
-      step_stmt db "CREATE TEMP TABLE docs_to_drop (hash TEXT, id INTEGER)" ignore;
-      step_stmt db
-        {|
+          step_stmt db "DROP TABLE IF EXISTS temp.docs_to_drop" ignore;
+          step_stmt db "CREATE TEMP TABLE docs_to_drop (hash TEXT, id INTEGER)" ignore;
+          step_stmt db
+            {|
     INSERT INTO temp.docs_to_drop
     SELECT hash, id
     FROM doc_info
@@ -549,30 +549,30 @@ let prune_old_documents ~keep_n_latest : unit =
     LIMIT -1
     OFFSET @offset
     |}
-        ~names:[("@offset", INT (Int64.of_int keep_n_latest))]
-        ignore;
-      let drop_based_on_doc_id ?(id_column = "doc_id") table =
-        step_stmt db
-          (Fmt.str
-             {|
+            ~names:[("@offset", INT (Int64.of_int keep_n_latest))]
+            ignore;
+          let drop_based_on_doc_id ?(id_column = "doc_id") table =
+            step_stmt db
+              (Fmt.str
+                 {|
       DELETE FROM %s
       WHERE EXISTS (
         SELECT 1 FROM temp.docs_to_drop WHERE %s.%s = temp.docs_to_drop.id
       )
       |}
-             table
-             table
-             id_column
-          )
-          ignore
-      in
-      drop_based_on_doc_id ~id_column:"id" "doc_info";
-      drop_based_on_doc_id "line_info";
-      drop_based_on_doc_id "page_info";
-      drop_based_on_doc_id "position";
-      drop_based_on_doc_id "word_id_doc_id_link";
-      step_stmt db "DROP TABLE temp.docs_to_drop" ignore
-      )
+                 table
+                 table
+                 id_column
+              )
+              ignore
+          in
+          drop_based_on_doc_id ~id_column:"id" "doc_info";
+          drop_based_on_doc_id "line_info";
+          drop_based_on_doc_id "page_info";
+          drop_based_on_doc_id "position";
+          drop_based_on_doc_id "word_id_doc_id_link";
+          step_stmt db "DROP TABLE temp.docs_to_drop" ignore
+        )
     )
 
 let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
@@ -597,135 +597,135 @@ let write_raw_to_db db ~already_in_transaction ~doc_id (x : Raw.t) : unit =
            ]
     ignore;
   with_transaction_if_needed db ~already_in_transaction (fun () ->
-  with_stmt db
-    {|
+      with_stmt db
+        {|
   INSERT INTO page_info
   (doc_id, page_num, line_count, start_pos, end_inc_pos)
   VALUES
   (@doc_id, @page_num, @line_count, @start_pos, @end_inc_pos)
   ON CONFLICT(doc_id, page_num) DO NOTHING
   |}
-    (fun stmt ->
-       Int_map.iter (fun page_num line_count ->
-           let (start_pos, end_inc_pos) =
-             Int_map.find page_num x.start_end_inc_pos_of_page_num
-           in
-           Stmt.bind_names stmt
-             [ ("@doc_id", INT doc_id)
-             ; ("@page_num", INT (Int64.of_int page_num))
-             ; ("@line_count", INT (Int64.of_int line_count))
-             ; ("@start_pos", INT (Int64.of_int start_pos))
-             ; ("@end_inc_pos", INT (Int64.of_int end_inc_pos))
-             ];
-           Stmt.step stmt;
-           Stmt.reset stmt;
-         )
-         x.line_count_of_page_num
-    );
-  with_stmt db
-    {|
+        (fun stmt ->
+           Int_map.iter (fun page_num line_count ->
+               let (start_pos, end_inc_pos) =
+                 Int_map.find page_num x.start_end_inc_pos_of_page_num
+               in
+               Stmt.bind_names stmt
+                 [ ("@doc_id", INT doc_id)
+                 ; ("@page_num", INT (Int64.of_int page_num))
+                 ; ("@line_count", INT (Int64.of_int line_count))
+                 ; ("@start_pos", INT (Int64.of_int start_pos))
+                 ; ("@end_inc_pos", INT (Int64.of_int end_inc_pos))
+                 ];
+               Stmt.step stmt;
+               Stmt.reset stmt;
+             )
+             x.line_count_of_page_num
+        );
+      with_stmt db
+        {|
   INSERT INTO line_info
   (doc_id, global_line_num, start_pos, end_inc_pos, page_num, line_num_in_page)
   VALUES
   (@doc_id, @global_line_num, @start_pos, @end_inc_pos, @page_num, @line_num_in_page)
   ON CONFLICT(doc_id, global_line_num) DO NOTHING
   |}
-    (fun stmt ->
-       Int_map.iter (fun line_num line_loc ->
-           let (start_pos, end_inc_pos) =
-             Int_map.find line_num x.start_end_inc_pos_of_global_line_num
-           in
-           let page_num = line_loc.Line_loc.page_num in
-           let line_num_in_page = line_loc.Line_loc.line_num_in_page in
-           Stmt.bind_names stmt
-             [ ("@doc_id", INT doc_id)
-             ; ("@global_line_num", INT (Int64.of_int line_num))
-             ; ("@start_pos", INT (Int64.of_int start_pos))
-             ; ("@end_inc_pos", INT (Int64.of_int end_inc_pos))
-             ; ("@page_num", INT (Int64.of_int page_num))
-             ; ("@line_num_in_page", INT (Int64.of_int line_num_in_page))
-             ];
-           Stmt.step stmt;
-           Stmt.reset stmt;
-         )
-         x.line_loc_of_global_line_num;
-    );
-  with_stmt db
-    {|
+        (fun stmt ->
+           Int_map.iter (fun line_num line_loc ->
+               let (start_pos, end_inc_pos) =
+                 Int_map.find line_num x.start_end_inc_pos_of_global_line_num
+               in
+               let page_num = line_loc.Line_loc.page_num in
+               let line_num_in_page = line_loc.Line_loc.line_num_in_page in
+               Stmt.bind_names stmt
+                 [ ("@doc_id", INT doc_id)
+                 ; ("@global_line_num", INT (Int64.of_int line_num))
+                 ; ("@start_pos", INT (Int64.of_int start_pos))
+                 ; ("@end_inc_pos", INT (Int64.of_int end_inc_pos))
+                 ; ("@page_num", INT (Int64.of_int page_num))
+                 ; ("@line_num_in_page", INT (Int64.of_int line_num_in_page))
+                 ];
+               Stmt.step stmt;
+               Stmt.reset stmt;
+             )
+             x.line_loc_of_global_line_num;
+        );
+      with_stmt db
+        {|
   INSERT INTO position
   (doc_id, pos, word_id)
   VALUES
   (@doc_id, @pos, @word_id)
   ON CONFLICT(doc_id, pos) DO NOTHING
     |}
-    (fun stmt ->
-       Int_map.iter (fun word_id pos_s ->
-           Int_set.iter (fun pos ->
-               Stmt.bind_names stmt
-                 [ ("@doc_id", INT doc_id)
-                 ; ("@pos", INT (Int64.of_int pos))
-                 ; ("@word_id", INT (Int64.of_int word_id))
-                 ];
-               Stmt.step stmt;
-               Stmt.reset stmt;
+        (fun stmt ->
+           Int_map.iter (fun word_id pos_s ->
+               Int_set.iter (fun pos ->
+                   Stmt.bind_names stmt
+                     [ ("@doc_id", INT doc_id)
+                     ; ("@pos", INT (Int64.of_int pos))
+                     ; ("@word_id", INT (Int64.of_int word_id))
+                     ];
+                   Stmt.step stmt;
+                   Stmt.reset stmt;
+                 )
+                 pos_s
              )
-             pos_s
-         )
-         x.pos_s_of_word
-    );
-  with_stmt db
-    {|
+             x.pos_s_of_word
+        );
+      with_stmt db
+        {|
   INSERT INTO link
   (doc_id, start_pos, end_inc_pos, typ, link)
   VALUES
   (@doc_id, @start_pos, @end_inc_pos, @typ, @link)
   ON CONFLICT(doc_id, start_pos, end_inc_pos) DO NOTHING
     |}
-    (fun stmt ->
-       Array.iter (fun link ->
-           let { Link.start_pos; end_inc_pos; typ; link } = link in
-           let typ = Link.string_of_typ typ in
-           Stmt.bind_names stmt
-             [ ("@doc_id", INT doc_id)
-             ; ("@start_pos", INT (Int64.of_int start_pos))
-             ; ("@end_inc_pos", INT (Int64.of_int end_inc_pos))
-             ; ("@typ", TEXT typ)
-             ; ("@link", TEXT link)
-             ];
-           Stmt.step stmt;
-           Stmt.reset stmt;
-         )
-         x.links
-    );
-  with_stmt db
-    {|
+        (fun stmt ->
+           Array.iter (fun link ->
+               let { Link.start_pos; end_inc_pos; typ; link } = link in
+               let typ = Link.string_of_typ typ in
+               Stmt.bind_names stmt
+                 [ ("@doc_id", INT doc_id)
+                 ; ("@start_pos", INT (Int64.of_int start_pos))
+                 ; ("@end_inc_pos", INT (Int64.of_int end_inc_pos))
+                 ; ("@typ", TEXT typ)
+                 ; ("@link", TEXT link)
+                 ];
+               Stmt.step stmt;
+               Stmt.reset stmt;
+             )
+             x.links
+        );
+      with_stmt db
+        {|
   INSERT INTO word_id_doc_id_link
   (word_id, doc_id)
   VALUES
   (@word_id, @doc_id)
   ON CONFLICT(word_id, doc_id) DO NOTHING
     |}
-    (fun stmt ->
-       Int_map.iter (fun word_id _pos_s ->
-           State.add_word_id_doc_id_link ~word_id ~doc_id;
-           Stmt.bind_names stmt
-             [ ("@word_id", INT (Int64.of_int word_id))
-             ; ("@doc_id", INT doc_id)
-             ];
-           Stmt.step stmt;
-           Stmt.reset stmt;
-         )
-         x.pos_s_of_word
-    );
-  step_stmt db
-    {|
+        (fun stmt ->
+           Int_map.iter (fun word_id _pos_s ->
+               State.add_word_id_doc_id_link ~word_id ~doc_id;
+               Stmt.bind_names stmt
+                 [ ("@word_id", INT (Int64.of_int word_id))
+                 ; ("@doc_id", INT doc_id)
+                 ];
+               Stmt.step stmt;
+               Stmt.reset stmt;
+             )
+             x.pos_s_of_word
+        );
+      step_stmt db
+        {|
       UPDATE doc_info
       SET status = 'COMPLETED'
       WHERE id = @doc_id
     |}
-    ~names:[ ("@doc_id", INT doc_id) ]
-    ignore
-  )
+        ~names:[ ("@doc_id", INT doc_id) ]
+        ignore
+    )
 
 let global_line_count =
   let open Sqlite3_pool in

@@ -117,7 +117,7 @@ let rollback_and_reraise db exn backtrace =
   (* Rollback is best-effort here (ignoring further exceptions) to
      avoid replacing the exception that made the transaction fail.
      [with_db] will subsequently discard the connection.
-     *)
+  *)
   (try Sqlite3.exec db "ROLLBACK" |> Sqlite3.Rc.check with _ -> ());
   Printexc.raise_with_backtrace exn backtrace
 
