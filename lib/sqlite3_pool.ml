@@ -55,17 +55,29 @@ let with_db : type a. (db -> a) -> a =
       Printexc.raise_with_backtrace exn backtrace
     )
 
-let retry_if_busy (f : unit -> Sqlite3.Rc.t) =
-  let rec aux () =
+let busy_retry_timeout_s = 30.0
+
+let retry_if_busy ~operation (f : unit -> Sqlite3.Rc.t) =
+  let start_time = Unix.gettimeofday () in
+  let rec aux retry_count =
     let r = f () in
     match r with
     | BUSY -> (
+        let elapsed_s = Unix.gettimeofday () -. start_time in
+        if elapsed_s >= busy_retry_timeout_s then (
+          failwith
+            (Fmt.str
+               "%s remained busy for %.1f seconds after %d retries"
+               operation
+               elapsed_s
+               retry_count)
+        );
         Unix.sleepf (0.1 +. Random.float 0.1);
-        aux ()
+        aux (retry_count + 1)
       )
     | _ -> r
   in
-  aux ()
+  aux 0
 
 module Stmt = struct
   let bind_names stmt l =
@@ -77,7 +89,7 @@ module Stmt = struct
     |> Sqlite3.Rc.check
 
   let step stmt =
-    match retry_if_busy (fun () -> Sqlite3.step stmt) with
+    match retry_if_busy ~operation:"sqlite3_step" (fun () -> Sqlite3.step stmt) with
     | OK | DONE | ROW -> ()
     | x -> Sqlite3.Rc.check x
 
@@ -98,7 +110,7 @@ module Stmt = struct
 end
 
 let exec db s =
-  retry_if_busy (fun () -> Sqlite3.exec db s)
+  retry_if_busy ~operation:"sqlite3_exec" (fun () -> Sqlite3.exec db s)
   |> Sqlite3.Rc.check
 
 let with_stmt : type a. db -> string -> ?names:((string * Sqlite3.Data.t) list) -> (Sqlite3.stmt -> a) -> a =
