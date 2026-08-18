@@ -508,21 +508,21 @@ let refresh_last_used_batch (doc_ids : int64 list) : unit =
   let open Sqlite3_pool in
   let now = now_int64 () in
   with_db (fun db ->
-      step_stmt db "BEGIN IMMEDIATE" ignore;
-      List.iter (fun doc_id ->
-          step_stmt db
-            {|
+      with_transaction db (fun () ->
+          List.iter (fun doc_id ->
+              step_stmt db
+                {|
   UPDATE doc_info
   SET last_used = @now
   WHERE id = @doc_id
   |}
-            ~names:[ ("@doc_id", INT doc_id)
-                   ; ("@now", INT now)
-                   ]
-            ignore;
-        )
-        doc_ids;
-      step_stmt db "COMMIT" ignore;
+                ~names:[ ("@doc_id", INT doc_id)
+                       ; ("@now", INT now)
+                       ]
+                ignore;
+            )
+            doc_ids
+        );
     )
 
 let document_count () : int =
