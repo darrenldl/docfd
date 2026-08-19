@@ -1,2 +1,2 @@
 (cram
-  (deps ../bin/docfd.exe))
+  (deps %{bin:docfd}))
