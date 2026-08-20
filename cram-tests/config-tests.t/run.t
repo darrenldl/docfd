@@ -1,7 +1,7 @@
 Setup:
   $ set -o pipefail
   $ mkdir -p xdg-empty
-  $ export XDG_CONFIG_HOME="$TESTCASE_ROOT/xdg-empty"
+  $ export XDG_CONFIG_HOME="$PWD/xdg-empty"
   $ touch test.md test.txt
 
 Explicit --config with whitespace and comments:
@@ -46,8 +46,7 @@ Config discovery traverses ancestors and uses the nearest config:
 Global config is used as a fallback:
   $ mkdir -p xdg/docfd
   $ printf '%s\n' '--exts=md' > xdg/docfd/config
-  $ export XDG_CONFIG_HOME="$TESTCASE_ROOT/xdg"
-  $ docfd --help=plain | grep -A3 'config'
+  $ export XDG_CONFIG_HOME="$PWD/xdg"
   $ global_project=$(mktemp -d)
   $ touch "$global_project/test.md" "$global_project/test.txt"
   $ (cd "$global_project" && docfd --debug-log - --cache-dir .cache --index-only . 2>&1) | grep '^Using .* search mode' | sed "s|$global_project|GLOBAL_PROJECT|" | sort
