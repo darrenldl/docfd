@@ -827,11 +827,22 @@ let run
               view.init_state
             )
         in
+        let path =
+          if Sys.file_exists script then (
+            script
+          ) else (
+            if Filename.basename script = script then (
+              Filename.concat (Params.script_dir ()) script
+            ) else (
+              script
+            )
+          )
+        in
         match
           Script.run
             pool
             ~init_state
-            ~path:script
+            ~path
         with
         | Error msg -> exit_with_error_msg msg
         | Ok snapshots -> Some snapshots
