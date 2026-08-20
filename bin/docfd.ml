@@ -1454,30 +1454,30 @@ let () =
   let no_config = ref false in
   let skip_parsing = ref false in
   Array.iteri (fun i arg ->
-        if i > 0 && not !skip_parsing then (
-          if arg = "--" then (
-            skip_parsing := true
-          ) else if arg = "--no-config" then (
-            no_config := true
-          ) else (
-             if CCString.starts_with ~prefix:"--config=" arg then (
-               match CCString.chop_prefix ~pre:"--config=" arg with
-               | None -> ()
-               | Some path -> config_path_from_arg := Some path
-             ) else if
-               i > 1 && Sys.argv.(i-1) = "--config"
-               && not (CCString.starts_with ~prefix:"--" arg)
-             then (
-               config_path_from_arg := Some arg
-             )
+      if i > 0 && not !skip_parsing then (
+        if arg = "--" then (
+          skip_parsing := true
+        ) else if arg = "--no-config" then (
+          no_config := true
+        ) else (
+          if CCString.starts_with ~prefix:"--config=" arg then (
+            match CCString.chop_prefix ~pre:"--config=" arg with
+            | None -> ()
+            | Some path -> config_path_from_arg := Some path
+          ) else if
+            i > 1 && Sys.argv.(i-1) = "--config"
+            && not (CCString.starts_with ~prefix:"--" arg)
+          then (
+            config_path_from_arg := Some arg
           )
         )
-      ) Sys.argv
-  in
-  let config_path =
-    if !no_config then (
-      None
-    ) else (
+      )
+    ) Sys.argv
+in
+let config_path =
+  if !no_config then (
+    None
+  ) else (
     match !config_path_from_arg with
     | None -> (
         match find_closest_config_path () with
@@ -1491,21 +1491,21 @@ let () =
           )
       )
     | Some path -> Some path
+  )
+in
+let argv =
+  match config_path with
+  | None -> Sys.argv
+  | Some path -> (
+      let argv_from_config = read_config ~path in
+      Array.concat [
+        [| Sys.argv.(0) |];
+        argv_from_config;
+        Array.sub Sys.argv 1 (Array.length Sys.argv - 1);
+      ]
     )
-  in
-  let argv =
-    match config_path with
-    | None -> Sys.argv
-    | Some path -> (
-        let argv_from_config = read_config ~path in
-        Array.concat [
-          [| Sys.argv.(0) |];
-          argv_from_config;
-          Array.sub Sys.argv 1 (Array.length Sys.argv - 1);
-        ]
-      )
-  in
-  Eio_posix.run (fun eio_env ->
-      Eio.Switch.run (fun sw ->
-          exit (Cmd.eval ~argv (cmd ~eio_env ~sw))
-        ))
+in
+Eio_posix.run (fun eio_env ->
+    Eio.Switch.run (fun sw ->
+        exit (Cmd.eval ~argv (cmd ~eio_env ~sw))
+      ))
