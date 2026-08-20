@@ -22,3 +22,4 @@ perf.data*
 dummy.gif
 *.db
 *.db-journal
+*.docfd-config
