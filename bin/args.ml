@@ -417,7 +417,7 @@ let script_arg_name = "script"
 
 let script_arg =
   let doc =
-    Fmt.str "Read and run Docfd script FILE."
+    Fmt.str "Read and run Docfd script FILE. If FILE is a bare filename that does not exist in the current directory, look for it in the Docfd script directory."
   in
   Arg.(
     value
@@ -429,7 +429,7 @@ let start_with_script_arg_name = "start-with-script"
 
 let start_with_script_arg =
   let doc =
-    Fmt.str "Read and run Docfd script FILE, then continue in interactive mode."
+    Fmt.str "Read and run Docfd script FILE, then continue in interactive mode. If FILE is a bare filename that does not exist in the current directory, look for it in the Docfd script directory."
   in
   Arg.(
     value
@@ -439,7 +439,7 @@ let start_with_script_arg =
 
 let list_scripts_arg =
   let doc =
-    Fmt.str "List Docfd scripts in data directory."
+    Fmt.str "List scripts in the Docfd script directory."
   in
   Arg.(
     value
