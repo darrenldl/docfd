@@ -225,7 +225,7 @@ let no_config_arg =
 let config_arg =
   let doc =
     Fmt.str {|Read default command-line arguments from $(docv).
-If unspecified, search the current directory adn its parents for the nearest %s, falling back to %s.
+If unspecified, search the current directory and its parents for the nearest %s, falling back to %s.
 Each non-empty, non-comment (#-prefixed) line should contain exactly one argument. Leading and trailing whitespace is ignored.
 Specify an option and its values on separate lines, or use the --option=value form. For instance, `--exts md` should be either one line as `--exts=md` or two lines as `--exts` and `md`. |}
       Params.docfd_config_ext
