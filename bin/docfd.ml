@@ -1408,13 +1408,74 @@ let cmd ~eio_env ~sw =
      $ files_without_match_arg
      $ paths_arg)
 
+let read_config ~path : string array =
+  let lines =
+    try
+      CCIO.with_in path CCIO.read_lines_l
+    with
+    | Sys_error _ -> (
+        exit_with_error_msg (Fmt.str "failed to read config %s" (Filename.quote path))
+      )
+  in
+  lines
+  |> List.filter (fun line ->
+      not (CCString.starts_with ~prefix:"#" line)
+      && (String.length line > 0)
+    )
+  |> Array.of_list
+
 let () =
   Printexc.record_backtrace true;
   if Sys.win32 then (
     exit_with_error_msg "Windows is not supported"
   );
   Random.self_init ();
+  let config_path_from_arg =
+    CCArray.foldi (fun acc i arg ->
+        if i > 0 then (
+          if CCString.starts_with ~prefix:"--config=" arg then (
+            match CCString.chop_prefix ~pre:"--config=" arg with
+            | None -> acc
+            | Some path -> Some path
+          ) else if i > 1 && Sys.argv.(i-1) = "--config" then (
+            Some arg
+          ) else (
+            acc
+          )
+        ) else (
+          acc
+        )
+      ) None Sys.argv
+  in
+  let config_path =
+    match config_path_from_arg with
+    | None -> (
+        let home_data_dir_config =
+          Filename.concat Params.default_data_dir "config"
+        in
+        if Sys.file_exists Params.docfd_config_ext then (
+          Some (normalize_path_to_absolute Params.docfd_config_ext)
+        ) else if Sys.file_exists home_data_dir_config then (
+          Some home_data_dir_config
+        ) else (
+          None
+        )
+      )
+    | Some path -> Some path
+  in
+  let argv =
+    match config_path with
+    | None -> Sys.argv
+    | Some path -> (
+        let argv_from_config = read_config ~path in
+        Array.concat [
+          [| Sys.argv.(0) |];
+          argv_from_config;
+          Array.sub Sys.argv 1 (Array.length Sys.argv - 1);
+        ]
+      )
+  in
   Eio_posix.run (fun eio_env ->
       Eio.Switch.run (fun sw ->
-          exit (Cmd.eval (cmd ~eio_env ~sw))
+          exit (Cmd.eval ~argv (cmd ~eio_env ~sw))
         ))
