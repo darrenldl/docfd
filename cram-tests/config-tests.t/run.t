@@ -14,10 +14,11 @@ Explicit --config=FILE:
   $ docfd --config=explicit-equals.config --debug-log - --cache-dir .cache-explicit-equals --index-only . 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
 
-Command line arguments override scalar config arguments:
-  $ printf '%s\n' '--exts=txt' > overridden.config
-  $ docfd --config overridden.config --exts md --debug-log - --cache-dir .cache-override --index-only . 2>&1 | grep '^Using .* search mode' | sort
+Repeatable config and command-line arguments are combined:
+  $ printf '%s\n' '--exts=' '--add-exts=txt' > combined.config
+  $ docfd --config combined.config --add-exts md --debug-log - --cache-dir .cache-combined --index-only . 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
+  Using multiline search mode for document '$TESTCASE_ROOT/test.txt'
 
 --no-config disables project config loading:
   $ mkdir no-config-project
@@ -43,8 +44,9 @@ Config discovery traverses ancestors and uses the nearest config:
   Using multiline search mode for document '$TESTCASE_ROOT/project/nested/test.txt'
 
 Global config is used as a fallback:
-  $ mkdir -p xdg/docfd global-project
-  $ touch global-project/test.md global-project/test.txt
+  $ mkdir -p xdg/docfd
   $ printf '%s\n' '--exts=md' > xdg/docfd/config
-  $ (cd global-project && XDG_CONFIG_HOME="$TESTCASE_ROOT/xdg" docfd --debug-log - --cache-dir .cache --index-only . 2>&1) | grep '^Using .* search mode' | sort
-  Using multiline search mode for document '$TESTCASE_ROOT/global-project/test.md'
+  $ global_project=$(mktemp -d)
+  $ touch "$global_project/test.md" "$global_project/test.txt"
+  $ (cd "$global_project" && XDG_CONFIG_HOME="$TESTCASE_ROOT/xdg" docfd --debug-log - --cache-dir .cache --index-only . 2>&1) | grep '^Using .* search mode' | sed "s|$global_project|GLOBAL_PROJECT|" | sort
+  Using multiline search mode for document 'GLOBAL_PROJECT/test.md'
