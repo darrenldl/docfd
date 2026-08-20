@@ -212,6 +212,16 @@ let data_dir_arg =
     & info [ "data-dir" ] ~doc ~docv:"DIR"
   )
 
+let config_arg =
+  let doc =
+    "Docfd config. Each line should either be blank, start with #, or contain exactly one cli argument, e.g. `--exts md` should be either one line as `--exts=md` or two lines as `--exts` followed by `md`."
+  in
+  Arg.(
+    value
+    & opt (some string) None
+    & info [ "config" ] ~doc ~docv:"FILE"
+  )
+
 let index_only_arg =
   let doc =
     Fmt.str "Exit after indexing."
