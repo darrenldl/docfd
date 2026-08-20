@@ -1450,35 +1450,35 @@ let () =
     exit_with_error_msg "Windows is not supported"
   );
   Random.self_init ();
-  let config_path_from_arg =
-    CCArray.foldi (fun (skip, acc) i arg ->
-        if i > 0 && not skip then (
-          if arg = "--" || arg = "--no-config" then (
-            (true, acc)
+  let config_path_from_arg = ref None in
+  let no_config = ref false in
+  let skip_parsing = ref false in
+  Array.iteri (fun i arg ->
+        if i > 0 && not !skip_parsing then (
+          if arg = "--" then (
+            skip_parsing := true
+          ) else if arg = "--no-config" then (
+            no_config := true
           ) else (
-            (false,
              if CCString.starts_with ~prefix:"--config=" arg then (
                match CCString.chop_prefix ~pre:"--config=" arg with
-               | None -> acc
-               | Some path -> Some path
+               | None -> ()
+               | Some path -> config_path_from_arg := Some path
              ) else if
                i > 1 && Sys.argv.(i-1) = "--config"
                && not (CCString.starts_with ~prefix:"--" arg)
              then (
-               Some arg
-             ) else (
-               acc
+               config_path_from_arg := Some arg
              )
-            )
           )
-        ) else (
-          (true, acc)
         )
-      ) (false, None) Sys.argv
-    |> snd
+      ) Sys.argv
   in
   let config_path =
-    match config_path_from_arg with
+    if !no_config then (
+      None
+    ) else (
+    match !config_path_from_arg with
     | None -> (
         match find_closest_config_path () with
         | Some path -> Some path
@@ -1491,6 +1491,7 @@ let () =
           )
       )
     | Some path -> Some path
+    )
   in
   let argv =
     match config_path with
