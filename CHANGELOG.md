@@ -4,6 +4,8 @@
 
 - Added config file support (`.docfd-config`)
     - The format follows the "cli arguments in lines" format as with ripgrep
+- Added `--list-scripts` flag
+- Made `--script` and `--start-with-script` to look up script in data directory if provided path is a file name and not present in current directory
 - Request handling debouncing fix
 - Other minor fixes aiming to further reduce crashes
     - Mainly around SQL related code
