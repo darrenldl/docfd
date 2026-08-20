@@ -1432,7 +1432,7 @@ let find_closest_config_path () =
     match parts with
     | [] -> None
     | x :: xs -> (
-        let path = path_of_parts parts in
+        let path = path_of_parts (x :: xs) in
         let candidate = Filename.concat path Params.docfd_config_ext in
         if Sys.file_exists candidate then (
           Some candidate
@@ -1460,8 +1460,10 @@ let () =
                match CCString.chop_prefix ~pre:"--config=" arg with
                | None -> acc
                | Some path -> Some path
-             ) else if i > 1 && Sys.argv.(i-1) = "--config"
-                       && not (CCString.starts_with ~prefix:"--") then (
+             ) else if
+               i > 1 && Sys.argv.(i-1) = "--config"
+               && not (CCString.starts_with ~prefix:"--" arg)
+             then (
                Some arg
              ) else (
                acc
@@ -1472,6 +1474,7 @@ let () =
           (true, acc)
         )
       ) (false, None) Sys.argv
+    |> snd
   in
   let config_path =
     match config_path_from_arg with
@@ -1479,7 +1482,7 @@ let () =
         match find_closest_config_path () with
         | Some path -> Some path
         | None -> (
-            if Sys.file_exists home_data_dir_config then (
+            if Sys.file_exists Params.default_config_path then (
               Some Params.default_config_path
             ) else (
               None

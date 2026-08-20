@@ -282,6 +282,25 @@ let xdg_data_home =
         (Filename.concat "Library" "Application Support")
     )
 
+let xdg_config_home =
+  let home_dir =
+    match Sys.getenv_opt "HOME" with
+    | None -> (
+        Misc_utils.exit_with_error_msg "environment variable HOME is not set";
+      )
+    | Some home -> home
+  in
+  match os_typ with
+  | `Linux -> (
+      match Sys.getenv_opt "XDG_CONFIG_HOME" with
+      | None -> Filename.concat home_dir ".config"
+      | Some x -> x
+    )
+  | `Darwin -> (
+      Filename.concat home_dir
+        (Filename.concat "Library" "Application Support")
+    )
+
 let xdg_cache_home =
   let home_dir =
     match Sys.getenv_opt "HOME" with
