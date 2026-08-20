@@ -69,6 +69,7 @@ tests :
 	dune build @non-interactive-mode-return-code-tests
 	dune build @search-scope-narrowing-tests
 	dune build @script-tests
+	dune build @config-tests
 
 .PHONY: demo-vhs
 demo-vhs :
