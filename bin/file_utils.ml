@@ -258,3 +258,10 @@ let file_size (path : string) : int option =
     Some st.st_size
   with
   | _ -> None
+
+let list_script_files () =
+  list_files_recursive_filter_by_exts
+    ~max_depth:1
+    ~report_progress:(fun () -> ())
+    ~exts:[ Params.docfd_script_ext ]
+    (Seq.return (Params.script_dir ()))

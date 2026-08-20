@@ -59,11 +59,7 @@ end
 
 let refresh_script_files () =
   Lwd.set UI_base.Vars.index_of_script_selected 0;
-  File_utils.list_files_recursive_filter_by_exts
-    ~max_depth:1
-    ~report_progress:(fun () -> ())
-    ~exts:[ Params.docfd_script_ext ]
-    (Seq.return (Params.script_dir ()))
+  File_utils.list_script_files ()
   |> String_set.to_seq
   |> Seq.map Filename.basename
   |> Dynarray.of_seq
