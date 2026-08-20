@@ -225,7 +225,7 @@ let no_config_arg =
 let config_arg =
   let doc =
     Fmt.str "Docfd config file. By default, `.docfd-config` is scanned in the ascending traversal manner from current directory to root, and %s is looked up as last resort. Each line should either be blank, start with #, or contain exactly one cli argument, e.g. `--exts md` should be either one line as `--exts=md` or two lines as `--exts` followed by `md`."
-    Params.default_config_path
+      Params.default_config_path
   in
   Arg.(
     value
