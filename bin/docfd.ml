@@ -1420,12 +1420,13 @@ let read_config ~path : string array =
       )
   in
   lines
-  |> List.filter (fun line ->
-      let line = String.trim line in
+  |> List.to_seq
+  |> Seq.map String.trim
+  |> Seq.filter (fun line ->
       not (CCString.starts_with ~prefix:"#" line)
       && (String.length line > 0)
     )
-  |> Array.of_list
+  |> Array.of_seq
 
 let find_closest_config_path () =
   let rec aux parts =
