@@ -437,6 +437,16 @@ let start_with_script_arg =
     & info [ start_with_script_arg_name ] ~doc ~docv:"FILE"
   )
 
+let list_scripts_arg =
+  let doc =
+    Fmt.str "List Docfd scripts in data directory."
+  in
+  Arg.(
+    value
+    & flag
+    & info [ "list-scripts" ] ~doc
+  )
+
 let paths_from_arg_name = "paths-from"
 
 let paths_from_arg =

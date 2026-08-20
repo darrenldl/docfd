@@ -506,6 +506,7 @@ let run
     (search_result_print_max_add_lines : int)
     (start_with_script : string option)
     (script : string option)
+    (list_scripts : bool)
     (paths_from : string list)
     (globs : string list)
     (single_line_globs : string list)
@@ -598,6 +599,15 @@ let run
             exts
         )
     ) path_open_specs;
+  if list_scripts then (
+    File_utils.list_script_files ()
+    |> String_set.iter (fun s ->
+        let s = Filename.basename s in
+        Printf.printf "%s\n" s
+      );
+    flush stdout;
+    exit 0
+  );
   let db_path = Filename.concat cache_dir Params.db_file_name in
   (match Docfd_lib.init ~db_path ~document_count_limit:cache_limit with
    | None -> ()
@@ -1401,6 +1411,7 @@ let cmd ~eio_env ~sw =
      $ search_result_print_snippet_max_add_lines_arg
      $ start_with_script_arg
      $ script_arg
+     $ list_scripts_arg
      $ paths_from_arg
      $ glob_arg
      $ single_line_glob_arg
