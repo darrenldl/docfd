@@ -1,7 +1,9 @@
 # Changelog
 
-## 13.0.2
+## 13.1.0
 
+- Added config file support (`.docfd-config`)
+    - The format follows the "cli arguments in lines" format as with ripgrep
 - Request handling debouncing fix
 - Other minor fixes aiming to further reduce crashes
     - Mainly around SQL related code
