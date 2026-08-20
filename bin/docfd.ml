@@ -1472,40 +1472,39 @@ let () =
           )
         )
       )
-    ) Sys.argv
-in
-let config_path =
-  if !no_config then (
-    None
-  ) else (
-    match !config_path_from_arg with
-    | None -> (
-        match find_closest_config_path () with
-        | Some path -> Some path
-        | None -> (
-            if Sys.file_exists Params.default_config_path then (
-              Some Params.default_config_path
-            ) else (
-              None
+    ) Sys.argv;
+  let config_path =
+    if !no_config then (
+      None
+    ) else (
+      match !config_path_from_arg with
+      | None -> (
+          match find_closest_config_path () with
+          | Some path -> Some path
+          | None -> (
+              if Sys.file_exists Params.default_config_path then (
+                Some Params.default_config_path
+              ) else (
+                None
+              )
             )
-          )
-      )
-    | Some path -> Some path
-  )
-in
-let argv =
-  match config_path with
-  | None -> Sys.argv
-  | Some path -> (
-      let argv_from_config = read_config ~path in
-      Array.concat [
-        [| Sys.argv.(0) |];
-        argv_from_config;
-        Array.sub Sys.argv 1 (Array.length Sys.argv - 1);
-      ]
+        )
+      | Some path -> Some path
     )
-in
-Eio_posix.run (fun eio_env ->
-    Eio.Switch.run (fun sw ->
-        exit (Cmd.eval ~argv (cmd ~eio_env ~sw))
-      ))
+  in
+  let argv =
+    match config_path with
+    | None -> Sys.argv
+    | Some path -> (
+        let argv_from_config = read_config ~path in
+        Array.concat [
+          [| Sys.argv.(0) |];
+          argv_from_config;
+          Array.sub Sys.argv 1 (Array.length Sys.argv - 1);
+        ]
+      )
+  in
+  Eio_posix.run (fun eio_env ->
+      Eio.Switch.run (fun sw ->
+          exit (Cmd.eval ~argv (cmd ~eio_env ~sw))
+        ))
