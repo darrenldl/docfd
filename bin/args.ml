@@ -182,10 +182,9 @@ let cache_dir_arg =
   let doc =
     "Docfd cache directory, mainly for index DB."
   in
-  let cache_home = Params.xdg_cache_home in
   Arg.(
     value
-    & opt string (Filename.concat cache_home "docfd")
+    & opt string Params.default_cache_dir
     & info [ "cache-dir" ] ~doc ~docv:"DIR"
   )
 
