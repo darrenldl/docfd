@@ -46,7 +46,9 @@ Config discovery traverses ancestors and uses the nearest config:
 Global config is used as a fallback:
   $ mkdir -p xdg/docfd
   $ printf '%s\n' '--exts=md' > xdg/docfd/config
+  $ export XDG_CONFIG_HOME="$TESTCASE_ROOT/xdg"
+  $ docfd --help=plain | grep -A3 'config'
   $ global_project=$(mktemp -d)
   $ touch "$global_project/test.md" "$global_project/test.txt"
-  $ (cd "$global_project" && XDG_CONFIG_HOME="$TESTCASE_ROOT/xdg" docfd --debug-log - --cache-dir .cache --index-only . 2>&1) | grep '^Using .* search mode' | sed "s|$global_project|GLOBAL_PROJECT|" | sort
+  $ (cd "$global_project" && docfd --debug-log - --cache-dir .cache --index-only . 2>&1) | grep '^Using .* search mode' | sed "s|$global_project|GLOBAL_PROJECT|" | sort
   Using multiline search mode for document 'GLOBAL_PROJECT/test.md'
