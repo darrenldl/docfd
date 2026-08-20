@@ -489,6 +489,7 @@ let run
     (cache_limit : int)
     (data_dir : string)
     (_config : string option)
+    (_no_config : bool)
     (index_only : bool)
     (start_with_filter : string option)
     (start_with_search : string option)
@@ -1383,6 +1384,7 @@ let cmd ~eio_env ~sw =
      $ cache_limit_arg
      $ data_dir_arg
      $ config_arg
+     $ no_config_arg
      $ index_only_arg
      $ start_with_filter_arg
      $ start_with_search_arg
