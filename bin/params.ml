@@ -299,6 +299,8 @@ let xdg_cache_home =
         (Filename.concat "Library" "Caches")
     )
 
+let default_data_dir = Filename.concat xdg_data_home "docfd"
+
 let script_dir () =
   Filename.concat
     (Option.get !data_dir)

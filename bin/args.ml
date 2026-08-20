@@ -206,10 +206,9 @@ let data_dir_arg =
   let doc =
     "Docfd data directory."
   in
-  let data_home = Xdg_utils.data_home in
   Arg.(
     value
-    & opt string (Filename.concat data_home "docfd")
+    & opt string Params.default_data_dir
     & info [ "data-dir" ] ~doc ~docv:"DIR"
   )
 
