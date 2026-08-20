@@ -1421,6 +1421,7 @@ let read_config ~path : string array =
   in
   lines
   |> List.filter (fun line ->
+      let line = String.trim line in
       not (CCString.starts_with ~prefix:"#" line)
       && (String.length line > 0)
     )
