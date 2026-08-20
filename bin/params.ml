@@ -252,6 +252,53 @@ let cache_dir : string option ref = ref None
 
 let data_dir : string option ref = ref None
 
+let os_typ : [ `Darwin | `Linux ] =
+  let s = CCUnix.call_stdout "uname"
+    |> String.trim
+    |> String.lowercase_ascii
+  in
+  match s with
+  | "darwin" -> `Darwin
+  | _ -> `Linux
+
+let xdg_data_home =
+  let home_dir =
+    match Sys.getenv_opt "HOME" with
+    | None -> (
+        Misc_utils.exit_with_error_msg "environment variable HOME is not set";
+      )
+    | Some home -> home
+  in
+  match os_typ with
+  | `Linux -> (
+      match Sys.getenv_opt "XDG_DATA_HOME" with
+      | None -> Filename.concat home_dir ".local/share"
+      | Some x -> x
+    )
+  | `Darwin -> (
+      Filename.concat home_dir
+        (Filename.concat "Library" "Application Support")
+    )
+
+let xdg_cache_home =
+  let home_dir =
+    match Sys.getenv_opt "HOME" with
+    | None -> (
+        Misc_utils.exit_with_error_msg "environment variable HOME is not set";
+      )
+    | Some home -> home
+  in
+  match os_typ with
+  | `Linux -> (
+      match Sys.getenv_opt "XDG_CACHE_HOME" with
+      | None -> Filename.concat home_dir ".cache"
+      | Some x -> x
+    )
+  | `Darwin -> (
+      Filename.concat home_dir
+        (Filename.concat "Library" "Caches")
+    )
+
 let script_dir () =
   Filename.concat
     (Option.get !data_dir)
@@ -280,15 +327,6 @@ let blink_on_duration : Mtime.span = Mtime.Span.(140 * ms)
 let session_manager_request_debounce_interval = Mtime.Span.(200 * ms)
 
 let session_manager_request_debounce_wait_buffer = Mtime.Span.(5 * ms)
-
-let os_typ : [ `Darwin | `Linux ] =
-  let s = CCUnix.call_stdout "uname"
-    |> String.trim
-    |> String.lowercase_ascii
-  in
-  match s with
-  | "darwin" -> `Darwin
-  | _ -> `Linux
 
 let clipboard_copy_cmd_and_args =
   match os_typ with
