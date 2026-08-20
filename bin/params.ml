@@ -303,6 +303,10 @@ let xdg_cache_home =
 
 let default_data_dir = Filename.concat xdg_data_home "docfd"
 
+let default_config_dir = Filename.concat xdg_config_home "docfd"
+
+let default_config_path = Filename.concat default_config_dir "config"
+
 let script_dir () =
   Filename.concat
     (Option.get !data_dir)
