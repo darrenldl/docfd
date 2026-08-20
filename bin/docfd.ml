@@ -557,6 +557,16 @@ let run
             )
         )
     );
+  if list_scripts then (
+    Params.data_dir := Some data_dir;
+    File_utils.list_script_files ()
+    |> String_set.iter (fun s ->
+        let s = Filename.basename s in
+        Printf.printf "%s\n" s
+      );
+    flush stdout;
+    exit 0
+  );
   Params.scan_hidden := scan_hidden;
   Params.max_file_tree_scan_depth := max_depth;
   Params.max_fuzzy_edit_dist := max_fuzzy_edit_dist;
@@ -599,15 +609,6 @@ let run
             exts
         )
     ) path_open_specs;
-  if list_scripts then (
-    File_utils.list_script_files ()
-    |> String_set.iter (fun s ->
-        let s = Filename.basename s in
-        Printf.printf "%s\n" s
-      );
-    flush stdout;
-    exit 0
-  );
   let db_path = Filename.concat cache_dir Params.db_file_name in
   (match Docfd_lib.init ~db_path ~document_count_limit:cache_limit with
    | None -> ()
