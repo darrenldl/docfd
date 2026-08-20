@@ -1427,6 +1427,22 @@ let read_config ~path : string array =
     )
   |> Array.of_list
 
+let find_closest_config_path () =
+  let rec aux parts =
+    match parts with
+    | [] -> None
+    | x :: xs -> (
+      let path = path_of_parts parts in
+      let candidate = Filename.concat path Params.docfd_config_ext in
+    if Sys.file_exists candidate then (
+      Some candidate
+    ) else (
+      aux xs
+    )
+    )
+  in
+  aux Params.cwd_path_parts
+
 let () =
   Printexc.record_backtrace true;
   if Sys.win32 then (
@@ -1434,34 +1450,40 @@ let () =
   );
   Random.self_init ();
   let config_path_from_arg =
-    CCArray.foldi (fun acc i arg ->
-        if i > 0 then (
+    CCArray.foldi (fun (skip, acc) i arg ->
+        if i > 0 && not skip then (
+          if arg = "--" || arg = "--no-config" then (
+            (true, acc)
+          ) else (
+            (false,
           if CCString.starts_with ~prefix:"--config=" arg then (
             match CCString.chop_prefix ~pre:"--config=" arg with
             | None -> acc
             | Some path -> Some path
-          ) else if i > 1 && Sys.argv.(i-1) = "--config" then (
+          ) else if i > 1 && Sys.argv.(i-1) = "--config"
+          && not (CCString.starts_with ~prefix:"--") then (
             Some arg
           ) else (
             acc
           )
+          )
+          )
         ) else (
-          acc
+          (true, acc)
         )
-      ) None Sys.argv
+      ) (false, None) Sys.argv
   in
   let config_path =
     match config_path_from_arg with
     | None -> (
-        let home_data_dir_config =
-          Filename.concat Params.default_data_dir "config"
-        in
-        if Sys.file_exists Params.docfd_config_ext then (
-          Some (normalize_path_to_absolute Params.docfd_config_ext)
-        ) else if Sys.file_exists home_data_dir_config then (
-          Some home_data_dir_config
+        match find_closest_config_path () with
+        | Some path -> Some path
+        | None -> (
+        if Sys.file_exists home_data_dir_config then (
+          Some Params.default_config_path
         ) else (
           None
+        )
         )
       )
     | Some path -> Some path
