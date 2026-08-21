@@ -22,6 +22,6 @@ COPY . /root/docfd
 # RUN chown -R root:root /home/opam/docfd
 
 WORKDIR /root/docfd
-RUN eval $(opam env) && dune build docfd.opam
+RUN eval $(opam env) && dune build @opam
 RUN opam install --yes . --deps-only --with-test
 RUN echo 'eval $(opam env)' >> /root/.bash_profile
