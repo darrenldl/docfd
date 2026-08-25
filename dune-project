@@ -65,7 +65,7 @@ Features:
    (decompress (>= "1.4.0"))
    (progress (>= "0.5.0"))
    diet
-   (sqlite3 (>= "5.0.0"))
+   (sqlite3 (>= "5.4.2"))
    (uuseg (>= "15.1.0"))
    uucp
    (alcotest :with-test)
