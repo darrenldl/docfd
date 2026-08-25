@@ -944,7 +944,7 @@ let ui_loop ~quit ~term root =
              ~renderer
              term
              (Lwd.observe @@ root);
-           Vars.overlay_follow_up_action := None
+           Vars.overlay_follow_up_action := None;
            f ();
          ));
       loop ()
