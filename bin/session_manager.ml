@@ -224,9 +224,11 @@ let recompute_current_state_if_missing pool =
       in
       let state =
         CCList.foldi (fun state i command ->
-            Lwd.set overlay_message_var [
-              Fmt.str "Recomputing snapshot %d" i;
-            ];
+            Lwd.set overlay_message_var (
+              let lines = Lwd.peek overlay_message_var in
+              lines @
+              [ Fmt.str "Recomputing snapshot %d" i ]
+            );
             Session.run_command
               pool
               command
@@ -239,7 +241,6 @@ let recompute_current_state_if_missing pool =
           commands
       in
       let snapshot = Dynarray.get snapshots cur_ver in
-      Lwd.set overlay_message_var [];
       Dynarray.set
         snapshots
         cur_ver
@@ -268,13 +269,18 @@ let prune_unused_snapshot_states () =
 
 let shift_ver ~offset =
   lock_for_external_editing ~clean_up:true (fun () ->
+    Atomic.set UI_base.Vars.input_enabled false;
+            Lwd.set overlay_message_var [
+              Fmt.str "Shifting snapshot version";
+            ];
       let pool = UI_base.task_pool () in
       let new_ver = !cur_ver + offset in
       if 0 <= new_ver && new_ver < Dynarray.length snapshots then (
         cur_ver := new_ver;
         recompute_current_state_if_missing pool;
         prune_unused_snapshot_states ();
-      )
+      );
+    Atomic.set UI_base.Vars.input_enabled true;
     )
 
 let update_from_cur_snapshot f =
