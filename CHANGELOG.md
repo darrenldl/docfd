@@ -10,6 +10,7 @@
 - Other minor fixes aiming to further reduce crashes
     - Mainly around SQL related code
 - Added more reporting to help capture info when the rare crashes occur
+- Requiring `sqlite3 >= 5.4.2` for a crash fix
 
 ## 13.0.1
 
