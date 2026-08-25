@@ -6,8 +6,6 @@ val worker_fiber : Task_pool.t -> unit
 
 val cur_snapshot : (int * Session.Snapshot.t) Lwd.t
 
-val overlay_message : string list Lwd.t
-
 type view = {
   init_state : Session.State.t;
   commands : Command.t list;
@@ -21,7 +19,7 @@ val update_starting_state : Session.State.t -> unit
 
 val load_snapshots : Session.Snapshot.t Dynarray.t -> unit
 
-val shift_ver : offset:int -> unit
+val queue_shift_ver : offset:int -> unit
 
 val update_from_cur_snapshot : (Session.Snapshot.t -> Session.Snapshot.t) -> unit
 

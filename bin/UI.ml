@@ -1601,12 +1601,12 @@ let keyboard_handler
             )
           | (`ASCII 'u', [])
           | (`ASCII 'Z', [`Ctrl]) -> (
-              Session_manager.shift_ver ~offset:(-1);
+              Session_manager.queue_shift_ver ~offset:(-1);
               `Handled
             )
           | (`ASCII 'R', [`Ctrl])
           | (`ASCII 'Y', [`Ctrl]) -> (
-              Session_manager.shift_ver ~offset:1;
+              Session_manager.queue_shift_ver ~offset:1;
               `Handled
             )
           | (`Page `Down, [`Shift])
@@ -2281,10 +2281,10 @@ let main : Nottui.ui Lwd.t =
       ~show_bottom_right_pane
       ~search_result_groups
   in
-  let$* session_manager_overlay_message = Session_manager.overlay_message in
+  let$* overlay_message = Lwd.get UI_base.Vars.overlay_message in
   let overlay =
     let img =
-      match session_manager_overlay_message with
+      match overlay_message with
       | [] -> Notty.I.void 0 0
       | lines -> (
           let attr = Notty.A.(fg black ++ bg white) in

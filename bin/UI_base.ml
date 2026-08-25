@@ -68,6 +68,10 @@ let render_mode_of_document (doc : Document.t)
 module Vars = struct
   let quit = Lwd.var false
 
+  let overlay_message : string list Lwd.var = Lwd.var []
+
+  let overlay_follow_up_action : (unit -> unit) option ref = ref None
+
   let pool : Task_pool.t option Atomic.t = Atomic.make None
 
   let action : top_level_action option ref = ref None
@@ -931,6 +935,18 @@ let ui_loop ~quit ~term root =
         term
         (Lwd.observe @@ root);
       Eio.Fiber.yield ();
+      (match !Vars.overlay_follow_up_action with
+      | None -> ()
+      | Some f -> (
+      Nottui_unix.step
+        ~process_event:false
+        ~timeout:0.01
+        ~renderer
+        term
+        (Lwd.observe @@ root);
+      f ();
+      Vars.overlay_follow_up_action := None
+      ));
       loop ()
     )
   in

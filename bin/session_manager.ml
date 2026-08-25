@@ -76,10 +76,6 @@ let cur_snapshot_var = Lwd.var (0, Session.Snapshot.make_empty ())
 
 let cur_snapshot = Lwd.get cur_snapshot_var
 
-let overlay_message_var : string list Lwd.var = Lwd.var []
-
-let overlay_message = Lwd.get overlay_message_var
-
 type view = {
   init_state : Session.State.t;
   commands : Command.t list;
@@ -223,12 +219,7 @@ let recompute_current_state_if_missing pool =
           snapshots
       in
       let state =
-        CCList.foldi (fun state i command ->
-            Lwd.set overlay_message_var (
-              let lines = Lwd.peek overlay_message_var in
-              lines @
-              [ Fmt.str "Recomputing snapshot %d" i ]
-            );
+        List.fold_left (fun state command ->
             Session.run_command
               pool
               command
@@ -267,20 +258,30 @@ let prune_unused_snapshot_states () =
     Gc.compact ()
   )
 
-let shift_ver ~offset =
+let shift_ver ~new_ver =
   lock_for_external_editing ~clean_up:true (fun () ->
-    Atomic.set UI_base.Vars.input_enabled false;
-            Lwd.set overlay_message_var [
-              Fmt.str "Shifting snapshot version";
-            ];
       let pool = UI_base.task_pool () in
-      let new_ver = !cur_ver + offset in
       if 0 <= new_ver && new_ver < Dynarray.length snapshots then (
         cur_ver := new_ver;
         recompute_current_state_if_missing pool;
         prune_unused_snapshot_states ();
       );
-    Atomic.set UI_base.Vars.input_enabled true;
+    )
+
+let queue_shift_ver ~offset =
+  lock_for_external_editing ~clean_up:true (fun () ->
+      let new_ver = !cur_ver + offset in
+      if 0 <= new_ver && new_ver < Dynarray.length snapshots then (
+        Lwd.set UI_base.Vars.overlay_message [
+            Fmt.str "Shifting to snapshot version %d" new_ver;
+        ];
+        UI_base.Vars.overlay_follow_up_action :=
+          Some (fun () ->
+            Fun.protect
+            ~finally:(fun () -> Lwd.set UI_base.Vars.overlay_message [])
+            (fun () -> shift_ver ~new_ver)
+          )
+      )
     )
 
 let update_from_cur_snapshot f =
