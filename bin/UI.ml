@@ -2281,10 +2281,38 @@ let main : Nottui.ui Lwd.t =
       ~show_bottom_right_pane
       ~search_result_groups
   in
-  Nottui_widgets.vbox
+  let$* session_manager_overlay_message = Session_manager.overlay_message in
+  let overlay =
+    let img =
+      match session_manager_overlay_message with
+      | [] -> Notty.I.void 0 0
+      | lines -> (
+          let attr = Notty.A.(fg black ++ bg white) in
+          let max_line_len = List.fold_left (fun acc s -> max acc (String.length s)) 0 lines in
+          ("" :: lines @ [ "" ])
+          |> List.map (fun s ->
+              Notty.I.(
+                crop ~l:(-2) ~r:(-2) (strf ~attr "%s" s)
+                </>
+                char attr ' ' (max_line_len + 4) 1
+              )
+            )
+          |> Notty.I.vcat
+        )
+    in
+    let img_h = Notty.I.height img in
+    let img_w = Notty.I.width img in
+    Notty.I.crop ~l:(-(term_width - img_w) / 2) ~t:(-(term_height - img_h) / 2) img
+    |> Nottui.Ui.atom
+  in
+  Nottui_widgets.zbox
     [
-      Lwd.return (Nottui.Ui.keyboard_area
-                    (keyboard_handler ~session_state ~search_result_groups)
-                    top_pane);
-      Lwd.return bottom_pane;
+      Nottui_widgets.vbox
+        [
+          Lwd.return (Nottui.Ui.keyboard_area
+                        (keyboard_handler ~session_state ~search_result_groups)
+                        top_pane);
+          Lwd.return bottom_pane;
+        ];
+      Lwd.return overlay;
     ]

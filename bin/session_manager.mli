@@ -6,6 +6,8 @@ val worker_fiber : Task_pool.t -> unit
 
 val cur_snapshot : (int * Session.Snapshot.t) Lwd.t
 
+val overlay_message : string list Lwd.t
+
 type view = {
   init_state : Session.State.t;
   commands : Command.t list;

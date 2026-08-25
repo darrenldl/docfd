@@ -76,6 +76,10 @@ let cur_snapshot_var = Lwd.var (0, Session.Snapshot.make_empty ())
 
 let cur_snapshot = Lwd.get cur_snapshot_var
 
+let overlay_message_var : string list Lwd.var = Lwd.var []
+
+let overlay_message = Lwd.get overlay_message_var
+
 type view = {
   init_state : Session.State.t;
   commands : Command.t list;
@@ -219,7 +223,10 @@ let recompute_current_state_if_missing pool =
           snapshots
       in
       let state =
-        List.fold_left (fun state command ->
+        CCList.foldi (fun state i command ->
+            Lwd.set overlay_message_var [
+              Fmt.str "Recomputing snapshot %d" i;
+            ];
             Session.run_command
               pool
               command
@@ -232,6 +239,7 @@ let recompute_current_state_if_missing pool =
           commands
       in
       let snapshot = Dynarray.get snapshots cur_ver in
+      Lwd.set overlay_message_var [];
       Dynarray.set
         snapshots
         cur_ver
