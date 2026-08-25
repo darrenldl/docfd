@@ -936,17 +936,17 @@ let ui_loop ~quit ~term root =
         (Lwd.observe @@ root);
       Eio.Fiber.yield ();
       (match !Vars.overlay_follow_up_action with
-      | None -> ()
-      | Some f -> (
-      Nottui_unix.step
-        ~process_event:false
-        ~timeout:0.01
-        ~renderer
-        term
-        (Lwd.observe @@ root);
-      f ();
-      Vars.overlay_follow_up_action := None
-      ));
+       | None -> ()
+       | Some f -> (
+           Nottui_unix.step
+             ~process_event:false
+             ~timeout:0.01
+             ~renderer
+             term
+             (Lwd.observe @@ root);
+           f ();
+           Vars.overlay_follow_up_action := None
+         ));
       loop ()
     )
   in

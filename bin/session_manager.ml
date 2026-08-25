@@ -273,14 +273,14 @@ let queue_shift_ver ~offset =
       let new_ver = !cur_ver + offset in
       if 0 <= new_ver && new_ver < Dynarray.length snapshots then (
         Lwd.set UI_base.Vars.overlay_message [
-            Fmt.str "Shifting to snapshot version %d" new_ver;
+          Fmt.str "Shifting to snapshot version %d" new_ver;
         ];
         UI_base.Vars.overlay_follow_up_action :=
           Some (fun () ->
-            Fun.protect
-            ~finally:(fun () -> Lwd.set UI_base.Vars.overlay_message [])
-            (fun () -> shift_ver ~new_ver)
-          )
+              Fun.protect
+                ~finally:(fun () -> Lwd.set UI_base.Vars.overlay_message [])
+                (fun () -> shift_ver ~new_ver)
+            )
       )
     )
 
