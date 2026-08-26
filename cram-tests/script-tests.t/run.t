@@ -37,6 +37,15 @@ Fall back to the script directory for a bare filename:
   $ docfd --data-dir data -l --script a.docfd-script .
   $TESTCASE_ROOT/test0.txt
 
+The extension may be omitted when falling back to the script directory:
+  $ docfd --data-dir data -l --script a .
+  $TESTCASE_ROOT/test0.txt
+
+An exact extensionless file in the script directory takes precedence:
+  $ cp 1.docfd-script data/scripts/a
+  $ docfd --data-dir data -l --script a .
+  [1]
+
 A file in the current directory takes precedence over the fallback:
   $ cp 1.docfd-script a.docfd-script
   $ docfd --data-dir data -l --script a.docfd-script .
@@ -44,11 +53,11 @@ A file in the current directory takes precedence over the fallback:
 
 Paths containing directory components do not fall back:
   $ docfd --data-dir data -l --script missing/a.docfd-script .
-  error: failed to read script 'missing/a.docfd-script'
+  error: script does not exist: missing/a.docfd-script
   [1]
 
 --start-with-script uses the same fallback:
   $ printf '%s\n' 'not a command' > data/scripts/invalid.docfd-script
-  $ docfd --data-dir data --start-with-script invalid.docfd-script . > start-with-script.out 2>&1; status=$?; grep '^error:' start-with-script.out; echo "status=$status"
+  $ docfd --data-dir data --start-with-script invalid . > start-with-script.out 2>&1; status=$?; grep '^error:' start-with-script.out; echo "status=$status"
   error: failed to parse command on line 1: not a command
   status=1
