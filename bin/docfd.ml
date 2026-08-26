@@ -833,7 +833,14 @@ let run
             script
           ) else (
             if Filename.basename script = script then (
-              Filename.concat (Params.script_dir ()) script
+              let base =
+                if Filename.extension script = "" then (
+                  script ^ Params.docfd_script_ext
+                ) else (
+                  script
+                )
+              in
+              Filename.concat (Params.script_dir ()) base
             ) else (
               script
             )
