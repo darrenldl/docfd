@@ -417,7 +417,7 @@ let script_arg_name = "script"
 
 let script_arg =
   let doc =
-    Fmt.str "Read and run Docfd script FILE. If FILE is a bare filename that does not exist in the current directory, look for it in the Docfd script directory. In the latter case, the extension is also optional, e.g. specifying `--%s foo` when foo is not in current directory will trigger a look up for foo%s in the script directory."
+    Fmt.str "Read and run Docfd script FILE. If FILE is a bare filename that does not exist in the current directory, look for it in the Docfd script directory, appending .docfd-script extension if needed."
       script_arg_name
       Params.docfd_script_ext
   in

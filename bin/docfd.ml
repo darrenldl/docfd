@@ -829,20 +829,30 @@ let run
             )
         in
         let path =
+          let exit_with_error_msg path =
+            exit_with_error_msg (Fmt.str "script does not exist: %s" path)
+          in
           if Sys.file_exists script then (
             script
           ) else (
             if Filename.basename script = script then (
-              let base =
+              let path = Filename.concat (Params.script_dir ()) script in
+              if Sys.file_exists path then (
+                path
+              ) else (
                 if Filename.extension script = "" then (
-                  script ^ Params.docfd_script_ext
+                  let path = path ^ Params.docfd_script_ext in
+                  if Sys.file_exists path then (
+                    path
+                  ) else (
+                    exit_with_error_msg path
+                  )
                 ) else (
-                  script
+                  exit_with_error_msg path
                 )
-              in
-              Filename.concat (Params.script_dir ()) base
+              )
             ) else (
-              script
+              exit_with_error_msg script
             )
           )
         in
