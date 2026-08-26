@@ -75,7 +75,6 @@ let reload_document (doc : Document.t) =
         Fun.protect
           ~finally:(fun () -> Lwd.set UI_base.Vars.overlay_message [])
           (fun () ->
-             Unix.sleepf 5.0;
              let pool = UI_base.task_pool () in
              let doc =
                match
