@@ -66,37 +66,48 @@ let refresh_script_files () =
   |> Lwd.set Vars.script_files
 
 let reload_document (doc : Document.t) =
-  let pool = UI_base.task_pool () in
   let path = Document.path doc in
-  let doc =
-    match
-      Document.of_path
-        ~env:(UI_base.eio_env ())
-        pool
-        ~already_in_transaction:false
-        (Document.search_mode doc)
-        path
-    with
-    | Ok doc -> Some doc
-    | Error _ -> (
-        None
-      )
-  in
-  let session_state =
-    Session_manager.lock_with_view (fun view ->
-        view.init_state
-      )
-    |> (fun state ->
-        match doc with
-        | Some doc -> (
-            Session.State.add_document pool doc state
+  Lwd.set UI_base.Vars.overlay_message [
+    Fmt.str "Reloading document %s" path;
+  ];
+  UI_base.Vars.overlay_follow_up_action :=
+    Some (fun () ->
+        Fun.protect
+          ~finally:(fun () -> Lwd.set UI_base.Vars.overlay_message [])
+          (fun () ->
+             Unix.sleepf 5.0;
+             let pool = UI_base.task_pool () in
+             let doc =
+               match
+                 Document.of_path
+                   ~env:(UI_base.eio_env ())
+                   pool
+                   ~already_in_transaction:false
+                   (Document.search_mode doc)
+                   path
+               with
+               | Ok doc -> Some doc
+               | Error _ -> (
+                   None
+                 )
+             in
+             let session_state =
+               Session_manager.lock_with_view (fun view ->
+                   view.init_state
+                 )
+               |> (fun state ->
+                   match doc with
+                   | Some doc -> (
+                       Session.State.add_document pool doc state
+                     )
+                   | None -> (
+                       Session.State.drop (`Path path) state
+                     )
+                 )
+             in
+             Session_manager.update_starting_state session_state
           )
-        | None -> (
-            Session.State.drop (`Path path) state
-          )
       )
-  in
-  Session_manager.update_starting_state session_state
 
 let reload_document_selected
     ~(search_result_groups : Session.search_result_group array)

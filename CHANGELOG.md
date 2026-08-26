@@ -11,6 +11,7 @@
     - Mainly around SQL related code
 - Added more reporting to help capture info when the rare crashes occur
 - Requiring `sqlite3 >= 5.4.2` for a crash fix
+- Added overlay for potentially long synchronous operations to make it clear Docfd is not frozen, e.g. redo/undo, reload
 
 ## 13.0.1
 

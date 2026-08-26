@@ -1056,6 +1056,10 @@ let run
         match action with
         | UI_base.Recompute_document_src -> (
             close_term ();
+            if interactive then (
+              Printf.printf "Reloading documents\n";
+              flush stdout;
+            );
             let new_starting_state =
               compute_document_src ()
               |> init_session_state_of_document_src ~env ~interactive pool
