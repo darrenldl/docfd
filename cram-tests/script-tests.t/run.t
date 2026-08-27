@@ -61,3 +61,7 @@ Paths containing directory components do not fall back:
   $ docfd --data-dir data --start-with-script invalid . > start-with-script.out 2>&1; status=$?; grep '^error:' start-with-script.out; echo "status=$status"
   error: failed to parse command on line 1: not a command
   status=1
+
+A valid --start-with-script retains interactive initialization:
+  $ docfd --data-dir data --cache-dir start-with-script-cache --start-with-script z --index-only . 2>&1 | grep '^Initializing in-memory index$'
+  Initializing in-memory index
