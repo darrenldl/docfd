@@ -609,6 +609,51 @@ let run
             exts
         )
     ) path_open_specs;
+  let script_path =
+    match script, start_with_script with
+    | None, None -> None
+    | Some _, Some _ -> failwith "unexpected case"
+    | Some script, None
+    | None, Some script -> (
+        let exit_with_error_msg path =
+          exit_with_error_msg (Fmt.str "script does not exist: %s" path)
+        in
+        Some (
+          if Sys.file_exists script then (
+            script
+          ) else (
+            if Filename.basename script = script then (
+              let path = Filename.concat (Params.script_dir ()) script in
+              if Sys.file_exists path then (
+                path
+              ) else (
+                if Filename.extension script = "" then (
+                  let path = path ^ Params.docfd_script_ext in
+                  if Sys.file_exists path then (
+                    path
+                  ) else (
+                    exit_with_error_msg path
+                  )
+                ) else (
+                  exit_with_error_msg path
+                )
+              )
+            ) else (
+              exit_with_error_msg script
+            )
+          )
+        )
+      )
+  in
+  let script =
+    match script_path with
+    | None -> None
+    | Some path -> (
+        match Script.parse ~path with
+        | Error msg -> exit_with_error_msg msg
+        | Ok script -> Some script
+      )
+  in
   let db_path = Filename.concat cache_dir Params.db_file_name in
   (match Docfd_lib.init ~db_path ~document_count_limit:cache_limit with
    | None -> ()
@@ -818,49 +863,16 @@ let run
     | `Auto -> not (Out_channel.isatty print_oc)
   in
   let snapshots_from_script =
-    match script, start_with_script with
-    | None, None -> None
-    | Some _, Some _ -> failwith "unexpected case"
-    | Some script, None
-    | None, Some script -> (
+    match script with
+    | None -> None
+    | Some script -> (
         let init_state =
           Session_manager.lock_with_view (fun view ->
               view.init_state
             )
         in
-        let path =
-          let exit_with_error_msg path =
-            exit_with_error_msg (Fmt.str "script does not exist: %s" path)
-          in
-          if Sys.file_exists script then (
-            script
-          ) else (
-            if Filename.basename script = script then (
-              let path = Filename.concat (Params.script_dir ()) script in
-              if Sys.file_exists path then (
-                path
-              ) else (
-                if Filename.extension script = "" then (
-                  let path = path ^ Params.docfd_script_ext in
-                  if Sys.file_exists path then (
-                    path
-                  ) else (
-                    exit_with_error_msg path
-                  )
-                ) else (
-                  exit_with_error_msg path
-                )
-              )
-            ) else (
-              exit_with_error_msg script
-            )
-          )
-        in
         match
-          Script.run
-            pool
-            ~init_state
-            ~path
+          Script.run pool ~init_state script
         with
         | Error msg -> exit_with_error_msg msg
         | Ok snapshots -> Some snapshots
@@ -1294,16 +1306,15 @@ let run
                   view.init_state
                 )
             in
-            match
-              Script.run
-                pool
-                ~init_state
-                ~path
-            with
+            match Script.parse ~path with
             | Error msg -> exit_with_error_msg msg
-            | Ok snapshots -> (
-                Session_manager.load_snapshots snapshots;
-                loop ()
+            | Ok script -> (
+                match Script.run pool ~init_state script with
+                | Error msg -> exit_with_error_msg msg
+                | Ok snapshots -> (
+                    Session_manager.load_snapshots snapshots;
+                    loop ()
+                  )
               )
           )
         | Edit_script path -> (
