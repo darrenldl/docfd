@@ -597,6 +597,19 @@ let run
       `Multiline
     )
   );
+  let interactive =
+    Option.is_none filter_exp
+    &&
+    Option.is_none sample_search_exp
+    &&
+    Option.is_none search_exp
+    &&
+    not print_files_with_match
+    &&
+    not print_files_without_match
+    &&
+    Option.is_none script
+  in
   List.iter (fun spec ->
       match Path_opening.parse_spec spec with
       | Error msg -> (
@@ -659,19 +672,6 @@ let run
    | None -> ()
    | Some msg -> exit_with_error_msg msg
   );
-  let interactive =
-    Option.is_none filter_exp
-    &&
-    Option.is_none sample_search_exp
-    &&
-    Option.is_none search_exp
-    &&
-    not print_files_with_match
-    &&
-    not print_files_without_match
-    &&
-    Option.is_none script
-  in
   if interactive then (
     Printf.printf "Initializing in-memory index\n";
     flush stdout;
