@@ -1,32 +1,32 @@
-type found_word = [
-  | `String of string
-  | `Id of int
+type word_ref = [
+  | `Inline of string
+  | `Word_id of int
 ]
 
-let string_of_found_word (x : found_word) : string =
+let string_of_word_ref (x : word_ref) : string =
   match x with
-  | `String s -> s
-  | `Id i -> Word_db.word_of_id i
+  | `Inline s -> s
+  | `Word_id i -> Word_db.word_of_id i
 
-let string_ci_of_found_word (x : found_word) : string =
-  string_of_found_word x
+let lowercase_string_of_word_ref (x : word_ref) : string =
+  string_of_word_ref x
   |> String.lowercase_ascii
 
-type indexed_found_word = {
-  found_word_pos : int;
-  found_word : found_word;
+type matched_word = {
+  position : int;
+  word : word_ref;
 }
 
 type t = {
   score : float;
   search_phrase : Search_phrase.t;
-  found_phrase : indexed_found_word list;
+  found_phrase : matched_word list;
 }
 
 let equal t1 t2 =
   Search_phrase.equal t1.search_phrase t2.search_phrase
   && List.length t1.found_phrase = List.length t2.found_phrase
-  && List.for_all2 (fun x1 x2 -> x1.found_word_pos = x2.found_word_pos)
+  && List.for_all2 (fun x1 x2 -> x1.position = x2.position)
     t1.found_phrase t2.found_phrase
 
 module Score = struct
@@ -70,7 +70,7 @@ module Score = struct
 
   let score
       (search_phrase : Search_phrase.t)
-      ~(found_phrase : indexed_found_word list)
+      ~(found_phrase : matched_word list)
       ~(found_phrase_opening_closing_symbol_match_count : int)
     : float =
     assert (not (Search_phrase.is_empty search_phrase));
@@ -98,8 +98,8 @@ module Score = struct
       }
     in
     let stats =
-      List.fold_left2 (fun (stats : stats) (token : ET.t) { found_word; _ } ->
-          let found_word = string_of_found_word found_word in
+      List.fold_left2 (fun (stats : stats) (token : ET.t) { word; _ } ->
+          let found_word = string_of_word_ref word in
           let found_word_ci = String.lowercase_ascii found_word in
           let found_word_len = Int.to_float (String.length found_word) in
           match ET.data token with
@@ -190,14 +190,14 @@ module Score = struct
     in
     let unique_match_count =
       found_phrase
-      |> List.map (fun x -> x.found_word_pos)
+      |> List.map (fun x -> x.position)
       |> List.sort_uniq Int.compare
       |> List.length
       |> Int.to_float
     in
     let (total_distance, out_of_order_match_count, _) =
       List.fold_left
-        (fun (total_dist, out_of_order_match_count, last_pos) { found_word_pos = pos; _ } ->
+        (fun (total_dist, out_of_order_match_count, last_pos) { position = pos; _ } ->
            match last_pos with
            | None -> (total_dist, out_of_order_match_count, Some pos)
            | Some last_pos ->
@@ -396,8 +396,8 @@ let compare_relevance (t1 : t) (t2 : t) =
   if Float.abs (t1.score -. t2.score) < Params.float_compare_margin then (
     (* If scores are within the comparison margin,
        then order result that appears earlier to the front. *)
-    let t1_found_phrase_start_pos = (List.hd t1.found_phrase).found_word_pos in
-    let t2_found_phrase_start_pos = (List.hd t2.found_phrase).found_word_pos in
+    let t1_found_phrase_start_pos = (List.hd t1.found_phrase).position in
+    let t2_found_phrase_start_pos = (List.hd t2.found_phrase).position in
     Int.compare t1_found_phrase_start_pos t2_found_phrase_start_pos
   ) else (
     (* Otherwise just order result with higher score to the front. *)

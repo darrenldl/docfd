@@ -133,8 +133,8 @@ let start_and_end_inc_global_line_num_of_search_result
   match Search_result.found_phrase search_result with
   | [] -> failwith "unexpected case"
   | l -> (
-      List.fold_left (fun s_e Search_result.{ found_word_pos; _ } ->
-          let loc = Index.loc_of_pos ~doc_id found_word_pos in
+      List.fold_left (fun s_e Search_result.{ position; _ } ->
+          let loc = Index.loc_of_pos ~doc_id position in
           let line_loc = Index.Loc.line_loc loc in
           let global_line_num = Index.Line_loc.global_line_num line_loc in
           match s_e with
@@ -208,8 +208,8 @@ let mark_search_result_in_word_grid
     (search_result : Search_result.t)
   : unit =
   Search_result.found_phrase search_result
-  |> List.map (fun Search_result.{ found_word_pos; _ } ->
-      found_word_pos
+  |> List.map (fun Search_result.{ position; _ } ->
+      position
     )
   |> mark_in_word_grid ~doc_id grid
 

@@ -1,28 +1,28 @@
-type found_word = [
-  | `String of string
-  | `Id of int
+type word_ref = [
+  | `Inline of string
+  | `Word_id of int
 ]
 
-val string_of_found_word : found_word -> string
+val string_of_word_ref : word_ref -> string
 
-val string_ci_of_found_word : found_word -> string
+val lowercase_string_of_word_ref : word_ref -> string
 
-type indexed_found_word = {
-  found_word_pos : int;
-  found_word : found_word;
+type matched_word = {
+  position : int;
+  word : word_ref;
 }
 
 type t
 
 val make :
   Search_phrase.t ->
-  found_phrase:indexed_found_word list ->
+  found_phrase:matched_word list ->
   found_phrase_opening_closing_symbol_match_count:int ->
   t
 
 val search_phrase : t -> Search_phrase.t
 
-val found_phrase : t -> indexed_found_word list
+val found_phrase : t -> matched_word list
 
 val score : t -> float
 

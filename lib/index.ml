@@ -1311,8 +1311,8 @@ module Search = struct
                      ~found_phrase:(List.map
                                       (fun pos ->
                                          Search_result.{
-                                           found_word_pos = pos;
-                                           found_word = `Id (word_id_of_pos ~doc_id pos);
+                                           position = pos;
+                                           word = `Word_id (word_id_of_pos ~doc_id pos);
                                          }) l)
                      ~found_phrase_opening_closing_symbol_match_count
                  )
