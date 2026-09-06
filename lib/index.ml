@@ -930,11 +930,15 @@ let line_loc_of_global_line_num ~doc_id global_line_num : Line_loc.t =
 
 let loc_of_pos ~doc_id pos : Loc.t =
   let open Sqlite3_pool in
-  let pos_in_line, global_line_num =
+  let pos_in_line, global_line_num, page_num, line_num_in_page =
     with_db (fun db ->
         step_stmt db
           {|
-      SELECT @pos - start_pos, global_line_num
+      SELECT
+        @pos - start_pos,
+        global_line_num,
+        page_num,
+        line_num_in_page
       FROM line_info
       WHERE doc_id = @doc_id
       AND @pos BETWEEN start_pos AND end_inc_pos
@@ -942,11 +946,14 @@ let loc_of_pos ~doc_id pos : Loc.t =
           ~names:[ ("@doc_id", INT doc_id)
                  ; ("@pos", INT (Int64.of_int pos)) ]
           (fun stmt ->
-             (Stmt.column_int stmt 0, Stmt.column_int stmt 1)
+             (Stmt.column_int stmt 0,
+              Stmt.column_int stmt 1,
+              Stmt.column_int stmt 2,
+              Stmt.column_int stmt 3)
           )
       )
   in
-  let line_loc = line_loc_of_global_line_num ~doc_id global_line_num in
+  let line_loc = { Line_loc.page_num; line_num_in_page; global_line_num } in
   { line_loc; pos_in_line }
 
 let max_pos ~doc_id =
