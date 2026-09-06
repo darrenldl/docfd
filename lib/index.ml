@@ -1022,14 +1022,19 @@ let start_end_inc_pos_of_global_line_num ~doc_id global_line_num =
 module Search = struct
   module ET = Search_phrase.Enriched_token
 
-  let positions_of_words
+  type matched_word = {
+    pos : int;
+    id : int;
+  }
+
+  let match_words
       ~doc_id
       (words : int Seq.t)
-    : int Dynarray.t =
+    : matched_word Dynarray.t =
     let open Sqlite3_pool in
     let acc = Dynarray.create () in
-    let f data =
-      Dynarray.add_last acc (Data.to_int_exn data.(0))
+    let f id data =
+      Dynarray.add_last acc { pos = Data.to_int_exn data.(0); id }
     in
     with_db (fun db ->
         with_stmt db
@@ -1047,7 +1052,7 @@ module Search = struct
                    [ ("@doc_id", INT doc_id)
                    ; ("@word_id", INT (Int64.of_int word_id))
                    ];
-                 Stmt.iter stmt f;
+                 Stmt.iter stmt (f word_id);
                  Stmt.reset stmt;
                )
                words
@@ -1055,12 +1060,12 @@ module Search = struct
       );
     acc
 
-  let usable_positions
+  let usable_words
       ~doc_id
       ?within
       ~around_pos
       (token : Search_phrase.Enriched_token.t)
-    : int Seq.t =
+    : matched_word Seq.t =
     let open Sqlite3_pool in
     Eio.Fiber.yield ();
     let match_typ = ET.match_typ token in
@@ -1085,14 +1090,15 @@ module Search = struct
           (max within_start_pos start, min within_end_inc_pos end_inc)
         )
     in
-    let positions : int Dynarray.t =
-      let acc : int Dynarray.t =
+    let words : matched_word Dynarray.t =
+      let acc : matched_word Dynarray.t =
         Dynarray.create ()
       in
       let cache : (string, bool) Hashtbl.t = Hashtbl.create 100 in
       let f data =
         let indexed_word = Data.to_string_exn data.(0) in
         let pos = Data.to_int_exn data.(1) in
+        let id = Data.to_int_exn data.(2) in
         let compatible =
           match Hashtbl.find_opt cache indexed_word with
           | None -> (
@@ -1103,7 +1109,7 @@ module Search = struct
           | Some compatible -> compatible
         in
         if compatible then (
-          Dynarray.add_last acc pos
+          Dynarray.add_last acc { pos; id }
         )
       in
       (
@@ -1143,7 +1149,8 @@ module Search = struct
                  {|
               SELECT
                 word.word AS word,
-                p.pos as pos
+                p.pos as pos,
+                p.word_id as id
               FROM position p
               JOIN word
                   ON p.word_id = word.id
@@ -1161,27 +1168,27 @@ module Search = struct
       );
       acc
     in
-    Dynarray.to_seq positions
+    Dynarray.to_seq words
 
   let search_around_pos
       ~doc_id
       ~(within : (int * int) option)
       (around_pos : int)
       (l : Search_phrase.Enriched_token.t list)
-    : int list Seq.t =
+    : matched_word list Seq.t =
     let rec aux around_pos l =
       Eio.Fiber.yield ();
       match l with
       | [] -> Seq.return []
       | token :: rest -> (
-          usable_positions
+          usable_words
             ~doc_id
             ?within
             ~around_pos
             token
-          |> Seq.flat_map (fun pos ->
-              aux pos rest
-              |> Seq.map (fun l -> pos :: l)
+          |> Seq.flat_map (fun matched_word ->
+              aux matched_word.pos rest
+              |> Seq.map (fun l -> matched_word :: l)
             )
         )
     in
@@ -1201,7 +1208,7 @@ module Search = struct
       doc_id : int64;
       within_same_line : bool;
       phrase : Search_phrase.t;
-      start_pos : int;
+      start : matched_word;
       search_limit_per_start : int;
     }
 
@@ -1212,7 +1219,7 @@ module Search = struct
         ~doc_id
         ~within_same_line
         ~phrase
-        ~start_pos
+        ~start
         ~search_limit_per_start
       =
       {
@@ -1222,7 +1229,7 @@ module Search = struct
         doc_id;
         within_same_line;
         phrase;
-        start_pos;
+        start;
         search_limit_per_start;
       }
 
@@ -1233,7 +1240,7 @@ module Search = struct
           let doc_id = t.doc_id in
           let within =
             if t.within_same_line then (
-              let loc = loc_of_pos ~doc_id t.start_pos in
+              let loc = loc_of_pos ~doc_id t.start.pos in
               Some (start_end_inc_pos_of_global_line_num ~doc_id loc.line_loc.global_line_num)
             ) else (
               None
@@ -1248,25 +1255,29 @@ module Search = struct
                search_around_pos
                  ~doc_id
                  ~within
-                 t.start_pos
+                 t.start.pos
                  rest
-               |> Seq.map (fun l -> t.start_pos :: l)
-               |> Seq.map (fun (l : int list) ->
+               |> Seq.map (fun l -> (t.start :: l))
+               |> Seq.map (fun (l : matched_word list) ->
                    if t.terminate_on_result_found then (
                      raise Result_found
                    );
                    Eio.Fiber.yield ();
                    let opening_closing_symbol_pairs =
-                     List.map (fun pos -> word_of_pos ~doc_id pos) l
+                     List.map (fun matched_word -> Word_db.word_of_id matched_word.id) l
                      |>  Misc_utils.opening_closing_symbol_pairs
                    in
                    let found_phrase_opening_closing_symbol_match_count =
-                     let pos_arr : int array = Array.of_list l in
+                     let word_arr : matched_word array = Array.of_list l in
                      List.fold_left (fun total (x, y) ->
-                         let pos_x = pos_arr.(x) in
-                         let pos_y = pos_arr.(y) in
-                         let c_x = String.get (word_of_pos ~doc_id pos_x) 0 in
-                         let c_y = String.get (word_of_pos ~doc_id pos_y) 0 in
+                         let pos_x = word_arr.(x).pos in
+                         let pos_y = word_arr.(y).pos in
+                         let id_x = word_arr.(x).id in
+                         let id_y = word_arr.(y).id in
+                         let word_x = Word_db.word_of_id id_x in
+                         let word_y = Word_db.word_of_id id_y in
+                         let c_x = word_x.[0] in
+                         let c_y = word_y.[0] in
                          assert (List.exists (fun (x, y) -> c_x = x && c_y = y)
                                    Params.opening_closing_symbols);
                          if pos_x < pos_y then (
@@ -1309,10 +1320,10 @@ module Search = struct
                    Search_result.make
                      t.phrase
                      ~found_phrase:(List.map
-                                      (fun pos ->
+                                      (fun matched_word ->
                                          Search_result.{
-                                           position = pos;
-                                           word = `Word_id (word_id_of_pos ~doc_id pos);
+                                           position = matched_word.pos;
+                                           word = `Word_id matched_word.id;
                                          }) l)
                      ~found_phrase_opening_closing_symbol_match_count
                  )
@@ -1339,7 +1350,7 @@ module Search = struct
       doc_id : int64;
       within_same_line : bool;
       phrase : Search_phrase.t;
-      possible_start_pos_list : int list;
+      possible_starts : matched_word list;
       search_limit_per_start : int;
     }
 
@@ -1352,11 +1363,11 @@ module Search = struct
           doc_id;
           within_same_line;
           phrase;
-          possible_start_pos_list;
+          possible_starts;
           search_limit_per_start;
         } = group in
-      List.to_seq possible_start_pos_list
-      |> Seq.map (fun start_pos ->
+      List.to_seq possible_starts
+      |> Seq.map (fun start ->
           Search_job.make
             stop_signal
             ~terminate_on_result_found
@@ -1364,7 +1375,7 @@ module Search = struct
             ~doc_id
             ~within_same_line
             ~phrase
-            ~start_pos
+            ~start
             ~search_limit_per_start
         )
 
@@ -1404,13 +1415,13 @@ module Search = struct
           let possible_starts =
             first_word_candidates
             |> Int_set.to_seq
-            |> positions_of_words ~doc_id
+            |> match_words ~doc_id
             |> (fun arr ->
                 match search_scope with
                 | None -> arr
                 | Some search_scope -> (
                     Dynarray.filter (fun x ->
-                        Diet.Int.mem x search_scope
+                        Diet.Int.mem x.pos search_scope
                       ) arr
                   )
               )
@@ -1437,7 +1448,7 @@ module Search = struct
                   ) index_arr
                 |> Array.to_list
               )
-            |> Seq.map (fun possible_start_pos_list ->
+            |> Seq.map (fun possible_starts ->
                 {
                   Search_job_group.stop_signal;
                   terminate_on_result_found;
@@ -1445,7 +1456,7 @@ module Search = struct
                   doc_id;
                   within_same_line;
                   phrase;
-                  possible_start_pos_list;
+                  possible_starts;
                   search_limit_per_start;
                 }
               )
