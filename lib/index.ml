@@ -775,23 +775,6 @@ let is_indexed ~doc_hash =
         )
     )
 
-let word_id_of_pos ~doc_id pos : int =
-  let open Sqlite3_pool in
-  with_db (fun db ->
-      step_stmt db
-        {|
-    SELECT p.word_id
-    FROM position p
-    WHERE p.doc_id = @doc_id
-    AND p.pos = @pos
-    |}
-        ~names:[ ("@doc_id", INT doc_id)
-               ; ("@pos", INT (Int64.of_int pos)) ]
-        (fun stmt ->
-           Stmt.column_int stmt 0
-        )
-    )
-
 let word_of_pos ~doc_id pos : string =
   let open Sqlite3_pool in
   with_db (fun db ->
