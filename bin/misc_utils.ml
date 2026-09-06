@@ -139,7 +139,7 @@ let fuzzy_rank_assoc
                 if
                   Search_phrase.Enriched_token.compatible_with_word token part
                 then (
-                  Some (i, part, String.lowercase_ascii part)
+                  Some (i, part)
                 ) else (
                   None
                 )
@@ -148,11 +148,10 @@ let fuzzy_rank_assoc
         |> OSeq.cartesian_product
         |> Seq.map (fun l ->
             let found_phrase =
-              List.map (fun (i, part, part_ci) ->
+              List.map (fun (i, part) ->
                   Search_result.{
                     found_word_pos = i;
-                    found_word_ci = part_ci;
-                    found_word = part;
+                    found_word = `String part;
                   }
                 )
                 l

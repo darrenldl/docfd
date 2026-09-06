@@ -1,7 +1,20 @@
+type found_word = [
+  | `String of string
+  | `Id of int
+]
+
+let string_of_found_word (x : found_word) : string =
+  match x with
+  | `String s -> s
+  | `Id i -> Word_db.word_of_id i
+
+let string_ci_of_found_word (x : found_word) : string =
+  string_of_found_word x
+  |> String.lowercase_ascii
+
 type indexed_found_word = {
   found_word_pos : int;
-  found_word_ci : string;
-  found_word : string;
+  found_word : found_word;
 }
 
 type t = {
@@ -85,7 +98,9 @@ module Score = struct
       }
     in
     let stats =
-      List.fold_left2 (fun (stats : stats) (token : ET.t) { found_word_ci; found_word; _ } ->
+      List.fold_left2 (fun (stats : stats) (token : ET.t) { found_word; _ } ->
+          let found_word = string_of_found_word found_word in
+          let found_word_ci = String.lowercase_ascii found_word in
           let found_word_len = Int.to_float (String.length found_word) in
           match ET.data token with
           | `Explicit_spaces -> (

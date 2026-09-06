@@ -189,8 +189,11 @@ let compute_most_unique_word_and_residing_page_num ~doc_id found_phrase =
       let m = Int_map.find page_num frequency_of_word_of_page_ci in
       let freq =
         String_map.fold (fun word_on_page_ci freq acc_freq ->
+            let found_word_ci =
+              Search_result.string_ci_of_found_word word.Search_result.found_word
+            in
             if
-              CCString.find ~sub:word.Search_result.found_word_ci word_on_page_ci >= 0
+              CCString.find ~sub:found_word_ci word_on_page_ci >= 0
             then (
               acc_freq + freq
             ) else (
@@ -216,7 +219,7 @@ let compute_most_unique_word_and_residing_page_num ~doc_id found_phrase =
     None
   |> Option.get
   |> (fun (word, page_num, _freq) ->
-      (word.found_word, page_num))
+      (Search_result.string_of_found_word word.found_word, page_num))
 
 let pdf_config_and_cmd ~path ~doc_id_and_search_result : Config.t * string =
   let config =

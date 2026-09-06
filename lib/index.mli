@@ -18,7 +18,7 @@ module Loc : sig
   val pos_in_line : t -> int
 end
 
-val word_ci_of_pos : doc_id:int64 -> int -> string
+val word_id_of_pos : doc_id:int64 -> int -> int
 
 val word_of_pos : doc_id:int64 -> int -> string
 
