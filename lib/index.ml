@@ -1272,11 +1272,10 @@ module Search = struct
                                    Params.opening_closing_symbols);
                          if pos_x < pos_y then (
                            let outstanding_opening_symbol_count =
-                             OSeq.(pos_x + 1 --^ pos_y)
-                             |> Seq.fold_left (fun count pos ->
+                             words_between_start_and_end_inc ~doc_id (pos_x + 1, pos_y - 1)
+                             |> Dynarray.fold_left (fun count word ->
                                  match count with
                                  | Some count -> (
-                                     let word = word_of_pos ~doc_id pos in
                                      if String.length word = 1 then (
                                        if String.get word 0 = c_x then (
                                          Some (count + 1)
