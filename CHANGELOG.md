@@ -1,5 +1,10 @@
 # Changelog
 
+## 13.1.1
+
+- Search result memory usage optimization
+- Search procedure data retrieval optimization
+
 ## 13.1.0
 
 - Added config file support (`.docfd-config`)
