@@ -780,10 +780,8 @@ let word_id_of_pos ~doc_id pos : int =
   with_db (fun db ->
       step_stmt db
         {|
-    SELECT word.id
+    SELECT p.word_id
     FROM position p
-    JOIN word
-        ON word.id = p.word_id
     WHERE p.doc_id = @doc_id
     AND p.pos = @pos
     |}
