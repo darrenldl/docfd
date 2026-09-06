@@ -187,11 +187,11 @@ let compute_most_unique_word_and_residing_page_num ~doc_id found_phrase =
         |> Index.Line_loc.page_num
       in
       let m = Int_map.find page_num frequency_of_word_of_page_ci in
+      let found_word_ci =
+        Search_result.string_ci_of_found_word word.Search_result.found_word
+      in
       let freq =
         String_map.fold (fun word_on_page_ci freq acc_freq ->
-            let found_word_ci =
-              Search_result.string_ci_of_found_word word.Search_result.found_word
-            in
             if
               CCString.find ~sub:found_word_ci word_on_page_ci >= 0
             then (
