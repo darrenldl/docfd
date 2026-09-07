@@ -198,6 +198,7 @@ let update_starting_state (starting_state : Session.State.t) =
           (Session.Snapshot.update_state state cur)
       done;
       cur_ver := (Dynarray.length snapshots - 1);
+      prune_unused_snapshot_states ();
     )
 
 let load_snapshots snapshots' =
@@ -210,6 +211,7 @@ let load_snapshots snapshots' =
       Dynarray.clear snapshots;
       Dynarray.append snapshots snapshots';
       cur_ver := (Dynarray.length snapshots - 1);
+      prune_unused_snapshot_states ();
     )
 
 let stop_filter_and_search_and_restore_input_fields () =
@@ -294,6 +296,7 @@ let update_from_cur_snapshot f =
       let next_snapshot = f (Dynarray.get_last snapshots) in
       Dynarray.add_last snapshots next_snapshot;
       cur_ver := Dynarray.length snapshots - 1;
+      prune_unused_snapshot_states ();
     )
 
 let manager_fiber () =
