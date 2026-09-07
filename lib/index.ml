@@ -997,8 +997,7 @@ module Search = struct
     : Search_result.matched_word Dynarray.t =
     let open Sqlite3_pool in
     let acc = Dynarray.create () in
-    let f id data =
-      let word = Word_db.word_of_id id in
+    let f word data =
       Dynarray.add_last acc Search_result.{ pos = Data.to_int_exn data.(0); word }
     in
     with_db (fun db ->
@@ -1013,11 +1012,12 @@ module Search = struct
     |}
           (fun stmt ->
              Seq.iter (fun word_id ->
+                 let word = Word_db.word_of_id word_id in
                  Stmt.bind_names stmt
                    [ ("@doc_id", INT doc_id)
                    ; ("@word_id", INT (Int64.of_int word_id))
                    ];
-                 Stmt.iter stmt (f word_id);
+                 Stmt.iter stmt (f word);
                  Stmt.reset stmt;
                )
                words
@@ -1074,8 +1074,7 @@ module Search = struct
           | Some compatible -> compatible
         in
         if compatible then (
-          let word = Word_db.word_of_id id in
-          Dynarray.add_last acc { pos; word }
+          Dynarray.add_last acc { pos; word = indexed_word }
         )
       in
       (
