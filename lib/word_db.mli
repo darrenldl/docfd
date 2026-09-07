@@ -6,6 +6,8 @@ val filter : Task_pool.t -> (string -> bool) -> (int * string) Dynarray.t
 
 val word_of_id : int -> string
 
+val words_of_ids : int Seq.t -> string Dynarray.t
+
 val id_of_word : string -> int option
 
 val read_from_db : unit -> unit

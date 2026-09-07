@@ -804,12 +804,10 @@ let words_between_start_and_end_inc : doc_id:int64 -> int * int -> string Dynarr
                          ; ("@end_inc", INT (Int64.of_int end_inc))
                          ]
                   (fun data ->
-                     Data.to_int_exn data.(0)
-                     |> Word_db.word_of_id
-                     |> Dynarray.add_last acc
+                     Dynarray.add_last acc (Data.to_int_exn data.(0))
                   );
               );
-            acc
+            Word_db.words_of_ids (Dynarray.to_seq acc)
           )
           (doc_id, start, end_inc)
       )

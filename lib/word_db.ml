@@ -79,6 +79,15 @@ let word_of_id i : string =
       Int_map.find i t.word_of_id
     )
 
+let words_of_ids (s : int Seq.t) : string Dynarray.t =
+  lock (fun () ->
+      let acc = Dynarray.create () in
+      Seq.iter (fun i ->
+          Dynarray.add_last acc (Int_map.find i t.word_of_id)
+        ) s;
+      acc
+    )
+
 let id_of_word s : int option =
   lock (fun () ->
       Hashtbl.find_opt t.id_of_word s
