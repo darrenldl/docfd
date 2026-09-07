@@ -147,6 +147,29 @@ let lock_with_view : type a. (view -> a) -> a =
         }
     )
 
+let prune_unused_snapshot_states () =
+  let cleared_some_snapshot_state = ref false in
+  for i=0 to Dynarray.length snapshots - 1 do
+    let keep =
+      i = 0
+      ||
+      (!cur_ver - 3 <= i && i <= !cur_ver + 3)
+      ||
+      (!cur_ver - 15 <= i && i <= !cur_ver && i mod 5 = 0)
+    in
+    if not keep then (
+      let snapshot = Dynarray.get snapshots i in
+      if Option.is_some (Session.Snapshot.state snapshot) then (
+        Session.Snapshot.remove_state snapshot
+        |> Dynarray.set snapshots i;
+        cleared_some_snapshot_state := true;
+      )
+    )
+  done;
+  if !cleared_some_snapshot_state then (
+    Gc.compact ()
+  )
+
 let update_starting_state (starting_state : Session.State.t) =
   lock_for_external_editing ~clean_up:true (fun () ->
       let pool = UI_base.task_pool () in
@@ -238,29 +261,6 @@ let recompute_current_state_if_missing pool =
         (Session.Snapshot.update_state state snapshot)
     )
   | Some _ -> ()
-
-let prune_unused_snapshot_states () =
-  let cleared_some_snapshot_state = ref false in
-  for i=0 to Dynarray.length snapshots - 1 do
-    let keep =
-      i = 0
-      ||
-      (!cur_ver - 3 <= i && i <= !cur_ver + 3)
-      ||
-      (!cur_ver - 15 <= i && i <= !cur_ver && i mod 5 = 0)
-    in
-    if not keep then (
-      let snapshot = Dynarray.get snapshots i in
-      if Option.is_some (Session.Snapshot.state snapshot) then (
-        Session.Snapshot.remove_state snapshot
-        |> Dynarray.set snapshots i;
-        cleared_some_snapshot_state := true;
-      )
-    )
-  done;
-  if !cleared_some_snapshot_state then (
-    Gc.compact ()
-  )
 
 let shift_ver ~new_ver =
   lock_for_external_editing ~clean_up:true (fun () ->
