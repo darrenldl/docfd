@@ -4,6 +4,8 @@
 
 - Search result memory usage optimization
 - Index data retrieval optimization
+- Added bounds to retention of old snapshots, so Docfd memory usage should not
+  grow indefinitely as the session continues
 
 ## 13.1.0
 
