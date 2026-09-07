@@ -1065,9 +1065,9 @@ module Search = struct
       in
       let cache : (string, bool) Hashtbl.t = Hashtbl.create 100 in
       let f data =
-        let indexed_word = Data.to_string_exn data.(0) in
-        let pos = Data.to_int_exn data.(1) in
-        let id = Data.to_int_exn data.(2) in
+        let pos = Data.to_int_exn data.(0) in
+        let id = Data.to_int_exn data.(1) in
+        let indexed_word = Word_db.word_of_id id in
         let compatible =
           match Hashtbl.find_opt cache indexed_word with
           | None -> (
@@ -1086,13 +1086,13 @@ module Search = struct
           match ET.data token with
           | `Explicit_spaces -> (
               {|AND (
-                  word LIKE ' %'
+                  word.word LIKE ' %'
                   OR
-                  word LIKE char(9) || '%'
+                  word.word LIKE char(9) || '%'
                   OR
-                  word LIKE char(10) || '%'
+                  word.word LIKE char(10) || '%'
                   OR
-                  word LIKE char(13) || '%'
+                  word.word LIKE char(13) || '%'
                 )
             |}
             )
@@ -1105,10 +1105,10 @@ module Search = struct
               match match_typ with
               | `Fuzzy | `Suffix -> ""
               | `Exact -> (
-                  Fmt.str "AND word LIKE '%s' ESCAPE '\\'" search_word
+                  Fmt.str "AND word.word LIKE '%s' ESCAPE '\\'" search_word
                 )
               | `Prefix -> (
-                  Fmt.str "AND word LIKE '%s%%' ESCAPE '\\'" search_word
+                  Fmt.str "AND word.word LIKE '%s%%' ESCAPE '\\'" search_word
                 )
             )
         in
@@ -1117,7 +1117,6 @@ module Search = struct
               (Fmt.str
                  {|
               SELECT
-                word.word AS word,
                 p.pos as pos,
                 p.word_id as id
               FROM position p
