@@ -1722,12 +1722,12 @@ let keyboard_handler
                 let links = Document.links doc in
                 let avg_pos =
                   List.fold_left (fun min_max_pos search_result ->
-                      let { Search_result.position; _ } = search_result in
+                      let { Search_result.pos; _ } = search_result in
                       match min_max_pos with
-                      | None -> Some (position, position)
+                      | None -> Some (pos, pos)
                       | Some (min_pos, max_pos) -> (
-                          Some (min position min_pos,
-                                max position max_pos)
+                          Some (min pos min_pos,
+                                max pos max_pos)
                         )
                     )
                     None

@@ -150,8 +150,8 @@ let fuzzy_rank_assoc
             let found_phrase =
               List.map (fun (i, part) ->
                   Search_result.{
-                    position = i;
-                    word = `Inline part;
+                    pos = i;
+                    word = part;
                   }
                 )
                 l
@@ -189,7 +189,7 @@ let fuzzy_rank_assoc
 let highlights_of_search_result (search_result : Search_result.t) =
   List.fold_left
     (fun acc (x : Search_result.matched_word) ->
-       Int_set.add x.position acc
+       Int_set.add x.pos acc
     )
     Int_set.empty
     (Search_result.found_phrase search_result)

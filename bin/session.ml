@@ -677,11 +677,11 @@ module State = struct
                   if String_set.mem path t.documents_passing_filter then (
                     Array.fold_left (fun scope search_result ->
                         let s, e =
-                          List.fold_left (fun s_e Search_result.{ position; _ } ->
+                          List.fold_left (fun s_e Search_result.{ pos; _ } ->
                               match s_e with
-                              | None -> Some (position, position)
+                              | None -> Some (pos, pos)
                               | Some (s, e) -> (
-                                  Some (min s position, max position e)
+                                  Some (min s pos, max pos e)
                                 )
                             )
                             None

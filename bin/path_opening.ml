@@ -161,7 +161,7 @@ let fallback_cmd : string =
 let compute_most_unique_word_and_residing_page_num ~doc_id found_phrase =
   let page_nums = found_phrase
     |> List.map (fun word ->
-        word.Search_result.position
+        word.Search_result.pos
         |> (fun pos -> Index.loc_of_pos ~doc_id pos)
         |> Index.Loc.line_loc
         |> Index.Line_loc.page_num
@@ -182,13 +182,13 @@ let compute_most_unique_word_and_residing_page_num ~doc_id found_phrase =
   found_phrase
   |> List.map (fun word ->
       let page_num =
-        Index.loc_of_pos ~doc_id word.Search_result.position
+        Index.loc_of_pos ~doc_id word.Search_result.pos
         |> Index.Loc.line_loc
         |> Index.Line_loc.page_num
       in
       let m = Int_map.find page_num frequency_of_word_of_page_ci in
       let found_word_ci =
-        Search_result.lowercase_string_of_word_ref word.Search_result.word
+        String.lowercase_ascii word.Search_result.word
       in
       let freq =
         String_map.fold (fun word_on_page_ci freq acc_freq ->
@@ -219,7 +219,7 @@ let compute_most_unique_word_and_residing_page_num ~doc_id found_phrase =
     None
   |> Option.get
   |> (fun (word, page_num, _freq) ->
-      (Search_result.string_of_word_ref word.word, page_num))
+      (word.word, page_num))
 
 let pdf_config_and_cmd ~path ~doc_id_and_search_result : Config.t * string =
   let config =
@@ -327,7 +327,7 @@ let text_config_and_cmd ~path ~doc_id_and_search_result : Config.t * string =
     | Some (doc_id, search_result) -> (
         let first_word = List.hd @@ Search_result.found_phrase search_result in
         let first_word_loc =
-          Index.loc_of_pos ~doc_id first_word.Search_result.position
+          Index.loc_of_pos ~doc_id first_word.Search_result.pos
         in
         first_word_loc
         |> Index.Loc.line_loc
