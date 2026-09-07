@@ -793,10 +793,8 @@ let words_between_start_and_end_inc : doc_id:int64 -> int * int -> string Dynarr
             with_db (fun db ->
                 iter_stmt db
                   {|
-    SELECT word.word
+    SELECT p.word_id
     FROM position p
-    JOIN word
-      ON word.id = p.word_id
     WHERE p.doc_id = @doc_id
     AND p.pos BETWEEN @start AND @end_inc
     ORDER BY p.pos
@@ -806,7 +804,9 @@ let words_between_start_and_end_inc : doc_id:int64 -> int * int -> string Dynarr
                          ; ("@end_inc", INT (Int64.of_int end_inc))
                          ]
                   (fun data ->
-                     Dynarray.add_last acc (Data.to_string_exn data.(0))
+                     Data.to_int_exn data.(0)
+                     |> Word_db.word_of_id
+                     |> Dynarray.add_last acc
                   );
               );
             acc
