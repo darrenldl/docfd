@@ -1,15 +1,6 @@
-type word_ref = [
-  | `Inline of string
-  | `Word_id of int
-]
-
-val string_of_word_ref : word_ref -> string
-
-val lowercase_string_of_word_ref : word_ref -> string
-
 type matched_word = {
-  position : int;
-  word : word_ref;
+  pos : int;
+  word : string;
 }
 
 type t

@@ -1,20 +1,6 @@
-type word_ref = [
-  | `Inline of string
-  | `Word_id of int
-]
-
-let string_of_word_ref (x : word_ref) : string =
-  match x with
-  | `Inline s -> s
-  | `Word_id i -> Word_db.word_of_id i
-
-let lowercase_string_of_word_ref (x : word_ref) : string =
-  string_of_word_ref x
-  |> String.lowercase_ascii
-
 type matched_word = {
-  position : int;
-  word : word_ref;
+  pos : int;
+  word : string;
 }
 
 type t = {
@@ -26,7 +12,7 @@ type t = {
 let equal t1 t2 =
   Search_phrase.equal t1.search_phrase t2.search_phrase
   && List.length t1.found_phrase = List.length t2.found_phrase
-  && List.for_all2 (fun x1 x2 -> x1.position = x2.position)
+  && List.for_all2 (fun x1 x2 -> x1.pos = x2.pos)
     t1.found_phrase t2.found_phrase
 
 module Score = struct
@@ -99,7 +85,7 @@ module Score = struct
     in
     let stats =
       List.fold_left2 (fun (stats : stats) (token : ET.t) { word; _ } ->
-          let found_word = string_of_word_ref word in
+          let found_word = word in
           let found_word_ci = String.lowercase_ascii found_word in
           let found_word_len = Int.to_float (String.length found_word) in
           match ET.data token with
@@ -190,14 +176,14 @@ module Score = struct
     in
     let unique_match_count =
       found_phrase
-      |> List.map (fun x -> x.position)
+      |> List.map (fun x -> x.pos)
       |> List.sort_uniq Int.compare
       |> List.length
       |> Int.to_float
     in
     let (total_distance, out_of_order_match_count, _) =
       List.fold_left
-        (fun (total_dist, out_of_order_match_count, last_pos) { position = pos; _ } ->
+        (fun (total_dist, out_of_order_match_count, last_pos) { pos = pos; _ } ->
            match last_pos with
            | None -> (total_dist, out_of_order_match_count, Some pos)
            | Some last_pos ->
@@ -396,8 +382,8 @@ let compare_relevance (t1 : t) (t2 : t) =
   if Float.abs (t1.score -. t2.score) < Params.float_compare_margin then (
     (* If scores are within the comparison margin,
        then order result that appears earlier to the front. *)
-    let t1_found_phrase_start_pos = (List.hd t1.found_phrase).position in
-    let t2_found_phrase_start_pos = (List.hd t2.found_phrase).position in
+    let t1_found_phrase_start_pos = (List.hd t1.found_phrase).pos in
+    let t2_found_phrase_start_pos = (List.hd t2.found_phrase).pos in
     Int.compare t1_found_phrase_start_pos t2_found_phrase_start_pos
   ) else (
     (* Otherwise just order result with higher score to the front. *)
