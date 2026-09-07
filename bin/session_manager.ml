@@ -245,9 +245,9 @@ let prune_unused_snapshot_states () =
     let keep =
       i = 0
       ||
-      i = !cur_ver
+      (!cur_ver - 3 <= i && i <= !cur_ver + 3)
       ||
-      (i >= !cur_ver - 15 && i mod 5 = 0)
+      (!cur_ver - 15 <= i && i <= !cur_ver && i mod 5 = 0)
     in
     if not keep then (
       let snapshot = Dynarray.get snapshots i in
