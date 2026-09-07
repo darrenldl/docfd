@@ -775,25 +775,6 @@ let is_indexed ~doc_hash =
         )
     )
 
-let word_of_pos ~doc_id pos : string =
-  let open Sqlite3_pool in
-  with_db (fun db ->
-      step_stmt db
-        {|
-    SELECT word.word
-    FROM position p
-    JOIN word
-        ON word.id = p.word_id
-    WHERE p.doc_id = @doc_id
-    AND p.pos = @pos
-    |}
-        ~names:[ ("@doc_id", INT doc_id)
-               ; ("@pos", INT (Int64.of_int pos)) ]
-        (fun stmt ->
-           Stmt.column_text stmt 0
-        )
-    )
-
 let words_between_start_and_end_inc : doc_id:int64 -> int * int -> string Dynarray.t =
   let lock = Eio.Mutex.create () in
   let cache =

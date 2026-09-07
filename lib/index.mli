@@ -18,8 +18,6 @@ module Loc : sig
   val pos_in_line : t -> int
 end
 
-val word_of_pos : doc_id:int64 -> int -> string
-
 val words_of_global_line_num : doc_id:int64 -> int -> string Dynarray.t
 
 val line_of_global_line_num : doc_id:int64 -> int -> string
