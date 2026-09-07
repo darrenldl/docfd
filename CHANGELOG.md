@@ -2,7 +2,8 @@
 
 ## 13.1.1
 
-- Search result memory usage optimization
+- Memory usage optimization by swapping heavily to sharing copies of indexed
+  words in word DB
 - Index data retrieval optimization
 - Added bounds to retention of old snapshot states, so Docfd memory usage
   should grow much slower compared to before as the session continues
