@@ -147,17 +147,10 @@ let lock_with_view : type a. (view -> a) -> a =
         }
     )
 
-let should_keep_snapshot_state ~cur_ver i =
-  i = 0
-  ||
-  (cur_ver - 3 <= i && i <= cur_ver + 3)
-  ||
-  (cur_ver - 15 <= i && i <= cur_ver && i mod 5 = 0)
-
 let prune_unused_snapshot_states () =
   let cleared_some_snapshot_state = ref false in
   for i=0 to Dynarray.length snapshots - 1 do
-    if not (should_keep_snapshot_state ~cur_ver:!cur_ver i) then (
+    if not (Session.should_keep_snapshot_state ~cur_ver:!cur_ver i) then (
       let snapshot = Dynarray.get snapshots i in
       if Option.is_some (Session.Snapshot.state snapshot) then (
         Session.Snapshot.remove_state snapshot
@@ -250,7 +243,7 @@ let recompute_current_state_if_missing pool =
                Session.run_command pool command !state
                |> Option.get
                |> snd));
-        if should_keep_snapshot_state ~cur_ver i then (
+        if Session.should_keep_snapshot_state ~cur_ver i then (
           Dynarray.set
             snapshots
             i

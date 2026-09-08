@@ -870,3 +870,10 @@ module Snapshot = struct
   let remove_state t =
     { t with state = None }
 end
+
+let should_keep_snapshot_state ~cur_ver i =
+  i = 0
+  ||
+  (cur_ver - 3 <= i && i <= cur_ver + 3)
+  ||
+  (cur_ver - 15 <= i && i <= cur_ver && i mod 5 = 0)

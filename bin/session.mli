@@ -95,3 +95,5 @@ module Snapshot : sig
 
   val remove_state : t -> t
 end
+
+val should_keep_snapshot_state : cur_ver:int -> int -> bool
