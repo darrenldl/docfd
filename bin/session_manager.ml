@@ -147,7 +147,7 @@ let lock_with_view : type a. (view -> a) -> a =
         }
     )
 
-let prune_unused_snapshot_states () =
+let prune_unused_snapshot_states ?(force_compact = false) () =
   let cleared_some_snapshot_state = ref false in
   for i=0 to Dynarray.length snapshots - 1 do
     if not (Session.should_keep_snapshot_state ~cur_ver:!cur_ver i) then (
@@ -159,7 +159,7 @@ let prune_unused_snapshot_states () =
       )
     )
   done;
-  if !cleared_some_snapshot_state then (
+  if force_compact || !cleared_some_snapshot_state then (
     Gc.compact ()
   )
 
@@ -208,7 +208,7 @@ let load_snapshots snapshots' =
       Dynarray.clear snapshots;
       Dynarray.append snapshots snapshots';
       cur_ver := (Dynarray.length snapshots - 1);
-      prune_unused_snapshot_states ();
+      prune_unused_snapshot_states ~force_compact:true ();
     )
 
 let stop_filter_and_search_and_restore_input_fields () =
