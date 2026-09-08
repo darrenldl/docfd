@@ -46,7 +46,7 @@ let run pool ~init_state (t : t) : (Session.Snapshot.t Dynarray.t, string) resul
       (Session.Snapshot.make
          ~last_command:None
          init_state);
-    let final_ver = 1 + List.length t.commands in
+    let final_ver = List.length t.commands in
     CCList.foldi
       (fun state i (line_num_in_error_msg, original_line, command) ->
          match Session.run_command pool command state with
@@ -56,12 +56,13 @@ let run pool ~init_state (t : t) : (Session.Snapshot.t Dynarray.t, string) resul
                          line_num_in_error_msg original_line))
            )
          | Some (command, state) -> (
+             let ver = i + 1 in
              let snapshot =
                Session.Snapshot.make
                  ~last_command:(Some command)
                  state
                |> (fun snapshot ->
-                   if Session.should_keep_snapshot_state ~cur_ver:final_ver i then (
+                   if Session.should_keep_snapshot_state ~cur_ver:final_ver ver then (
                      snapshot
                    ) else (
                      Session.Snapshot.remove_state snapshot
