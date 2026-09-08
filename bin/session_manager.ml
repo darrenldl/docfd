@@ -173,7 +173,8 @@ let update_starting_state (starting_state : Session.State.t) =
           starting_state
       in
       Dynarray.set snapshots 0 starting_snapshot;
-      for i=1 to Dynarray.length snapshots - 1 do
+      let final_ver = Dynarray.length snapshots - 1 in
+      for i=1 to final_ver do
         let prev = Dynarray.get snapshots (i - 1) in
         let prev_state = Session.Snapshot.state_exn prev in
         let cur = Dynarray.get snapshots i in
@@ -185,13 +186,16 @@ let update_starting_state (starting_state : Session.State.t) =
             |> Option.map snd
             |> Option.value ~default:prev_state
         in
-        Dynarray.set
-          snapshots
-          i
-          (Session.Snapshot.update_state state cur)
+        let snapshot =
+          if Session.should_keep_snapshot_state ~cur_ver:final_ver i then (
+            Session.Snapshot.update_state state cur
+          ) else (
+            Session.Snapshot.remove_state cur
+          )
+        in
+        Dynarray.set snapshots i snapshot
       done;
-      cur_ver := (Dynarray.length snapshots - 1);
-      prune_unused_snapshot_states ();
+      cur_ver := final_ver;
     )
 
 let load_snapshots snapshots' =
