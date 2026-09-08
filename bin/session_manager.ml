@@ -147,17 +147,17 @@ let lock_with_view : type a. (view -> a) -> a =
         }
     )
 
+let should_keep_snapshot_state ~cur_ver i =
+  i = 0
+  ||
+  (cur_ver - 3 <= i && i <= cur_ver + 3)
+  ||
+  (cur_ver - 15 <= i && i <= cur_ver && i mod 5 = 0)
+
 let prune_unused_snapshot_states () =
   let cleared_some_snapshot_state = ref false in
   for i=0 to Dynarray.length snapshots - 1 do
-    let keep =
-      i = 0
-      ||
-      (!cur_ver - 3 <= i && i <= !cur_ver + 3)
-      ||
-      (!cur_ver - 15 <= i && i <= !cur_ver && i mod 5 = 0)
-    in
-    if not keep then (
+    if not (should_keep_snapshot_state ~cur_ver:!cur_ver i) then (
       let snapshot = Dynarray.get snapshots i in
       if Option.is_some (Session.Snapshot.state snapshot) then (
         Session.Snapshot.remove_state snapshot
