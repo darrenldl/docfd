@@ -243,19 +243,19 @@ let recompute_current_state_if_missing pool =
       in
       for i=last_preceding_ver_with_state+1 to cur_ver do
         let snapshot = Dynarray.get snapshots i in
-        match Session.Snapshot.last_command snapshot with
-        | None -> ()
-        | Some command -> (
-            state := Session.run_command pool command !state
-              |> Option.get
-              |> snd;
-            if should_keep_snapshot_state ~cur_ver i then (
-              Dynarray.set
-                snapshots
-                i
-                (Session.Snapshot.update_state !state snapshot)
-            )
-          )
+        state :=
+          (match Session.Snapshot.last_command snapshot with
+           | None -> !state
+           | Some command -> (
+               Session.run_command pool command !state
+               |> Option.get
+               |> snd));
+        if should_keep_snapshot_state ~cur_ver i then (
+          Dynarray.set
+            snapshots
+            i
+            (Session.Snapshot.update_state !state snapshot)
+        )
       done;
     )
   | Some _ -> ()
