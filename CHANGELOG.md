@@ -7,6 +7,8 @@
 - Index data retrieval optimization
 - Added bounds to retention of old snapshot states, so Docfd memory usage
   should grow much slower compared to before as the session continues
+- Reduced temporary snapshot state retention and peak memory usage by
+  selectively storing states during history reconstruction and script execution
 
 ## 13.1.0
 
