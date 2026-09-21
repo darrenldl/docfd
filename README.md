@@ -204,8 +204,7 @@ unless any of the following is used:
 
 ## Documentation
 
-See [GitHub Wiki](https://github.com/darrenldl/docfd/wiki) for
-more examples/cookbook, and technical details.
+See https://darrenldl.github.io/docfd/
 
 ## Changelog
 
