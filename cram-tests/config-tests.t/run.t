@@ -16,7 +16,7 @@ Explicit --config=FILE:
 
 Resolved config path is logged:
   $ docfd --config explicit.config --debug-log - --cache-dir .cache-log --index-only . 2>&1 | grep '^Using config file:'
-  Using config file: 'explicit.config'
+  Using config file: '$TESTCASE_ROOT/explicit.config'
 
 Repeatable config and command-line arguments are combined:
   $ printf '%s\n' '--exts=' '--add-exts=txt' > combined.config
