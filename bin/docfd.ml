@@ -4,13 +4,14 @@ open Docfd_lib
 open Debug_utils
 open Misc_utils
 open File_utils
+open Cli_utils
 
 let compute_paths_from_globs ~report_progress globs =
   Seq.iter (fun s ->
       match Glob.parse s with
       | Some _ -> ()
       | None -> (
-          exit_with_error_msg
+          exit_with_cli_error_msg
             (Fmt.str "failed to parse glob pattern: \"%s\"" s)
         )
     ) globs;
@@ -457,7 +458,7 @@ let parse_sort_by_arg ~no_score (s : string) : Command.Sort_by.t =
       let msg = CCString.chop_prefix ~pre:": " msg
         |> Option.value ~default:msg
       in
-      exit_with_error_msg
+      exit_with_cli_error_msg
         (Fmt.str "failed to parse --%s argument: %s"
            (if no_score then (
                Args.sort_no_score_arg_name
@@ -618,7 +619,7 @@ let run
   List.iter (fun spec ->
       match Path_opening.parse_spec spec with
       | Error msg -> (
-          exit_with_error_msg (Fmt.str "failed to parse %s, %s" spec msg)
+          exit_with_cli_error_msg (Fmt.str "failed to parse %s, %s" spec msg)
         )
       | Ok (exts, launch_mode, cmd) -> (
           List.iter (fun ext ->
@@ -702,7 +703,7 @@ let run
   in
   (match recognized_exts, recognized_single_line_exts, globs, single_line_globs with
    | [], [], [], [] -> (
-       exit_with_error_msg
+       exit_with_cli_error_msg
          (Fmt.str "no usable file extensions or glob patterns")
      )
    | _, _, _, _ -> ()

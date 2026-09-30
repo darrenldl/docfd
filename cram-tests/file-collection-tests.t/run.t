@@ -204,7 +204,7 @@ Empty --exts and --single-line-exts:
   Initializing in-memory index
   error: no usable file extensions or glob patterns
   No config file used
-  [1]
+  [124]
 
 --add-exts:
   $ docfd --debug-log - --cache-dir .cache --index-only --add-exts ext0 . 2>&1 | grep '^Using .* search mode' | sort | grep "ext0"
