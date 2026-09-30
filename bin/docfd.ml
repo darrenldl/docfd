@@ -1534,23 +1534,24 @@ let () =
       )
     ) Sys.argv;
   let config_path =
-    if !no_config then (
-      None
-    ) else (
-      match !config_path_from_arg with
-      | None -> (
-          match find_closest_config_path () with
-          | Some path -> Some path
-          | None -> (
-              if Sys.file_exists Params.default_config_path then (
-                Some Params.default_config_path
-              ) else (
-                None
-              )
-            )
-        )
-      | Some path -> Some path
-    )
+    (if !no_config then (
+        None
+      ) else (
+       match !config_path_from_arg with
+       | None -> (
+           match find_closest_config_path () with
+           | Some path -> Some path
+           | None -> (
+               if Sys.file_exists Params.default_config_path then (
+                 Some Params.default_config_path
+               ) else (
+                 None
+               )
+             )
+         )
+       | Some path -> Some path
+     ))
+    |> Option.map Misc_utils.normalize_path_to_absolute
   in
   Params.config_path := config_path;
   let argv =

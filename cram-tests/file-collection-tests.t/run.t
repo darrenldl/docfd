@@ -203,7 +203,7 @@ Empty --exts and --single-line-exts:
   $ docfd --debug-log - --cache-dir .cache --index-only --exts "" --single-line-exts "" .
   Initializing in-memory index
   error: no usable file extensions or glob patterns
-  Using config file: '/home/docfd/.docfd-config'
+  No config file used
   [1]
 
 --add-exts:
