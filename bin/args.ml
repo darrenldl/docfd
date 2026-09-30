@@ -1,6 +1,6 @@
 open Cmdliner
 open Docfd_lib
-open Misc_utils
+open Cli_utils
 
 let no_pdftotext_arg_name = "no-pdftotext"
 
@@ -637,47 +637,47 @@ let check
     ~print_files_without_match
   =
   if max_depth < 0 then (
-    exit_with_error_msg
+    exit_with_cli_error_msg
       (Fmt.str "invalid %s: cannot be < 0" max_depth_arg_name)
   );
   if max_fuzzy_edit_dist < 0 then (
-    exit_with_error_msg
+    exit_with_cli_error_msg
       (Fmt.str "invalid %s: cannot be < 0" max_fuzzy_edit_dist_arg_name)
   );
   if max_token_search_dist < 1 then (
-    exit_with_error_msg
+    exit_with_cli_error_msg
       (Fmt.str "invalid %s: cannot be < 1" max_token_search_dist_arg_name)
   );
   if max_linked_token_search_dist < 1 then (
-    exit_with_error_msg
+    exit_with_cli_error_msg
       (Fmt.str "invalid %s: cannot be < 1" max_linked_token_search_dist_arg_name)
   );
   if tokens_per_search_scope_level < 1 then (
-    exit_with_error_msg
+    exit_with_cli_error_msg
       (Fmt.str "invalid %s: cannot be < 1" tokens_per_search_scope_level_arg_name)
   );
   if index_chunk_size < 1 then (
-    exit_with_error_msg
+    exit_with_cli_error_msg
       (Fmt.str "invalid %s: cannot be < 1" index_chunk_size_arg_name)
   );
   if cache_limit < 1 then (
-    exit_with_error_msg
+    exit_with_cli_error_msg
       (Fmt.str "invalid %s: cannot be < 1" cache_limit_arg_name)
   );
   if samples_per_doc < 1 then (
-    exit_with_error_msg
+    exit_with_cli_error_msg
       (Fmt.str "invalid %s: cannot be < 1" samples_per_doc_arg_name)
   );
   if search_result_print_text_width < 1 then (
-    exit_with_error_msg
+    exit_with_cli_error_msg
       (Fmt.str "invalid %s: cannot be < 1" search_result_print_text_width_arg_name)
   );
   if search_result_print_snippet_min_size < 0 then (
-    exit_with_error_msg
+    exit_with_cli_error_msg
       (Fmt.str "invalid %s: cannot be < 0" search_result_print_snippet_min_size_arg_name)
   );
   if search_result_print_max_add_lines < 0 then (
-    exit_with_error_msg
+    exit_with_cli_error_msg
       (Fmt.str "invalid %s: cannot be < 0" search_result_print_snippet_max_add_lines_arg_name)
   );
   if Option.is_some filter_exp then (
@@ -691,7 +691,7 @@ let check
         print_files_without_match
       )
     then (
-      exit_with_error_msg
+      exit_with_cli_error_msg
         (Fmt.str "--%s must be used with at least one of: --%s, --%s, --%s, --%s"
            filter_arg_name
            search_arg_name
@@ -702,7 +702,7 @@ let check
     )
   );
   let cannot_be_used_together x y =
-    exit_with_error_msg
+    exit_with_cli_error_msg
       (Fmt.str "--%s and --%s cannot be used together" x y)
   in
   (match print_files_with_match, print_files_without_match with
@@ -721,7 +721,7 @@ let check
            Option.is_some script
          )
        then (
-         exit_with_error_msg
+         exit_with_cli_error_msg
            (Fmt.str "--%s cannot be used without one of: --%s, --%s, --%s, --%s"
               files_with_match_arg_name
               filter_arg_name
@@ -740,7 +740,7 @@ let check
            Option.is_some search_exp
          )
        then (
-         exit_with_error_msg
+         exit_with_cli_error_msg
            (Fmt.str "--%s cannot be used without one of: --%s, --%s, --%s"
               files_without_match_arg_name
               filter_arg_name
@@ -754,7 +754,7 @@ let check
   (
     let l = List.filter (fun x -> x = "-") paths_from in
     if List.length l > 1 then (
-      exit_with_error_msg
+      exit_with_cli_error_msg
         (Fmt.str "at most one \"-\" may be supplied to --%s" paths_from_arg_name)
     )
   );
@@ -765,7 +765,7 @@ let check
          Filter_exp.parse filter_exp_string
        with
        | None -> (
-           exit_with_error_msg "failed to parse filter exp"
+           exit_with_cli_error_msg "failed to parse filter exp"
          )
        | Some _ -> ()
      )
@@ -773,7 +773,7 @@ let check
   (match sample_search_exp, search_exp with
    | None, None -> ()
    | Some _, Some _ -> (
-       exit_with_error_msg
+       exit_with_cli_error_msg
          (Fmt.str "%s and %s cannot be used together" sample_arg_name search_arg_name)
      )
    | Some search_exp_string, None
@@ -782,7 +782,7 @@ let check
          Search_exp.parse search_exp_string
        with
        | None -> (
-           exit_with_error_msg "failed to parse search exp"
+           exit_with_cli_error_msg "failed to parse search exp"
          )
        | Some _ -> ()
      )

@@ -3,6 +3,8 @@
 ## 13.1.2
 
 - Added missing config path logging to debug log
+- Fixed exit code for cli argument errors
+- Improved cli argument error reporting when config file is used
 
 ## 13.1.1
 

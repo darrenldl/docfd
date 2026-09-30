@@ -1568,5 +1568,12 @@ let () =
   in
   Eio_posix.run (fun eio_env ->
       Eio.Switch.run (fun sw ->
-          exit (Cmd.eval ~argv (cmd ~eio_env ~sw))
+          let exit_code = Cmd.eval ~argv (cmd ~eio_env ~sw) in
+          if exit_code = Cmd.Exit.cli_error then (
+            Option.iter (fun config_path ->
+                Cli_utils.print_config_path_for_cli_error_msg ~config_path
+              )
+              config_path
+          );
+          exit exit_code
         ))
