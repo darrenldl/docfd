@@ -4,6 +4,7 @@
 
 - Added missing config path logging to debug log
 - Fixed exit code for cli argument errors
+- Updated cli argument error message prefixes to match cmdliner's `docfd:` prefix
 - Improved cli argument error reporting when config file is used
 
 ## 13.1.1
