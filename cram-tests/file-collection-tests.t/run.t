@@ -200,11 +200,13 @@ Empty --single-line-exts:
   Using multiline search mode for document '$TESTCASE_ROOT/test3/ijkl/mnop.txt'
 
 Empty --exts and --single-line-exts:
-  $ docfd --debug-log - --cache-dir .cache --index-only --exts "" --single-line-exts "" .
-  Initializing in-memory index
-  error: no usable file extensions or glob patterns
-  No config file used
+  $ docfd --debug-log - --cache-dir .cache --index-only --exts "" --single-line-exts "" . >stdout 2>stderr
   [124]
+  $ cat stdout
+  Initializing in-memory index
+  $ cat stderr
+  No config file used
+  docfd: no usable file extensions or glob patterns
 
 --add-exts:
   $ docfd --debug-log - --cache-dir .cache --index-only --add-exts ext0 . 2>&1 | grep '^Using .* search mode' | sort | grep "ext0"
