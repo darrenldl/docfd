@@ -1,5 +1,9 @@
 # Changelog
 
+## 13.1.2
+
+- Added missing config path logging to debug log
+
 ## 13.1.1
 
 - Reduced memory usage by sharing indexed word strings through the in-memory

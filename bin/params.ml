@@ -1,5 +1,7 @@
 include Docfd_lib.Params'
 
+let config_path : string option ref = ref None
+
 let debug_output : out_channel option ref = ref None
 
 let scan_hidden = ref false

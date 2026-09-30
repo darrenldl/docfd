@@ -557,6 +557,11 @@ let run
             )
         )
     );
+  do_if_debug (fun oc ->
+      match !Params.config_path with
+      | None -> Printf.fprintf oc "No config file used\n"
+      | Some s -> Printf.fprintf oc "Using config file: %s\n" (Filename.quote s)
+    );
   if list_scripts then (
     Params.data_dir := Some data_dir;
     File_utils.list_script_files ()
@@ -1547,6 +1552,7 @@ let () =
       | Some path -> Some path
     )
   in
+  Params.config_path := config_path;
   let argv =
     match config_path with
     | None -> Sys.argv
