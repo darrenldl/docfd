@@ -14,6 +14,10 @@ Explicit --config=FILE:
   $ docfd --config=explicit-equals.config --debug-log - --cache-dir .cache-explicit-equals --index-only . 2>&1 | grep '^Using .* search mode' | sort
   Using multiline search mode for document '$TESTCASE_ROOT/test.md'
 
+Resolved config path is logged:
+  $ docfd --config explicit.config --debug-log - --cache-dir .cache-log --index-only . 2>&1 | grep '^Using config file:'
+  Using config file: 'explicit.config'
+
 Repeatable config and command-line arguments are combined:
   $ printf '%s\n' '--exts=' '--add-exts=txt' > combined.config
   $ docfd --config combined.config --add-exts md --debug-log - --cache-dir .cache-combined --index-only . 2>&1 | grep '^Using .* search mode' | sort
@@ -24,7 +28,8 @@ Repeatable config and command-line arguments are combined:
   $ mkdir no-config-project
   $ touch no-config-project/test.md no-config-project/test.txt
   $ printf '%s\n' '--exts=txt' > no-config-project/.docfd-config
-  $ (cd no-config-project && docfd --no-config --exts md --debug-log - --cache-dir .cache --index-only . 2>&1) | grep '^Using .* search mode' | sort
+  $ (cd no-config-project && docfd --no-config --exts md --debug-log - --cache-dir .cache --index-only . 2>&1) | grep -e '^No config file used' -e '^Using .* search mode' | sort
+  No config file used
   Using multiline search mode for document '$TESTCASE_ROOT/no-config-project/test.md'
 
 Arguments after -- are not interpreted by config bootstrap parsing:
@@ -37,11 +42,11 @@ Config discovery traverses ancestors and uses the nearest config:
   $ touch project/nested/test.md project/nested/test.txt
   $ printf '%s\n' '--exts=txt' > project/.docfd-config
   $ printf '%s\n' '--exts=md' > project/nested/.docfd-config
-  $ (cd project/nested && docfd --debug-log - --cache-dir .cache --index-only . 2>&1) | grep '^Using .* search mode' | sort
-  Using multiline search mode for document '$TESTCASE_ROOT/project/nested/test.md'
+  $ (cd project/nested && docfd --debug-log - --cache-dir .cache --index-only . 2>&1) | grep '^Using config file:'
+  Using config file: '$TESTCASE_ROOT/project/nested/.docfd-config'
   $ rm project/nested/.docfd-config
-  $ (cd project/nested && docfd --debug-log - --cache-dir .cache-parent --index-only . 2>&1) | grep '^Using .* search mode' | sort
-  Using multiline search mode for document '$TESTCASE_ROOT/project/nested/test.txt'
+  $ (cd project/nested && docfd --debug-log - --cache-dir .cache-parent --index-only . 2>&1) | grep '^Using config file:'
+  Using config file: '$TESTCASE_ROOT/project/.docfd-config'
 
 Global config is used as a fallback:
   $ mkdir -p xdg/docfd
@@ -49,5 +54,5 @@ Global config is used as a fallback:
   $ export XDG_CONFIG_HOME="$PWD/xdg"
   $ global_project=$(mktemp -d)
   $ touch "$global_project/test.md" "$global_project/test.txt"
-  $ (cd "$global_project" && docfd --debug-log - --cache-dir .cache --index-only . 2>&1) | grep '^Using .* search mode' | sed "s|$global_project|GLOBAL_PROJECT|" | sort
-  Using multiline search mode for document 'GLOBAL_PROJECT/test.md'
+  $ (cd "$global_project" && docfd --debug-log - --cache-dir .cache --index-only . 2>&1) | grep '^Using config file:'
+  Using config file: '$TESTCASE_ROOT/xdg/docfd/config'
