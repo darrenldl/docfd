@@ -18,6 +18,12 @@ Resolved config path is logged:
   $ docfd --config explicit.config --debug-log - --cache-dir .cache-log --index-only . 2>&1 | grep '^Using config file:'
   Using config file: '$TESTCASE_ROOT/explicit.config'
 
+Config path is reported when config arguments are invalid:
+  $ printf '%s\n' '--definitely-invalid-option' > invalid.config
+  $ docfd --config invalid.config 2>&1 | grep '^docfd: the invalid arguments might be from config file:'
+  docfd: the invalid arguments might be from config file: '$TESTCASE_ROOT/invalid.config'
+  [124]
+
 Repeatable config and command-line arguments are combined:
   $ printf '%s\n' '--exts=' '--add-exts=txt' > combined.config
   $ docfd --config combined.config --add-exts md --debug-log - --cache-dir .cache-combined --index-only . 2>&1 | grep '^Using .* search mode' | sort
