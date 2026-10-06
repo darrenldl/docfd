@@ -1093,7 +1093,7 @@ module Bottom_pane = struct
             { label = "Shift+Y"; msg = "COPY-PATHS" };
             { label = "d"; msg = "DROP" };
             { label = "m"; msg = "MARK" };
-            { label = "Ctrl+R/Ctrl+Y"; msg = "Redo" };
+            { label = "Ctrl+R/Ctrl+Y"; msg = "redo" };
             { label = "Ctrl+O"; msg = "SCRIPTS" };
           ];
           [
