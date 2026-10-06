@@ -1,5 +1,9 @@
 # Changelog
 
+## 13.1.3
+
+- Added missing undo and redo key bindings to key binding info grid
+
 ## 13.1.2
 
 - Added missing config path logging to debug log

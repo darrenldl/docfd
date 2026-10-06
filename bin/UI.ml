@@ -1081,7 +1081,7 @@ module Bottom_pane = struct
             { label = "y"; msg = "COPY" };
             { label = "n"; msg = "NARROW" };
             { label = "Space"; msg = "toggle mark" };
-            { label = "h"; msg = "command history" };
+            { label = "u/Ctrl+Z"; msg = "undo" };
             { label = "Ctrl+S"; msg = "save session as script" };
           ];
           [
@@ -1093,7 +1093,7 @@ module Bottom_pane = struct
             { label = "Shift+Y"; msg = "COPY-PATHS" };
             { label = "d"; msg = "DROP" };
             { label = "m"; msg = "MARK" };
-            { label = ""; msg = "" };
+            { label = "Ctrl+R/Ctrl+Y"; msg = "Redo" };
             { label = "Ctrl+O"; msg = "SCRIPTS" };
           ];
           [
@@ -1105,7 +1105,7 @@ module Bottom_pane = struct
             { label = ""; msg = "" };
             { label = "r"; msg = "RELOAD" };
             { label = "Shift+M"; msg = "UNMARK" };
-            { label = ""; msg = "" };
+            { label = "h"; msg = "command history" };
             { label = ""; msg = "" };
           ];
         ]
