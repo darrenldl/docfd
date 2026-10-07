@@ -814,10 +814,17 @@ module Bottom_pane = struct
                  Lwd.set text_field UI_base.empty_text_field;
                  Nottui.Focus.release Vars.script_name_field_focus_handle;
                  Lwd.set UI_base.Vars.input_mode
-                   (if String.length text = 0 then
-                      Save_script_no_name
-                    else
-                      Save_script_overwrite text
+                   (if String.length text = 0 then (
+                       Save_script_no_name
+                     ) else (
+                      let path = compute_save_script_path script_name in
+                      if Sys.file_exists path then (
+                        Save_script_overwrite_confirm path
+                      ) else (
+                        save_script ~path;
+                        Save_script_edit path
+                      )
+                    )
                    );
               )
             )
@@ -896,27 +903,20 @@ module Bottom_pane = struct
         let$ bar = UI_base.Status_bar.background_bar in
         Nottui.Ui.join_z bar content
       )
-    | Save_script_overwrite script_name -> (
-        let path = compute_save_script_path script_name in
-        if Sys.file_exists path then (
-          let$* content =
-            Lwd.return
-              (Nottui.Ui.atom
-                 (Notty.I.hcat
-                    [
-                      input_mode_image;
-                      UI_base.Status_bar.element_spacer;
-                      Notty.I.strf ~attr "%s already exists, overwrite?"
-                        (Filename.basename path);
-                    ]))
-          in
-          let$ bar = UI_base.Status_bar.background_bar in
-          Nottui.Ui.join_z bar content
-        ) else (
-          save_script ~path;
-          Lwd.set UI_base.Vars.input_mode (Save_script_edit script_name);
-          UI_base.Status_bar.background_bar
-        )
+    | Save_script_overwrite_confirm path -> (
+        let$* content =
+          Lwd.return
+            (Nottui.Ui.atom
+               (Notty.I.hcat
+                  [
+                    input_mode_image;
+                    UI_base.Status_bar.element_spacer;
+                    Notty.I.strf ~attr "%s already exists, overwrite?"
+                      (Filename.basename path);
+                  ]))
+        in
+        let$ bar = UI_base.Status_bar.background_bar in
+        Nottui.Ui.join_z bar content
       )
     | Save_script_no_name -> (
         let$* content =
@@ -932,8 +932,7 @@ module Bottom_pane = struct
         let$ bar = UI_base.Status_bar.background_bar in
         Nottui.Ui.join_z bar content
       )
-    | Save_script_edit script_name -> (
-        let path = compute_save_script_path script_name in
+    | Save_script_edit path -> (
         let$* content =
           Lwd.return
             (Nottui.Ui.atom
@@ -1366,7 +1365,7 @@ module Bottom_pane = struct
         (Copy_paths, copy_paths_grid);
         (Reload, reload_grid);
         (Save_script, save_script_grid);
-        (Save_script_overwrite "", save_script_confirm_grid);
+        (Save_script_overwrite_confirm "", save_script_confirm_grid);
         (Save_script_no_name, save_script_cancel_grid);
         (Save_script_edit "", save_script_edit_grid);
         (Scripts, scripts_grid);
@@ -2175,14 +2174,13 @@ let keyboard_handler
           );
           `Handled
         )
-      | Save_script_overwrite script_name -> (
+      | Save_script_overwrite_confirm path -> (
           (match key with
            | (`Escape, [])
            | (`ASCII 'n', []) -> (
                UI_base.set_input_mode Navigate;
              )
            | (`ASCII 'y', []) -> (
-               let path = compute_save_script_path script_name in
                save_script ~path;
                UI_base.set_input_mode (Save_script_edit script_name);
              )
@@ -2202,13 +2200,12 @@ let keyboard_handler
           );
           `Handled
         )
-      | Save_script_edit script_name -> (
+      | Save_script_edit path -> (
           let exit =
             (match key with
              | (`Escape, [])
              | (`ASCII 'n', []) -> true
              | (`ASCII 'y', []) -> (
-                 let path = compute_save_script_path script_name in
                  Lwd.set UI_base.Vars.quit true;
                  UI_base.Vars.action := Some (UI_base.Edit_script path);
                  true
