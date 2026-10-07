@@ -817,7 +817,7 @@ module Bottom_pane = struct
                    (if String.length text = 0 then (
                        Save_script_no_name
                      ) else (
-                      let path = compute_save_script_path script_name in
+                      let path = compute_save_script_path text in
                       if Sys.file_exists path then (
                         Save_script_overwrite_confirm path
                       ) else (
@@ -2182,7 +2182,7 @@ let keyboard_handler
              )
            | (`ASCII 'y', []) -> (
                save_script ~path;
-               UI_base.set_input_mode (Save_script_edit script_name);
+               UI_base.set_input_mode (Save_script_edit path);
              )
            | _ -> ()
           );
