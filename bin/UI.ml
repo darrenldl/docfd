@@ -1157,10 +1157,10 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
-      let save_script_cancel_grid =
+      let save_script_invalid_name_grid =
         [
           [
-            { label = "Enter"; msg = "confirm" };
+            { label = "Esc/Enter"; msg = "confirm" };
           ];
           empty_row;
           empty_row;
@@ -1376,7 +1376,7 @@ module Bottom_pane = struct
         (Reload, reload_grid);
         (Save_script, save_script_grid);
         (Save_script_overwrite_confirm "", save_script_confirm_grid);
-        (Save_script_invalid_name "", save_script_cancel_grid);
+        (Save_script_invalid_name "", save_script_invalid_name_grid);
         (Save_script_edit "", save_script_edit_grid);
         (Scripts, scripts_grid);
         (Delete_script_confirm ("", ""), delete_script_confirm_grid);
@@ -2201,6 +2201,7 @@ let keyboard_handler
       | Save_script_invalid_name name -> (
           let exit =
             (match key with
+             | (`Escape, [])
              | (`Enter, []) -> true
              | _ -> false
             );
