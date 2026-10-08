@@ -2191,7 +2191,7 @@ let keyboard_handler
           );
           `Handled
         )
-      | Save_script_invalid_name _ -> (
+      | Save_script_invalid_name name -> (
           let exit =
             (match key with
              | (`Enter, []) -> true
@@ -2200,6 +2200,8 @@ let keyboard_handler
           in
           if exit then (
             UI_base.set_input_mode Save_script;
+            Lwd.set Vars.script_name_field (name, String.length name);
+            Nottui.Focus.request Vars.script_name_field_focus_handle;
           );
           `Handled
         )
