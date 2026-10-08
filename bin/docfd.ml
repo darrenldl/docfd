@@ -1218,6 +1218,12 @@ let run
                      init_state);
                 let rerun = ref false in
                 let error_line_num = ref None in
+                let record_error ~line_num =
+                  rerun := true;
+                  error_line_num := (match !error_line_num with
+                      | None -> Some line_num
+                      | Some x -> Some x);
+                in
                 let lines =
                   CCIO.with_in file (fun ic ->
                       CCIO.read_lines_l ic
@@ -1229,8 +1235,7 @@ let run
                           ) else (
                             match Command.of_string line with
                             | None -> (
-                                rerun := true;
-                                error_line_num := Some line_num;
+                                record_error ~line_num;
                                 [
                                   line;
                                   "; Failed to parse the above command"
@@ -1239,8 +1244,7 @@ let run
                             | Some command -> (
                                 match Session.run_command pool command !state with
                                 | None -> (
-                                    rerun := true;
-                                    error_line_num := Some line_num;
+                                    record_error ~line_num;
                                     [
                                       line;
                                       "; Failed to run the above command, check if the arguments are correct"
