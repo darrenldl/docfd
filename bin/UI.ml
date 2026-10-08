@@ -1147,7 +1147,7 @@ module Bottom_pane = struct
           empty_row;
         ]
       in
-      let save_script_confirm_grid =
+      let save_script_overwrite_confirm_grid =
         [
           [
             { label = "y"; msg = "confirm overwrite" };
@@ -1375,7 +1375,7 @@ module Bottom_pane = struct
         (Copy_paths, copy_paths_grid);
         (Reload, reload_grid);
         (Save_script, save_script_grid);
-        (Save_script_overwrite_confirm "", save_script_confirm_grid);
+        (Save_script_overwrite_confirm "", save_script_overwrite_confirm_grid);
         (Save_script_invalid_name "", save_script_invalid_name_grid);
         (Save_script_edit "", save_script_edit_grid);
         (Scripts, scripts_grid);
