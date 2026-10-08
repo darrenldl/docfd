@@ -3,6 +3,8 @@
 ## 13.1.3
 
 - Added missing undo and redo key bindings to key binding info grid
+- Fixed save script workflow which could get stuck randomly previously
+- Added missing script name validation
 
 ## 13.1.2
 
