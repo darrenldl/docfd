@@ -814,9 +814,12 @@ module Bottom_pane = struct
                  Lwd.set text_field UI_base.empty_text_field;
                  Nottui.Focus.release Vars.script_name_field_focus_handle;
                  Lwd.set UI_base.Vars.input_mode
-                   (if String.length text = 0 then (
-                       Save_script_no_name
-                     ) else (
+                   (if text = ""
+                    || text = "."
+                    || text = ".."
+                    || Filename.basename text <> text then (
+                      Save_script_invalid_name text
+                    ) else (
                       let path = compute_save_script_path text in
                       if Sys.file_exists path then (
                         Save_script_overwrite_confirm path
@@ -918,7 +921,7 @@ module Bottom_pane = struct
         let$ bar = UI_base.Status_bar.background_bar in
         Nottui.Ui.join_z bar content
       )
-    | Save_script_no_name -> (
+    | Save_script_invalid_name name -> (
         let$* content =
           Lwd.return
             (Nottui.Ui.atom
@@ -926,7 +929,7 @@ module Bottom_pane = struct
                   [
                     input_mode_image;
                     UI_base.Status_bar.element_spacer;
-                    Notty.I.strf ~attr "No name entered, saving skipped";
+                    Notty.I.strf ~attr "Invalid name: %s" name;
                   ]))
         in
         let$ bar = UI_base.Status_bar.background_bar in
@@ -1366,7 +1369,7 @@ module Bottom_pane = struct
         (Reload, reload_grid);
         (Save_script, save_script_grid);
         (Save_script_overwrite_confirm "", save_script_confirm_grid);
-        (Save_script_no_name, save_script_cancel_grid);
+        (Save_script_invalid_name "", save_script_cancel_grid);
         (Save_script_edit "", save_script_edit_grid);
         (Scripts, scripts_grid);
         (Delete_script_confirm ("", ""), delete_script_confirm_grid);
@@ -2188,7 +2191,7 @@ let keyboard_handler
           );
           `Handled
         )
-      | Save_script_no_name -> (
+      | Save_script_invalid_name _ -> (
           let exit =
             (match key with
              | (`Enter, []) -> true
@@ -2196,7 +2199,7 @@ let keyboard_handler
             );
           in
           if exit then (
-            UI_base.set_input_mode Navigate;
+            UI_base.set_input_mode Save_script;
           );
           `Handled
         )
