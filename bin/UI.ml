@@ -1160,7 +1160,7 @@ module Bottom_pane = struct
       let save_script_invalid_name_grid =
         [
           [
-            { label = "Esc/Enter"; msg = "confirm" };
+            { label = "Esc/Enter"; msg = "return" };
           ];
           empty_row;
           empty_row;
