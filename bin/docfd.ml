@@ -1217,10 +1217,11 @@ let run
                      ~last_command:None
                      init_state);
                 let rerun = ref false in
+                let error_line_num = ref None in
                 let lines =
                   CCIO.with_in file (fun ic ->
                       CCIO.read_lines_l ic
-                      |> CCList.flat_map (fun line ->
+                      |> CCList.flat_map_i (fun line_num line ->
                           if
                             String_utils.line_is_blank_or_system_comment line
                           then (
@@ -1229,6 +1230,7 @@ let run
                             match Command.of_string line with
                             | None -> (
                                 rerun := true;
+                                error_line_num := Some line_num;
                                 [
                                   line;
                                   "; Failed to parse the above command"
@@ -1238,6 +1240,7 @@ let run
                                 match Session.run_command pool command !state with
                                 | None -> (
                                     rerun := true;
+                                    error_line_num := Some line_num;
                                     [
                                       line;
                                       "; Failed to run the above command, check if the arguments are correct"
@@ -1261,7 +1264,12 @@ let run
                     )
                 in
                 if !rerun then (
-                  aux ~rerun:true ~jump_to_line_num:(Dynarray.length snapshots) lines
+                  let jump_to_line_num =
+                    match !error_line_num with
+                    | None -> Dynarray.length snapshots
+                    | Some x -> x + 1
+                  in
+                  aux ~rerun:true ~jump_to_line_num lines
                 ) else (
                   `Changes_made snapshots
                 )
