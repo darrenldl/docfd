@@ -932,7 +932,11 @@ module Bottom_pane = struct
                   [
                     input_mode_image;
                     UI_base.Status_bar.element_spacer;
-                    Notty.I.strf ~attr "Invalid name: %s" name;
+                    (if name = "" then (
+                        Notty.I.strf ~attr "Name cannot be empty"
+                      ) else (
+                       Notty.I.strf ~attr "Invalid name: %s" name
+                     ));
                   ]))
         in
         let$ bar = UI_base.Status_bar.background_bar in
