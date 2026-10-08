@@ -18,7 +18,7 @@ let remove_leading_dots (s : string) =
   )
 
 let line_is_system_comment line =
-  CCString.starts_with ~prefix:";" line
+  CCString.starts_with ~prefix:";" (String.trim line)
 
 let line_is_blank_or_system_comment line =
   line_is_system_comment line
