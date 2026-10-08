@@ -813,6 +813,7 @@ module Bottom_pane = struct
               (fun (text, _x) ->
                  Lwd.set text_field UI_base.empty_text_field;
                  Nottui.Focus.release Vars.script_name_field_focus_handle;
+                 let text = String.trim text in
                  Lwd.set UI_base.Vars.input_mode
                    (if text = ""
                     || text = "."
