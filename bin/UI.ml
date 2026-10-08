@@ -892,6 +892,8 @@ module Bottom_pane = struct
               UI_base.edit_field text_field
                 ~focus:Vars.script_name_field_focus_handle
                 ~on_cancel:(fun (_, _) ->
+                    Lwd.set text_field UI_base.empty_text_field;
+                    Nottui.Focus.release Vars.script_name_field_focus_handle;
                     Lwd.set UI_base.Vars.input_mode Navigate
                   )
                 ~on_change:(fun (text, x) ->
