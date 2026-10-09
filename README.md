@@ -1,6 +1,6 @@
 # Docfd
 
-[Online Demo](https://demo.docfd.sh)
+[User Guide](https://darrenldl.github.io/docfd/guide/index.html) - [Online Demo](https://demo.docfd.sh)
 
 TUI multiline fuzzy document finder
 
