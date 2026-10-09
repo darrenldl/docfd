@@ -6,6 +6,8 @@
 - Fixed save script workflow which could get stuck randomly previously
 - Added missing script name validation
 - Minor fixes for Docfd script user and system comment handling
+- Minor polishing for command history editing where Docfd now opens to
+  the line of the first error in editor
 
 ## 13.1.2
 
