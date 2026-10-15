@@ -18,6 +18,10 @@ Interactive use
 
 ![](demo-vhs-gifs/repo.gif)
 
+Interactive use with PDF
+
+![](screen-recording-gifs/pdf.gif)
+
 Non-interactive use
 
 ![](demo-vhs-gifs/repo-non-interactive.gif)
