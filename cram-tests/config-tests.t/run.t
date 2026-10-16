@@ -63,6 +63,15 @@ Config discovery traverses ancestors and uses the nearest config:
   $ (cd config-token-invocation && docfd --config "../config token assets/config" --debug-log - --cache-dir .cache --index-only 2>&1) | grep '^Using .* search mode'
   Using multiline search mode for document '$TESTCASE_ROOT/config token assets/test.md'
 
+<HOME> expands to the value of the HOME environment variable within an argument:
+  $ # The spaces are intentional, to check that expansion into a path containing spaces remains one argument.
+  $ mkdir -p "home token assets"
+  $ touch "home token assets/test.md"
+  $ printf '%s\n' "$PWD/home token assets/test.md" > "home token assets/paths"
+  $ printf '%s\n' '--exts=md' '--paths-from=<HOME>/paths' > home-token.config
+  $ HOME="$PWD/home token assets" docfd --config home-token.config --debug-log - --cache-dir .cache-home-token --data-dir .data-home-token --index-only 2>&1 | grep '^Using .* search mode'
+  Using multiline search mode for document '$TESTCASE_ROOT/home token assets/test.md'
+
 Global config is used as a fallback:
   $ mkdir -p xdg/docfd
   $ printf '%s\n' '--exts=md' > xdg/docfd/config
