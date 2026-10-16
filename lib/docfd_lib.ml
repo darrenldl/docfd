@@ -4,6 +4,8 @@ module Doc_id_db = Doc_id_db
 
 module Link = Link
 
+module Link_extraction = Link_extraction
+
 module Search_result = Search_result
 
 module Search_phrase = Search_phrase
