@@ -2,6 +2,8 @@ include Docfd_lib.Params'
 
 let config_path : string option ref = ref None
 
+let config_file_config_dir_token = "<CONFIG_DIR>"
+
 let debug_output : out_channel option ref = ref None
 
 let scan_hidden = ref false

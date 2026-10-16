@@ -1492,12 +1492,16 @@ let read_config ~path : string array =
         exit_with_error_msg (Fmt.str "failed to read config %s" (Filename.quote path))
       )
   in
+  let config_dir = Filename.dirname path in
   lines
   |> List.to_seq
   |> Seq.map String.trim
   |> Seq.filter (fun line ->
       not (CCString.starts_with ~prefix:"#" line)
       && (String.length line > 0)
+    )
+  |> Seq.map (fun line ->
+      CCString.replace ~which:`All ~sub:Params.config_file_config_dir_token ~by:config_dir line
     )
   |> Array.of_seq
 

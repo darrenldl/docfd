@@ -1,5 +1,15 @@
 # Changelog
 
+## 13.2.0
+
+**Note**: This update contains a feature that requires removing the existing index DB to take effect.
+
+- Upgraded link extraction
+    - This will **only** work after recreating the index DB
+    - Fixes issue [#22](https://github.com/darrenldl/docfd/issues/22)
+- Added `<CONFIG_DIR>` token to cli arguments in config file for expansion into
+  the directory the config file is located in
+
 ## 13.1.3
 
 - Added missing undo and redo key bindings to key binding info grid
