@@ -8,6 +8,7 @@ let () =
             [
               ("Search_exp_tests.Alco", Search_exp_tests.Alco.suite);
               ("Utils_tests.Alco", Utils_tests.Alco.suite);
+              ("Link_extraction_tests.Alco", Link_extraction_tests.Alco.suite);
             ]
           in
           let qc_suites =
