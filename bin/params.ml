@@ -2,7 +2,11 @@ include Docfd_lib.Params'
 
 let config_path : string option ref = ref None
 
-let config_file_config_dir_token = "<CONFIG_DIR>"
+module Config_file_tokens = struct
+  let config_dir = "<CONFIG_DIR>"
+
+  let home = "<HOME>"
+end
 
 let debug_output : out_channel option ref = ref None
 

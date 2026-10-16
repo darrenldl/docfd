@@ -1501,7 +1501,10 @@ let read_config ~path : string array =
       && (String.length line > 0)
     )
   |> Seq.map (fun line ->
-      CCString.replace ~which:`All ~sub:Params.config_file_config_dir_token ~by:config_dir line
+      CCString.replace ~which:`All ~sub:Params.Config_file_tokens.config_dir ~by:config_dir line
+    )
+  |> Seq.map (fun line ->
+      CCString.replace ~which:`All ~sub:Params.Config_file_tokens.home ~by:Params.home_dir line
     )
   |> Array.of_seq
 
