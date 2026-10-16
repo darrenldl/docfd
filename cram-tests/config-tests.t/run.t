@@ -58,7 +58,7 @@ Config discovery traverses ancestors and uses the nearest config:
   $ # The spaces are intentional, to check that expansion into a path containing spaces remains one argument.
   $ mkdir -p "config token assets" config-token-invocation
   $ touch "config token assets/test.md"
-  $ printf '%s\n' "$TESTCASE_ROOT/config token assets/test.md" > "config token assets/paths"
+  $ printf '%s\n' "$PWD/config token assets/test.md" > "config token assets/paths"
   $ printf '%s\n' '--exts=md' '--paths-from=<CONFIG_DIR>/paths' > "config token assets/config"
   $ (cd config-token-invocation && docfd --config "../config token assets/config" --debug-log - --cache-dir .cache --index-only 2>&1) | grep '^Using .* search mode'
   Using multiline search mode for document '$TESTCASE_ROOT/config token assets/test.md'
