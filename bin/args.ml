@@ -227,7 +227,7 @@ let config_arg =
 If unspecified, search the current directory and its parents for the nearest %s, falling back to %s.
 Each non-empty, non-comment (#-prefixed) line should contain exactly one argument. Leading and trailing whitespace is ignored.
 Specify an option and its values on separate lines, or use the --option=value form. For instance, `--exts md` should be either one line as `--exts=md` or two lines as `--exts` and `md`.
-Within the config file, %s expands to the absolute directory containing the config file, %s expands to the environment variable HOME.|}
+Within the config file, %s expands to the absolute directory containing the config file, %s expands to the value of the HOME environment variable.|}
       Params.docfd_config_ext
       Params.default_config_path
       Params.Config_file_tokens.config_dir
