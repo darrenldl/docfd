@@ -267,14 +267,14 @@ let os_typ : [ `Darwin | `Linux ] =
   | "darwin" -> `Darwin
   | _ -> `Linux
 
+let home_dir =
+  match Sys.getenv_opt "HOME" with
+  | None -> (
+      Misc_utils.exit_with_error_msg "environment variable HOME is not set";
+    )
+  | Some home -> home
+
 let xdg_data_home =
-  let home_dir =
-    match Sys.getenv_opt "HOME" with
-    | None -> (
-        Misc_utils.exit_with_error_msg "environment variable HOME is not set";
-      )
-    | Some home -> home
-  in
   match os_typ with
   | `Linux -> (
       match Sys.getenv_opt "XDG_DATA_HOME" with
@@ -287,13 +287,6 @@ let xdg_data_home =
     )
 
 let xdg_config_home =
-  let home_dir =
-    match Sys.getenv_opt "HOME" with
-    | None -> (
-        Misc_utils.exit_with_error_msg "environment variable HOME is not set";
-      )
-    | Some home -> home
-  in
   match os_typ with
   | `Linux -> (
       match Sys.getenv_opt "XDG_CONFIG_HOME" with
@@ -306,13 +299,6 @@ let xdg_config_home =
     )
 
 let xdg_cache_home =
-  let home_dir =
-    match Sys.getenv_opt "HOME" with
-    | None -> (
-        Misc_utils.exit_with_error_msg "environment variable HOME is not set";
-      )
-    | Some home -> home
-  in
   match os_typ with
   | `Linux -> (
       match Sys.getenv_opt "XDG_CACHE_HOME" with
