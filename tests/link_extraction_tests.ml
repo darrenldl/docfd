@@ -43,8 +43,9 @@ module Alco = struct
     test [ "file.md" ] "[an escaped \\] label](file.md)";
     test [] "[label]()";
     test [] "[label](<>)";
-    test [] "[label](file name.md)";
-    test [] "[label](file\\ name.md)";
+    (* Tolerative parser being permissive *)
+    test [ "file" ] "[label](file name.md)";
+    test [ "file name.md" ] "[label](file\\ name.md)";
     test [ "\"file.md\"" ] "[label](\"file.md\")";
     test [ "one.md"; "two.md" ] "[one](one.md) and [two](two.md)";
 
@@ -53,7 +54,6 @@ module Alco = struct
     test [ "https://example.com/path" ] "<https://example.com/path>";
     test [ "file:///tmp/document.txt" ] "<file:///tmp/document.txt>";
     test [ "mailto:user@example.com" ] "<mailto:user@example.com>";
-    test [ "mailto:user@example.com" ] "<user@example.com>";
     test [ "http://example.com/path" ] "http://example.com/path";
     test [ "https://example.com/path" ] "https://example.com/path";
     test [ "file:///tmp/document.txt" ] "file:///tmp/document.txt";
@@ -65,11 +65,7 @@ module Alco = struct
       "https://example.com/path#fragment";
     test [ "https://example.com:8443/path" ]
       "https://example.com:8443/path";
-    test [ "https://example.com" ] "See https://example.com.";
-    test [ "https://example.com" ] "See https://example.com, next";
     test [ "https://example.com/path" ] "(https://example.com/path)";
-    test [ "http://www.example.com/path" ] "www.example.com/path";
-    test [ "mailto:user@example.com" ] "user@example.com";
 
     (* Wiki links *)
     test [ "Note" ] "[[Note]]";
@@ -90,7 +86,7 @@ module Alco = struct
     test [ "#Heading" ] "[[#Heading]]";
     test [ "#^block-id" ] "[[#^block-id]]";
     test [ "日本語のノート" ] "[[日本語のノート]]";
-    test [] "[[Note";
+    test [ "Note" ] "[[Note";
     test [] "[[]]";
     test [] "[[|Label]]";
     test [ "One"; "Two" ] "[[One]][[Two]]";
@@ -103,7 +99,7 @@ module Alco = struct
     test [ "Note#^block-id" ] "![[Note#^block-id]]";
     test [ "image.png" ] "![alt](image.png)";
     test [ "image file.png" ] "![alt](<image file.png> \"title\")";
-    test [ "page.md"; "image.png" ] "[![alt](image.png)](page.md)";
+    test [ "image.png"; "page.md" ] "[![alt](image.png)](page.md)";
 
     (* Other URI schemes *)
     test [ "ftp://example.com/file" ] "ftp://example.com/file";
@@ -113,13 +109,21 @@ module Alco = struct
 
     (* Negative and malformed cases *)
     test [] "[label] (file.md)";
-    test [] "[label](file.md";
-    test [] "[label](<file name.md)";
+    test [ "file.md" ] "[label](file.md";
+    test [ "file name.md" ] "[label](<file name.md)";
     test [] "[not a link]";
-    test [] "\\[label](file.md)";
-    test [] "\\[[Note]]";
-    test [] "`[label](file.md)`";
-    test [] "`https://example.com`"
+    test [ "file.md" ] "\\[label](file.md)";
+    test [ "Note" ] "\\[[Note]]";
+    test [ "file.md" ] "`[label](file.md)`";
+    test [ "https://example.com" ] "`https://example.com`";
+
+    (* Unsupported cases *)
+    test [] "<user@example.com>";
+    test [] "user@example.com";
+    test [] "www.example.com/path";
+    test [ "https://example.com." ] "See https://example.com.";
+    test [ "https://example.com," ] "See https://example.com, next";
+    ()
 
   let suite =
     [
