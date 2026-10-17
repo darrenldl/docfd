@@ -513,10 +513,9 @@ let open_link ~close_term ~doc link =
     )
   in
   let strip_fragment s =
-    match String.split_on_char '#' s with
-    | "" :: x :: _ -> x
-    | x :: _ -> x
-    | _ -> s
+    match String.index_opt s '#' with
+    | None -> s
+    | Some i -> String.sub s 0 i
   in
   let prepare_local_link link =
     let link = strip_fragment link in
