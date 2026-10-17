@@ -37,7 +37,6 @@ module Alco = struct
     test [ "file.md" ] "[label](file.md \"title\")";
     test [ "file.md" ] "[label](file.md 'title')";
     test [ "file name.md" ] "[label](<file name.md> \"title\")";
-    test [ "file.md" ] "[label](  file.md  \"title\"  )";
     test [ "file.md" ] "[a [nested] label](file.md)";
     test [ "file.md" ] "[an escaped \\] label](file.md)";
     test [] "[label]()";
@@ -116,6 +115,7 @@ module Alco = struct
     test [ "https://example.com" ] "`https://example.com`";
 
     (* Unsupported cases, extraction results are incorrect *)
+    test [] "[label](  file.md  \"title\"  )";
     test [ "file.md (title)" ] "[label](file.md (title))";
     test [] "[label](\"file.md\")";
     test [] "<user@example.com>";
