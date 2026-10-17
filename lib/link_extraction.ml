@@ -114,7 +114,7 @@ type scanning_state = [
   | `In_link of Ctx.t
 ]
 
-let common_url_prefixes = [
+let hierarchical_url_prefixes = [
   "https";
   "http";
   "file";
@@ -122,9 +122,12 @@ let common_url_prefixes = [
   "obsidian";
 ]
 
-let links_of_line (line : (int * string) Dynarray.t) : Link.t list =
-  let word_at pos = Dynarray.get line pos in
-  let word_matches ~pos l =
+let non_hierarchical_url_prefixes = [
+  "mailto";
+]
+
+module Parsing = struct
+  let match_word line ~pos l =
     if 0 <= pos && pos < Dynarray.length line then (
       let x =
         Dynarray.get line pos
@@ -135,7 +138,17 @@ let links_of_line (line : (int * string) Dynarray.t) : Link.t list =
     ) else (
       false
     )
-  in
+
+  let match_words line ~start_pos l =
+    l
+    |> List.to_seq
+    |> Seq.mapi (fun i choices -> (i, choices))
+    |> Seq.for_all (fun (i, choices) ->
+        match_word line ~pos:(start_pos + i) choices
+      )
+end
+
+let links_of_line (line : (int * string) Dynarray.t) : Link.t list =
   let rec aux
       (state : scanning_state)
       ~(acc : Link.t list)
@@ -156,8 +169,7 @@ let links_of_line (line : (int * string) Dynarray.t) : Link.t list =
       in
       List.rev acc
     ) else (
-      let pos, word = word_at cur in
-      let word_ci = String.lowercase_ascii word in
+      let pos, word = Dynarray.get line cur in
       let word_is_blank_or_space =
         String.length word = 0
         || Parser_components.is_space word.[0]
@@ -165,38 +177,79 @@ let links_of_line (line : (int * string) Dynarray.t) : Link.t list =
       match state with
       | `Scanning -> (
           let next_state, next_pos =
-            if word_matches ~pos:(cur - 2) [ "]" ]
-            && word_matches ~pos:(cur - 1) [ "(" ]
-            && word = "<"
+            if Parsing.match_words line ~start_pos:(cur - 2)
+                [ [ "]" ]
+                ; [ "(" ]
+                ; [ "<" ]
+                ]
             then (
-              (`Skip_spaces (Ctx.make ~starting_bracket:"<" `Markdown), cur + 1)
-            ) else if word_matches ~pos:(cur - 1) [ "]" ]
-                   && word = "("
-                   && not (word_matches ~pos:(cur + 1) [ "<" ])
+              let link_typ =
+                if Parsing.match_words line ~start_pos:(cur + 1)
+                    [ hierarchical_url_prefixes
+                    ; [ ":" ]
+                    ; [ "/" ]
+                    ; [ "/" ]
+                    ]
+                then (
+                  `URL
+                ) else (
+                  `Markdown
+                )
+              in
+              (`Skip_spaces (Ctx.make ~starting_bracket:"<" link_typ), cur + 1)
+            ) else if Parsing.match_words line ~start_pos:(cur - 1)
+                [ [ "]" ]
+                ; [ "(" ]
+                ]
+                   && not (Parsing.match_word line ~pos:(cur + 1) [ "<" ])
             then (
-              (`Skip_spaces (Ctx.make ~starting_bracket:"(" `Markdown), cur + 1)
-            ) else if word_matches ~pos:(cur - 1) [ "[" ]
-                   && word_matches ~pos [ "[" ]
+              let link_typ =
+                if
+                  Parsing.match_words line ~start_pos:(cur + 1)
+                    [ hierarchical_url_prefixes
+                    ; [ ":" ]
+                    ; [ "/" ]
+                    ; [ "/" ]
+                    ]
+                then (
+                  `URL
+                ) else (
+                  `Markdown
+                )
+              in
+              (`Skip_spaces (Ctx.make ~starting_bracket:"(" link_typ), cur + 1)
+            ) else if Parsing.match_words line ~start_pos:(cur - 1)
+                [ [ "[" ]
+                ; [ "[" ]
+                ]
             then (
               (`Skip_spaces (Ctx.make `Wiki), cur + 1)
-            ) else if word_matches ~pos:(cur + 1) common_url_prefixes
-                   && word_matches ~pos:(cur + 2) [ ":" ]
-                   && word_matches ~pos:(cur + 3) [ "/" ]
-                   && word_matches ~pos:(cur + 4) [ "/" ]
+            ) else if
+              Parsing.match_words line ~start_pos:(cur + 1)
+                [ hierarchical_url_prefixes
+                ; [ ":" ]
+                ; [ "/" ]
+                ; [ "/" ]
+                ]
             then (
-              if List.mem word [ "<"; "`" ] then (
+              if Parsing.match_word line ~pos:cur [ "<"; "`" ] then (
                 (`In_link (Ctx.make ~starting_bracket:word `URL), cur + 1)
               ) else (
                 (`Scanning, cur + 1)
               )
-            ) else if List.mem word_ci common_url_prefixes
-                   && word_matches ~pos:(cur + 1) [ ":" ]
-                   && word_matches ~pos:(cur + 2) [ "/" ]
-                   && word_matches ~pos:(cur + 3) [ "/" ]
+            ) else if
+              Parsing.match_words line ~start_pos:cur
+                [ hierarchical_url_prefixes
+                ; [ ":" ]
+                ; [ "/" ]
+                ; [ "/" ]
+                ]
             then (
               (`In_link (Ctx.make `URL), cur)
-            ) else if List.mem word_ci [ "mailto" ]
-                   && word_matches ~pos:(cur + 1) [ ":" ]
+            ) else if Parsing.match_words line ~start_pos:cur
+                [ non_hierarchical_url_prefixes
+                ; [ ":" ]
+                ]
             then (
               (`In_link (Ctx.make `URL), cur)
             ) else (
