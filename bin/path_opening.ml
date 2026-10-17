@@ -512,6 +512,8 @@ let open_link ~close_term ~doc link =
         )
     )
   in
+  (* TODO: resolve heading fragment before decoding percent encoding *)
+  (* TODO: resolve percent encoded characters *)
   if String.length link > 0 then (
     match typ with
     | `Markdown -> (
