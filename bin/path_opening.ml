@@ -443,7 +443,7 @@ let open_link ~close_term ~doc link =
   let doc_path = Document.path doc in
   let doc_dir = Filename.dirname doc_path in
   let doc_ext = Filename.extension doc_path in
-  let resolve_wiki_link link =
+  let resolve_wiki_link link : string option =
     let link =
       Option.value ~default:link
         (CCString.chop_prefix ~pre:"/" link)
@@ -456,18 +456,20 @@ let open_link ~close_term ~doc link =
         link ^ doc_ext
       )
     in
-    if link.[0] = '.' then (
+    if link = "" then (
+      None
+    ) else if link.[0] = '.' then (
       if link_has_ext then (
-        Filename.concat doc_dir link
+        Some (Filename.concat doc_dir link)
       ) else (
         let candidate_with_ext = Filename.concat doc_dir link_with_ext in
         let candidate_without_ext = Filename.concat doc_dir link in
         if Sys.file_exists candidate_with_ext then (
-          candidate_with_ext
+          Some candidate_with_ext
         ) else if Sys.file_exists candidate_without_ext then (
-          candidate_without_ext
+          Some candidate_without_ext
         ) else (
-          candidate_with_ext
+          Some candidate_with_ext
         )
       )
     ) else (
@@ -496,18 +498,18 @@ let open_link ~close_term ~doc link =
             CCString.suffix ~suf:link_with_ext path
           ) candidates
       with
-      | Some x -> x
+      | Some x -> Some x
       | None -> (
           match
             String_set.find_first_opt (fun path ->
                 CCString.suffix ~suf:link path
               ) candidates
           with
-          | Some x -> x
+          | Some x -> Some x
           | None -> (
               match String_set.min_elt_opt candidates with
-              | Some x -> x
-              | None -> Filename.concat wiki_root link_with_ext
+              | Some x -> Some x
+              | None -> Some (Filename.concat wiki_root link_with_ext)
             )
         )
     )
@@ -547,7 +549,9 @@ let open_link ~close_term ~doc link =
           if link = "" then (
             doc_path
           ) else (
-            resolve_wiki_link link
+            match resolve_wiki_link link with
+            | None -> doc_path
+            | Some path -> path
           )
         in
         main ~close_term ~path ~doc_id_and_search_result:None
