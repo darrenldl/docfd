@@ -470,13 +470,18 @@ let open_link ~close_term ~doc link =
                 with
                 | _ -> path
               in
-              CCString.suffix ~suf:link path_no_ext
+              if Filename.extension link = "" then (
+                CCString.suffix ~suf:link path_no_ext
+              ) else (
+                CCString.suffix ~suf:link path
+              )
             )
           wiki_root
       in
       match
         String_set.find_first_opt (fun path ->
             CCString.suffix ~suf:link_with_ext path
+            || CCString.suffix ~suf:link path
           ) candidates
       with
       | Some x -> x
