@@ -512,8 +512,8 @@ let open_link ~close_term ~doc link =
         )
     )
   in
-  (* TODO: resolve heading fragment before decoding percent encoding *)
-  (* TODO: resolve percent encoded characters *)
+  (* TODO: separate and currently ignore local heading fragments before percent decoding. *)
+  (* TODO: percent-decode local paths without treating '+' as a space. *)
   if String.length link > 0 then (
     match typ with
     | `Markdown -> (
