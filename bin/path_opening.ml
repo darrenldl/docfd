@@ -448,15 +448,26 @@ let open_link ~close_term ~doc link =
       Option.value ~default:link
         (CCString.chop_prefix ~pre:"/" link)
     in
+    let link_has_ext = Filename.extension link <> "" in
     let link_with_ext =
-      if Filename.extension link = "" then (
-        link ^ doc_ext
-      ) else (
+      if link_has_ext then (
         link
+      ) else (
+        link ^ doc_ext
       )
     in
     if link.[0] = '.' then (
-      Filename.concat doc_dir link_with_ext
+      if link_has_ext then (
+        Filename.concat doc_dir link
+      ) else (
+        let candidate_with_ext = Filename.concat doc_dir link_with_ext in
+        let candidate_without_ext = Filename.concat doc_dir link in
+        if Sys.file_exists candidate_with_ext then (
+          candidate_with_ext
+        ) else (
+          candidate_without_ext
+        )
+      )
     ) else (
       let wiki_root =
         Option.value ~default:doc_dir (find_project_root doc_dir)
@@ -464,16 +475,16 @@ let open_link ~close_term ~doc link =
       let candidates = File_utils.list_files_recursive
           ~report_progress:(fun () -> ())
           ~filter:(fun _depth path ->
-              let path_no_ext =
-                try
-                  Filename.chop_extension path
-                with
-                | _ -> path
-              in
-              if Filename.extension link = "" then (
-                CCString.suffix ~suf:link path_no_ext
-              ) else (
+              if link_has_ext then (
                 CCString.suffix ~suf:link path
+              ) else (
+                let path_no_ext =
+                  try
+                    Filename.chop_extension path
+                  with
+                  | _ -> path
+                in
+                CCString.suffix ~suf:link path_no_ext
               )
             )
           wiki_root
@@ -481,14 +492,21 @@ let open_link ~close_term ~doc link =
       match
         String_set.find_first_opt (fun path ->
             CCString.suffix ~suf:link_with_ext path
-            || CCString.suffix ~suf:link path
           ) candidates
       with
       | Some x -> x
       | None -> (
-          match String_set.min_elt_opt candidates with
+          match
+            String_set.find_first_opt (fun path ->
+                CCString.suffix ~suf:link path
+              ) candidates
+          with
           | Some x -> x
-          | None -> Filename.concat wiki_root link_with_ext
+          | None -> (
+              match String_set.min_elt_opt candidates with
+              | Some x -> x
+              | None -> Filename.concat wiki_root link_with_ext
+            )
         )
     )
   in
