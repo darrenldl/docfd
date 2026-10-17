@@ -193,3 +193,37 @@ let highlights_of_search_result (search_result : Search_result.t) =
     )
     Int_set.empty
     (Search_result.found_phrase search_result)
+
+let value_of_hex_char = function
+  | '0' .. '9' as c -> Some (Char.code c - Char.code '0')
+  | 'a' .. 'f' as c -> Some (Char.code c - Char.code 'a' + 10)
+  | 'A' .. 'F' as c -> Some (Char.code c - Char.code 'A' + 10)
+  | _ -> None
+
+let percent_decode s : string option =
+  let len = String.length s in
+  let buf = Buffer.create len in
+  let rec loop i =
+    if i >= len then (
+      Some (Buffer.contents buf)
+    ) else if i + 2 < len && s.[i] = '%' then (
+      match value_of_hex_char s.[i + 1], value_of_hex_char s.[i + 2] with
+      | Some high, Some low -> (
+          let byte = (high lsl 4) lor low in
+          if byte = 0 then (
+            None
+          ) else (
+            Buffer.add_char buf (Char.chr byte);
+            loop (i + 3)
+          )
+        )
+      | _ -> (
+          Buffer.add_char buf s.[i];
+          loop (i + 1)
+        )
+    ) else (
+      Buffer.add_char buf s.[i];
+      loop (i + 1)
+    )
+  in
+  loop 0

@@ -512,25 +512,36 @@ let open_link ~close_term ~doc link =
         )
     )
   in
-  (* TODO: separate and currently ignore local heading fragments before percent decoding. *)
-  (* TODO: percent-decode local paths without treating '+' as a space. *)
+  let strip_fragment s =
+    match String.split_on_char '#' s with
+    | "" :: x :: _ -> x
+    | x :: _ -> x
+    | _ -> s
+  in
   if String.length link > 0 then (
     match typ with
     | `Markdown -> (
-        let path =
-          if Filename.is_relative link then (
-            Filename.concat doc_dir link
-          ) else (
-            let project_root =
-              Option.value ~default:doc_dir (find_project_root doc_dir)
-            in
-            Filename.concat project_root link
-          )
+        let path = link
+          |> strip_fragment
+          |> (fun s -> Option.value ~default:s (Misc_utils.percent_decode s))
+          |> (fun path ->
+              if Filename.is_relative path then (
+                Filename.concat doc_dir path
+              ) else (
+                let project_root =
+                  Option.value ~default:doc_dir (find_project_root doc_dir)
+                in
+                Filename.concat project_root path
+              )
+            )
         in
         main ~close_term ~path ~doc_id_and_search_result:None
       )
     | `Wiki -> (
-        let path = resolve_wiki_link link in
+        let path = resolve_wiki_link link
+          |> strip_fragment
+          |> (fun s -> Option.value ~default:s (Misc_utils.percent_decode s))
+        in
         main ~close_term ~path ~doc_id_and_search_result:None
       )
     | `URL -> (
