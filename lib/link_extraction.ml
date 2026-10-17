@@ -248,6 +248,17 @@ let links_of_line (line : (int * string) Dynarray.t) : Link.t list =
           if word_is_blank_or_space then (
             aux (`Skip_spaces ctx) ~acc ~buf (cur + 1)
           ) else (
+            let ctx =
+              match ctx.Ctx.link_typ with
+              | `Markdown -> (
+                  if Parsing.match_url line ~start_pos:cur then (
+                    { ctx with link_typ = `URL }
+                  ) else (
+                    ctx
+                  )
+                )
+              | _ -> ctx
+            in
             aux (`In_link ctx) ~acc ~buf cur
           )
         )
