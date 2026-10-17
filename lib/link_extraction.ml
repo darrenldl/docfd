@@ -202,28 +202,14 @@ let links_of_line (line : (int * string) Dynarray.t) : Link.t list =
                 ; [ "<" ]
                 ]
             then (
-              let link_typ =
-                if Parsing.match_url line ~start_pos:(cur + 1) then (
-                  `URL
-                ) else (
-                  `Markdown
-                )
-              in
-              (`Skip_spaces (Ctx.make ~starting_bracket:"<" link_typ), cur + 1)
+              (`Skip_spaces (Ctx.make ~starting_bracket:"<" `Markdown), cur + 1)
             ) else if Parsing.match_words line ~start_pos:(cur - 1)
                 [ [ "]" ]
                 ; [ "(" ]
                 ]
                    && not (Parsing.match_word line ~pos:(cur + 1) [ "<" ])
             then (
-              let link_typ =
-                if Parsing.match_url line ~start_pos:(cur + 1) then (
-                  `URL
-                ) else (
-                  `Markdown
-                )
-              in
-              (`Skip_spaces (Ctx.make ~starting_bracket:"(" link_typ), cur + 1)
+              (`Skip_spaces (Ctx.make ~starting_bracket:"(" `Markdown), cur + 1)
             ) else if Parsing.match_words line ~start_pos:(cur - 1)
                 [ [ "[" ]
                 ; [ "[" ]
