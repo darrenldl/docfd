@@ -448,7 +448,13 @@ let open_link ~close_term ~doc link =
       Option.value ~default:link
         (CCString.chop_prefix ~pre:"/" link)
     in
-    let link_with_ext = link ^ doc_ext in
+    let link_with_ext =
+      if Filename.extension link = "" then (
+        link ^ doc_ext
+      ) else (
+        link
+      )
+    in
     if link.[0] = '.' then (
       Filename.concat doc_dir link_with_ext
     ) else (
