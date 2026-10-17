@@ -550,7 +550,10 @@ let open_link ~close_term ~doc link =
             doc_path
           ) else (
             match resolve_wiki_link link with
-            | None -> doc_path
+            | None -> (
+                (* Use doc_path as the safe fallback *)
+                doc_path
+              )
             | Some path -> path
           )
         in
