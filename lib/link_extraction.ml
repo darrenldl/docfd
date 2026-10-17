@@ -127,18 +127,6 @@ let non_hierarchical_url_prefixes = [
 ]
 
 module Parsing = struct
-  let match_space line ~pos =
-    if 0 <= pos && pos < Dynarray.length line then (
-      let x =
-        Dynarray.get line pos
-        |> snd
-      in
-      String.length x = 0
-      || Parser_components.is_space x.[0]
-    ) else (
-      false
-    )
-
   let match_word line ~pos l =
     if 0 <= pos && pos < Dynarray.length line then (
       let x =
@@ -213,7 +201,6 @@ let links_of_line (line : (int * string) Dynarray.t) : Link.t list =
                 ; [ "(" ]
                 ; [ "<" ]
                 ]
-            && not (Parsing.match_space line ~pos:(cur + 1))
             then (
               let link_typ =
                 if Parsing.match_url line ~start_pos:(cur + 1) then (
@@ -228,7 +215,6 @@ let links_of_line (line : (int * string) Dynarray.t) : Link.t list =
                 ; [ "(" ]
                 ]
                    && not (Parsing.match_word line ~pos:(cur + 1) [ "<" ])
-                   && not (Parsing.match_space line ~pos:(cur + 1))
             then (
               let link_typ =
                 if Parsing.match_url line ~start_pos:(cur + 1) then (
@@ -242,7 +228,6 @@ let links_of_line (line : (int * string) Dynarray.t) : Link.t list =
                 [ [ "[" ]
                 ; [ "[" ]
                 ]
-                   && not (Parsing.match_space line ~pos:(cur + 1))
             then (
               (`Skip_spaces (Ctx.make `Wiki), cur + 1)
             ) else if Parsing.match_url line ~start_pos:(cur + 1) then (
