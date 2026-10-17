@@ -3,8 +3,7 @@ open Docfd_lib
 module Alco = struct
   let corpus () =
     let test expected_links input =
-      let line = Tokenization.tokenize ~drop_spaces:false input
-        |> Seq.mapi (fun i x -> (i, x))
+      let line = Tokenization.tokenize_with_pos ~drop_spaces:false input
         |> Dynarray.of_seq
       in
       let links = Link_extraction.links_of_line line
