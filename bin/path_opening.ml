@@ -518,29 +518,38 @@ let open_link ~close_term ~doc link =
     | x :: _ -> x
     | _ -> s
   in
+  let prepare_local_link link =
+    let link = strip_fragment link in
+    Option.value ~default:link (Misc_utils.percent_decode link)
+  in
   if String.length link > 0 then (
     match typ with
     | `Markdown -> (
-        let path = link
-          |> strip_fragment
-          |> (fun s -> Option.value ~default:s (Misc_utils.percent_decode s))
-          |> (fun path ->
-              if Filename.is_relative path then (
-                Filename.concat doc_dir path
-              ) else (
-                let project_root =
-                  Option.value ~default:doc_dir (find_project_root doc_dir)
-                in
-                Filename.concat project_root path
-              )
+        let link = prepare_local_link link in
+        let path =
+          if link = "" then (
+            doc_path
+          ) else (
+            if Filename.is_relative link then (
+              Filename.concat doc_dir link
+            ) else (
+              let project_root =
+                Option.value ~default:doc_dir (find_project_root doc_dir)
+              in
+              Filename.concat project_root link
             )
+          )
         in
         main ~close_term ~path ~doc_id_and_search_result:None
       )
     | `Wiki -> (
-        let path = resolve_wiki_link link
-          |> strip_fragment
-          |> (fun s -> Option.value ~default:s (Misc_utils.percent_decode s))
+        let link = prepare_local_link link in
+        let path =
+          if link = "" then (
+            doc_path
+          ) else (
+            resolve_wiki_link link
+          )
         in
         main ~close_term ~path ~doc_id_and_search_result:None
       )
