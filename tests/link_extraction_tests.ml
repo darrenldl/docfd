@@ -49,6 +49,12 @@ module Alco = struct
     test [ link 4 8 `Markdown "file name.md" ] "[label](file name.md)";
     test [ link 4 9 `Markdown "file name.md" ] "[label](file\\ name.md)";
     test [ link 4 6 `Markdown "one.md"; link 15 17 `Markdown "two.md" ] "[one](one.md) and [two](two.md)";
+    test
+      [ link 4 6 `Markdown "one.md"
+      ; link 11 17 `URL "https://example.com"
+      ; link 23 23 `Wiki "Two"
+      ]
+      "[one](one.md) then https://example.com and [[Two]]";
 
     (* Markdown autolinks and bare URLs *)
     test [ link 1 9 `URL "http://example.com/path" ] "<http://example.com/path>";
@@ -88,6 +94,11 @@ module Alco = struct
     test [] "[[]]";
     test [] "[[|Label]]";
     test [ link 2 2 `Wiki "One"; link 7 7 `Wiki "Two" ] "[[One]][[Two]]";
+    test
+      [ link 4 4 `Wiki "One"
+      ; link 14 18 `Wiki "Two name#Heading"
+      ]
+      "See [[One|first]] and [[Two name#Heading|second]].";
 
     (* Wiki embeds and Markdown images *)
     test [ link 3 3 `Wiki "Note" ] "![[Note]]";
