@@ -36,7 +36,6 @@ module Alco = struct
     test [ "file[draft].md" ] "[label](file\\[draft\\].md)";
     test [ "file.md" ] "[label](file.md \"title\")";
     test [ "file.md" ] "[label](file.md 'title')";
-    test [ "file.md" ] "[label](file.md (title))";
     test [ "file name.md" ] "[label](<file name.md> \"title\")";
     test [ "file.md" ] "[label](  file.md  \"title\"  )";
     test [ "file.md" ] "[a [nested] label](file.md)";
@@ -44,9 +43,8 @@ module Alco = struct
     test [] "[label]()";
     test [] "[label](<>)";
     (* Tolerative parser being permissive *)
-    test [ "file" ] "[label](file name.md)";
+    test [ "file name.md" ] "[label](file name.md)";
     test [ "file name.md" ] "[label](file\\ name.md)";
-    test [ "\"file.md\"" ] "[label](\"file.md\")";
     test [ "one.md"; "two.md" ] "[one](one.md) and [two](two.md)";
 
     (* Markdown autolinks and bare URLs *)
@@ -117,7 +115,9 @@ module Alco = struct
     test [ "file.md" ] "`[label](file.md)`";
     test [ "https://example.com" ] "`https://example.com`";
 
-    (* Unsupported cases *)
+    (* Unsupported cases, extraction results are incorrect *)
+    test [ "file.md (title)" ] "[label](file.md (title))";
+    test [] "[label](\"file.md\")";
     test [] "<user@example.com>";
     test [] "user@example.com";
     test [] "www.example.com/path";

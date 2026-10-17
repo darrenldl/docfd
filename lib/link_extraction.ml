@@ -102,7 +102,7 @@ let flush_buf ctx ~acc ~buf =
           start_pos;
           end_inc_pos;
           typ = ctx.Ctx.link_typ;
-          link = String.concat "" strings;
+          link = String.concat "" strings |> String.trim;
         }
       in
       (link :: acc, [])
@@ -234,7 +234,7 @@ let links_of_line (line : (int * string) Dynarray.t) : Link.t list =
                           match ctx.Ctx.link_typ, ctx.Ctx.starting_bracket with
                           | `Markdown, Some "<" -> (`Record_word, ctx)
                           | `Markdown, _ -> (
-                              if word_is_blank_or_space then (
+                            if List.mem word [ "\""; "'" ] then (
                                 (`End_link, ctx)
                               ) else (
                                 (`Record_word, ctx)
