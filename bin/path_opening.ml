@@ -464,8 +464,10 @@ let open_link ~close_term ~doc link =
         let candidate_without_ext = Filename.concat doc_dir link in
         if Sys.file_exists candidate_with_ext then (
           candidate_with_ext
-        ) else (
+        ) else if Sys.file_exists candidate_without_ext then (
           candidate_without_ext
+        ) else (
+          candidate_with_ext
         )
       )
     ) else (
