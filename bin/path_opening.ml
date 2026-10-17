@@ -438,7 +438,7 @@ let find_project_root path =
   let arr = Dynarray.of_list (CCString.split ~by:Filename.dir_sep path) in
   aux arr
 
-let open_link ~close_term ~doc link =
+let resolve_link_to_path ~doc (link : Link.t) : string option =
   let { Link.typ; link; _ } = link in
   let doc_path = Document.path doc in
   let doc_dir = Filename.dirname doc_path in
@@ -523,47 +523,54 @@ let open_link ~close_term ~doc link =
     let link = strip_fragment link in
     Option.value ~default:link (Misc_utils.percent_decode link)
   in
-  if String.length link > 0 then (
+  if link = "" then (
+    None
+  ) else (
     match typ with
     | `Markdown -> (
         let link = prepare_local_link link in
-        let path =
           if link = "" then (
-            doc_path
+            Some doc_path
           ) else (
             if Filename.is_relative link then (
-              Filename.concat doc_dir link
+              Some (Filename.concat doc_dir link)
             ) else (
               let project_root =
                 Option.value ~default:doc_dir (find_project_root doc_dir)
               in
-              Filename.concat project_root link
+              Some (Filename.concat project_root link)
             )
           )
-        in
-        main ~close_term ~path ~doc_id_and_search_result:None
       )
     | `Wiki -> (
         let link = prepare_local_link link in
-        let path =
           if link = "" then (
-            doc_path
+            Some doc_path
           ) else (
-            match resolve_wiki_link link with
-            | None -> (
-                (* Use doc_path as the safe fallback *)
-                doc_path
-              )
-            | Some path -> path
+            resolve_wiki_link link
           )
-        in
-        main ~close_term ~path ~doc_id_and_search_result:None
       )
     | `URL -> (
-        let config = Config.make ~path:link ~launch_mode:`Detached () in
+      Some link
+      )
+  )
+
+let open_link ~close_term ~doc link =
+  match resolve_link_to_path ~doc link with
+  | None -> ()
+  | Some path -> (
+    match link.Link.typ with
+    | `Markdown -> (
+        main ~close_term ~path ~doc_id_and_search_result:None
+    )
+    | `Wiki -> (
+        main ~close_term ~path ~doc_id_and_search_result:None
+    )
+    | `URL -> (
+        let config = Config.make ~path ~launch_mode:`Detached () in
         resolve_cmd config fallback_cmd
         |> Result.get_ok
         |> Proc_utils.run_in_background
         |> ignore
-      )
+    )
   )
