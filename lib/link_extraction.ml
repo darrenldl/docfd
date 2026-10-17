@@ -234,7 +234,7 @@ let links_of_line (line : (int * string) Dynarray.t) : Link.t list =
                           match ctx.Ctx.link_typ, ctx.Ctx.starting_bracket with
                           | `Markdown, Some "<" -> (`Record_word, ctx)
                           | `Markdown, _ -> (
-                            if List.mem word [ "\""; "'" ] then (
+                              if List.mem word [ "\""; "'" ] then (
                                 (`End_link, ctx)
                               ) else (
                                 (`Record_word, ctx)
