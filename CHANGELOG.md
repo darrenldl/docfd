@@ -8,7 +8,9 @@
     - This will **only** work after recreating the index DB
     - Fixes issue [#22](https://github.com/darrenldl/docfd/issues/22)
 - Added `<CONFIG_DIR>` token to cli arguments in config file for expansion into
-  the directory the config file is located in
+  the directory that contains the config file
+- Added `<HOME>` token to cli arguments in config file for expansion into
+  the HOME environment variable
 
 ## 13.1.3
 
