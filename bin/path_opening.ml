@@ -529,29 +529,29 @@ let resolve_link_to_path ~doc (link : Link.t) : string option =
     match typ with
     | `Markdown -> (
         let link = prepare_local_link link in
-          if link = "" then (
-            Some doc_path
+        if link = "" then (
+          Some doc_path
+        ) else (
+          if Filename.is_relative link then (
+            Some (Filename.concat doc_dir link)
           ) else (
-            if Filename.is_relative link then (
-              Some (Filename.concat doc_dir link)
-            ) else (
-              let project_root =
-                Option.value ~default:doc_dir (find_project_root doc_dir)
-              in
-              Some (Filename.concat project_root link)
-            )
+            let project_root =
+              Option.value ~default:doc_dir (find_project_root doc_dir)
+            in
+            Some (Filename.concat project_root link)
           )
+        )
       )
     | `Wiki -> (
         let link = prepare_local_link link in
-          if link = "" then (
-            Some doc_path
-          ) else (
-            resolve_wiki_link link
-          )
+        if link = "" then (
+          Some doc_path
+        ) else (
+          resolve_wiki_link link
+        )
       )
     | `URL -> (
-      Some link
+        Some link
       )
   )
 
@@ -559,18 +559,18 @@ let open_link ~close_term ~doc link =
   match resolve_link_to_path ~doc link with
   | None -> ()
   | Some path -> (
-    match link.Link.typ with
-    | `Markdown -> (
-        main ~close_term ~path ~doc_id_and_search_result:None
+      match link.Link.typ with
+      | `Markdown -> (
+          main ~close_term ~path ~doc_id_and_search_result:None
+        )
+      | `Wiki -> (
+          main ~close_term ~path ~doc_id_and_search_result:None
+        )
+      | `URL -> (
+          let config = Config.make ~path ~launch_mode:`Detached () in
+          resolve_cmd config fallback_cmd
+          |> Result.get_ok
+          |> Proc_utils.run_in_background
+          |> ignore
+        )
     )
-    | `Wiki -> (
-        main ~close_term ~path ~doc_id_and_search_result:None
-    )
-    | `URL -> (
-        let config = Config.make ~path ~launch_mode:`Detached () in
-        resolve_cmd config fallback_cmd
-        |> Result.get_ok
-        |> Proc_utils.run_in_background
-        |> ignore
-    )
-  )
