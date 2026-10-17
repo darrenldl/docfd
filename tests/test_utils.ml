@@ -5,3 +5,6 @@ let enriched_token_testable : (module Alcotest.TESTABLE with type t = Search_phr
 
 let search_phrase_testable : (module Alcotest.TESTABLE with type t = Search_phrase.t) =
   (module Search_phrase)
+
+let link_testable : (module Alcotest.TESTABLE with type t = Link.t) =
+  (module Link)

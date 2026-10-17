@@ -2,7 +2,7 @@ type typ = [
   | `Markdown
   | `Wiki
   | `URL
-]
+] [@@deriving show, eq]
 
 let string_of_typ (typ : typ) =
   match typ with
@@ -22,4 +22,4 @@ type t = {
   end_inc_pos : int;
   typ : typ;
   link : string;
-}
+} [@@deriving show, eq]

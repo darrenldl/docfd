@@ -1,21 +1,20 @@
 open Docfd_lib
+open Test_utils
 
 module Alco = struct
   let corpus () =
-    let test expected_links input =
+    let test (expected_links : Link.t list) input =
       let line = Tokenization.tokenize_with_pos ~drop_spaces:false input
         |> Dynarray.of_seq
       in
-      let links = Link_extraction.links_of_line line
-        |> List.map (fun (link : Link.t) -> link.link)
-      in
-      Alcotest.(check (list string))
-        Fmt.(str "%s gives %a" input (list string) expected_links)
+      let links = Link_extraction.links_of_line line in
+      Alcotest.(check (list link_testable))
+        Fmt.(str "%s gives %a" input (list Link.pp) expected_links)
         expected_links
         links
     in
     (* Markdown inline links *)
-    test [ "file.md" ] "[label](file.md)";
+    test [ (`Markdown, "file.md") ] "[label](file.md)";
     test [ "file.md" ] "[](file.md)";
     test [ "./dir/file.md" ] "[label](./dir/file.md)";
     test [ "../file.md" ] "[label](../file.md)";
