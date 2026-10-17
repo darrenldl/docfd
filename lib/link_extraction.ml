@@ -140,12 +140,31 @@ module Parsing = struct
     )
 
   let match_words line ~start_pos l =
-    l
-    |> List.to_seq
-    |> Seq.mapi (fun i choices -> (i, choices))
-    |> Seq.for_all (fun (i, choices) ->
-        match_word line ~pos:(start_pos + i) choices
-      )
+    let rec aux i l =
+      match l with
+      | [] -> true
+      | choices :: rest -> (
+          if match_word line ~pos:(start_pos + i) choices then (
+            aux (i + 1) rest
+          ) else (
+            false
+          )
+        )
+    in
+    aux 0 l
+
+  let match_url line ~start_pos =
+    match_words line ~start_pos
+      [ hierarchical_url_prefixes
+      ; [ ":" ]
+      ; [ "/" ]
+      ; [ "/" ]
+      ]
+    ||
+    match_words line ~start_pos
+      [ non_hierarchical_url_prefixes
+      ; [ ":" ]
+      ]
 end
 
 let links_of_line (line : (int * string) Dynarray.t) : Link.t list =
@@ -184,13 +203,7 @@ let links_of_line (line : (int * string) Dynarray.t) : Link.t list =
                 ]
             then (
               let link_typ =
-                if Parsing.match_words line ~start_pos:(cur + 1)
-                    [ hierarchical_url_prefixes
-                    ; [ ":" ]
-                    ; [ "/" ]
-                    ; [ "/" ]
-                    ]
-                then (
+                if Parsing.match_url line ~start_pos:(cur + 1) then (
                   `URL
                 ) else (
                   `Markdown
@@ -204,14 +217,7 @@ let links_of_line (line : (int * string) Dynarray.t) : Link.t list =
                    && not (Parsing.match_word line ~pos:(cur + 1) [ "<" ])
             then (
               let link_typ =
-                if
-                  Parsing.match_words line ~start_pos:(cur + 1)
-                    [ hierarchical_url_prefixes
-                    ; [ ":" ]
-                    ; [ "/" ]
-                    ; [ "/" ]
-                    ]
-                then (
+                if Parsing.match_url line ~start_pos:(cur + 1) then (
                   `URL
                 ) else (
                   `Markdown
@@ -224,33 +230,13 @@ let links_of_line (line : (int * string) Dynarray.t) : Link.t list =
                 ]
             then (
               (`Skip_spaces (Ctx.make `Wiki), cur + 1)
-            ) else if
-              Parsing.match_words line ~start_pos:(cur + 1)
-                [ hierarchical_url_prefixes
-                ; [ ":" ]
-                ; [ "/" ]
-                ; [ "/" ]
-                ]
-            then (
+            ) else if Parsing.match_url line ~start_pos:(cur + 1) then (
               if Parsing.match_word line ~pos:cur [ "<"; "`" ] then (
                 (`In_link (Ctx.make ~starting_bracket:word `URL), cur + 1)
               ) else (
                 (`Scanning, cur + 1)
               )
-            ) else if
-              Parsing.match_words line ~start_pos:cur
-                [ hierarchical_url_prefixes
-                ; [ ":" ]
-                ; [ "/" ]
-                ; [ "/" ]
-                ]
-            then (
-              (`In_link (Ctx.make `URL), cur)
-            ) else if Parsing.match_words line ~start_pos:cur
-                [ non_hierarchical_url_prefixes
-                ; [ ":" ]
-                ]
-            then (
+            ) else if Parsing.match_url line ~start_pos:cur then (
               (`In_link (Ctx.make `URL), cur)
             ) else (
               (`Scanning, cur + 1)
