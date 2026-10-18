@@ -239,11 +239,13 @@ Within the config file, %s expands to the absolute directory containing the conf
     & info [ "config" ] ~doc ~docv:"FILE"
   )
 
+let index_only_arg_name = "index-only"
+
 let index_only_arg =
   let doc =
     Fmt.str "Exit after indexing."
   in
-  Arg.(value & flag & info [ "index-only" ] ~doc)
+  Arg.(value & flag & info [ index_only_arg_name ] ~doc)
 
 let debug_log_arg =
   let doc =
@@ -450,6 +452,8 @@ let start_with_script_arg =
     & info [ start_with_script_arg_name ] ~doc ~docv:"FILE"
   )
 
+let list_scripts_arg_name = "list-scripts"
+
 let list_scripts_arg =
   let doc =
     Fmt.str "List scripts in the Docfd script directory."
@@ -457,7 +461,7 @@ let list_scripts_arg =
   Arg.(
     value
     & flag
-    & info [ "list-scripts" ] ~doc
+    & info [ list_scripts_arg_name ] ~doc
   )
 
 let paths_from_arg_name = "paths-from"
