@@ -317,7 +317,7 @@ let links_arg_name = "links"
 
 let links_arg =
   let doc =
-    "Show links of all matched documents."
+    "Print resolved links of all matched documents."
   in
   Arg.(value & flag & info [ links_arg_name ] ~doc)
 
