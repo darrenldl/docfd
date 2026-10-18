@@ -7,6 +7,8 @@
 - Upgraded link extraction
     - This will **only** work after recreating the index DB
     - Fixes issue [#22](https://github.com/darrenldl/docfd/issues/22)
+- Improved Markdown and wiki link path resolution, including fragments,
+  percent-encoded paths, and extension handling
 - Added `<CONFIG_DIR>` token to cli arguments in config file for expansion into
   the directory that contains the config file
 - Added `<HOME>` token to cli arguments in config file for expansion into
