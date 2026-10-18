@@ -12,6 +12,8 @@
 - Added `<HOME>` token to cli arguments in config file for expansion into
   the HOME environment variable
 - Added `--links` flag for printing links in document non-interactively
+- Improved validation of incompatible interactive, non-interactive, and
+  early-exit CLI arguments
 
 ## 13.1.3
 
