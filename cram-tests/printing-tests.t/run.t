@@ -75,7 +75,7 @@
   https://example.com
 
 --filter can select the documents whose links are printed:
-  $ docfd --cache-dir .links-filter-cache --exts md --filter 'path-glob:source.md' --links link-project | sort
+  $ docfd --cache-dir .links-filter-cache --exts md --filter 'path-glob:link-project/source.md' --links link-project | sort
   $TESTCASE_ROOT/link-project/source.md
   $TESTCASE_ROOT/link-project/target.md
   https://example.com
