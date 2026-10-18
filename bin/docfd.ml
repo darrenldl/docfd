@@ -538,6 +538,8 @@ let run
     ~search_result_print_max_add_lines
     ~start_with_script
     ~script
+    ~index_only
+    ~list_scripts
     ~paths_from
     ~print_files_with_match
     ~print_files_without_match
