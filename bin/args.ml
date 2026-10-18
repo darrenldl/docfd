@@ -311,6 +311,14 @@ or when samples printing is triggered."
     & info [ samples_per_doc_arg_name ] ~doc ~docv:"N"
   )
 
+let links_arg_name = "links"
+
+let links_arg =
+  let doc =
+    "Show links of all matched documents."
+  in
+  Arg.(value & flag & info [ links_arg_name ] ~doc)
+
 let search_arg_name = "search"
 
 let search_arg =
@@ -638,6 +646,7 @@ let check
     ~paths_from
     ~print_files_with_match
     ~print_files_without_match
+    ~print_links
   =
   if max_depth < 0 then (
     exit_with_cli_error_msg
@@ -708,12 +717,20 @@ let check
     exit_with_cli_error_msg
       (Fmt.str "--%s and --%s cannot be used together" x y)
   in
-  (match print_files_with_match, print_files_without_match with
-   | true, true -> (
+  (match print_files_with_match, print_files_without_match, print_links with
+   | true, true, _ -> (
        cannot_be_used_together
          files_with_match_arg_name files_without_match_arg_name
      )
-   | true, false -> (
+   | _, true, true -> (
+       cannot_be_used_together
+         files_without_match_arg_name links_arg_name
+     )
+   | true, _, true -> (
+       cannot_be_used_together
+         files_with_match_arg_name links_arg_name
+     )
+   | true, false, false -> (
        if not (
            Option.is_some filter_exp
            ||
@@ -734,7 +751,9 @@ let check
            )
        )
      )
-   | false, true -> (
+   | false, false, true -> (
+     )
+   | false, true, false -> (
        if not (
            Option.is_some filter_exp
            ||
@@ -752,7 +771,7 @@ let check
            )
        )
      )
-   | false, false -> ()
+   | false, false, false -> ()
   );
   (
     let l = List.filter (fun x -> x = "-") paths_from in

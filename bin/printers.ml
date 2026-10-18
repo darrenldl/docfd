@@ -1,3 +1,5 @@
+open Docfd_lib
+
 let output_image ~color (oc : out_channel) (img : Notty.image) : unit =
   let open Notty in
   let buf = Buffer.create 1024 in
@@ -51,3 +53,13 @@ let search_result_groups
       );
       search_result_group ~color ~underline oc x
     ) s
+
+let links ~color (oc : out_channel) (document : Document.t) =
+  let path = Document.path document in
+  path_image ~color oc path;
+  Array.iter (fun link ->
+      Notty.I.string Notty.A.(fg white) link.Link.link
+      |> Notty_unix.eol
+      |> output_image ~color oc
+    )
+    (Document.links document)

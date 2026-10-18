@@ -515,6 +515,7 @@ let run
     (path_open_specs : string list)
     (print_files_with_match : bool)
     (print_files_without_match : bool)
+    (print_links : bool)
     (paths : string list)
   =
   let env = eio_env in
@@ -539,7 +540,8 @@ let run
     ~script
     ~paths_from
     ~print_files_with_match
-    ~print_files_without_match;
+    ~print_files_without_match
+    ~print_links;
   Params.debug_output := (match debug_log with
       | None -> None
       | Some "-" -> Some stderr
@@ -615,6 +617,8 @@ let run
     not print_files_without_match
     &&
     Option.is_none script
+    &&
+    not print_links
   in
   List.iter (fun spec ->
       match Path_opening.parse_spec spec with
@@ -969,6 +973,16 @@ let run
             Printers.path_image ~color:print_with_color oc (Document.path doc)
           ) arr;
         Array.length arr = 0
+      ) else if print_links then (
+        let arr =
+          Session.State.search_result_groups session_state
+        in
+        let link_count = ref 0 in
+        Array.iter (fun (doc, _search_result) ->
+            link_count := !link_count + Array.length (Document.links doc);
+            Printers.links ~color:print_with_color oc doc
+          ) arr;
+        !link_count = 0
       ) else if print_files_without_match then (
         let arr =
           Session.State.unusable_documents session_state
@@ -1481,6 +1495,7 @@ let cmd ~eio_env ~sw =
      $ open_with_arg
      $ files_with_match_arg
      $ files_without_match_arg
+     $ links_arg
      $ paths_arg)
 
 let read_config ~path : string array =
