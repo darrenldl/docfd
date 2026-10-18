@@ -80,6 +80,44 @@
   $TESTCASE_ROOT/link-project/target.md
   https://example.com
 
+--links covers local path resolution:
+  $ mkdir -p resolution-project/.git resolution-project/docs resolution-project/notes
+  $ touch resolution-project/README.md
+  $ touch 'resolution-project/docs/Encoded file.md'
+  $ touch 'resolution-project/docs/Hash#file.md'
+  $ touch resolution-project/docs/Adjacent.md
+  $ touch resolution-project/docs/Extensionless
+  $ touch resolution-project/notes/Note.md
+  $ touch resolution-project/notes/Exact.txt
+  $ touch resolution-project/notes/Parent.md
+  $ touch resolution-project/notes/RootNote.md
+  $ touch 'resolution-project/notes/Wiki file.md'
+  $ printf '%s\n' \
+  >   '[encoded space](Encoded%20file.md)' \
+  >   '[encoded hash](Hash%23file.md#heading)' \
+  >   '[project root](/README.md)' \
+  >   '[parent](../notes/Parent.md#heading)' \
+  >   '[[Note#Heading]]' \
+  >   '[[Exact.txt]]' \
+  >   '[[./Adjacent]]' \
+  >   '[[./Extensionless]]' \
+  >   '[[./Missing]]' \
+  >   '[[/RootNote#Heading]]' \
+  >   '[[Wiki%20file]]' \
+  >   > resolution-project/docs/source.md
+  $ docfd --cache-dir .link-resolution-cache --exts md,txt --filter 'path-glob:resolution-project/docs/source.md' --links resolution-project | sort
+  $TESTCASE_ROOT/resolution-project/README.md
+  $TESTCASE_ROOT/resolution-project/docs/Adjacent.md
+  $TESTCASE_ROOT/resolution-project/docs/Encoded file.md
+  $TESTCASE_ROOT/resolution-project/docs/Extensionless
+  $TESTCASE_ROOT/resolution-project/docs/Hash#file.md
+  $TESTCASE_ROOT/resolution-project/docs/Missing.md
+  $TESTCASE_ROOT/resolution-project/notes/Exact.txt
+  $TESTCASE_ROOT/resolution-project/notes/Note.md
+  $TESTCASE_ROOT/resolution-project/notes/Parent.md
+  $TESTCASE_ROOT/resolution-project/notes/RootNote.md
+  $TESTCASE_ROOT/resolution-project/notes/Wiki file.md
+
 --links exits with status 1 when no resolved links are found:
   $ docfd --cache-dir .no-links-cache --exts txt --links empty.txt
   [1]
