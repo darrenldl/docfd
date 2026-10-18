@@ -86,8 +86,8 @@
 
 Early-exit modes cannot silently override --links:
   $ docfd --index-only --links 2>&1
-  error: --index-only and --links cannot be used together
-  [1]
+  docfd: --index-only and --links cannot be used together
+  [124]
   $ docfd --list-scripts --links 2>&1
-  error: --list-scripts and --links cannot be used together
-  [1]
+  docfd: --list-scripts and --links cannot be used together
+  [124]
