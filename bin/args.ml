@@ -844,15 +844,16 @@ let check
      )
   );
   let non_interactive =
-    Option.is_some filter_exp
-    || Option.is_some sample_search_exp
-    || Option.is_some search_exp
-    || Option.is_some script
-    || print_files_with_match
-    || print_files_without_match
-    || print_links
-    || index_only
-    || list_scripts
+    Cli_utils.is_non_interactive_mode
+      ~filter_exp
+      ~sample_search_exp
+      ~search_exp
+      ~script
+      ~print_files_with_match
+      ~print_files_without_match
+      ~print_links
+      ~index_only
+      ~list_scripts
   in
   let start_with_arg_check ~arg_name =
     if non_interactive then (

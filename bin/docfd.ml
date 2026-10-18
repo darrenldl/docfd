@@ -608,19 +608,17 @@ let run
     )
   );
   let interactive =
-    Option.is_none filter_exp
-    &&
-    Option.is_none sample_search_exp
-    &&
-    Option.is_none search_exp
-    &&
-    not print_files_with_match
-    &&
-    not print_files_without_match
-    &&
-    Option.is_none script
-    &&
-    not print_links
+    not (Cli_utils.is_non_interactive_mode
+           ~filter_exp
+           ~sample_search_exp
+           ~search_exp
+           ~script
+           ~print_files_with_match
+           ~print_files_without_match
+           ~print_links
+           ~index_only
+           ~list_scripts
+        )
   in
   List.iter (fun spec ->
       match Path_opening.parse_spec spec with
