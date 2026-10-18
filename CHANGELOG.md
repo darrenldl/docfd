@@ -11,6 +11,7 @@
   the directory that contains the config file
 - Added `<HOME>` token to cli arguments in config file for expansion into
   the HOME environment variable
+- Added `--links` flag for printing links in document non-interactively
 
 ## 13.1.3
 
