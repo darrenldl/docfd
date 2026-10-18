@@ -392,7 +392,9 @@ let main ~close_term ~path ~doc_id_and_search_result =
       Proc_utils.run_in_background cmd |> ignore
     )
 
-let find_project_root path =
+let find_project_root : string -> string option =
+  let lock = Eio.Mutex.create () in
+  let cache = CCCache.lru ~eq:String.equal 10240 in
   let rec aux arr =
     let cur = CCString.concat_seq ~sep:Filename.dir_sep (Dynarray.to_seq arr) in
     if Dynarray.length arr = 0 then (
@@ -435,8 +437,14 @@ let find_project_root path =
         )
     )
   in
-  let arr = Dynarray.of_list (CCString.split ~by:Filename.dir_sep path) in
-  aux arr
+  fun path ->
+    Eio.Mutex.use_rw ~protect:false lock (fun () ->
+        CCCache.with_cache cache (fun path ->
+            let arr = Dynarray.of_list (CCString.split ~by:Filename.dir_sep path) in
+            aux arr
+          )
+          path
+      )
 
 let resolve_link_to_path ~doc (link : Link.t) : string option =
   let { Link.typ; link; _ } = link in
