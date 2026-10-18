@@ -64,5 +64,5 @@ Paths containing directory components do not fall back:
 
 --start-with-script cannot be combined with a non-interactive mode:
   $ docfd --data-dir data --cache-dir start-with-script-cache --start-with-script z --index-only . 2>&1
-  error: --start-with-script cannot be used in non-interactive mode
-  [1]
+  docfd: --start-with-script cannot be used in non-interactive mode
+  [124]
