@@ -54,12 +54,19 @@ let search_result_groups
       search_result_group ~color ~underline oc x
     ) s
 
-let links ~color (oc : out_channel) (document : Document.t) =
-  let path = Document.path document in
-  path_image ~color oc path;
-  Array.iter (fun link ->
-      Notty.I.string Notty.A.(fg white) link.Link.link
-      |> Notty_unix.eol
-      |> output_image ~color oc
+let links (oc : out_channel) (document : Document.t) : int =
+  Array.fold_left (fun count link ->
+      match Path_opening.resolve_link_to_path ~doc:document link with
+      | None -> count
+      | Some path -> (
+          let path =
+            match link.Link.typ with
+            | `Markdown | `Wiki -> Misc_utils.normalize_path_to_absolute path
+            | `URL -> path
+          in
+          Printf.fprintf oc "%s\n" path;
+          count + 1
+        )
     )
+    0
     (Document.links document)

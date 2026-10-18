@@ -979,12 +979,14 @@ let run
         let arr =
           Session.State.search_result_groups session_state
         in
-        let link_count = ref 0 in
-        Array.iter (fun (doc, _search_result) ->
-            link_count := !link_count + Array.length (Document.links doc);
-            Printers.links ~color:print_with_color oc doc
-          ) arr;
-        !link_count = 0
+        let link_count =
+          Array.fold_left (fun count (doc, _search_result) ->
+              count + Printers.links oc doc
+            )
+            0
+            arr
+        in
+        link_count = 0
       ) else if print_files_without_match then (
         let arr =
           Session.State.unusable_documents session_state
