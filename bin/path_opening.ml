@@ -394,7 +394,7 @@ let main ~close_term ~path ~doc_id_and_search_result =
 
 let find_project_root : string -> string option =
   let lock = Eio.Mutex.create () in
-  let cache = CCCache.lru ~eq:String.equal 10240 in
+  let cache = CCCache.lru ~eq:String.equal 256 in
   let rec aux arr =
     let cur = CCString.concat_seq ~sep:Filename.dir_sep (Dynarray.to_seq arr) in
     if Dynarray.length arr = 0 then (
