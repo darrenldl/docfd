@@ -647,6 +647,8 @@ let check
     ~search_result_print_max_add_lines
     ~start_with_script
     ~script
+    ~index_only
+    ~list_scripts
     ~paths_from
     ~print_files_with_match
     ~print_files_without_match
@@ -705,15 +707,18 @@ let check
         print_files_with_match
         ||
         print_files_without_match
+        ||
+        print_links
       )
     then (
       exit_with_cli_error_msg
-        (Fmt.str "--%s must be used with at least one of: --%s, --%s, --%s, --%s"
+        (Fmt.str "--%s must be used with at least one of: --%s, --%s, --%s, --%s, --%s"
            filter_arg_name
            search_arg_name
            sample_arg_name
            files_with_match_arg_name
            files_without_match_arg_name
+           links_arg_name
         )
     )
   );
@@ -721,6 +726,31 @@ let check
     exit_with_cli_error_msg
       (Fmt.str "--%s and --%s cannot be used together" x y)
   in
+  let non_interactive_args =
+    [ (Option.is_some filter_exp, filter_arg_name)
+    ; (Option.is_some sample_search_exp, sample_arg_name)
+    ; (Option.is_some search_exp, search_arg_name)
+    ; (Option.is_some script, script_arg_name)
+    ; (print_files_with_match, files_with_match_arg_name)
+    ; (print_files_without_match, files_without_match_arg_name)
+    ; (print_links, links_arg_name)
+    ]
+  in
+  let check_early_exit_arg ~enabled ~arg_name =
+    if enabled then (
+      List.iter (fun (present, other_arg_name) ->
+          if present then (
+            cannot_be_used_together arg_name other_arg_name
+          )
+        )
+        non_interactive_args
+    )
+  in
+  if index_only && list_scripts then (
+    cannot_be_used_together index_only_arg_name list_scripts_arg_name
+  );
+  check_early_exit_arg ~enabled:index_only ~arg_name:index_only_arg_name;
+  check_early_exit_arg ~enabled:list_scripts ~arg_name:list_scripts_arg_name;
   (match print_files_with_match, print_files_without_match, print_links with
    | true, true, _ -> (
        cannot_be_used_together
@@ -813,16 +843,22 @@ let check
        | Some _ -> ()
      )
   );
+  let non_interactive =
+    Option.is_some filter_exp
+    || Option.is_some sample_search_exp
+    || Option.is_some search_exp
+    || Option.is_some script
+    || print_files_with_match
+    || print_files_without_match
+    || print_links
+    || index_only
+    || list_scripts
+  in
   let start_with_arg_check ~arg_name =
-    if Option.is_some filter_exp then (
-      cannot_be_used_together arg_name filter_arg_name
-    );
-    if Option.is_some sample_search_exp then (
-      cannot_be_used_together arg_name sample_arg_name
-    );
-    if Option.is_some search_exp then (
-      cannot_be_used_together arg_name search_arg_name
-    );
+    if non_interactive then (
+      exit_with_cli_error_msg
+        (Fmt.str "--%s cannot be used in non-interactive mode" arg_name)
+    )
   in
   if Option.is_some start_with_filter then (
     start_with_arg_check ~arg_name:start_with_filter_arg_name
