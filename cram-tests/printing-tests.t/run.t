@@ -109,6 +109,7 @@
   >   > resolution-project/docs/source.md
   $ docfd --cache-dir .link-resolution-cache --exts md,txt --filter 'path-glob:resolution-project/docs/source.md' --links resolution-project | sort
   $TESTCASE_ROOT/resolution-project/README.md
+  $TESTCASE_ROOT/resolution-project/README.md
   $TESTCASE_ROOT/resolution-project/docs/Adjacent.md
   $TESTCASE_ROOT/resolution-project/docs/Encoded file.md
   $TESTCASE_ROOT/resolution-project/docs/Extensionless
@@ -117,6 +118,7 @@
   $TESTCASE_ROOT/resolution-project/notes/Exact.txt
   $TESTCASE_ROOT/resolution-project/notes/Note.md
   $TESTCASE_ROOT/resolution-project/notes/Parent.md
+  $TESTCASE_ROOT/resolution-project/notes/RootNote.md
   $TESTCASE_ROOT/resolution-project/notes/RootNote.md
   $TESTCASE_ROOT/resolution-project/notes/Wiki file.md
 
