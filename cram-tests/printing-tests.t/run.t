@@ -96,6 +96,7 @@
   >   '[encoded space](Encoded%20file.md)' \
   >   '[encoded hash](Hash%23file.md#heading)' \
   >   '[project root](/README.md)' \
+  >   '[repeated root separators](///README.md)' \
   >   '[parent](../notes/Parent.md#heading)' \
   >   '[[Note#Heading]]' \
   >   '[[Exact.txt]]' \
@@ -103,6 +104,7 @@
   >   '[[./Extensionless]]' \
   >   '[[./Missing]]' \
   >   '[[/RootNote#Heading]]' \
+  >   '[[///RootNote#Heading]]' \
   >   '[[Wiki%20file]]' \
   >   > resolution-project/docs/source.md
   $ docfd --cache-dir .link-resolution-cache --exts md,txt --filter 'path-glob:resolution-project/docs/source.md' --links resolution-project | sort
