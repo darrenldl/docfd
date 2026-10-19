@@ -499,16 +499,18 @@ let resolve_link_to_path ~doc (link : Link.t) : string option =
           wiki_root
       in
       match
-        String_set.find_first_opt (fun path ->
+        String_set.to_seq candidates
+        |> Seq.find (fun path ->
             CCString.suffix ~suf:link_with_ext path
-          ) candidates
+          )
       with
       | Some x -> Some x
       | None -> (
           match
-            String_set.find_first_opt (fun path ->
+            String_set.to_seq candidates
+            |> Seq.find (fun path ->
                 CCString.suffix ~suf:link path
-              ) candidates
+              )
           with
           | Some x -> Some x
           | None -> (
