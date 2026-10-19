@@ -137,7 +137,7 @@
   >   '[[README.txt]]' \
   >   > resolution-project/docs/source.txt
   $ docfd --cache-dir .link-resolution-cache --exts md,txt --filter 'path-glob:resolution-project/docs/source.txt' --links resolution-project
-  $TESTCASE_ROOT/resolution-project/README.md
+  $TESTCASE_ROOT/resolution-project/README.txt
   $TESTCASE_ROOT/resolution-project/README.md
   $TESTCASE_ROOT/resolution-project/README.txt
 
