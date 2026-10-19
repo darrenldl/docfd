@@ -534,27 +534,29 @@ let resolve_link_to_path ~doc (link : Link.t) : string option =
     match typ with
     | `Markdown -> (
         let link = prepare_local_link link in
-        if link = "" then (
-          Some doc_path
-        ) else (
-          if Filename.is_relative link then (
-            Some (Filename.concat doc_dir link)
+        (if link = "" then (
+            Some doc_path
           ) else (
-            let link = File_utils.strip_leading_dir_sep link in
-            let project_root =
-              Option.value ~default:doc_dir (find_project_root doc_dir)
-            in
-            Some (Filename.concat project_root link)
-          )
-        )
+           if Filename.is_relative link then (
+             Some (Filename.concat doc_dir link)
+           ) else (
+             let link = File_utils.strip_leading_dir_sep link in
+             let project_root =
+               Option.value ~default:doc_dir (find_project_root doc_dir)
+             in
+             Some (Filename.concat project_root link)
+           )
+         ))
+        |> Option.map Misc_utils.normalize_path_to_absolute
       )
     | `Wiki -> (
         let link = prepare_local_link link in
-        if link = "" then (
-          Some doc_path
-        ) else (
-          resolve_wiki_link link
-        )
+        (if link = "" then (
+            Some doc_path
+          ) else (
+           resolve_wiki_link link
+         ))
+        |> Option.map Misc_utils.normalize_path_to_absolute
       )
     | `URL -> (
         Some link
