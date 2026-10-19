@@ -69,20 +69,21 @@
   $ mkdir link-project
   $ printf '%s\n' '[target](target.md)' '[same document](#section)' 'https://example.com' '[[/]]' > link-project/source.md
   $ touch link-project/target.md
-  $ docfd --cache-dir .links-cache --exts md --links link-project | sort
-  $TESTCASE_ROOT/link-project/source.md
+  $ docfd --cache-dir .links-cache --exts md --links link-project
   $TESTCASE_ROOT/link-project/target.md
+  $TESTCASE_ROOT/link-project/source.md
   https://example.com
 
 --filter can select the documents whose links are printed:
-  $ docfd --cache-dir .links-filter-cache --exts md --filter 'path-glob:link-project/source.md' --links link-project | sort
-  $TESTCASE_ROOT/link-project/source.md
+  $ docfd --cache-dir .links-filter-cache --exts md --filter 'path-glob:link-project/source.md' --links link-project
   $TESTCASE_ROOT/link-project/target.md
+  $TESTCASE_ROOT/link-project/source.md
   https://example.com
 
 --links covers local path resolution:
   $ mkdir -p resolution-project/.git resolution-project/docs resolution-project/notes
   $ touch resolution-project/README.md
+  $ touch resolution-project/README.txt
   $ touch 'resolution-project/docs/Encoded file.md'
   $ touch 'resolution-project/docs/Hash#file.md'
   $ touch resolution-project/docs/Adjacent.md
@@ -106,21 +107,36 @@
   >   '[[/RootNote#Heading]]' \
   >   '[[///RootNote#Heading]]' \
   >   '[[Wiki%20file]]' \
+  >   '[[README]]' \
+  >   '[[README.md]]' \
+  >   '[[README.txt]]' \
   >   > resolution-project/docs/source.md
-  $ docfd --cache-dir .link-resolution-cache --exts md,txt --filter 'path-glob:resolution-project/docs/source.md' --links resolution-project | sort
-  $TESTCASE_ROOT/resolution-project/README.md
-  $TESTCASE_ROOT/resolution-project/README.md
-  $TESTCASE_ROOT/resolution-project/docs/Adjacent.md
+  $ docfd --cache-dir .link-resolution-cache --exts md,txt --filter 'path-glob:resolution-project/docs/source.md' --links resolution-project
   $TESTCASE_ROOT/resolution-project/docs/Encoded file.md
-  $TESTCASE_ROOT/resolution-project/docs/Extensionless
   $TESTCASE_ROOT/resolution-project/docs/Hash#file.md
-  $TESTCASE_ROOT/resolution-project/docs/Missing.md
-  $TESTCASE_ROOT/resolution-project/notes/Exact.txt
-  $TESTCASE_ROOT/resolution-project/notes/Note.md
+  $TESTCASE_ROOT/resolution-project/README.md
+  $TESTCASE_ROOT/resolution-project/README.md
   $TESTCASE_ROOT/resolution-project/notes/Parent.md
+  $TESTCASE_ROOT/resolution-project/notes/Note.md
+  $TESTCASE_ROOT/resolution-project/notes/Exact.txt
+  $TESTCASE_ROOT/resolution-project/docs/Adjacent.md
+  $TESTCASE_ROOT/resolution-project/docs/Extensionless
+  $TESTCASE_ROOT/resolution-project/docs/Missing.md
   $TESTCASE_ROOT/resolution-project/notes/RootNote.md
   $TESTCASE_ROOT/resolution-project/notes/RootNote.md
   $TESTCASE_ROOT/resolution-project/notes/Wiki file.md
+  $TESTCASE_ROOT/resolution-project/README.md
+  $TESTCASE_ROOT/resolution-project/README.md
+  $TESTCASE_ROOT/resolution-project/README.txt
+  $ printf '%s\n' \
+  >   '[[README]]' \
+  >   '[[README.md]]' \
+  >   '[[README.txt]]' \
+  >   > resolution-project/docs/source.txt
+  $ docfd --cache-dir .link-resolution-cache --exts md,txt --filter 'path-glob:resolution-project/docs/source.txt' --links resolution-project
+  $TESTCASE_ROOT/resolution-project/README.txt
+  $TESTCASE_ROOT/resolution-project/README.md
+  $TESTCASE_ROOT/resolution-project/README.txt
 
 --links exits with status 1 when no resolved links are found:
   $ docfd --cache-dir .no-links-cache --exts txt --links empty.txt
