@@ -120,6 +120,7 @@ let normalize_path_to_absolute path =
         | ".." -> (
             let acc =
               match acc with
+              | [ "" ] -> [ "" ] (* Stay at Unix root *)
               | [] -> []
               | _ :: xs -> xs
             in
