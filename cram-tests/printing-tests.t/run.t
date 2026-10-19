@@ -101,6 +101,8 @@
   >   '[repeated root separators](///README.md)' \
   >   '[parent](../notes/Parent.md#heading)' \
   >   '[[Note#Heading]]' \
+  >   '[](#Heading)' \
+  >   '[[#Heading]]' \
   >   '[[Exact.txt]]' \
   >   '[[./Adjacent]]' \
   >   '[[./Extensionless]]' \
@@ -120,6 +122,8 @@
   $TESTCASE_ROOT/resolution-project/README.md
   $TESTCASE_ROOT/resolution-project/notes/Parent.md
   $TESTCASE_ROOT/resolution-project/notes/Note.md
+  $TESTCASE_ROOT/resolution-project/docs/source.md
+  $TESTCASE_ROOT/resolution-project/docs/source.md
   $TESTCASE_ROOT/resolution-project/notes/Exact.txt
   $TESTCASE_ROOT/resolution-project/docs/Adjacent.md
   $TESTCASE_ROOT/resolution-project/docs/Extensionless
@@ -132,11 +136,15 @@
   $TESTCASE_ROOT/resolution-project/README.md
   $TESTCASE_ROOT/resolution-project/README.txt
   $ printf '%s\n' \
+  >   '[](#Heading)' \
+  >   '[[#Heading]]' \
   >   '[[README]]' \
   >   '[[README.md]]' \
   >   '[[README.txt]]' \
   >   > resolution-project/docs/source.txt
   $ docfd --cache-dir .link-resolution-cache --exts md,txt --filter 'path-glob:resolution-project/docs/source.txt' --links resolution-project
+  $TESTCASE_ROOT/resolution-project/docs/source.txt
+  $TESTCASE_ROOT/resolution-project/docs/source.txt
   $TESTCASE_ROOT/resolution-project/README.txt
   $TESTCASE_ROOT/resolution-project/README.md
   $TESTCASE_ROOT/resolution-project/README.txt
