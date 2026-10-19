@@ -452,10 +452,7 @@ let resolve_link_to_path ~doc (link : Link.t) : string option =
   let doc_dir = Filename.dirname doc_path in
   let doc_ext = Filename.extension doc_path in
   let resolve_wiki_link link : string option =
-    let link =
-      Option.value ~default:link
-        (CCString.chop_prefix ~pre:"/" link)
-    in
+    let link = File_utils.strip_leading_dir_sep link in
     let link_has_ext = Filename.extension link <> "" in
     let link_with_ext =
       if link_has_ext then (
