@@ -13,9 +13,9 @@ module Alco = struct
       test (if expected = "" then cwd else Filename.concat cwd expected) input
     in
     test "/" "/..";
-    test "/" "/..";
+    test "/" "/../..";
     test "/" "/abcd/..";
-    test "/" "/abcd/..";
+    test "/def" "/abc/../../def";
     test "/abc" "/abc/";
     test "/abc" "/abc/def/..";
     test "/abc" "/abc//";
