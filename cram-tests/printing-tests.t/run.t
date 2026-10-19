@@ -86,6 +86,7 @@
   $ touch resolution-project/README.txt
   $ touch 'resolution-project/docs/Encoded file.md'
   $ touch 'resolution-project/docs/Hash#file.md'
+  $ touch resolution-project/docs/README.md
   $ touch resolution-project/docs/Adjacent.md
   $ touch resolution-project/docs/Extensionless
   $ touch resolution-project/notes/Note.md
@@ -107,6 +108,7 @@
   >   '[[/RootNote#Heading]]' \
   >   '[[///RootNote#Heading]]' \
   >   '[[Wiki%20file]]' \
+  >   '[[./README]]' \
   >   '[[README]]' \
   >   '[[README.md]]' \
   >   '[[README.txt]]' \
@@ -125,6 +127,7 @@
   $TESTCASE_ROOT/resolution-project/notes/RootNote.md
   $TESTCASE_ROOT/resolution-project/notes/RootNote.md
   $TESTCASE_ROOT/resolution-project/notes/Wiki file.md
+  $TESTCASE_ROOT/resolution-project/docs/README.md
   $TESTCASE_ROOT/resolution-project/README.md
   $TESTCASE_ROOT/resolution-project/README.md
   $TESTCASE_ROOT/resolution-project/README.txt
@@ -134,7 +137,7 @@
   >   '[[README.txt]]' \
   >   > resolution-project/docs/source.txt
   $ docfd --cache-dir .link-resolution-cache --exts md,txt --filter 'path-glob:resolution-project/docs/source.txt' --links resolution-project
-  $TESTCASE_ROOT/resolution-project/README.txt
+  $TESTCASE_ROOT/resolution-project/README.md
   $TESTCASE_ROOT/resolution-project/README.md
   $TESTCASE_ROOT/resolution-project/README.txt
 
