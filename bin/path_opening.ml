@@ -543,6 +543,7 @@ let resolve_link_to_path ~doc (link : Link.t) : string option =
           if Filename.is_relative link then (
             Some (Filename.concat doc_dir link)
           ) else (
+            let link = File_utils.strip_leading_dir_sep link in
             let project_root =
               Option.value ~default:doc_dir (find_project_root doc_dir)
             in

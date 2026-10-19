@@ -265,3 +265,17 @@ let list_script_files () =
     ~report_progress:(fun () -> ())
     ~exts:[ Params.docfd_script_ext ]
     (Seq.return (Params.script_dir ()))
+
+let strip_leading_dir_sep s =
+  let rec aux s i =
+    if i < String.length s then (
+      if s.[i] = '/' then (
+        aux s i
+      ) else (
+        String.sub s i (String.length s - i)
+      )
+    ) else (
+      String.sub s i (String.length s - i)
+    )
+  in
+  aux s 0
