@@ -265,8 +265,12 @@ module Raw = struct
           aux (links @ acc) rest
         )
     in
-    aux [] line_candidates
-    |> Array.of_list
+    let arr =
+      aux [] line_candidates
+      |> Array.of_list
+    in
+    Array.sort (fun l0 l1 -> Int.compare l0.Link.start_pos l1.Link.start_pos) arr;
+    arr
 
   let of_seq pool (s : (Line_loc.t * string) Seq.t) : t =
     let indices =
