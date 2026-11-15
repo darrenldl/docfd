@@ -1486,6 +1486,7 @@ let links ~doc_id : Link.t array =
     SELECT start_pos, end_inc_pos, typ, link
     FROM link
     WHERE link.doc_id = @doc_id
+    ORDER BY start_pos
     |}
         ~names:[ ("@doc_id", INT doc_id) ]
         (fun data ->
